@@ -1,22 +1,21 @@
-#pragma once 
+#pragma once
 
-#include <movutl/db/anim.hpp>
-#include <movutl/db/body.hpp>
-#include <movutl/db/effect.hpp>
-#include <movutl/db/collection.hpp>
-#include <movutl/db/mesh.hpp>
-#include <movutl/db/world.hpp>
+#include <movutl/asset/entity.hpp>
+#include <movutl/core/defines.hpp>
+#include <movutl/core/ref.hpp>
+#include <movutl/core/vector.hpp>
+#include <string>
 
-namespace mu::db {
+namespace mu {
 
-struct Project : Block {
-  core::Vec<_MeshBase *> meshes;
-  core::Vec<World> worlds;
-  core::Vec<Body> bodies;
-  core::Vec<Collection> layers;
-
+class Project {
+public:
   Project() = default;
   ~Project() = default;
+  MOVUTL_DECLARE_SINGLETON(Project);
+
+  std::string path;
+  std::vector<Ref<Entity>> entities;
 };
 
-} // namespace mu::db
+} // namespace mu

@@ -1,7 +1,7 @@
 #pragma once
 #include <movutl/core/vector.hpp>
 
-namespace mu::core {
+namespace mu {
 struct Range {
   float min, max;
   Range() { clear(); }
@@ -25,16 +25,16 @@ struct Range {
     min = std::min(min, t);
     max = std::max(max, t);
   }
-  Range<float> scale(const float t) const { return Range<float>(center() - length() * t / 2.0f, center() + length() * t / 2.0f); }
-  Range<float> margin(const float t) const { return Range<float>(min - t, max + t); }
+  Range scale(const float t) const { return Range(center() - length() * t / 2.0f, center() + length() * t / 2.0f); }
+  Range margin(const float t) const { return Range(min - t, max + t); }
 
   bool valid() const { return max >= min; }
-  template <typename U> bool operator==(const Range<U>& o) const { return o.min == min && o.max == max; }
-  static Range<float> Inf() { return Range(std::numeric_limits<float>::lowest(), std::numeric_limits<float>::max()); }
+  bool operator==(const Range o) const { return o.min == min && o.max == max; }
+  static Range Inf() { return Range(std::numeric_limits<float>::lowest(), std::numeric_limits<float>::max()); }
 };
 
 struct Rect3D {
-  Range<float> x, y, z;
+  Range x, y, z;
   Rect3D() = default;
   Rect3D(float xmin, float xmax, float ymin, float ymax, float zmin, float zmax) {
     x.min = xmin;
@@ -59,7 +59,7 @@ struct Rect3D {
     x.max = y.max = z.max = max;
   }
 
-  Rect3D(const Range<float>& range_x, const Range<float>& range_y, const Range<float>& range_z) {
+  Rect3D(const Range& range_x, const Range& range_y, const Range& range_z) {
     x = range_x;
     y = range_y;
     z = range_z;
@@ -76,27 +76,27 @@ struct Rect3D {
   auto w() const { return x.length(); } /// width  ( x length  )
   auto d() const { return y.length(); } /// depth  ( y length  )
   auto h() const { return z.length(); } /// height ( z lngth   )
-  template <typename float = float> _Vec<float, 3> pos() const { return {x.min, y.min, z.min}; }
-  template <typename float = float> _Vec<float, 3> center() const { return {x.center(), y.center(), z.center()}; }
-  template <typename float = float> _Vec<float, 3> size() const { return {x.length(), y.length(), z.length()}; }
+  Vec3 pos() const { return {x.min, y.min, z.min}; }
+  Vec3 center() const { return {x.center(), y.center(), z.center()}; }
+  Vec3 size() const { return {x.length(), y.length(), z.length()}; }
   bool contains(const Rect3D& other) const { return x.contains(other.x) && y.contains(other.y) && z.contains(other.z); }
-  template <typename float> bool contains(const _Vec<float, 3>& p) const { return x.contains(p[0]) && y.contains(p[1]) && z.contains(p[2]); }
-  template <typename float> bool contains(const float x_, float y_, float z_) const { return x.contains(x_) && y.contains(y_) && z.contains(z_); }
+  bool contains(const Vec3& p) const { return x.contains(p[0]) && y.contains(p[1]) && z.contains(p[2]); }
+  bool contains(const float x_, float y_, float z_) const { return x.contains(x_) && y.contains(y_) && z.contains(z_); }
   float area() const { return x.length() * y.length() * z.length(); }
   void clear() {
     x.clear();
     y.clear();
     z.clear();
   }
-  void expand(float x_, float y_, float z_) { expand(Vec3f(x_, y_, z_)); }
-  template <typename float> void expand(const _Vec<float, 3>& p) {
+  void expand(float x_, float y_, float z_) { expand(Vec3(x_, y_, z_)); }
+  void expand(const Vec3& p) {
     x.expand(p[0]);
     y.expand(p[1]);
     z.expand(p[2]);
   }
   bool valid() const { return x.valid() && y.valid() && z.valid(); }
   Rect3D scale(float t) const { return Rect3D(x.scale(t), y.scale(t), z.scale(t)); }
-  template <typename float> Rect3D scale(const _Vec<float, 3> t) { return Rect3D(x.scale(t[0]), y.scale(t[1]), z.scale(t[2])); }
+  Rect3D scale(const Vec3 t) { return Rect3D(x.scale(t[0]), y.scale(t[1]), z.scale(t[2])); }
   Rect3D margin(float t) const { return Rect3D(x.margin(t), y.margin(t), z.margin(t)); }
 
   void merge(const Rect3D& other) {
@@ -104,13 +104,13 @@ struct Rect3D {
     y.merge(other.y);
     z.merge(other.z);
   }
-  static Rect3D Inf() { return Rect3D(Range<float>::Inf(), Range<float>::Inf(), Range<float>::Inf()); }
+  static Rect3D Inf() { return Rect3D(Range::Inf(), Range::Inf(), Range::Inf()); }
 };
 
 struct Rect {
-  Range<float> x, y;
+  Range x, y;
   Rect() { x.min = y.min = x.max = y.max = 0; }
-  template <typename float> Rect(const Range<float>& xr, const Range<float>& yr) {
+  Rect(const Range& xr, const Range& yr) {
     x = xr;
     y = yr;
   }
@@ -120,15 +120,15 @@ struct Rect {
     y.min = ymin;
     y.max = ymax;
   }
-  template <typename float> Rect(const _Vec<float, 2>& pos, const _Vec<float, 2>& size) {
+  Rect(const _Vec<float, 2>& pos, const _Vec<float, 2>& size) {
     x.min = pos[0];
     x.max = pos[0] + size[0];
     y.min = pos[1];
     y.max = pos[1] + size[1];
   }
-  template <typename float = float> _Vec<float, 2> center() const { return {x.center(), y.center()}; }
-  template <typename float = float> _Vec<float, 2> size() const { return {x.length(), y.length()}; }
-  Vec2f pos() const { return {x.min, y.min}; }
+  Vec2 center() const { return {x.center(), y.center()}; }
+  Vec2 size() const { return {x.length(), y.length()}; }
+  Vec2 pos() const { return {x.min, y.min}; }
   float top() const { return y.min; }
   float bottom() const { return y.max; }
   float left() const { return x.min; }
@@ -140,13 +140,13 @@ struct Rect {
   void right(float t) { x.max = t; }
 
   bool contains(const Rect& other) const { return x.contains(other.x) && y.contains(other.y); }
-  template <typename float> bool contains(const _Vec<float, 2>& p) const { return contains(p[0], p[1]); }
-  template <typename float> bool contains(const float x_, const float y_) const { return x.contains(x_) && y.contains(y_); }
+  bool contains(const _Vec<float, 2>& p) const { return contains(p[0], p[1]); }
+  bool contains(const float x_, const float y_) const { return x.contains(x_) && y.contains(y_); }
   float area() const { return x.length() * y.length(); }
-  template <typename float> void expand(const float x_, const float y_) { expand({x_, y_}); }
-  template <typename float> void expand(const _Vec<float, 2>& p) {
-    x.merge(p[0]);
-    y.merge(p[1]);
+  void expand(const float x_, const float y_) { expand({x_, y_}); }
+  void expand(const Vec2& p) {
+    x.expand(p[0]);
+    y.expand(p[1]);
   }
   bool valid() const { return x.valid() && y.valid(); }
   void scale(float t) {
@@ -161,17 +161,17 @@ struct Rect {
     x.clear();
     y.clear();
   }
-  static Rect Inf() { return Rect(Range<float>::Inf(), Range<float>::Inf()); }
+  static Rect Inf() { return Rect(Range::Inf(), Range::Inf()); }
 };
 
-template <typename float> inline std::ostream& operator<<(std::ostream& os, const Range<float>& r) {
-  return os << "Range(" << r.min << ", " << r.max << ")";
-}
-inline std::ostream& operator<<(std::ostream& os, const Rect3D& r) {
-  return os << "Rect(x, y, z) = [ " << r.x << ", " << r.y << ", " << r.z << " ] ";
-}
-inline std::ostream& operator<<(std::ostream& os, const Rect& r) {
-  return os << "Rect(x, y) = [ " << r.x << ", " << r.y << " ]  ";
-}
-
-} // namespace mu::core
+/*template <typename float> inline std::ostream& operator<<(std::ostream& os, const Range& r) {*/
+/*  return os << "Range(" << r.min << ", " << r.max << ")";*/
+/*}*/
+/*inline std::ostream& operator<<(std::ostream& os, const Rect3D& r) {*/
+/*  return os << "Rect(x, y, z) = [ " << r.x << ", " << r.y << ", " << r.z << " ] ";*/
+/*}*/
+/*inline std::ostream& operator<<(std::ostream& os, const Rect& r) {*/
+/*  return os << "Rect(x, y) = [ " << r.x << ", " << r.y << " ]  ";*/
+/*}*/
+/**/
+} // namespace mu

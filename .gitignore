@@ -7,8 +7,6 @@ lcov.info
 */.vscode/
 !/.vscode
 
-src/version/melchior/impl/version_info.hpp
-
 __pycache__
 
 doxygen-awesome-css

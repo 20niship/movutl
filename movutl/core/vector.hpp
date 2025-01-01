@@ -544,6 +544,7 @@ template <typename T, unsigned int W, unsigned int H> struct _Mat {
     return det;
   }
 
+#ifdef MU_WITH_OSTREAM
   void display() const {
     std::cout << "data = [ " << std::endl;
     for(size_t i = 0; i < W; i++) {
@@ -555,6 +556,7 @@ template <typename T, unsigned int W, unsigned int H> struct _Mat {
     }
     std::cout << "]" << std::endl;
   }
+#endif
 
   _Mat inv() const {
     MU_ASSERT(W == H);
