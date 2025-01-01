@@ -1,66 +1,102 @@
 #pragma once
 
-#ifdef WITH_OPENGL // CmakeListsをみてね
-#define GLEW_STATIC
+#include <stdio.h>
+
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
-#else
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-#endif
 
-#include <movutl/asset/camera.hpp>
-#include <movutl/render/engine.hpp>
-#include <movutl/render/render.hpp>
-#include <movutl/ui/io.hpp>
-#include <movutl/ui/widget.hpp>
-#include <movutl/ui/window.hpp>
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
 
 
-namespace mu::ui {
+namespace mu {
 
-using uihWnd    = uiWindow*;
-using uihWidget = uiWidget*;
-
-// keyboardCBで呼ばれる関数
-// keycoard, scancode, action, mods, position
-
-struct Editor {
-  Vec<uihWnd> windows;
-  uiWindow *drawingWnd, *hoveringWnd, *focusedWnd;
-  uiStyle style;
-  void init();
-  bool update(const bool verbose);
-  void terminate(const bool verbose = false);
-};
-
-#define MU_API
-
-MU_API Editor* get_editor_ptr();
-inline MU_API auto drawing_wnd(uiWindow* wnd) { return get_editor_ptr()->drawingWnd = wnd; }
-inline MU_API auto drawing_wnd() { return get_editor_ptr()->drawingWnd; }
-inline MU_API auto focused_wnd(uiWindow* wnd) { return get_editor_ptr()->focusedWnd = wnd; }
-inline MU_API auto focused_wnd() { return get_editor_ptr()->focusedWnd; }
-inline MU_API auto hover_wnd(uiWindow* wnd) { return get_editor_ptr()->hoveringWnd = wnd; }
-inline MU_API auto hover_wnd() { return get_editor_ptr()->hoveringWnd; }
-
-// inline MU_API auto setFocusedWidget(uiWidget *w){return get_editor_ptr()->focusedWidget = w;}
-inline MU_API uiWidget* focused_widget() { return drawing_wnd()->root_widget_ui.getFocusedWidget(); }
-inline MU_API uiWidget* hover_widget() { return drawing_wnd()->root_widget_ui.getHoveringWidget(); }
-
-inline MU_API void initFinish() {
-  assert(get_editor_ptr()->windows.size() > 0);
-  /* render::engine.renderer.init(); */
+// ImGui - standalone example application for Glfw + OpenGL 3, using programmable pipeline
+// If you are new to ImGui, see examples/README.txt and documentation at the top of imgui.cpp.
+static void error_callback(int error, const char* description) {
+  fprintf(stderr, "Error %d: %s\n", error, description);
 }
-inline MU_API uiWindow* create_window(std::string name, int w, int h) {
-  auto wnd = new uiWindow(name, w, h);
-  get_editor_ptr()->windows.push_back(std::move(wnd));
-  return wnd;
-}
-// styles
-inline MU_API const uiStyle* getStyle() { return &get_editor_ptr()->style; }
-inline MU_API void setStyle(const uiStyle& s) { get_editor_ptr()->style = s; }
-inline MU_API auto getAllWindows() { return &get_editor_ptr()->windows; }
-inline MU_API bool update(bool verbose = false) { return get_editor_ptr()->update(verbose); }
 
-} // namespace mu::ui
+int main(int, char**) {
+  // Setup window
+  glfwSetErrorCallback(error_callback);
+  if(!glfwInit()) return 1;
+  glfwWindowHint(GLFW_SAMPLES, 4);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // To make MacOS happy; should not be needed
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+  GLFWwindow* window = glfwCreateWindow(1280, 720, "ImGui OpenGL3 example", NULL, NULL);
+  glfwMakeContextCurrent(window);
+
+  glewInit();
+
+  // Setup ImGui binding
+  ImGui_ImplGlfwGL3_Init(window, true);
+
+  // Load FontsR
+  // (there is a default font, this is only if you want to change it. see extra_fonts/README.txt for more details)
+  // ImGuiIO& io = ImGui::GetIO();
+  // io.Fonts->AddFontDefault();
+  // io.Fonts->AddFontFromFileTTF("../../extra_fonts/Cousine-Regular.ttf", 15.0f);
+  // io.Fonts->AddFontFromFileTTF("../../extra_fonts/DroidSans.ttf", 16.0f);
+  // io.Fonts->AddFontFromFileTTF("../../extra_fonts/ProggyClean.ttf", 13.0f);
+  // io.Fonts->AddFontFromFileTTF("../../extra_fonts/ProggyTiny.ttf", 10.0f);
+  // io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
+
+  bool show_test_window = true;
+  bool show_another_window = false;
+  ImVec4 clear_color = ImColor(114, 144, 154);
+
+  // Main loop
+  while(!glfwWindowShouldClose(window)) {
+    ImGui_ImplGlfwGL3_NewFrame();
+
+    // 1. Show a simple window
+    // Tip: if we don't call ImGui::Begin()/ImGui::End() the widgets appears in a window automatically called "Debug"
+    {
+      static float f = 0.0f;
+      ImGui::Text("Hello, world!");
+      ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
+      ImGui::ColorEdit3("clear color", (float*)&clear_color);
+      if(ImGui::Button("Test Window")) show_test_window ^= 1;
+      if(ImGui::Button("Another Window")) show_another_window ^= 1;
+      ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+    }
+
+    // 2. Show another simple window, this time using an explicit Begin/End pair
+    if(show_another_window) {
+      ImGui::SetNextWindowSize(ImVec2(200, 100), ImGuiSetCond_FirstUseEver);
+      ImGui::Begin("Another Window", &show_another_window);
+      ImGui::Text("Hello");
+      ImGui::End();
+    }
+
+    // 3. Show the ImGui test window. Most of the sample code is in ImGui::ShowTestWindow()
+    if(show_test_window) {
+      ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiSetCond_FirstUseEver);
+      ImGui::ShowTestWindow(&show_test_window);
+    }
+
+    // Rendering
+    int display_w, display_h;
+    glfwGetFramebufferSize(window, &display_w, &display_h);
+    glViewport(0, 0, display_w, display_h);
+    glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
+    glClear(GL_COLOR_BUFFER_BIT);
+    ImGui::Render();
+
+    glfwSwapBuffers(window);
+    glfwPollEvents();
+  }
+
+  // Cleanup
+  ImGui_ImplGlfwGL3_Shutdown();
+  glfwTerminate();
+
+  return 0;
+}
+
+} // namespace mu
