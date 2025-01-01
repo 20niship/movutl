@@ -15,7 +15,6 @@ find_package(assimp REQUIRED QUIET)
 if(NOT DEFINED CMAKE_SUPPRESS_DEVELOPER_WARNINGS)
    set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS 1 CACHE INTERNAL "No dev warnings")
 endif()
-find_package(PCL REQUIRED QUIET COMPONENTS)
 
 if(APPLE)
   find_package(PkgConfig REQUIRED)
@@ -47,11 +46,7 @@ set(MOVUTL_LIBRARIES
   ${OpenCV_LIBRARIES}
   # ${assimp_LIBRARIES}
   assimp::assimp
-  ${PCL_LIBRARIES}
 )
-
-link_directories(${PCL_LIBRARY_DIRS})
-add_definitions(${PCL_DEFINITIONS})
 
 set(ALL_INCLUDES 
     ${OpenCV_INCLUDE_DIRS} 
@@ -59,7 +54,6 @@ set(ALL_INCLUDES
     ${assimp_INCLUDE_DIR}
     ${glm_INCLUDE_DIRS}
     ${FREETYPE_INCLUDE_DIRS}
-    ${PCL_INCLUDE_DIRS}
     # ${spdlog_INCLUDE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/movutl
     ${CMAKE_CURRENT_SOURCE_DIR}/movutl/external/loguru/include/
