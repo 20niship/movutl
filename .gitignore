@@ -1,0 +1,67 @@
+.cache/*
+build/*
+.vs/
+*.swp
+html
+lcov.info
+*/.vscode/
+!/.vscode
+
+src/version/melchior/impl/version_info.hpp
+
+__pycache__
+
+doxygen-awesome-css
+
+.DS_Store
+
+examples/tmp.cpp
+
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.vcxproj.webinfo
+*.rule
+*.suo
+*.log
+*.pdb
+CMakeFiles
+build*/
+
+# Aviutl Cache
+*.lwi
+*.lwf
