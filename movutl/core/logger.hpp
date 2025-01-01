@@ -1,5 +1,5 @@
 #pragma once
-#include <spdlog/spdlog.h>
+#include <loguru.hpp>
 
 #include <chrono>
 #include <sstream>
@@ -110,13 +110,14 @@ struct log_intermediate {
 
   ~log_intermediate() noexcept {
     try {
-      const auto now      = std::chrono::system_clock::now();
-      const time_t tt     = std::chrono::system_clock::to_time_t(now);
+      const auto now = std::chrono::system_clock::now();
+      const time_t tt = std::chrono::system_clock::to_time_t(now);
       const auto timeinfo = localtime(&tt);
-      const auto nowMs    = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
-      const int msec      = nowMs.count();
+      const auto nowMs = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
+      const int msec = nowMs.count();
       std::stringstream s;
-      s << prefix << timeinfo->tm_year + 1900 << "/" << timeinfo->tm_mon << "/" << timeinfo->tm_mday << " " << timeinfo->tm_hour << ":" << timeinfo->tm_min << ":" << timeinfo->tm_sec << "." << msec << " " << type << " " << function << " " << buffer.str() << suffix << std::endl;
+      s << prefix << timeinfo->tm_year + 1900 << "/" << timeinfo->tm_mon << "/" << timeinfo->tm_mday << " " << timeinfo->tm_hour << ":" << timeinfo->tm_min << ":" << timeinfo->tm_sec << "." << msec
+        << " " << type << " " << function << " " << buffer.str() << suffix << std::endl;
 
 #ifdef MYLOGGER_OUTPUT_FILENAME
       myFile << s.str();

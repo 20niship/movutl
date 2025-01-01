@@ -1,6 +1,5 @@
 #include <cmath>
 #include <movutl/core/core.hpp>
-#include <opencv2/core/persistence.hpp>
 
 namespace mu::core {
 
@@ -43,7 +42,7 @@ Mat4x4 scale_mat(const Vec3& scale) {
   return s;
 }
 
-Mat4x4 translation_mat(const Vec3& pos){
+Mat4x4 translation_mat(const Vec3& pos) {
   Mat4x4 s;
   // clang-format off
   s << 1,0,0,pos[0],
@@ -54,12 +53,12 @@ Mat4x4 translation_mat(const Vec3& pos){
   return s;
 }
 
-Mat4x4 transform_mat(const Vec3& pos, const Vec3& pry, const Vec3& scale){
+Mat4x4 transform_mat(const Vec3& pos, const Vec3& pry, const Vec3& scale) {
   return rotation_mat_4x4(pry) * scale_mat(scale) * translation_mat(pos);
 }
 
-std::array<Vec3f, 2> get_vert_vec(const Vec3f& x) {
-  Vec3f e1, e2;
+std::array<Vec3, 2> get_vert_vec(const Vec3& x) {
+  Vec3 e1, e2;
   if(x[0] >= x[1] && x[0] >= x[2]) { // X軸に近い直線
     e1 = {x[1], x[0], x[2]};
     e2 = {x[2], x[1], x[0]};

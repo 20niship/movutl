@@ -9,7 +9,7 @@
 #include <GLFW/glfw3.h>
 #endif
 
-#include <movutl/db/camera.hpp>
+#include <movutl/asset/camera.hpp>
 #include <movutl/render/engine.hpp>
 #include <movutl/render/render.hpp>
 #include <movutl/ui/io.hpp>

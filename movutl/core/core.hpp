@@ -1,19 +1,13 @@
 #pragma once
+#include <array>
 #include <movutl/core/vector.hpp>
 
-namespace mu::core {
+namespace mu {
 
-template <typename T, typename... Args> const T& min(const T& a, const T& b, const Args&... args) {
-  return min(b < a ? b : a, args...);
-}
-template <typename T, typename... Args> const T& max(const T& a, const T& b, const Args&... args) {
-  return max(b > a ? b : a, args...);
-}
-
-template <typename T> constexpr inline auto rad_to_deg(const T x) {
+constexpr inline float rad_to_deg(const float x) {
   return x * 180.0 / 3.141592;
 }
-template <typename T> constexpr inline auto deg_to_rad(const T x) {
+constexpr inline float deg_to_rad(const float x) {
   return x / 180.0 * 3.141592;
 }
 
@@ -104,6 +98,6 @@ inline Mat4x4 look_at(Vec3 pos, Vec3 to, Vec3 up) {
 }
 
 
-std::array<Vec3f, 2> get_vert_vec(const Vec3f& x);
+std::array<Vec3, 2> get_vert_vec(const Vec3& x);
 
-} // namespace mu::core
+} // namespace mu

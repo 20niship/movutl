@@ -3,24 +3,18 @@
 #include <limits>
 #include <vector>
 
+#include <movutl/asset/mesh.hpp>
 #include <movutl/core/assert.hpp>
 #include <movutl/core/pool.hpp>
 #include <movutl/core/rect.hpp>
-#include <movutl/db/mesh.hpp>
-#include <spdlog/spdlog.h>
 
-namespace mu::core {
+namespace mu {
 
-using IndicesT = size_t;
+inline bool isPow2(unsigned i) {
+  return ((i - 1) & i) == 0;
+}
 
-inline bool isPow2(unsigned i) { return ((i - 1) & i) == 0; }
-
-enum class SearchMethod {
-  Nearest = 1,
-  Sphere,
-  Volume,
-  NearestRecursive
-};
+enum class SearchMethod { Nearest = 1, Sphere, Volume, NearestRecursive };
 
 template <typename T = float, int DEPTH = 10> class Octree2 {
 public:
@@ -40,7 +34,7 @@ public:
   };
 
   struct Leave : public Node {
-    core::Vec<IndicesT> indices;
+    Vec<IndicesT> indices;
     inline Leave() { indices.clear(); }
     inline Leave(const IndicesT v) {
       indices.resize(1);
@@ -66,14 +60,16 @@ public:
   Pool<Branch> branch_pool;
   Rect3D r;
 
-  Vec3d apply_bbox(const core::_Vec<T, 3>& p) const {
+  Vec3d apply_bbox(const _Vec<T, 3>& p) const {
     Vec3d bin;
     bin[0] = (p[0] - r.x.min) * resolution() / r.x.length();
     bin[1] = (p[1] - r.y.min) * resolution() / r.y.length();
     bin[2] = (p[2] - r.z.min) * resolution() / r.z.length();
     return bin;
   }
-  Vec3d raw_to_bin_scale(const _Vec<T, 3>& p) const { return Vec3d((double)p[0] * resolution() / r.x.length(), (double)p[1] * resolution() / r.y.length(), (double)p[2] * resolution() / r.z.length()); }
+  Vec3d raw_to_bin_scale(const _Vec<T, 3>& p) const {
+    return Vec3d((double)p[0] * resolution() / r.x.length(), (double)p[1] * resolution() / r.y.length(), (double)p[2] * resolution() / r.z.length());
+  }
   Vec3d raw_to_bin_scale(const T& p) const { return raw_to_bin_scale({p, p, p}); }
 
   _Vec<T, 3> bin_to_raw(const Vec3d& p) const {
@@ -94,7 +90,9 @@ public:
 
     /// Check if any point of the position is in the search box.
     /// bbox_min,  bbox_maxで示された領域ないに一部が含まれるか？
-    bool check_branch(const int x, const int y, const int z, const int w) const { return !(bbox_max[0] < x || bbox_min[0] > x + w || bbox_max[1] < y || bbox_min[1] > y + w || bbox_max[2] < z || bbox_min[2] > z + w); }
+    bool check_branch(const int x, const int y, const int z, const int w) const {
+      return !(bbox_max[0] < x || bbox_min[0] > x + w || bbox_max[1] < y || bbox_min[1] > y + w || bbox_max[2] < z || bbox_min[2] > z + w);
+    }
 
     bool check_branch_radius(const Vec3d& min, const int w, const Vec3d& r) const {
       const bool x_contains = Range(min[0] - r[0], min[0] + w + r[0]).contains(target_pos[0]);
@@ -110,7 +108,7 @@ public:
 
     void add(const Leave* l) { nn_leaves.push_back(l); }
 
-    SearchBase()  = default;
+    SearchBase() = default;
     ~SearchBase() = default;
   };
 
@@ -119,21 +117,21 @@ public:
   public:
     NearestSearch() = delete;
     NearestSearch(const Vec3d& tar) {
-      this->target_pos     = tar;
+      this->target_pos = tar;
       this->nn_sq_distance = std::numeric_limits<uint64_t>::max();
     }
 
     // 指定されたLeaveが目的に合ったものかどうかを調べ、もし条件に適している場合はpush_backする
     void update_nearest(Leave* l, const Vec3d& p) {
-      const auto d               = this->target_pos - p;
+      const auto d = this->target_pos - p;
       const unsigned sq_distance = d.norm_sq();
 
       if(sq_distance < this->nn_sq_distance) {
         if(this->nn_leaves.size() == 0) this->nn_leaves.resize(1);
-        this->nn_leaves[0]   = l;
+        this->nn_leaves[0] = l;
         this->nn_sq_distance = sq_distance;
 
-        const int r    = std::sqrt(sq_distance) + 1.0;
+        const int r = std::sqrt(sq_distance) + 1.0;
         this->bbox_min = this->target_pos - r;
         this->bbox_max = this->target_pos + r;
       }
@@ -166,7 +164,7 @@ public:
     RadiusSearch() = delete;
     RadiusSearch(const Vec3d& tar, Vec3d radius_) {
       this->target_pos = tar;
-      radius           = radius_;
+      radius = radius_;
     }
 
     void search(const Branch* b, Vec3d t, const unsigned size) {
@@ -189,14 +187,14 @@ public:
     }
   };
 
-  bool insert(const core::_Vec<T, 3>& p, IndicesT idx);
+  bool insert(const _Vec<T, 3>& p, IndicesT idx);
 
 public:
   Octree2() {
-    m_root       = new(&branch_pool) Branch();
+    m_root = new(&branch_pool) Branch();
     branch_count = 0;
-    leaf_count   = 0;
-    r            = Rect3D();
+    leaf_count = 0;
+    r = Rect3D();
   }
   ~Octree2() {}
 
@@ -218,13 +216,12 @@ public:
 
   /// 背景削除に用いる
   /// 与えられた点(x, y, z)を含むBox(Depth＝MAX)が存在するか
-  bool hasNode(const core::_Vec<T, 3>& p) const;
+  bool hasNode(const _Vec<T, 3>& p) const;
 
-  void set_dataset(const core::Vec<_Vec<T, 3> >* d);
-  void set_dataset(const db::MeshCol* m);
+  void set_dataset(const Vec<_Vec<T, 3> >* d);
 
   std::vector<IndicesT> findNearest(const _Vec<T, 3>& p, const SearchMethod& method, double radius = 0.0) const;
   void report() const;
 };
 
-} // namespace mu::core
+} // namespace mu

@@ -30,9 +30,8 @@ if(APPLE)
   set(OpenMP_ROOT "/opt/homebrew/opt/libomp")
 endif()
 
-
 # --------------------------------------------------------------
-# ----------------     Renderer (OpenGL / Vulkan) --------------
+# ------------     Renderer (OpenGL / Vulkan) ------------------
 # --------------------------------------------------------------
 set(RENDERER "WITH_OPENGL")
 add_compile_definitions(${RENDERER})
@@ -49,15 +48,14 @@ set(MOVUTL_LIBRARIES
 )
 
 set(MOVUTL_INCLUDES 
-    ${OpenCV_INCLUDE_DIRS} 
-    ${CMAKE_CURRENT_SOURCE_DIR}/movutl/external/stb/
-    ${assimp_INCLUDE_DIR}
-    ${glm_INCLUDE_DIRS}
-    ${FREETYPE_INCLUDE_DIRS}
-    # ${spdlog_INCLUDE_DIR}
-   ${CMAKE_CURRENT_SOURCE_DIR}/../
-   ${CMAKE_CURRENT_SOURCE_DIR}/movutl/external/loguru/include/
-   ${GLEW_INCLUDE_DIRS}
+  ${MOVUTL_INCLUDES}
+  ${OpenCV_INCLUDE_DIRS} 
+  ${assimp_INCLUDE_DIR}
+  ${glm_INCLUDE_DIRS}
+  ${FREETYPE_INCLUDE_DIRS}
+  # ${spdlog_INCLUDE_DIR}
+  ${MOVUTL_ROOT_DIR}
+  ${GLEW_INCLUDE_DIRS}
 )
 
 set(MOVUTL_LIBRARIES ${MOVUTL_LIBRARIES} GLEW::GLEW)
@@ -70,7 +68,31 @@ file(GLOB MOVUTL_SOURCE_1 ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 file(GLOB MOVUTL_SOURCE_2 ${CMAKE_CURRENT_SOURCE_DIR}/**/*.cpp) 
 file(GLOB MOVUTL_SOURCE_3 ${CMAKE_CURRENT_SOURCE_DIR}/*/*/*.cpp) 
 file(GLOB MOVUTL_SOURCE_4 ${CMAKE_CURRENT_SOURCE_DIR}/*/*/*/*.cpp) 
-set(MOVUTL_SRC ${MOVUTL_SOURCE_1} ${MOVUTL_SOURCE_2} ${MOVUTL_SOURCE_3} ${MOVUTL_SOURCE_4})
+
+# --------------------------------------------------------------
+# ------------     Third Party Libraries -----------------------
+# --------------------------------------------------------------
+set(MOVUTL_INCLUDES
+  ${MOVUTL_INCLUDES}
+  ${MOVUTL_ROOT_DIR}/ext/loguru
+  ${MOVUTL_ROOT_DIR}/ext/IconFontCppHeaders
+  ${MOVUTL_ROOT_DIR}/ext/imgui
+  ${MOVUTL_ROOT_DIR}/ext/imgui/backends
+  ${MOVUTL_ROOT_DIR}/ext/filewatch
+)
+file(GLOB MOVUTL_EXT_SRC 
+  ${MOVUTL_ROOT_DIR}/ext/loguru/loguru.cpp
+  ${MOVUTL_ROOT_DIR}/ext/imgui/imgui.cpp
+  ${MOVUTL_ROOT_DIR}/ext/imgui/imgui_draw.cpp
+  ${MOVUTL_ROOT_DIR}/ext/imgui/imgui_widgets.cpp
+  ${MOVUTL_ROOT_DIR}/ext/imgui/imgui_tables.cpp
+  ${MOVUTL_ROOT_DIR}/ext/imgui/backends/imgui_impl_glfw.cpp
+  ${MOVUTL_ROOT_DIR}/ext/imgui/backends/imgui_impl_opengl3.cpp
+  ${MOVUTL_ROOT_DIR}/ext/filewatch/FileWatcher.cpp
+)
+
+
+set(MOVUTL_SRC ${MOVUTL_SOURCE_1} ${MOVUTL_SOURCE_2} ${MOVUTL_SOURCE_3} ${MOVUTL_SOURCE_4} ${MOVUTL_EXT_SRC})
 add_library(mucore ${MOVUTL_SRC})
 target_link_libraries(mucore ${MOVUTL_LIBRARIES})
 set(MOVUTL_LIBRARIES ${MOVUTL_LIBRARIES} movutl)

@@ -8,6 +8,8 @@ if(BUILD_DOC)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/doxygen.cmake)
 endif()
 
+set(MOVUTL_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+add_subdirectory(${MOVUTL_ROOT_DIR}/ext/nanobind)
 add_subdirectory(movutl)
 
 add_subdirectory(tests)
