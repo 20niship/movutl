@@ -48,23 +48,20 @@ set(MOVUTL_LIBRARIES
   assimp::assimp
 )
 
-set(ALL_INCLUDES 
+set(MOVUTL_INCLUDES 
     ${OpenCV_INCLUDE_DIRS} 
     ${CMAKE_CURRENT_SOURCE_DIR}/movutl/external/stb/
     ${assimp_INCLUDE_DIR}
     ${glm_INCLUDE_DIRS}
     ${FREETYPE_INCLUDE_DIRS}
     # ${spdlog_INCLUDE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/movutl
-    ${CMAKE_CURRENT_SOURCE_DIR}/movutl/external/loguru/include/
+   ${CMAKE_CURRENT_SOURCE_DIR}/../
+   ${CMAKE_CURRENT_SOURCE_DIR}/movutl/external/loguru/include/
+   ${GLEW_INCLUDE_DIRS}
 )
 
-set(ALL_INCLUDES ${ALL_INCLUDES} ${GLEW_INCLUDE_DIRS} )
 set(MOVUTL_LIBRARIES ${MOVUTL_LIBRARIES} GLEW::GLEW)
-include_directories(${ALL_INCLUDES})
-
-add_compile_definitions(MOVUTL_DATA_DIR=\"${movutl-data_SOURCE_DIR}\")
-message("movutl data dir = ${movutl-data_SOURCE_DIR}")
+include_directories(${MOVUTL_INCLUDES})
 
 file(GLOB DATA_FILES ${CMAKE_CURRENT_SOURCE_DIR}/data/*)
 file(COPY ${DATA_FILES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

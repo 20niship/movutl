@@ -58,4 +58,27 @@ Mat4x4 transform_mat(const Vec3& pos, const Vec3& pry, const Vec3& scale){
   return rotation_mat_4x4(pry) * scale_mat(scale) * translation_mat(pos);
 }
 
+std::array<Vec3f, 2> get_vert_vec(const Vec3f& x) {
+  Vec3f e1, e2;
+  if(x[0] >= x[1] && x[0] >= x[2]) { // X軸に近い直線
+    e1 = {x[1], x[0], x[2]};
+    e2 = {x[2], x[1], x[0]};
+  } else if(x[1] >= x[0] && x[1] >= x[2]) {
+    e1 = {x[1], x[0], x[2]};
+    e2 = {x[0], x[2], x[1]};
+  } else {
+    e1 = {x[2], x[1], x[0]};
+    e2 = {x[0], x[2], x[1]};
+  }
+
+  e1 = x.cross(e1);
+  e1 = e1.normalize();
+
+  e2 = x.cross(e1);
+  e2 = e2.normalize();
+
+  return {e1, e2};
+}
+
+
 } // namespace mu::core

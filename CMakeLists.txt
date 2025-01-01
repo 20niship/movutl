@@ -16,5 +16,4 @@ add_subdirectory(examples)
 add_executable(movutl ${CMAKE_CURRENT_SOURCE_DIR}/lancher/main.cpp)
 target_link_libraries(movutl ${MOVUTL_LIBRARIES})
 
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/install.cmake)
 

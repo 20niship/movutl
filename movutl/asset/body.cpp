@@ -4,11 +4,11 @@
 #include <cwchar>
 #include <filesystem>
 
-#include <movutl/db/body.hpp>
+#include <movutl/asset/body.hpp>
 #include <movutl/instance/instance.hpp>
 #include <movutl/io/object_loader.hpp>
 
-namespace mu::db {
+namespace mu {
 
 void Body::move_geom(const Vec3& pos) {
   for(auto&& m : meshs) m->move_geom(pos);
@@ -35,7 +35,7 @@ void Body::apply_scale() {
 }
 void Body::apply_position() {
   move_geom(pos);
-  pos= {0, 0, 0};
+  pos = {0, 0, 0};
 }
 void Body::apply_rotation() {
   rot_geom(pos);
@@ -46,9 +46,15 @@ void Body::apply_all_transform() {
   apply_rotation();
   apply_position();
 }
-void Body::clear_position() { pos = {0, 0, 0}; }
-void Body::clear_rotation() { rotation = {0, 0, 0}; }
-void Body::clear_scale() { scale = {1, 1, 1}; }
+void Body::clear_position() {
+  pos = {0, 0, 0};
+}
+void Body::clear_rotation() {
+  rotation = {0, 0, 0};
+}
+void Body::clear_scale() {
+  scale = {1, 1, 1};
+}
 
 core::Rect3D Body::get_bbox() const {
   Rect3D r;
@@ -67,12 +73,12 @@ core::Vec3 Body::get_center_of_geom() const {
 }
 
 /* void Body::draw() { */
-  /* Shader* shader_use; */
-  /* if(shader) */
-  /*   shader_use = shader; */
-  /* else */
-  /*   LOGE << "ここのshader == nullptrのときにshader_useもnullptrになってセグフォルので注意"; */
-  /* for(auto&& m : meshs) m->draw(shader_use); */
+/* Shader* shader_use; */
+/* if(shader) */
+/*   shader_use = shader; */
+/* else */
+/*   LOGE << "ここのshader == nullptrのときにshader_useもnullptrになってセグフォルので注意"; */
+/* for(auto&& m : meshs) m->draw(shader_use); */
 /* } */
 
 core::Mat4x4f Body::get_model_transform_matrix() const {
@@ -80,4 +86,4 @@ core::Mat4x4f Body::get_model_transform_matrix() const {
   return Mat4x4f(m);
 }
 
-} // namespace mu::db
+} // namespace mu

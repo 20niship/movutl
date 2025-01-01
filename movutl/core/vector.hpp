@@ -1,27 +1,22 @@
 #pragma once
 
+#include <algorithm>
 #include <cmath>
 #include <cstring>
-#include <functional>
 #include <initializer_list>
-#include <iostream>
 #include <limits>
+
+#ifdef MU_WITH_OSTREAM
+#include <iostream>
+#include <string>
+#endif
 
 #include <movutl/core/assert.hpp>
 
 /* #pragma GCC diagnostic push */
 /* #pragma GCC diagnostic ignored "-Wsign-compare" // May be used uninitialized 'return {};'. */
 
-namespace mu::core {
-
-#ifdef MU_USE_CONCEPTS
-#include <concepts>
-template <typename T>
-concept RealNumberConcept = requires(T a) {
-                              (double)a;
-                              (int)a;
-                            };
-#endif
+namespace mu {
 
 template <typename T, unsigned int LEN> class _Vec {
 public:
@@ -268,13 +263,6 @@ public:
     return res;
   }
 
-  inline void display() {
-    std::cout << "value = [";
-    for(size_t i = 0; i < LEN; i++) {
-      std::cout << value[i] << ", ";
-    }
-    std::cout << "\n";
-  }
   inline _Vec all(const T& v) {
     for(size_t i = 0; i < LEN; i++) value[i] = v;
     return *this;
@@ -285,12 +273,12 @@ public:
   inline void ones() { all(1); }
   T min() const {
     T m = value[0];
-    for(size_t i = 1; i < LEN; i++) m = std::min(m, value[i]);
+    for(size_t i = 1; i < LEN; i++) m = std::min<T>(m, value[i]);
     return m;
   }
   T max() const {
     T m = value[0];
-    for(size_t i = 1; i < LEN; i++) m = std::max(m, value[i]);
+    for(size_t i = 1; i < LEN; i++) m = std::max<T>(m, value[i]);
     return m;
   }
   T sum() const {
@@ -314,6 +302,7 @@ template <typename T, unsigned int LEN> bool operator<(_Vec<T, LEN>& t1, _Vec<T,
   return r;
 }
 
+#ifdef MU_WITH_OSTREAM
 template <typename T, unsigned int LEN> std::ostream& operator<<(std::ostream& os, const _Vec<T, LEN>& t) {
   os << " _Vector<" << std::string(typeid(T).name()) << ", " << LEN << "> [ ";
   for(size_t i = 0; i < LEN; i++) {
@@ -325,11 +314,10 @@ template <typename T, unsigned int LEN> std::ostream& operator<<(std::ostream& o
   os << " ] ";
   return os;
 }
+#endif
 
 using Vec2 = _Vec<double, 2>;
-#ifndef USE_CUSTOM_VECTOR3
 using Vec3 = _Vec<double, 3>;
-#endif
 using Vec6 = _Vec<double, 6>;
 using Vec4 = _Vec<double, 4>;
 
@@ -339,28 +327,11 @@ using Vec4b = _Vec<unsigned char, 4>;
 using Vec5b = _Vec<unsigned char, 5>;
 using Vec6b = _Vec<unsigned char, 6>;
 
-using Vec2s = _Vec<uint16_t, 2>;
-using Vec3s = _Vec<uint16_t, 3>;
-using Vec4s = _Vec<uint16_t, 4>;
-using Vec5s = _Vec<uint16_t, 5>;
-using Vec6s = _Vec<uint16_t, 6>;
-
-using Vec2f = _Vec<float, 2>;
-using Vec3f = _Vec<float, 3>;
-using Vec4f = _Vec<float, 4>;
-using Vec5f = _Vec<float, 5>;
-using Vec6f = _Vec<float, 6>;
-
 using Vec2d = _Vec<int64_t, 2>;
 using Vec3d = _Vec<int64_t, 3>;
 using Vec4d = _Vec<int64_t, 4>;
 using Vec5d = _Vec<int64_t, 5>;
 using Vec6d = _Vec<int64_t, 6>;
-
-using Vec3S16 = _Vec<int16_t, 3>;
-using Vec3U16 = _Vec<uint16_t, 3>;
-using Vec3S32 = _Vec<int32_t, 3>;
-using Vec3U32 = _Vec<uint32_t, 3>;
 
 template <typename T, unsigned int W, unsigned int H> struct _Mat {
   class CommaInput {
@@ -370,7 +341,7 @@ template <typename T, unsigned int W, unsigned int H> struct _Mat {
 
   public:
     CommaInput(_Mat* m_, int i) {
-      m     = m_;
+      m = m_;
       index = i;
     }
     CommaInput& operator,(T v) {
@@ -382,8 +353,7 @@ template <typename T, unsigned int W, unsigned int H> struct _Mat {
 
   T value[W * H];
   _Mat() { reset(); }
-  template<typename U>
-  _Mat(const _Mat<U, W, H>& t) {
+  template <typename U> _Mat(const _Mat<U, W, H>& t) {
     for(size_t i = 0; i < W * H; i++) {
       value[i] = t[i];
     }
@@ -419,44 +389,6 @@ template <typename T, unsigned int W, unsigned int H> struct _Mat {
     return t;
   }
 
-#ifdef VKUI_USE_CONCEPTS
-  template <RealNumberConcept U> inline _Mat operator+=(const U& other) {
-    for(size_t i = 0; i < W * H; i++) value[i] += other;
-    return *this;
-  }
-  template <RealNumberConcept U> inline _Mat operator-=(const U& other) {
-    for(size_t i = 0; i < W * H; i++) value[i] -= other;
-    return *this;
-  }
-  template <RealNumberConcept U> inline _Mat operator*=(const U& other) {
-    for(size_t i = 0; i < W * H; i++) value[i] *= other;
-    return *this;
-  }
-  template <RealNumberConcept U> inline _Mat operator/=(const U& other) {
-    for(size_t i = 0; i < W * H; i++) value[i] /= other;
-    return *this;
-  }
-  template <RealNumberConcept U> inline _Mat operator+(const U& other) {
-    _Mat<T, W, H> t;
-    for(size_t i = 0; i < W * H; i++) t[i] = value[i] + other;
-    return t;
-  }
-  template <RealNumberConcept U> inline _Mat operator-(const U& other) {
-    _Mat<T, W, H> t;
-    for(size_t i = 0; i < W * H; i++) t[i] = value[i] - other;
-    return t;
-  }
-  template <RealNumberConcept U> inline _Mat operator*(const U& other) {
-    _Mat<T, W, H> t;
-    for(size_t i = 0; i < W * H; i++) t[i] = value[i] * other;
-    return t;
-  }
-  template <RealNumberConcept U> inline _Mat operator/(const U& other) {
-    _Mat<T, W, H> t;
-    for(size_t i = 0; i < W * H; i++) t[i] = value[i] / other;
-    return t;
-  }
-#else
   inline _Mat operator+=(const double other) {
     for(size_t i = 0; i < W * H; i++) value[i] += other;
     return *this;
@@ -493,7 +425,6 @@ template <typename T, unsigned int W, unsigned int H> struct _Mat {
     for(size_t i = 0; i < W * H; i++) t[i] = value[i] / other;
     return t;
   }
-#endif
   // T operator[](int i)            { MU_ASSERT(i < 3); return (i == 0)? x : (i==1 ? y : z); }
   inline const T& operator[](size_t i) const {
     MU_ASSERT(i < W * H);
@@ -551,8 +482,8 @@ template <typename T, unsigned int W, unsigned int H> struct _Mat {
     _Mat<T, H, W> tmp(*this);
     int x, y;
     for(size_t i = 0; i < W * H; i++) {
-      x                = i % W;
-      y                = i / W;
+      x = i % W;
+      y = i / W;
       value[y * W + x] = tmp[x * H + y];
     }
   }
@@ -652,6 +583,7 @@ template <typename T, unsigned int W, unsigned int H> struct _Mat {
   }
 };
 
+#ifdef MU_WITH_OSTREAM
 template <typename T, unsigned int W, unsigned int H> std::ostream& operator<<(std::ostream& os, const _Mat<T, W, H>& t) {
   os << " _Mat<" << std::string(typeid(T).name()) << ", " << W << "," << H << "> [ ";
   for(size_t i = 0; i < H; i++) {
@@ -663,6 +595,7 @@ template <typename T, unsigned int W, unsigned int H> std::ostream& operator<<(s
   os << " ] " << std::endl;
   return os;
 }
+#endif
 
 template <typename T, typename U, unsigned int LEN, unsigned int LEN2> inline _Mat<T, LEN2, LEN> outer_product(const _Vec<T, LEN>& A, const _Vec<U, LEN2>& B) {
   _Mat<T, LEN2, LEN> s;
@@ -674,20 +607,9 @@ template <typename T, typename U, unsigned int LEN, unsigned int LEN2> inline _M
   return s;
 }
 
-using Mat2x2 = _Mat<double, 2, 2>;
-using Mat3x3 = _Mat<double, 3, 3>;
-using Mat4x4 = _Mat<double, 4, 4>;
-using Mat5x5 = _Mat<double, 5, 5>;
-using Mat3x6 = _Mat<double, 6, 3>;
-using Mat6x6 = _Mat<double, 6, 6>;
-
-using Mat2x2f = _Mat<float, 2, 2>;
-using Mat3x3f = _Mat<float, 3, 3>;
-using Mat4x4f = _Mat<float, 4, 4>;
-using Mat5x5f = _Mat<float, 5, 5>;
-using Mat3x6f = _Mat<float, 6, 3>;
-using Mat6x6f = _Mat<float, 6, 6>;
-
+using Mat2x2 = _Mat<float, 2, 2>;
+using Mat3x3 = _Mat<float, 3, 3>;
+using Mat4x4 = _Mat<float, 4, 4>;
 
 template <typename T> struct Vec {
   size_t Size, Capacity;
@@ -701,11 +623,11 @@ template <typename T> struct Vec {
   // Constructors, destructor
   inline Vec() {
     Size = Capacity = 0;
-    Data            = NULL;
+    Data = NULL;
   }
   inline Vec(const Vec<T>& src) {
     Size = Capacity = 0;
-    Data            = NULL;
+    Data = NULL;
     operator=(src);
   }
   inline Vec(const std::initializer_list<T>& src) {
@@ -768,14 +690,14 @@ template <typename T> struct Vec {
   }
   inline void swap(Vec<T>& rhs) {
     int rhs_size = rhs.Size;
-    rhs.Size     = Size;
-    Size         = rhs_size;
-    int rhs_cap  = rhs.Capacity;
+    rhs.Size = Size;
+    Size = rhs_size;
+    int rhs_cap = rhs.Capacity;
     rhs.Capacity = Capacity;
-    Capacity     = rhs_cap;
-    T* rhs_data  = rhs.Data;
-    rhs.Data     = Data;
-    Data         = rhs_data;
+    Capacity = rhs_cap;
+    T* rhs_data = rhs.Data;
+    rhs.Data = Data;
+    Data = rhs_data;
   }
 
   inline int _grow_capacity(int sz) const {
@@ -804,10 +726,10 @@ template <typename T> struct Vec {
     if(new_capacity <= Capacity) return;
     T* new_data = (T*)malloc(new_capacity * sizeof(T));
     if(Data) {
-      std::memcpy((void *)new_data, (void *)Data, Size * sizeof(T));
+      std::memcpy((void*)new_data, (void*)Data, Size * sizeof(T));
       free(Data);
     }
-    Data     = new_data;
+    Data = new_data;
     Capacity = new_capacity;
   }
 
@@ -819,7 +741,7 @@ template <typename T> struct Vec {
   }
   inline void push_back(const T&& v) {
     if(Size == Capacity) reserve(_grow_capacity(Size + Size / 2 + 100));
-    std::memcpy((void *)&Data[Size], &v, sizeof(v));
+    std::memcpy((void*)&Data[Size], &v, sizeof(v));
     Size++;
   }
   /* inline void push_back_ptr(const T* v) { */
@@ -866,7 +788,7 @@ template <typename T> struct Vec {
   inline T* erase(const T* it, const T* it_last) {
     MU_ASSERT(it >= Data && it < Data + Size && it_last > it && it_last <= Data + Size);
     const ptrdiff_t count = it_last - it;
-    const ptrdiff_t off   = it - Data;
+    const ptrdiff_t off = it - Data;
     memmove(Data + off, Data + off + count, ((size_t)Size - (size_t)off - count) * sizeof(T));
     Size -= (int)count;
     return Data + off;
@@ -903,14 +825,14 @@ template <typename T> struct Vec {
     return Data;
   }
   inline bool contains(const T& v) const {
-    const T* data     = Data;
+    const T* data = Data;
     const T* data_end = Data + Size;
     while(data < data_end)
       if(*data++ == v) return true;
     return false;
   }
   inline T* find(const T& v) {
-    T* data           = Data;
+    T* data = Data;
     const T* data_end = Data + Size;
     while(data < data_end)
       if(*data == v)
@@ -920,7 +842,7 @@ template <typename T> struct Vec {
     return data;
   }
   inline const T* find(const T& v) const {
-    const T* data     = Data;
+    const T* data = Data;
     const T* data_end = Data + Size;
     while(data < data_end)
       if(*data == v)
@@ -955,4 +877,4 @@ template <typename T> struct Vec {
   }
 };
 
-} // namespace mu::core
+} // namespace mu
