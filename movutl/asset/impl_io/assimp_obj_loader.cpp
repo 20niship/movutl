@@ -4,19 +4,18 @@
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 
-#include <movutl/instance/instance.hpp>
-#include <movutl/io/object_loader.hpp>
+#include <movutl/asset/image.hpp>
+#include <movutl/asset/mesh.hpp>
 
 
-namespace mu::io {
+namespace mu {
 
-using namespace mu::db;
-using namespace mu::render;
+#if 0
 
 // checks all material textures of a given type and loads the textures if they're not loaded yet.
 // the required info is returned as a Image struct.
-static core::Vec<Image*> loadMaterialTextures(db::Body* b, aiMaterial* mat, aiTextureType type, const char* typeName) {
-  core::Vec<Image*> tmp_texes;
+static Vec<Image*> loadMaterialTextures(db::Body* b, aiMaterial* mat, aiTextureType type, const char* typeName) {
+  Vec<Image*> tmp_texes;
   for(unsigned int i = 0; i < mat->GetTextureCount(type); i++) {
     aiString str;
     mat->GetTexture(type, i, &str);
@@ -31,7 +30,7 @@ static core::Vec<Image*> loadMaterialTextures(db::Body* b, aiMaterial* mat, aiTe
     }
     if(!skip) { // if texture hasn't been loaded already, load it
       const std::string path = b->directory + "/" + std::string(str.C_Str());
-      auto tex               = instance::create_texture(path.c_str());
+      auto tex = instance::create_texture(path.c_str());
       tex->texture_name(typeName);
       tex->path(str.C_Str());
       tmp_texes.push_back(tex);
@@ -118,8 +117,8 @@ static void processNode(Body* b, aiNode* node, const aiScene* scene) {
   }
 }
 
-db::Body *impl_load_obj(const char* file_name) {
-  db::Body *b = instance::create_body();
+db::Body* impl_load_obj(const char* file_name) {
+  db::Body* b = instance::create_body();
   Assimp::Importer importer;
   const aiScene* scene = importer.ReadFile(file_name, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
   if(!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
@@ -131,5 +130,6 @@ db::Body *impl_load_obj(const char* file_name) {
   processNode(b, scene->mRootNode, scene);
   return b;
 }
+#endif
 
-} // namespace mu::io
+} // namespace mu

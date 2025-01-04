@@ -1,9 +1,7 @@
 #include <cmath>
 #include <movutl/core/core.hpp>
 
-namespace mu::core {
-
-using namespace mu::core;
+namespace mu {
 
 Mat4x4 rotation_mat_4x4(const Vec3& pry) {
   Mat4x4 p, r, y;
@@ -80,4 +78,4 @@ std::array<Vec3, 2> get_vert_vec(const Vec3& x) {
 }
 
 
-} // namespace mu::core
+} // namespace mu

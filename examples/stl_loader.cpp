@@ -1,3 +1,4 @@
+#if 0
 #include <movutl/mu.hpp>
 #include <movutl/ui/all_widgets.hpp>
 #include <movutl/ui/colors.hpp>
@@ -46,3 +47,4 @@ int main() {
   return 0;
 }
 
+#endif

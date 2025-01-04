@@ -1,12 +1,13 @@
 #include <movutl/core/octree.hpp>
+#if 0
 
-namespace mu::core {
-template <typename T, int DEPTH> bool Octree2<T, DEPTH>::insert(const core::_Vec<T, 3>& p, IndicesT idx) {
+namespace mu {
+template <typename T, int DEPTH> bool Octree2<T, DEPTH>::insert(const _Vec<T, 3>& p, IndicesT idx) {
   MU_ASSERT(r.valid());
   MU_ASSERT(r.contains(p));
   MU_ASSERT(m_root != nullptr);
 
-  Node** n       = &m_root;
+  Node** n = &m_root;
   uint16_t depth = DEPTH;
   const auto bin = apply_bbox(p);
 
@@ -17,8 +18,8 @@ template <typename T, int DEPTH> bool Octree2<T, DEPTH>::insert(const core::_Vec
     } else {
       --depth;
       const unsigned size = (1 << depth);
-      unsigned i          = ((bin[0] & size) ? 1 : 0) + ((bin[1] & size) ? 2 : 0) + ((bin[2] & size) ? 4 : 0);
-      n                   = &reinterpret_cast<Branch*>(*n)->children[i];
+      unsigned i = ((bin[0] & size) ? 1 : 0) + ((bin[1] & size) ? 2 : 0) + ((bin[2] & size) ? 4 : 0);
+      n = &reinterpret_cast<Branch*>(*n)->children[i];
     }
   }
   if(*n == nullptr) {
@@ -30,7 +31,7 @@ template <typename T, int DEPTH> bool Octree2<T, DEPTH>::insert(const core::_Vec
   }
   return true;
 }
-template <typename T, int DEPTH> void Octree2<T, DEPTH>::set_dataset(const core::Vec<_Vec<T, 3> >* d) {
+template <typename T, int DEPTH> void Octree2<T, DEPTH>::set_dataset(const Vec<_Vec<T, 3> >* d) {
   MU_ASSERT(d != nullptr);
   if(d->size() == 0) {
     spdlog::warn("octree input size is 0");
@@ -120,15 +121,15 @@ template <typename T, int DEPTH> void Octree2<T, DEPTH>::report() const {
   std::cout << "----------  octree report ---------------" << std::endl;
 }
 
-template <typename T, int DEPTH> bool Octree2<T, DEPTH>::hasNode(const core::_Vec<T, 3>& p) const {
+template <typename T, int DEPTH> bool Octree2<T, DEPTH>::hasNode(const _Vec<T, 3>& p) const {
   MU_ASSERT(r.valid());
   MU_ASSERT(r.contains(p));
   MU_ASSERT(root() != nullptr);
   const auto bin = apply_bbox(p);
-  Branch* b      = root();
+  Branch* b = root();
 
   for(int _dw = resolution() / 2; _dw > 1; _dw = _dw << 1) {
-    auto idx   = !!(bin[0] & _dw) * 1 + !!(bin[1] & _dw) * 2 + !!(bin[2] & _dw) * 4;
+    auto idx = !!(bin[0] & _dw) * 1 + !!(bin[1] & _dw) * 2 + !!(bin[2] & _dw) * 4;
     auto child = b->children[idx & 7];
     if(b == nullptr) return false;
     b = reinterpret_cast<Branch*>(child);
@@ -142,4 +143,5 @@ template class Octree2<int, 10>;
 template class Octree2<short, 10>;
 template class Octree2<size_t, 10>;
 
-} // namespace mu::core
+} // namespace mu
+#endif

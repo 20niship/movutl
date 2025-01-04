@@ -1,18 +1,18 @@
 #pragma once
+#include <movutl/asset/entity.hpp>
+#include <movutl/asset/mesh.hpp>
 #include <movutl/core/rect.hpp>
-#include <movutl/db/body.hpp>
-#include <movutl/db/collection.hpp>
 #include <vector>
 
 namespace mu::plugin {
 
 using MU_Handle = void*;
-using MU_Char   = const char*;
+using MU_Char = const char*;
 
 struct PluginParams {
   enum class ParamType {
     RESERVED = -1,
-    LAYER    = 0,
+    LAYER = 0,
     DOUBLE,
     VEC2,
     VEC3,
@@ -30,24 +30,24 @@ struct PluginParams {
   union ParamDefUnion {
     db::Collection* l;
     double d;
-    core::Vec2 v2;
-    core::Vec3 v3;
-    core::Vec4 v4;
-    core::Vec3b c3;
-    core::Vec4b c4;
+    Vec2 v2;
+    Vec3 v3;
+    Vec4 v4;
+    Vec3b c3;
+    Vec4b c4;
     bool b;
     void* v;
-    core::Rect r;
-    core::Rect3D r3;
+    Rect r;
+    Rect3D r3;
     ParamDefUnion() {}
     ParamDefUnion(double v_) { d = v_; }
-    ParamDefUnion(core::Vec2 v_) { v2 = v_; }
-    ParamDefUnion(core::Vec3 v_) { v3 = v_; }
-    ParamDefUnion(core::Vec4 v_) { v4 = v_; }
-    ParamDefUnion(core::Vec3b v_) { c3 = v_; }
-    ParamDefUnion(core::Vec4b v_) { c4 = v_; }
-    ParamDefUnion(core::Rect v_) { r = v_; }
-    ParamDefUnion(core::Rect3D v_) { r3 = v_; }
+    ParamDefUnion(Vec2 v_) { v2 = v_; }
+    ParamDefUnion(Vec3 v_) { v3 = v_; }
+    ParamDefUnion(Vec4 v_) { v4 = v_; }
+    ParamDefUnion(Vec3b v_) { c3 = v_; }
+    ParamDefUnion(Vec4b v_) { c4 = v_; }
+    ParamDefUnion(Rect v_) { r = v_; }
+    ParamDefUnion(Rect3D v_) { r3 = v_; }
     ParamDefUnion(void* v_) { v = v_; }
     ~ParamDefUnion() = default;
   };
@@ -61,20 +61,20 @@ struct PluginParams {
     PluginParam() = default;
     PluginParam(const char* name_, const ParamType t_, const ParamDefUnion u_) {
       name = name_;
-      t    = t_;
-      u    = u_;
+      t = t_;
+      u = u_;
     }
   };
   std::vector<PluginParam> p;
   const char* name;
   void add_param(const char* name, double v) { p.push_back(PluginParam(name, ParamType::DOUBLE, v)); }
-  void add_param(const char* name, core::Vec2 v) { p.push_back(PluginParam(name, ParamType::VEC2, v)); }
-  void add_param(const char* name, core::Vec3 v) { p.push_back(PluginParam(name, ParamType::VEC3, v)); }
-  void add_param(const char* name, core::Vec4 v) { p.push_back(PluginParam(name, ParamType::VEC4, v)); }
-  void add_param(const char* name, core::Vec3b v) { p.push_back(PluginParam(name, ParamType::COLOR_RGB, v)); }
-  void add_param(const char* name, core::Vec4b v) { p.push_back(PluginParam(name, ParamType::COLOR_RGBA, v)); }
-  void add_param(const char* name, const core::Rect& v) { p.push_back(PluginParam(name, ParamType::RECT, v)); }
-  void add_param(const char* name, core::Rect3D v) { p.push_back(PluginParam(name, ParamType::RECT3D, v)); }
+  void add_param(const char* name, Vec2 v) { p.push_back(PluginParam(name, ParamType::VEC2, v)); }
+  void add_param(const char* name, Vec3 v) { p.push_back(PluginParam(name, ParamType::VEC3, v)); }
+  void add_param(const char* name, Vec4 v) { p.push_back(PluginParam(name, ParamType::VEC4, v)); }
+  void add_param(const char* name, Vec3b v) { p.push_back(PluginParam(name, ParamType::COLOR_RGB, v)); }
+  void add_param(const char* name, Vec4b v) { p.push_back(PluginParam(name, ParamType::COLOR_RGBA, v)); }
+  void add_param(const char* name, const Rect& v) { p.push_back(PluginParam(name, ParamType::RECT, v)); }
+  void add_param(const char* name, Rect3D v) { p.push_back(PluginParam(name, ParamType::RECT3D, v)); }
   void add_param(const char* name, bool v) { p.push_back(PluginParam(name, ParamType::BOOL, v)); }
   bool has_param(const char* name) {
     return std::find_if(p.begin(), p.end(), [=](auto x) { return strcmp(x.name, name) == 0; }) == p.end();
@@ -110,13 +110,13 @@ struct PluginInfo {
 
 class PluginBase {
 public:
-  PluginBase()                                    = default;
-  virtual PluginInfo get_plugin_info()            = 0; /// get version
+  PluginBase() = default;
+  virtual PluginInfo get_plugin_info() = 0;            /// get version
   virtual void apply(db::Body* in, db::Body* out) = 0; /// process in Body data and store to out Body data;
-  virtual void registered()                       = 0; /// calls on register
-  virtual void unregistered()                     = 0; /// calls on un register
-  virtual void set_param(const PluginParams& p)   = 0; /// calls on un register
-  virtual PluginParams get_param() const          = 0; /// calls on un register
+  virtual void registered() = 0;                       /// calls on register
+  virtual void unregistered() = 0;                     /// calls on un register
+  virtual void set_param(const PluginParams& p) = 0;   /// calls on un register
+  virtual PluginParams get_param() const = 0;          /// calls on un register
 };
 
 

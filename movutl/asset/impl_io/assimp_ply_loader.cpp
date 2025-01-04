@@ -4,12 +4,7 @@
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 
-#include <movutl/instance/instance.hpp>
-#include <movutl/io/object_loader.hpp>
-
-namespace mu::io {
-using namespace mu::db;
-using namespace mu::render;
+namespace mu {
 #if 0
 
 static MeshCol* processMesh(aiMesh* mesh, const aiScene* ) {
@@ -70,4 +65,4 @@ db::Body *impl_load_ply(const char* file_name) {
 }
 #endif
 
-} // namespace mu::io
+} // namespace mu

@@ -1,6 +1,8 @@
 #pragma once
 
+#include <movutl/asset/composition.hpp>
 #include <movutl/asset/entity.hpp>
+#include <movutl/asset/track.hpp>
 #include <movutl/core/defines.hpp>
 #include <movutl/core/ref.hpp>
 #include <movutl/core/vector.hpp>
@@ -15,7 +17,10 @@ public:
   MOVUTL_DECLARE_SINGLETON(Project);
 
   std::string path;
+  std::string output_path; //	出力ファイル名 (ファイル名が決まっていない時は何も入っていません)
+
   std::vector<Ref<Entity>> entities;
+  std::vector<Composition> compos_;
 };
 
 } // namespace mu

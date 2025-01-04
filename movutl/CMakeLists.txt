@@ -73,6 +73,7 @@ file(GLOB MOVUTL_SOURCE_4 ${CMAKE_CURRENT_SOURCE_DIR}/*/*/*/*.cpp)
 # --------------------------------------------------------------
 set(MOVUTL_INCLUDES
   ${MOVUTL_INCLUDES}
+  ${MOVUTL_ROOT_DIR}/ext/stb
   ${MOVUTL_ROOT_DIR}/ext/loguru
   ${MOVUTL_ROOT_DIR}/ext/IconFontCppHeaders
   ${MOVUTL_ROOT_DIR}/ext/imgui

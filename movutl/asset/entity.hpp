@@ -20,7 +20,7 @@ enum EntityType {
 class Entity {
 public:
   std::string name_;
-  int guid_;
+  uint32_t guid_;
   virtual constexpr EntityType getType() const = 0;
 };
 

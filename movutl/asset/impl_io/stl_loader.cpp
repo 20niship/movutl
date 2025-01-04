@@ -2,14 +2,16 @@
 #include <iostream>
 #include <vector>
 
+#if 0
+
+#include <movutl/asset/mesh.hpp>
 #include <movutl/core/vector.hpp>
-#include <movutl/instance/instance.hpp>
 #include <movutl/io/object_loader.hpp>
 
-
-namespace mu::io {
 #include <tuple>
 #include <vector>
+
+namespace mu {
 
 
 // 座標
@@ -25,9 +27,9 @@ struct polygon {
   coord normal;
   // セット
   void set(coord v0_, coord v1_, coord v2_, coord normal_) {
-    v0     = v0_;
-    v1     = v1_;
-    v2     = v2_;
+    v0 = v0_;
+    v1 = v1_;
+    v2 = v2_;
     normal = normal_;
   }
 };
@@ -42,7 +44,7 @@ db::Body* impl_load_stl(const char* fname) {
   }
 
   db::Body* b = instance::create_body();
-  auto m      = instance::create_mesh_3d();
+  auto m = instance::create_mesh_3d();
   MU_ASSERT(m);
 
   // ポリゴン数の読み込み
@@ -67,12 +69,12 @@ db::Body* impl_load_stl(const char* fname) {
       fin.read((char*)&p[0], sizeof(float));
       fin.read((char*)&p[1], sizeof(float));
       fin.read((char*)&p[2], sizeof(float));
-      m->vertex[i*3+j].pos[0] = p[0];
-      m->vertex[i*3+j].pos[1] = p[1];
-      m->vertex[i*3+j].pos[2] = p[2];
-      m->vertex[i*3+j].norm[0]= norm[0];
-      m->vertex[i*3+j].norm[1]= norm[1];
-      m->vertex[i*3+j].norm[2]= norm[2];
+      m->vertex[i * 3 + j].pos[0] = p[0];
+      m->vertex[i * 3 + j].pos[1] = p[1];
+      m->vertex[i * 3 + j].pos[2] = p[2];
+      m->vertex[i * 3 + j].norm[0] = norm[0];
+      m->vertex[i * 3 + j].norm[1] = norm[1];
+      m->vertex[i * 3 + j].norm[2] = norm[2];
 
       DISP(core::Vec2(i, j));
       DISP(p);
@@ -87,4 +89,5 @@ db::Body* impl_load_stl(const char* fname) {
   return b;
 }
 
-} // namespace mu::io
+} // namespace mu
+#endif
