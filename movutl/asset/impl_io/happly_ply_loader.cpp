@@ -1,3 +1,4 @@
+#if 0
 #include <happly.h>
 
 #include <movutl/core/vector.hpp>
@@ -52,3 +53,4 @@ db::Body* impl_load_ply_happly(const char* fname) {
 
 } // namespace mu::io
   //
+#endif

@@ -28,7 +28,6 @@ struct PluginParams {
   };
 
   union ParamDefUnion {
-    db::Collection* l;
     double d;
     Vec2 v2;
     Vec3 v3;

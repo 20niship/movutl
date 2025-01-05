@@ -6,9 +6,11 @@
 
 namespace mu {
 
+class Entity;
+
 struct Props {
 public:
-  using Value = std::variant<int, float, std::string, bool, Vec2, Vec3, Vec3b>;
+  using Value = std::variant<int, float, std::string, bool, Vec2, Vec3, Vec3b, Entity*>;
   std::map<std::string, Value> values;
 
   bool contains(const std::string& key) const { return values.contains(key); }
