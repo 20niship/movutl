@@ -29,7 +29,7 @@ void RenderingObj::getFrame(int) {
 
 // f(a, b) = 255 - (255 - a)*(255-b)  , where a is the base layer value and b is the top layer value. 
 #define IMAGE_BLEND_PROCESSOR_SCREEN(a, b) ((65025 - (255 - (a))* (255 - (b))) / 255)
-//#define IMAGE_BLEND_PROCESSOR_SCREEN(a, b) __int8(255.0f * (1.0f - (1.0f - float(a)/255.0f)* (1.0f - float(b)/255.0f))) <- Wikipedia‚É‚ ‚é³Ž®‚È‚â‚Â 
+//#define IMAGE_BLEND_PROCESSOR_SCREEN(a, b) __int8(255.0f * (1.0f - (1.0f - float(a)/255.0f)* (1.0f - float(b)/255.0f))) <- Wikipediaã«ã‚ã‚‹æ­£å¼ãªã‚„ã¤ 
 
 #define IMAGE_BLEND_PROCESSOR_MULTIPLY(a, b) ((a)* (b) / 255)
 
@@ -43,12 +43,12 @@ void RenderingObj::getFrame(int) {
 #define IMAGE_BLEND_PROCESSOR_OVERLAY(a, b) (((a)<122) ? __int8(0.00888f * float(a)* float(b)) :  ((65025 - 2 * (255 - (a))* (255 - (b))) / 255))
 
 
-//V‚µ‚­ƒvƒƒWƒFƒNƒg‚ðì‚é‚Æ‚«‚ÉŒÄ‚Ño‚³‚ê‚é
+//æ–°ã—ããƒ—ãƒ­ã‚¸ã‚§ã‚¯ãƒˆã‚’ä½œã‚‹ã¨ãã«å‘¼ã³å‡ºã•ã‚Œã‚‹
 RenderingObj::RenderingObj(int _width, int _height) {
 	const_width = _width;
 	const_height = _height;
 
-	Cur_img = cv::Mat::zeros(_height, _width, CV_8UC4); //500~500ƒsƒNƒZƒ‹‚Ì•F‚ÌMat
+	Cur_img = cv::Mat::zeros(_height, _width, CV_8UC4); //500Ã—500ãƒ”ã‚¯ã‚»ãƒ«ã®é»’è‰²ã®Mat
 
 
 	const_center_x = float(_width) / 2.0f;
@@ -57,7 +57,7 @@ RenderingObj::RenderingObj(int _width, int _height) {
 
 
 RenderingObj::~RenderingObj() {
-	//TODO: ‘S‚Ä‚Ìƒƒ‚ƒŠ[‚ðƒŠƒŠ[ƒX‚·‚é
+	//TODO: å…¨ã¦ã®ãƒ¡ãƒ¢ãƒªãƒ¼ã‚’ãƒªãƒªãƒ¼ã‚¹ã™ã‚‹
 
 }
 
@@ -276,5 +276,5 @@ void RenderingObj::RenderAndAddOneLayer(layerObj *upper_layer) {
 }
 
 void RenderingObj::clearImage() {
-	Cur_img = cv::Mat::zeros(const_height, const_width, CV_8UC4); //500~500ƒsƒNƒZƒ‹‚Ì•F‚ÌMat
+	Cur_img = cv::Mat::zeros(const_height, const_width, CV_8UC4); //500Ã—500ãƒ”ã‚¯ã‚»ãƒ«ã®é»’è‰²ã®Mat
 }

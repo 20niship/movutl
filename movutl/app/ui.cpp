@@ -1,5 +1,3 @@
-#pragma once
-
 #include <movutl/app/ui.hpp>
 #include <stdio.h>
 
@@ -81,10 +79,10 @@ void update() {
   }
 
   // 3. Show the ImGui test window. Most of the sample code is in ImGui::ShowTestWindow()
-  if(show_test_window) {
-    ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiCond_FirstUseEver);
-    ImGui::ShowTestWindow(&show_test_window);
-  }
+  /*if(show_test_window) {*/
+  /*  ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiCond_FirstUseEver);*/
+  /*  ImGui::ShowTestWindow(&show_test_window);*/
+  /*}*/
 
   // Rendering
   int display_w, display_h;

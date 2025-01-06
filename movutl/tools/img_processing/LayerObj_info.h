@@ -48,24 +48,24 @@ struct layerObj{
 	cv::VideoCapture cap;
 	std::vector<uint8_t> img_alpha;
 
-	bool enable_alpha = false; //true -> ƒAƒ‹ƒtƒ@‚ğg‚Á‚Ä‡¬@false -> ‚»‚Ì‚Ü‚ÜiƒAƒ‹ƒtƒ@‚ğl—¶‚µ‚È‚¢j
+	bool enable_alpha = false; //true -> ã‚¢ãƒ«ãƒ•ã‚¡ã‚’ä½¿ã£ã¦åˆæˆã€€false -> ãã®ã¾ã¾ï¼ˆã‚¢ãƒ«ãƒ•ã‚¡ã‚’è€ƒæ…®ã—ãªã„ï¼‰
 	
-	//Active‚©‚Ç‚¤‚©
+	//Activeã‹ã©ã†ã‹
 	bool isSolo = false;
 	bool isMute = false;
 	bool isActive = isSolo || !isMute;
 
-	//Šeíİ’è
-	int start = -1;     //ƒXƒ^[ƒgˆÊ’u
-	int end = -1;       //ÅIˆÊ’u
-	int layer_num = 0;  //ƒŒƒCƒ„[”Ô†
+	//å„ç¨®è¨­å®š
+	int start = -1;     //ã‚¹ã‚¿ãƒ¼ãƒˆä½ç½®
+	int end = -1;       //æœ€çµ‚ä½ç½®
+	int layer_num = 0;  //ãƒ¬ã‚¤ãƒ¤ãƒ¼ç•ªå·
 	int width = 0;
 	int height = 0;
-	float anchor_x = 0; //Šî€“_‚ÌXÀ•W@iƒfƒtƒHƒ‹ƒg‚Å‚Í width / 2j
+	float anchor_x = 0; //åŸºæº–ç‚¹ã®Xåº§æ¨™ã€€ï¼ˆãƒ‡ãƒ•ã‚©ãƒ«ãƒˆã§ã¯ width / 2ï¼‰
 	float anchor_y = 0;
 
-	//TODO: x, y‚ğ•Ï‰»‚³‚¹‚é‚Æ‚«‚Í‚Ç‚¤‚·‚é‚ÌH
-	float move_x = 0; //Šî€“_‚ÌXÀ•W‚ÌˆÚ“®‹——£iƒfƒtƒHƒ‹ƒg‚Å‚Í0j
+	//TODO: x, yã‚’å¤‰åŒ–ã•ã›ã‚‹ã¨ãã¯ã©ã†ã™ã‚‹ã®ï¼Ÿ
+	float move_x = 0; //åŸºæº–ç‚¹ã®Xåº§æ¨™ã®ç§»å‹•è·é›¢ï¼ˆãƒ‡ãƒ•ã‚©ãƒ«ãƒˆã§ã¯0ï¼‰
 	float move_y = 0;
 
 	int type = LAYER_TYPE_IMG;
@@ -101,7 +101,7 @@ struct layerObj{
 	void setCap(cv::VideoCapture cap_) {
 		cap = cap_;
 		anchor_x = float(img.cols) / 2.0f; anchor_y = float(img.rows) / 2.0f;
-		//TODO: cap‚Ìwidth‚Æheight‚ğİ’è
+		//TODO: capã®widthã¨heightã‚’è¨­å®š
 		move_x = 0; move_y = 0;
 	}
 
@@ -115,7 +115,7 @@ public:
 
 	cv::Mat Cur_img;
 
-	bool enable_alpha = true; //true -> ƒAƒ‹ƒtƒ@‚ğg‚Á‚Ä‡¬@false -> ‚»‚Ì‚Ü‚ÜiƒAƒ‹ƒtƒ@‚ğl—¶‚µ‚È‚¢j
+	bool enable_alpha = true; //true -> ã‚¢ãƒ«ãƒ•ã‚¡ã‚’ä½¿ã£ã¦åˆæˆã€€false -> ãã®ã¾ã¾ï¼ˆã‚¢ãƒ«ãƒ•ã‚¡ã‚’è€ƒæ…®ã—ãªã„ï¼‰
 	
 	void setRenderSize(int, int);
 	void setPlayStartPos(int);
@@ -133,12 +133,12 @@ public:
 
 
 private:
-	//Šeíİ’è
-	int start = -1;     //ƒXƒ^[ƒgˆÊ’u
-	int end = -1;       //ÅIˆÊ’u
+	//å„ç¨®è¨­å®š
+	int start = -1;     //ã‚¹ã‚¿ãƒ¼ãƒˆä½ç½®
+	int end = -1;       //æœ€çµ‚ä½ç½®
 	int CFN = 0;    //current frame number
-	int rendering_layer = 0;  //Œ»İƒŒƒ“ƒ_ƒŠƒ“ƒO‚ğs‚Á‚Ä‚¢‚éƒŒƒCƒ„[”Ô†
-	int const_width = 0;    //o—Íƒtƒ@ƒCƒ‹‚Ì‘å‚«‚³
+	int rendering_layer = 0;  //ç¾åœ¨ãƒ¬ãƒ³ãƒ€ãƒªãƒ³ã‚°ã‚’è¡Œã£ã¦ã„ã‚‹ãƒ¬ã‚¤ãƒ¤ãƒ¼ç•ªå·
+	int const_width = 0;    //å‡ºåŠ›ãƒ•ã‚¡ã‚¤ãƒ«ã®å¤§ãã•
 	int const_height = 0;
 	float const_center_x = 0;
 	float const_center_y = 0;

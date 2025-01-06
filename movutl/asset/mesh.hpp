@@ -67,6 +67,7 @@ public:
   virtual void scale_geom(const Vec3&); /// すべてのMeshについて 第1引数scale倍する
   virtual size_t get_vertices_size() = 0;
   virtual void rot_geom(const Vec3&); /// すべてのMeshについて 第1引数だけ回転する
+  Vec3 get_center_of_geom() const;
 
   size_t get_indices_size() { return indices.size(); }
   Mesh() = default;

@@ -1,3 +1,4 @@
+#if 0
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
 
@@ -56,3 +57,4 @@ db::Body* impl_load_pcd(const char* fname) {
 }
 
 } // namespace mu::io
+#endif
