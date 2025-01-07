@@ -1,4 +1,4 @@
-
+#if 0
 struct layerObj{
 	cv::Mat img = cv::Mat::zeros(10, 10, CV_8UC4);;
 	cv::VideoCapture cap;
@@ -60,5 +60,5 @@ struct layerObj{
 		//TODO: cap��width��height��ݒ�
 		move_x = 0; move_y = 0;
 	}
-
 };
+#endif

@@ -30,6 +30,7 @@ struct Range {
 
   bool valid() const { return max >= min; }
   bool operator==(const Range o) const { return o.min == min && o.max == max; }
+  [[nodiscard]] std::string str() const { return "Range(" + std::to_string(min) + ", " + std::to_string(max) + ")"; }
   static Range Inf() { return Range(std::numeric_limits<float>::lowest(), std::numeric_limits<float>::max()); }
 };
 
@@ -105,6 +106,7 @@ struct Rect3D {
     z.merge(other.z);
   }
   static Rect3D Inf() { return Rect3D(Range::Inf(), Range::Inf(), Range::Inf()); }
+  [[nodiscard]] std::string str() const { return "Rect3D( [x,y,z] = " + x.str() + ", " + y.str() + ", " + z.str() + ")"; }
 };
 
 struct Rect {

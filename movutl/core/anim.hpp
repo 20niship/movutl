@@ -21,10 +21,13 @@ enum AniInterpType {
 template <typename T> struct AnimKeyframe {
   T value_;
   uint32_t frame_ = 0;
-  AniInterpType type;
+  float ease_ = 0;
+  float ease2_ = 0;
+  AniInterpType type = AniInterpType::LINEAR;
 };
 
-template <typename T> struct PropAnimationClip {
+template <typename T> struct PropAnimClip {
+public:
   std::vector<AnimKeyframe<T>> keys;
   std::string keyname;
 
@@ -32,5 +35,12 @@ template <typename T> struct PropAnimationClip {
   bool add_keyframe(uint32_t frame, T value, AniInterpType t = AniInterpType::LINEAR);
 };
 
+struct AnimProps {
+public:
+  using Types = std::variant<PropAnimClip<int>, PropAnimClip<float>, PropAnimClip<std::string>, PropAnimClip<bool>, PropAnimClip<Vec2>, PropAnimClip<Vec3>, PropAnimClip<Vec3b>, PropAnimClip<Entity*>>;
+
+  std::vector<Types> props;
+  Props get(uint32_t frame);
+};
 
 } // namespace mu

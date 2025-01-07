@@ -1,26 +1,4 @@
-#include "LayerObj_info.h"
 #define SET_VALUE_RANGE(value, min, max) MAX(min, MIN(value, max))
-
-void RenderingObj::setRenderSize(int width, int height) {
-	const_width = width;
-	const_height = height;
-
-	const_center_x = float(const_width) / 2.0f;
-	const_center_y = float(const_height) / 2.0f;
-}
-
-
-void RenderingObj::setPlayStartPos(int pos) {
-	// 
-
-}
-
-
-void RenderingObj::getFrame(int) {
-
-
-}
-
 
 /////////////////////////////////////////////////////////////////////////
 //        reference : https://en.wikipedia.org/wiki/Blend_modes
@@ -42,6 +20,7 @@ void RenderingObj::getFrame(int) {
 //f(a, b) = {2ab (when a < 0.5) , 1-2(1-a)(1-b) (otherwise)}
 #define IMAGE_BLEND_PROCESSOR_OVERLAY(a, b) (((a)<122) ? __int8(0.00888f * float(a)* float(b)) :  ((65025 - 2 * (255 - (a))* (255 - (b))) / 255))
 
+#if 0
 
 //新しくプロジェクトを作るときに呼び出される
 RenderingObj::RenderingObj(int _width, int _height) {
@@ -49,7 +28,6 @@ RenderingObj::RenderingObj(int _width, int _height) {
 	const_height = _height;
 
 	Cur_img = cv::Mat::zeros(_height, _width, CV_8UC4); //500×500ピクセルの黒色のMat
-
 
 	const_center_x = float(_width) / 2.0f;
 	const_center_y = float(_height) / 2.0f;
@@ -278,3 +256,6 @@ void RenderingObj::RenderAndAddOneLayer(layerObj *upper_layer) {
 void RenderingObj::clearImage() {
 	Cur_img = cv::Mat::zeros(const_height, const_width, CV_8UC4); //500×500ピクセルの黒色のMat
 }
+
+#endif
+

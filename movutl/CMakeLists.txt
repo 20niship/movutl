@@ -93,10 +93,13 @@ file(GLOB MOVUTL_EXT_SRC
   ${MOVUTL_ROOT_DIR}/ext/filewatch/FileWatcher.cpp
 )
 
-
 include_directories(${MOVUTL_INCLUDES})
+
 set(MOVUTL_SRC ${MOVUTL_SOURCE_1} ${MOVUTL_SOURCE_2} ${MOVUTL_SOURCE_3} ${MOVUTL_SOURCE_4} ${MOVUTL_EXT_SRC})
 add_library(mucore ${MOVUTL_SRC})
+target_include_directories(mucore PUBLIC ${MOVUTL_INCLUDES})
 target_link_libraries(mucore ${MOVUTL_LIBRARIES})
 set(MOVUTL_LIBRARIES ${MOVUTL_LIBRARIES} movutl)
+
+set(MOVUTL_INCLUDES ${MOVUTL_INCLUDES} PARENT_SCOPE)
 

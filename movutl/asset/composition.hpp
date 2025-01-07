@@ -10,9 +10,14 @@ struct TrackLayer {
 public:
   char dispname[MAX_DISPNAME];
   bool active = true;
+  std::vector<TrackObject> objs;
 };
+
 struct Composition {
 public:
+  uint32_t guid;
+  char dispname[MAX_DISPNAME];
+
   enum Flag : uint32_t {
     setting_dialog = 1 << 4,      // そのオブジェクトの設定ダイアログが表示されている
     frame_alpha = 1 << 8,         // frame_edit,frame_tempにアルファチャンネルあり
@@ -46,7 +51,6 @@ public:
 
   // ---------- track ----------
   std::vector<TrackLayer> layers;
-  std::vector<TrackObject> objs;
 };
 
 } // namespace mu

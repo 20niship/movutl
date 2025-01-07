@@ -1,11 +1,13 @@
+#include <iostream>
 #include <movutl/core/rect.hpp>
-#include <movutl/tester/tester.hpp>
 
-int main(){
-  mu::core::Rect3D r;
-  DISP(r);
-  r.expand(mu::core::Vec3{-1, -1, -1});
-  DISP(r);
+using namespace mu;
+
+int main() {
+  Rect3D r;
+  DISP(r.str());
+  r.expand(Vec3{-1, -1, -1});
+  DISP(r.str());
 
 
   float max = std::numeric_limits<float>::lowest();

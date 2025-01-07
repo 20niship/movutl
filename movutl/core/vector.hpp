@@ -5,6 +5,7 @@
 #include <cstring>
 #include <initializer_list>
 #include <limits>
+#include <string>
 
 #ifdef MU_WITH_OSTREAM
 #include <iostream>
@@ -287,6 +288,20 @@ public:
     return m;
   }
   double avg() const { return (double)sum() / LEN; }
+
+  [[nodiscard]] std::string str() const {
+    std::string str = " Vec" + std::string(typeid(T).name()) + std::to_string(LEN) + "[ ";
+    for(size_t i = 0; i < LEN; i++) {
+      if constexpr(std::is_same_v<T, float> || std::is_same_v<T, double>) {
+        str += std::to_string((T)value[i]);
+      } else {
+        str += std::to_string(static_cast<int>(value[i]));
+      }
+      if(i != LEN - 1) str += ", ";
+    }
+    str += " ] ";
+    return str;
+  }
 };
 
 
@@ -512,6 +527,21 @@ template <typename T, unsigned int W, unsigned int H> struct _Mat {
     for(size_t x = 0; x < W; x++)
       for(size_t y = 0; y < H; y++) out(y, x) = value[y * W + x];
     return out;
+  }
+
+  [[nodiscard]] std::string str() const {
+    std::string str = " _Mat<" + std::string(typeid(T).name()) + ", " + std::to_string(W) + "," + std::to_string(H) + "> [ \n";
+    for(size_t j = 0; j < H; j++) {
+      str += "    [ ";
+      if constexpr(std::is_same_v<T, float> || std::is_same_v<T, double>) {
+        for(size_t i = 0; i < W; i++) str += std::to_string(value[j * W + i]) + ", ";
+      } else {
+        for(size_t i = 0; i < W; i++) str += std::to_string(static_cast<int>(value[j * W + i])) + ", ";
+      }
+      str += " ]\n";
+    }
+    str += "]";
+    return str;
   }
 
   // T& operator= (const _Mat& other){

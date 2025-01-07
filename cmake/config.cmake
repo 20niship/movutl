@@ -1,4 +1,3 @@
-
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # does not produce the json file
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "") # works
 
@@ -105,6 +104,3 @@ endforeach()
 # if(MSVC)
 #  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS")
 # endif()
-
-message("Compiler:\n\t${CMAKE_CXX_COMPILER}")
-message("compiler flags:\n\t${CMAKE_CXX_FLAGS}")
