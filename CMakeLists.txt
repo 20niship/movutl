@@ -18,5 +18,5 @@ add_subdirectory(tests)
 add_subdirectory(examples)
 
 add_executable(movutl_main ${CMAKE_CURRENT_SOURCE_DIR}/lancher/main.cpp)
-
+target_link_libraries(movutl_main mucore)
 

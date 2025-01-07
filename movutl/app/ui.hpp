@@ -19,10 +19,14 @@ public:
   ~GUIManager() = default;
 
   GLFWwindow* glfw_window = nullptr;
+  bool should_close = false;
   void init();
   void terminate();
 };
 
+void init();
 void update();
+void terminate();
+bool should_terminate();
 
 } // namespace mu

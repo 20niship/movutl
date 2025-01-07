@@ -1,13 +1,15 @@
 #include <movutl/app/ui.hpp>
+#include <movutl/core/logger.hpp>
+#include <movutl/core/vector.hpp>
 #include <stdio.h>
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
 #include <imgui.h>
-#include <imgui_internal.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
+#include <imgui_internal.h>
 
 // ImGui - standalone example application for Glfw + OpenGL 3, using programmable pipeline
 // If you are new to ImGui, see examples/README.txt and documentation at the top of imgui.cpp.
@@ -19,22 +21,36 @@ namespace mu {
 
 void GUIManager::init() {
   glfwSetErrorCallback(error_callback);
-  if(!glfwInit()) return 1;
+
+  if(!glfwInit()) {
+    LOG_F(ERROR, "Could not initialize GLFW");
+    return false;
+  }
+
   glfwWindowHint(GLFW_SAMPLES, 4);
+#if __APPLE__
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+#else
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+#endif
+  // 古い機能を削除したプロファイルを使用するか
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // To make MacOS happy; should not be needed
+  // OpenGLのプロファイルを指定する
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-  GLFWwindow* window = glfwCreateWindow(1280, 720, "ImGui OpenGL3 example", NULL, NULL);
-  glfwMakeContextCurrent(window);
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+
+  glfw_window = glfwCreateWindow(1280, 720, "ImGui OpenGL3 example", NULL, NULL);
+  glfwMakeContextCurrent(glfw_window);
 
   glewInit();
 
   // Setup ImGui binding
   ImGui_ImplOpenGL3_Init();
-  ImGui_ImplGlfw_InitForOpenGL(window, true);
-  glfw_window = window;
+  ImGui_ImplGlfw_InitForOpenGL(glfw_window, true);
 
   // Load FontsR
   // (there is a default font, this is only if you want to change it. see extra_fonts/README.txt for more details)
@@ -54,9 +70,13 @@ ImVec4 clear_color = ImColor(114, 144, 154);
 void update() {
   auto window = GUIManager::Get()->glfw_window;
 
-  // Main loop
   bool should_close = glfwWindowShouldClose(window);
+  GUIManager::Get()->should_close = should_close;
+
+  glfwPollEvents();
+  ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
+  ImGui::NewFrame();
 
   // 1. Show a simple window
   // Tip: if we don't call ImGui::Begin()/ImGui::End() the widgets appears in a window automatically called "Debug"
@@ -91,9 +111,13 @@ void update() {
   glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
   glClear(GL_COLOR_BUFFER_BIT);
   ImGui::Render();
+  _Vec<int, 2> window_size;
+  glfwGetFramebufferSize(window, &window_size[0], &window_size[1]);
+  ImGui::SetNextWindowBgAlpha(0.35f);
+  glViewport(0, 0, window_size[0], window_size[1]);
+  ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
   glfwSwapBuffers(window);
-  glfwPollEvents();
 }
 
 void GUIManager::terminate() {
@@ -101,5 +125,19 @@ void GUIManager::terminate() {
   ImGui_ImplGlfw_Shutdown();
   glfwTerminate();
 }
+
+void init() {
+  GUIManager::Get()->init();
+}
+
+void terminate() {
+  GUIManager::Get()->terminate();
+}
+
+bool should_terminate() {
+  return GUIManager::Get()->should_close;
+}
+
+GUIManager* GUIManager::singleton_ = nullptr;
 
 } // namespace mu
