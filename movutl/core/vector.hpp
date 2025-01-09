@@ -31,6 +31,9 @@ public:
       idx++;
     }
   }
+  template <typename U> _Vec(const _Vec<U, LEN>& t) {
+    for(size_t i = 0; i < LEN; i++) value[i] = t[i];
+  }
 
   // template<class... Args>
   // _Vec(Args... args){
@@ -331,10 +334,10 @@ template <typename T, unsigned int LEN> std::ostream& operator<<(std::ostream& o
 }
 #endif
 
-using Vec2 = _Vec<double, 2>;
-using Vec3 = _Vec<double, 3>;
-using Vec6 = _Vec<double, 6>;
-using Vec4 = _Vec<double, 4>;
+using Vec2 = _Vec<float, 2>;
+using Vec3 = _Vec<float, 3>;
+using Vec6 = _Vec<float, 6>;
+using Vec4 = _Vec<float, 4>;
 
 using Vec2b = _Vec<unsigned char, 2>;
 using Vec3b = _Vec<unsigned char, 3>;

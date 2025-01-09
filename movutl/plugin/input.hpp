@@ -32,6 +32,7 @@ typedef void* INPUT_HANDLE;
 
 //	入力プラグイン構造体
 struct InputPluginTable {
+  uint64_t guid;
   InputFlag supports = InputFlag::Video | InputFlag::Audio;
 
   char name[MAX_NAME];                                         //	プラグインの名前

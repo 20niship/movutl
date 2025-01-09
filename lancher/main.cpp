@@ -1,5 +1,6 @@
 #include <chrono>
 #include <iostream>
+#include <movutl/app/app.hpp>
 #include <movutl/app/ui.hpp>
 #include <thread>
 

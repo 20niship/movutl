@@ -24,9 +24,4 @@ public:
   void terminate();
 };
 
-void init();
-void update();
-void terminate();
-bool should_terminate();
-
 } // namespace mu

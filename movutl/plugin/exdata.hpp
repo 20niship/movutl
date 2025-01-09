@@ -1,3 +1,4 @@
+#pragma once
 #include <movutl/asset/config.hpp>
 #include <movutl/asset/image.hpp>
 #include <movutl/core/vector.hpp>

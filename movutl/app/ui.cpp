@@ -126,10 +126,6 @@ void GUIManager::terminate() {
   glfwTerminate();
 }
 
-void init() {
-  GUIManager::Get()->init();
-}
-
 void terminate() {
   GUIManager::Get()->terminate();
 }
