@@ -8,4 +8,5 @@ void InspectorWindow::Update() {
   ImGui::Text("Inspector");
   ImGui::End();
 }
+
 } // namespace mu
