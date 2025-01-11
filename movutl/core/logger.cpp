@@ -35,9 +35,12 @@ void init_logger() {
   }
 
   loguru::g_preamble_date = false;
-  loguru::g_preamble_uptime = false;
+  loguru::g_preamble_uptime = true;
+  loguru::g_preamble_time = false;
   loguru::g_preamble_thread = false;
   loguru::g_preamble_file = false;
+  loguru::g_preamble_pipe = false;
+  loguru::g_preamble_header = false;
 
   switch(c->log_level) {
     case LogLevel::TRACE: loguru::g_stderr_verbosity = 2; break;

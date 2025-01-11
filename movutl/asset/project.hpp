@@ -21,7 +21,7 @@ public:
 
   std::vector<Ref<Entity>> entities;
   std::vector<Composition> compos_;
-  int main_comp_idx = -1;
+  int main_comp_idx = 0;
 
   static void New(int width = 1920, int height = 1080, int fps = 30);
 

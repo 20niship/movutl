@@ -1,7 +1,10 @@
 #pragma once
+#include <vector>
 
 namespace mu::detail {
 
+std::vector<std::string> get_backtrace();
+void enable_signal_handlers();
 void _mu_assert_fail(const char* file, int line, const char* msg1);
 
 } // namespace mu::detail

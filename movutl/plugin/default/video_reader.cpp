@@ -1,3 +1,4 @@
+#include <opencv2/highgui.hpp>
 #include <opencv2/video.hpp>
 #include <opencv2/videoio.hpp>
 //
@@ -6,8 +7,13 @@
 
 namespace mu::detail {
 
-static bool fn_init() {}
-static bool fn_exit() {}
+static bool fn_init() {
+  printf("OpenCV Video Reader initialized\n");
+  return true;
+}
+static bool fn_exit() {
+  return true;
+}
 
 struct InHandleCVVideo {
   int frame;
@@ -22,7 +28,7 @@ static InputHandle fn_open(const char* file) {
     delete ih;
     return nullptr;
   }
-  return new cv::VideoCapture(ih->cap);
+  return ih;
 }
 
 static bool fn_close(InputHandle ih) {
@@ -32,26 +38,28 @@ static bool fn_close(InputHandle ih) {
   return true;
 }
 
-static bool fn_info_get(InputHandle ih, InputInfo* iip) {
+static bool fn_info_get(InputHandle ih, EntityInfo* iip) {
   if(!ih) return false;
   MU_ASSERT(iip);
-  cv::VideoCapture* cap = (cv::VideoCapture*)ih;
-  if(!cap) return false;
+  auto c = (InHandleCVVideo*)ih;
+  if(!c->cap.isOpened()) return false;
   iip->flag = EntityType_Movie;
-  iip->framerate = cap->get(cv::CAP_PROP_FPS);
-  iip->nframes = cap->get(cv::CAP_PROP_FRAME_COUNT);
-  iip->size[0] = cap->get(cv::CAP_PROP_FRAME_WIDTH);
-  iip->size[1] = cap->get(cv::CAP_PROP_FRAME_HEIGHT);
+  iip->framerate = c->cap.get(cv::CAP_PROP_FPS);
+  iip->nframes = c->cap.get(cv::CAP_PROP_FRAME_COUNT);
+  iip->width = c->cap.get(cv::CAP_PROP_FRAME_WIDTH);
+  iip->height = c->cap.get(cv::CAP_PROP_FRAME_HEIGHT);
   iip->handler = 0;
   return true;
 }
 
-int fn_read_video(InputHandle ih, const InputInfo* iip, Movie* entity) {
+int fn_read_video(InputHandle ih, const EntityInfo* iip, Movie* entity) {
   if(!ih) return 0;
-  cv::VideoCapture* cap = (cv::VideoCapture*)ih;
-  if(!cap) return 0;
+  InHandleCVVideo* cap = (InHandleCVVideo*)ih;
+  if(!cap->cap.isOpened()) return 0;
   cv::Mat image;
-  *cap >> image;
+  cap->cap >> image;
+  cv::imshow("imageaaaa", image);
+
   if(image.empty()) return 0;
   entity->img_->set_cv_img(&image);
   return image.total() * image.elemSize();

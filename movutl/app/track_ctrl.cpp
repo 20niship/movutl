@@ -26,10 +26,10 @@ Ref<Entity> add_new_video_track(const char* name, const char* path, int start, i
     Project::New();
     main_comp = pj->get_main_comp();
   }
-
   MU_ASSERT(main_comp);
+  MU_ASSERT(layer >= 0 && layer <= 1000);
   if(layer > main_comp->layers.size()) main_comp->layers.resize(layer);
-  main_comp->layers[layer - 1].entts.push_back(e);
+  main_comp->layers[layer].entts.push_back(e);
   return e;
 }
 

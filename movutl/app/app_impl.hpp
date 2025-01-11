@@ -10,9 +10,6 @@ public:
   AppMain() = default;
   ~AppMain() = default;
 
-  void init();
-  void exit();
-
   std::vector<FilterPluginTable> filters;
   std::vector<InputPluginTable> input_plugins;
   std::vector<PluginData> plugins;

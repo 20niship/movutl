@@ -1,3 +1,6 @@
+#define NOMINMAX
+
+#include <cmath>
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/entity.hpp>
 
@@ -10,6 +13,22 @@ Ref<Entity> TrackLayer::find_entt(uint32_t frame) const {
 }
 
 
+std::string TrackLayer::str() const {
+  std::string str = "Layer<" + std::string(name) + " / entt:" + std::to_string(entts.size()) + ">";
+  return str;
+}
+std::string TrackLayer::summary() const {
+  auto str = this->str();
+  if(entts.size() > 0) {
+    str += " [";
+    for(int i = 0; i < std::min(5, (int)entts.size()); i++) {
+      str += entts[i]->name;
+      if(i < std::min(5, (int)entts.size()) - 1) str += ",";
+    }
+    str += "]";
+  }
+  return str;
+}
 
 void Composition::resize(int32_t w, int32_t h) {
   size[0] = w;
@@ -27,10 +46,29 @@ Composition::Composition(const char* name, int32_t w, int32_t h, int32_t fps) {
   std::strncpy(cmp->name, name, MAX_DISPNAME);
   for(int i = 0; i < 10; i++) {
     TrackLayer layer;
-    std::string name_str = "Layer " + std::to_string(i + 1);
+    std::string name_str = "Layer" + std::to_string(i + 1);
     std::strncpy(layer.name, name_str.c_str(), MAX_DISPNAME);
     this->layers.push_back(layer);
   }
+}
+
+std::string Composition::str() const {
+  std::string str = "Composition<" + std::string(name) + "/" + std::to_string(layers.size()) + ">";
+  return str;
+}
+
+std::string Composition::summary() const {
+  auto str = this->str();
+  if(layers.size() > 0) {
+    str += " [";
+    for(int i = 0; i < std::min(5, (int)layers.size()); i++) {
+      printf(" ------ layer %d\n", i);
+      str += layers[i].summary();
+      if(i < std::min(5, (int)layers.size()) - 1) str += "\n";
+    }
+    str += "]";
+  }
+  return str;
 }
 
 } // namespace mu

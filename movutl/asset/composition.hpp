@@ -15,12 +15,14 @@ public:
   std::vector<Ref<Entity>> entts;
 
   Ref<Entity> find_entt(uint32_t guid) const;
+  std::string str() const;
+  std::string summary() const;
 };
 
 class Composition {
 public:
   uint32_t guid;
-  char name[MAX_DISPNAME];
+  char name[MAX_DISPNAME] = "Main";
 
   enum Flag : uint32_t {
     setting_dialog = 1 << 4,      // そのオブジェクトの設定ダイアログが表示されている
@@ -58,6 +60,8 @@ public:
 
   Composition() = default;
   Composition(const char* name, int32_t w = 1920, int32_t h = 1080, int32_t fps = 30);
+  std::string str() const;
+  std::string summary() const;
 };
 
 } // namespace mu

@@ -19,7 +19,7 @@ public:
   std::vector<std::string> plugin_search_paths;
   bool log_to_file = false;
   std::string log_filename = "log.txt";
-  LogLevel log_level = LogLevel::INFO;
+  LogLevel log_level = LogLevel::DEBUG;
 
   static void Load();
   static void Save();

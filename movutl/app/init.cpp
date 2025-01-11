@@ -7,7 +7,8 @@
 namespace mu {
 
 void init() {
-  printf("movutl project !!\n");
+  detail::enable_signal_handlers();
+  detail::init_logger();
   GUIManager::Get()->init();
   LOG_F(1, "Loading plugins...");
   detail::register_default_plugins();
@@ -15,7 +16,7 @@ void init() {
   LOG_F(1, "Loading plugins...");
   detail::activate_all_plugins();
   Config::Load();
-  printf("Config::Load();\n");
+  LOG_F(1, "Initialization complete");
 }
 
 } // namespace mu

@@ -15,10 +15,25 @@ Ref<Movie> Movie::Create(const char* name, const char* path) {
 }
 
 bool Movie::render(Composition* cmp) {
+  if(!in_plg_ || info.width <= 0 || info.height <= 0 || info.nframes <= 0) {
+    LOG_F(WARNING, "Invalid movie info: %s -> %s", name, info.str().c_str());
+    return false;
+  }
+
   MU_ASSERT(cmp);
   MU_ASSERT(cmp->frame_final);
-  if(!img_) return false;
-  if(img_->width <= 0 || img_->height <= 0) return false;
+  int tlocal = cmp->frame - trk.fstart;
+  printf("Movie::render: %s, frame=%d, tlocal=%d\n", name, cmp->frame, tlocal);
+  if(tlocal < 0 || tlocal >= trk.fend - trk.fstart) return false;
+  printf("set frame   : %d\n", tlocal);
+  if(in_plg_->fn_set_frame(in_handle_, tlocal)) in_plg_->fn_set_frame(in_handle_, tlocal);
+
+  printf("image create\n");
+  if(!img_) img_ = Image::Create("!movie", info.width, info.height, info.format, false);
+  MU_ASSERT(in_plg_->fn_read_video);
+  printf("read video\n");
+  in_plg_->fn_read_video(in_handle_, &info, this);
+  printf("copy to\n");
   int cw = cmp->size[0];
   int ch = cmp->size[1];
   if(cw <= 0 || ch <= 0) return false;
@@ -38,6 +53,15 @@ bool Movie::load_file(const char* path) {
   }
   this->in_plg_ = p;
   this->in_handle_ = p->fn_open(path);
+  if(!p->fn_info_get)
+    LOG_F(WARNING, "No info_get function found for plugin: %s", p->name);
+  else
+    p->fn_info_get(in_handle_, &info);
+  if(info.width <= 0 || info.height <= 0 || info.nframes <= 0) {
+    LOG_F(WARNING, "Invalid movie info: %s -> %s, plugin=%s", path, info.str().c_str(), p->name);
+    return false;
+  }
+  this->trk.fend = info.nframes;
   return true;
 }
 

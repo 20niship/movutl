@@ -11,14 +11,8 @@ namespace mu {
 
 class Image final : public Entity {
 public:
-  enum Format {
-    FormatRGB = 0,
-    FormatRGBA = 2,
-    FormatGRAYSCALE = 1,
-  };
-
 private:
-  Format fmt = Format::FormatRGB;
+  ImageFormat fmt = ImageFormatRGB;
   Vec<uint8_t> data_;
 
   void reserve(size_t new_capacity) { data_.resize(new_capacity); }
@@ -76,9 +70,9 @@ public:
 
   int channels() const {
     switch(fmt) {
-      case Format::FormatRGB: return 3;
-      case Format::FormatRGBA: return 4;
-      case Format::FormatGRAYSCALE: return 1;
+      case ImageFormatRGB: return 3;
+      case ImageFormatRGBA: return 4;
+      case ImageFormatGRAYSCALE: return 1;
       default: MU_ASSERT(false);
     }
   }
@@ -132,7 +126,7 @@ public:
   virtual EntityType getType() const override { return EntityType_Image; }
 
   static Ref<Image> Create(const char* name, const char* path, bool add_to_pj = true);
-  static Ref<Image> Create(const char* name, int w, int h, Format format = Format::FormatRGB, bool add_to_pj = true);
+  static Ref<Image> Create(const char* name, int w, int h, ImageFormat format = ImageFormatRGB, bool add_to_pj = true);
 };
 
 void cv_waitkey(int time = 0);

@@ -9,11 +9,11 @@ namespace mu {
 void Image::set_cv_img(const cv::Mat* cv_img) {
   MU_ASSERT(cv_img);
   if(cv_img->channels() == 1)
-    this->fmt = Format::FormatGRAYSCALE;
+    this->fmt = ImageFormatGRAYSCALE;
   else if(cv_img->channels() == 3)
-    this->fmt = Format::FormatRGB;
+    this->fmt = ImageFormatRGB;
   else if(cv_img->channels() == 4)
-    this->fmt = Format::FormatRGBA;
+    this->fmt = ImageFormatRGBA;
   else
     MU_ASSERT(false);
 
@@ -127,7 +127,7 @@ Ref<Image> Image::Create(const char* name, const char* path, bool add_to_pj) {
   MU_FAIL("Not implemented (loading image using plugin...)");
 }
 
-Ref<Image> Image::Create(const char* name, int w, int h, Format format, bool add_to_pj) {
+Ref<Image> Image::Create(const char* name, int w, int h, ImageFormat format, bool add_to_pj) {
   MU_ASSERT(name && w > 0 && h > 0);
   auto img = std::make_shared<Image>();
   MU_ASSERT(img);
