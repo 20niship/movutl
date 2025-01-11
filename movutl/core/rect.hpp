@@ -27,6 +27,7 @@ struct Range {
   }
   Range scale(const float t) const { return Range(center() - length() * t / 2.0f, center() + length() * t / 2.0f); }
   Range margin(const float t) const { return Range(min - t, max + t); }
+  Range shift(float t) const { return Range(min + t, max + t); }
 
   bool valid() const { return max >= min; }
   bool operator==(const Range o) const { return o.min == min && o.max == max; }
@@ -139,6 +140,8 @@ struct Rect {
   void top(float t) { y.min = t; }
   void bottom(float t) { y.max = t; }
   void left(float t) { x.min = t; }
+  float w() { return x.length(); }
+  float h() { return y.length(); }
   void right(float t) { x.max = t; }
 
   bool contains(const Rect& other) const { return x.contains(other.x) && y.contains(other.y); }
