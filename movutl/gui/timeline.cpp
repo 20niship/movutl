@@ -328,7 +328,7 @@ bool IsTimeline_LineHovered() {
   all.y = all.y.shift(h);
   all.y.max = all.y.min + dh;
 
-  ImRect rect(ImVec2(all.left(), all.top()), ImVec2(all.left() + ctx_.prop_view_width, all.top() + dh));
+  ImRect rect(ImVec2(all.left(), all.top()), ImVec2(all.left() + ctx_.trackname_width, all.top() + dh));
   return ImGui::IsMouseHoveringRect(rect.Min, rect.Max);
 }
 

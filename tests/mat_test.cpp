@@ -1,9 +1,10 @@
+#include <doctest/doctest.h>
 #include <iostream>
 #include <movutl/core/vector.hpp>
 
 using namespace mu;
 
-void test1() {
+TEST_CASE("vector") {
   Mat4x4 m;
   m << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16;
   MU_ASSERT(m(0, 0) == 1);
@@ -14,7 +15,3 @@ void test1() {
   DISP(res == Vec4(300, 700, 1100, 1500));
 }
 
-int main() {
-  test1();
-  return 0;
-}

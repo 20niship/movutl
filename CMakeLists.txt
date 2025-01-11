@@ -12,8 +12,7 @@ set(MOVUTL_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 add_subdirectory(${MOVUTL_ROOT_DIR}/ext/nanobind)
 add_subdirectory(movutl)
 
-message(STATUS "MOVUTL_INCLUDE_DIR: ${MOVUTL_INCLUDES}")
-include_directories(${MOVUTL_INCLUDES})
+include_directories(${MOVUTL_INCLUDES} ${MOVUTL_ROOT_DIR}/ext/doctest)
 add_subdirectory(tests)
 add_subdirectory(examples)
 

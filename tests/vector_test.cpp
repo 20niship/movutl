@@ -1,3 +1,4 @@
+#include <doctest/doctest.h>
 #include <iostream>
 #include <movutl/core/vector.hpp>
 #include <vector>
@@ -7,12 +8,12 @@ using namespace mu;
 
 void test1() {
   Vec<int> vec;
-  assert(vec.size() == 0);
+  CHECK(vec.size() == 0);
 
   vec.push_back(20);
   vec.push_back(10);
-  assert(vec[0] == 20);
-  assert(vec[1] == 10);
+  CHECK(vec[0] == 20);
+  CHECK(vec[1] == 10);
 }
 
 
@@ -58,10 +59,9 @@ int test5() {
   return 0;
 }
 
-int main() {
+TEST_CASE("vector-test") {
   test1();
   test2();
   test4();
   test5();
-  return 0;
 }
