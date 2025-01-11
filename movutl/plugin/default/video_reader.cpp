@@ -8,7 +8,6 @@
 namespace mu::detail {
 
 static bool fn_init() {
-  printf("OpenCV Video Reader initialized\n");
   return true;
 }
 static bool fn_exit() {
@@ -58,8 +57,6 @@ int fn_read_video(InputHandle ih, const EntityInfo* iip, Movie* entity) {
   if(!cap->cap.isOpened()) return 0;
   cv::Mat image;
   cap->cap >> image;
-  cv::imshow("imageaaaa", image);
-
   if(image.empty()) return 0;
   entity->img_->set_cv_img(&image);
   return image.total() * image.elemSize();

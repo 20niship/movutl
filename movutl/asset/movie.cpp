@@ -23,17 +23,12 @@ bool Movie::render(Composition* cmp) {
   MU_ASSERT(cmp);
   MU_ASSERT(cmp->frame_final);
   int tlocal = cmp->frame - trk.fstart;
-  printf("Movie::render: %s, frame=%d, tlocal=%d\n", name, cmp->frame, tlocal);
   if(tlocal < 0 || tlocal >= trk.fend - trk.fstart) return false;
-  printf("set frame   : %d\n", tlocal);
   if(in_plg_->fn_set_frame(in_handle_, tlocal)) in_plg_->fn_set_frame(in_handle_, tlocal);
 
-  printf("image create\n");
   if(!img_) img_ = Image::Create("!movie", info.width, info.height, info.format, false);
   MU_ASSERT(in_plg_->fn_read_video);
-  printf("read video\n");
   in_plg_->fn_read_video(in_handle_, &info, this);
-  printf("copy to\n");
   int cw = cmp->size[0];
   int ch = cmp->size[1];
   if(cw <= 0 || ch <= 0) return false;

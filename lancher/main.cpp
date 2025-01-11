@@ -15,18 +15,22 @@ void util_show_main_cmp_result() {
   render_comp(cmp);
   auto frame = cmp->frame_final;
   MU_ASSERT(frame);
-  frame->imshow();
-  cv_waitkey(1);
+  /*frame->imshow();*/
+  /*cv_waitkey(1);*/
 }
 
 void create_sample_video_data() {
   Project::New();
   add_new_video_track("testname", "../sample-5s.mp4", 0, 0);
-  util_show_main_cmp_result();
 }
 
 int main() {
   mu::init();
   create_sample_video_data();
+  util_show_main_cmp_result();
+  while(!mu::should_terminate()) {
+    mu::update();
+    std::this_thread::sleep_for(std::chrono::milliseconds(30));
+  }
   mu::terminate();
 }
