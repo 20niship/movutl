@@ -4,7 +4,6 @@
 
 namespace mu {
 
-bool render_comp(Ref<Composition> comp);
+bool render_comp(Composition* comp);
 
 } // namespace mu
-  

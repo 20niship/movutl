@@ -10,7 +10,7 @@ class Entity;
  */
 struct TrackLayer {
 public:
-  char dispname[MAX_DISPNAME];
+  char name[MAX_DISPNAME];
   bool active = true;
   std::vector<Ref<Entity>> objs;
 };
@@ -53,6 +53,9 @@ public:
   std::vector<TrackLayer> layers;
 
   void resize(int32_t w, int32_t h);
+
+  Composition() = default;
+  Composition(const char* name, int32_t w = 1920, int32_t h = 1080, int32_t fps = 30);
 };
 
 } // namespace mu

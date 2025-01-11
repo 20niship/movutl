@@ -23,7 +23,12 @@ public:
   std::vector<Composition> compos_;
   int main_comp_idx = -1;
 
-  void init();
+  static void New(int width = 1920, int height = 1080, int fps = 30);
+
+  Composition* get_main_comp() {
+    if(main_comp_idx < 0 || main_comp_idx >= compos_.size()) return nullptr;
+    return &compos_[main_comp_idx];
+  }
 };
 
 } // namespace mu
