@@ -6,7 +6,7 @@
 
 #ifdef MOVUTL_PLATFORM_WINDOWS
 #include <windows.h>
-#elif defined(MOVUTL_PLATFORM_MACOS)
+#elif defined(MOVUTL_PLATFORM_MACOS) or defined(MOVUTL_PLATFORM_LINUX)
 #include <dlfcn.h>
 #else
 #error "Unsupported platform"

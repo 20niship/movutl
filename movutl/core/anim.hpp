@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <movutl/core/props.hpp>
 
 namespace mu {

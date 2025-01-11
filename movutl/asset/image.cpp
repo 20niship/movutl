@@ -79,7 +79,7 @@ void Image::to_cv_img(cv::Mat* cv_img) const {
   }
 }
 
-void Image::copyto(Image* dst, const Vec2d& pmin) const {
+bool Image::copyto(Image* dst, const Vec2d& pmin) const {
   MU_ASSERT(dst);
   if(this->width <= 0 || this->height <= 0) return false;
   int cw = dst->width;
@@ -96,10 +96,8 @@ void Image::copyto(Image* dst, const Vec2d& pmin) const {
       dst->set_rgba(dx, dy, rgba);
     }
   }
+  return true;
 }
-void Image::copyto(Image* dst, const Vec2d& pmin, float scale, const Vec2d& offset) const {}
-void Image::copyto(Image* dst, const Vec2d& pmin, const Vec2d& pmax) const {}
-void Image::copyto(Image* dst, const Vec2d& center, float scale, float angle) const {}
 
 bool Image::render(Composition* cmp) {
   MU_ASSERT(cmp);

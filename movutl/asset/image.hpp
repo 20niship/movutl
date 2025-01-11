@@ -51,10 +51,10 @@ public:
     ptr[0] = rgba[0];
   }
 
-  void copyto(Image* dst, const Vec2d& pmin) const;
-  void copyto(Image* dst, const Vec2d& pmin, float scale, const Vec2d& offset) const;
-  void copyto(Image* dst, const Vec2d& pmin, const Vec2d& pmax) const;
-  void copyto(Image* dst, const Vec2d& center, float scale, float angle) const;
+  bool copyto(Image* dst, const Vec2d& pmin) const;
+  bool copyto(Image* dst, const Vec2d& pmin, float scale, const Vec2d& offset) const;
+  bool copyto(Image* dst, const Vec2d& pmin, const Vec2d& pmax) const;
+  bool copyto(Image* dst, const Vec2d& center, float scale, float angle) const;
 
   uint8_t* data() { return data_.data(); }
   size_t size() const { return width * height; }
@@ -101,8 +101,8 @@ public:
   }
 
   Vec4b rgba(const size_t x, const size_t y) const {
-    MU_ASSERT(0 <= x && x < width);
-    MU_ASSERT(0 <= y && y < height);
+    MU_ASSERT(x < width);
+    MU_ASSERT(y < height);
     int c = channels();
     auto* ptr = &data_[(y * width + x) * c];
     if(c == 3) return {ptr[0], ptr[1], ptr[2], 255};

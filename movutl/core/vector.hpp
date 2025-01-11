@@ -6,6 +6,7 @@
 #include <initializer_list>
 #include <limits>
 #include <string>
+#include <typeinfo>
 
 #ifdef MU_WITH_OSTREAM
 #include <iostream>

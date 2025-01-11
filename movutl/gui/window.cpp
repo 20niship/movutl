@@ -28,7 +28,7 @@ void GUIManager::init() {
 
   if(!glfwInit()) {
     LOG_F(ERROR, "Could not initialize GLFW");
-    return false;
+    return;
   }
 
   glfwWindowHint(GLFW_SAMPLES, 4);
