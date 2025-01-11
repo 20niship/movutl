@@ -28,23 +28,23 @@ enum EntityType {
 };
 
 class Entity {
-private:
+protected:
   InputPluginTable* in_plg_ = nullptr;
 
 public:
   char name[MAX_DISPNAME];
   uint64_t guid_ = 0;
-  TrackObject trk_;
+  TrackObject trk;
 
   virtual constexpr EntityType getType() const = 0;
-  int width = 0;
-  int height = 0;
 
-  static Ref<Entity> Create(const char* name, EntityType type);
+  Ref<Entity> CreateEntity(const char* name, EntityType type);
   static Ref<Entity> Find(const char* name);
-  static Ref<Entity> LoadFile(const char* name, const char* path);
 
   Ref<Composition> get_comp() const;
+  virtual bool render(Composition* cmp) = 0;
+
+  bool visible(int frame) const { return trk.visible(frame); }
 };
 
 } // namespace mu

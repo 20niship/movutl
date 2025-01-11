@@ -7,8 +7,8 @@ namespace mu::detail {
 class AppMain {
 public:
   MOVUTL_DECLARE_SINGLETON(AppMain);
-  AppMain();
-  ~AppMain();
+  AppMain() = default;
+  ~AppMain() = default;
 
   void init();
   void exit();

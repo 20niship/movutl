@@ -1,4 +1,3 @@
-#pragma once
 #include <opencv2/video.hpp>
 #include <opencv2/videoio.hpp>
 //
@@ -7,9 +6,8 @@
 
 namespace mu::detail {
 
-static bool fn_init();
-static bool fn_exit();
-
+static bool fn_init() {}
+static bool fn_exit() {}
 
 struct InHandleCVVideo {
   int frame;

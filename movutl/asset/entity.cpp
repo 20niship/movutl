@@ -12,12 +12,16 @@
 namespace mu {
 struct InputPluginTable;
 
-Ref<Entity> Entity::Create(const char* name, EntityType type) {
-  auto e = std::make_shared<Entity>();
+Ref<Entity> Entity::CreateEntity(const char* name, EntityType type) {
+  Ref<Entity> e = nullptr;
   switch(type) {
     case EntityType_Movie: e = std::make_shared<Movie>(); break;
     case EntityType_Image: e = std::make_shared<Image>(); break;
     default: break;
+  }
+  if(!e) {
+    LOG_F(ERROR, "[Entity::Create] Unknown type %d", type);
+    return nullptr;
   }
   strncpy(e->name, name, MAX_DISPNAME);
   Project::Get()->entities.push_back(e);
@@ -30,12 +34,6 @@ Ref<Entity> Entity::Find(const char* name) {
     if(strncmp(e->name, name, MAX_DISPNAME) == 0) return e;
   }
   return nullptr;
-}
-
-Ref<Entity> Entity::LoadFile(const char* name, const char* path) {
-  auto e = Create(name, EntityType_Image);
-  if(!e) return nullptr;
-  return e;
 }
 
 } // namespace mu

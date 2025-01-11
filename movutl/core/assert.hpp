@@ -16,6 +16,10 @@ void _mu_assert_fail(const char* file, int line, const char* msg1);
 #endif
 
 #ifndef MU_FAIL
-#define MU_FAIL(A) _mu_assert_fail(__FILE__, __LINE__, A)
+#define MU_FAIL(A) mu::detail::_mu_assert_fail(__FILE__, __LINE__, A)
+#endif
+
+#ifndef MU_UNUSED
+#define MU_UNUSED(A) (void)(A)
 #endif
 // clang-format on

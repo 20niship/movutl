@@ -32,8 +32,8 @@ struct TrackObject {
 public:
   uint32_t guid;
 
-  int fstart = -1; // スタート位置(frame)
-  int fend = -1;   // 最終位置(frame)
+  int fstart = -1;    // スタート位置(frame)
+  int fend = -1;      // 最終位置(frame)
   float anchor_x = 0; // 基準点のX座標　（デフォルトでは width / 2）
   float anchor_y = 0;
 
@@ -57,6 +57,8 @@ public:
     bool enabled = true;
   };
   FilterParam filters[MAX_FILTER];
+
+  bool visible(int frame) const { return fstart <= frame && frame <= fend && active_; }
 };
 
 } // namespace mu

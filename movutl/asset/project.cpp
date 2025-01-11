@@ -13,4 +13,6 @@ void Project::New(int width, int height, int fps) {
   pj->main_comp_idx = 0;
 }
 
+Project* Project::singleton_ = nullptr;
+
 } // namespace mu

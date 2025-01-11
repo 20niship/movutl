@@ -9,7 +9,7 @@ class Mat;
 
 namespace mu {
 
-class Image : public Entity {
+class Image final : public Entity {
 public:
   enum Format {
     FormatRGB = 0,
@@ -18,28 +18,56 @@ public:
   };
 
 private:
-  Format _format = Format::FormatRGB;
+  Format fmt = Format::FormatRGB;
   Vec<uint8_t> data_;
 
   void reserve(size_t new_capacity) { data_.resize(new_capacity); }
 
 public:
-  Image();
-  Image(const char* image_file_name);
-  Image(int w, int h, const Format format);
-  Image(int w, int h, uint8_t* data, const Format format);
-  ~Image();
+  Image() = default;
+  ~Image() = default;
 
-  std::string path_;
-  unsigned int width_ = 0;
-  unsigned int height_ = 0;
+  std::string path;
+  unsigned int width = 0;
+  unsigned int height = 0;
+  float scale_x = 1.0f;
+  float scale_y = 1.0f;
+
+  void set_rgb(const size_t x, const size_t y, const Vec3b& rgb) {
+    MU_ASSERT(channels() >= 3);
+    auto* ptr = &data_[y * width * 3 + x * 3];
+    ptr[0] = rgb[0];
+    ptr[1] = rgb[1];
+    ptr[2] = rgb[2];
+    if(channels() == 4) ptr[3] = 255;
+  }
+  void set_rgba(const size_t x, const size_t y, const Vec4b& rgba) {
+    int c = channels();
+    auto* ptr = &data_[(y * width + x) * c];
+    if(c == 3) {
+      ptr[0] = rgba[0];
+      ptr[1] = rgba[1];
+      ptr[2] = rgba[2];
+    } else if(c == 4) {
+      ptr[0] = rgba[0];
+      ptr[1] = rgba[1];
+      ptr[2] = rgba[2];
+      ptr[3] = rgba[3];
+    }
+    ptr[0] = rgba[0];
+  }
+
+  void copyto(Image* dst, const Vec2d& pmin) const;
+  void copyto(Image* dst, const Vec2d& pmin, float scale, const Vec2d& offset) const;
+  void copyto(Image* dst, const Vec2d& pmin, const Vec2d& pmax) const;
+  void copyto(Image* dst, const Vec2d& center, float scale, float angle) const;
 
   uint8_t* data() { return data_.data(); }
-  size_t size() const { return width_ * height_; }
+  size_t size() const { return width * height; }
   size_t size_in_bytes() const { return size() * channels(); }
   void reset() {
-    width_ = 0;
-    height_ = 0;
+    width = 0;
+    height = 0;
     data_.clear();
   }
   void fill(const uint8_t& v) {
@@ -47,7 +75,7 @@ public:
   }
 
   int channels() const {
-    switch(_format) {
+    switch(fmt) {
       case Format::FormatRGB: return 3;
       case Format::FormatRGBA: return 4;
       case Format::FormatGRAYSCALE: return 1;
@@ -57,15 +85,15 @@ public:
 
   void resize(const Vec2d& size) {
     MU_ASSERT(size[0] > 0 && size[1] > 0);
-    width_ = size[0];
-    height_ = size[1];
+    width = size[0];
+    height = size[1];
     data_.resize(size_in_bytes());
   }
   void resize(const int _w, const int _h) { resize({_w, _h}); }
 
   template <typename T> T at(int x, int y) const {
-    MU_ASSERT(x >= 0 && x < width_ && y >= 0 && y < height_);
-    auto ptr = &data_[(y * width_ + x) * sizeof(T)];
+    MU_ASSERT(x >= 0 && x < (int)width && y >= 0 && y < (int)height);
+    auto ptr = &data_[(y * width + x) * sizeof(T)];
     return *(T*)ptr;
   }
 
@@ -74,27 +102,37 @@ public:
     return data_[i];
   }
   uint8_t& operator[](size_t i) {
-    assert(i < size());
+    MU_ASSERT(i < size());
     return data_[i];
   }
-  Vec3b rgb(const size_t x, const size_t y) const {
-    MU_ASSERT(channels() == 3);
-    auto* ptr = &data_[y * width_ * 3 + x * 3];
-    return {ptr[0], ptr[1], ptr[2]};
+
+  Vec4b rgba(const size_t x, const size_t y) const {
+    MU_ASSERT(0 <= x && x < width);
+    MU_ASSERT(0 <= y && y < height);
+    int c = channels();
+    auto* ptr = &data_[(y * width + x) * c];
+    if(c == 3) return {ptr[0], ptr[1], ptr[2], 255};
+    if(c == 4) return {ptr[0], ptr[1], ptr[2], ptr[3]};
+    return {ptr[0], ptr[0], ptr[0], 255};
   }
 
   const uint8_t& operator()(const size_t x, const size_t y) const {
     MU_ASSERT(x * y < size());
-    return data_[(y * width_ + x) * channels()];
+    return data_[(y * width + x) * channels()];
   }
   uint8_t& operator()(const size_t x, const size_t y) {
     MU_ASSERT(x * y < size());
-    return data_[(y * width_ + x) * channels()];
+    return data_[(y * width + x) * channels()];
   }
 
   void set_cv_img(const cv::Mat* cv_img);
   void to_cv_img(cv::Mat* cv_img) const;
   void imshow() const;
+  virtual bool render(Composition* cmp) override;
+  virtual EntityType getType() const override { return EntityType_Image; }
+
+  static Ref<Image> Create(const char* name, const char* path, bool add_to_pj = true);
+  static Ref<Image> Create(const char* name, int w, int h, Format format = Format::FormatRGB, bool add_to_pj = true);
 };
 
 void cv_waitkey(int time = 0);

@@ -1,6 +1,16 @@
 #include <movutl/asset/composition.hpp>
+#include <movutl/asset/entity.hpp>
 
 namespace mu {
+
+Ref<Entity> TrackLayer::find_entt(uint32_t frame) const {
+  for(auto& e : entts)
+    if(e->visible(frame)) return e;
+  return nullptr;
+}
+
+
+
 void Composition::resize(int32_t w, int32_t h) {
   size[0] = w;
   size[1] = h;

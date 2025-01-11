@@ -12,7 +12,9 @@ struct TrackLayer {
 public:
   char name[MAX_DISPNAME];
   bool active = true;
-  std::vector<Ref<Entity>> objs;
+  std::vector<Ref<Entity>> entts;
+
+  Ref<Entity> find_entt(uint32_t guid) const;
 };
 
 class Composition {
