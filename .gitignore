@@ -63,3 +63,8 @@ build*/
 # Aviutl Cache
 *.lwi
 *.lwf
+
+*.mp3
+*.mp4
+*.wav
+*.jpg

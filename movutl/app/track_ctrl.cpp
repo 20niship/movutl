@@ -5,11 +5,12 @@
 #include <movutl/asset/project.hpp>
 #include <movutl/asset/track.hpp>
 #include <movutl/core/logger.hpp>
+#include <movutl/plugin/input.hpp>
+#include <movutl/plugin/plugin.hpp>
 
 namespace mu {
 
 Ref<Entity> add_new_video_track(const char* name, const char* path, int start, int layer) {
-  MU_ASSERT(layer);
   MU_ASSERT(name != nullptr);
   MU_ASSERT(path != nullptr);
   auto e = Movie::Create(name, path);
@@ -17,6 +18,8 @@ Ref<Entity> add_new_video_track(const char* name, const char* path, int start, i
     LOG_F(ERROR, "Failed to load file: %s", path);
     return nullptr;
   }
+  e->trk.fstart = start;
+  e->load_file(path);
   auto pj = Project::Get();
   Composition* main_comp = pj->get_main_comp();
   if(!main_comp) {

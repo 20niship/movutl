@@ -20,7 +20,7 @@ void util_show_main_cmp_result() {
 
 void create_sample_video_data() {
   Project::New();
-  add_new_video_track("test.mp4", "test.mp4", 0, 0);
+  add_new_video_track("testname", "../BigBuckBunny.mp4", 0, 0);
 
   util_show_main_cmp_result();
 }
@@ -28,9 +28,6 @@ void create_sample_video_data() {
 int main() {
   mu::init();
   std::cout << "movutl project !!" << std::endl;
-  while(!mu::should_terminate()) {
-    mu::update();
-    std::this_thread::sleep_for(std::chrono::milliseconds(20));
-  }
+  create_sample_video_data();
   mu::terminate();
 }

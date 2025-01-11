@@ -15,7 +15,7 @@ struct InHandleCVVideo {
   InHandleCVVideo(const char* file) : frame(0), cap(file) {}
 };
 
-static INPUT_HANDLE fn_open(const char* file) {
+static InputHandle fn_open(const char* file) {
   InHandleCVVideo* ih = new InHandleCVVideo(file);
   ih->frame = 0;
   if(!ih->cap.isOpened()) {
@@ -25,19 +25,19 @@ static INPUT_HANDLE fn_open(const char* file) {
   return new cv::VideoCapture(ih->cap);
 }
 
-static bool fn_close(INPUT_HANDLE ih) {
+static bool fn_close(InputHandle ih) {
   if(!ih) return false;
   auto cap = (InHandleCVVideo*)ih;
   if(cap) delete cap;
   return true;
 }
 
-static bool fn_info_get(INPUT_HANDLE ih, InputInfo* iip) {
+static bool fn_info_get(InputHandle ih, InputInfo* iip) {
   if(!ih) return false;
   MU_ASSERT(iip);
   cv::VideoCapture* cap = (cv::VideoCapture*)ih;
   if(!cap) return false;
-  iip->flag = InputFlag::Video;
+  iip->flag = EntityType_Movie;
   iip->framerate = cap->get(cv::CAP_PROP_FPS);
   iip->nframes = cap->get(cv::CAP_PROP_FRAME_COUNT);
   iip->size[0] = cap->get(cv::CAP_PROP_FRAME_WIDTH);
@@ -46,7 +46,7 @@ static bool fn_info_get(INPUT_HANDLE ih, InputInfo* iip) {
   return true;
 }
 
-int fn_read_video(INPUT_HANDLE ih, const InputInfo* iip, Movie* entity) {
+int fn_read_video(InputHandle ih, const InputInfo* iip, Movie* entity) {
   if(!ih) return 0;
   cv::VideoCapture* cap = (cv::VideoCapture*)ih;
   if(!cap) return 0;
@@ -57,7 +57,7 @@ int fn_read_video(INPUT_HANDLE ih, const InputInfo* iip, Movie* entity) {
   return image.total() * image.elemSize();
 }
 
-static int fn_set_frame(INPUT_HANDLE ih, int frame) {
+static int fn_set_frame(InputHandle ih, int frame) {
   if(!ih) return 0;
   auto cap = (InHandleCVVideo*)ih;
   cap->frame = frame;
@@ -65,7 +65,7 @@ static int fn_set_frame(INPUT_HANDLE ih, int frame) {
   return frame;
 }
 
-static int fn_get_frame(INPUT_HANDLE ih) {
+static int fn_get_frame(InputHandle ih) {
   if(!ih) return 0;
   InHandleCVVideo* cap = (InHandleCVVideo*)ih;
   if(!cap) return 0;
@@ -74,7 +74,7 @@ static int fn_get_frame(INPUT_HANDLE ih) {
 
 mu::InputPluginTable plg_video_reader = {
   0x00000001,            // guid
-  InputFlag::Video,      // supports
+  EntityType_Movie,      // supports
   "OpenCV Video Reader", // name
   "",                    // filepath
   "OpenCV Reader",       // information

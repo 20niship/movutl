@@ -9,6 +9,9 @@ void terminate();
 bool should_terminate();
 
 // ------------ API ------------
+InputPluginTable* get_compatible_plugin(const char* path, EntityType type);
+
+// ------------ API ------------
 void new_project();
 void save_project();
 void save_project_as(const char* path);

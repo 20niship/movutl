@@ -21,6 +21,7 @@ public:
   Ref<Image> img_;
   std::string path_;
   static Ref<Movie> Create(const char* name, const char* path = nullptr);
+  bool load_file(const char* path);
   virtual EntityType getType() const override { return EntityType_Movie; }
   virtual bool render(Composition* cmp) override;
 };

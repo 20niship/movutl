@@ -17,16 +17,26 @@ namespace detail {
 
 namespace fs = std::filesystem;
 
-void init_plugins() {
+void activate_all_plugins() {
+  auto app = AppMain::Get();
+  for(auto& p : app->input_plugins)
+    if(p.fn_init) p.fn_init();
+  for(auto& p : app->filters)
+    if(p.fn_init) p.fn_init(nullptr, nullptr);
+}
+
+void init_external_plugins() {
   // xxx.mso ファイルを読み込む
   auto search_paths = Config::Get()->plugin_search_paths;
   for(const auto& path : search_paths) {
     for(const auto& entry : fs::directory_iterator(path)) {
       if(!entry.is_regular_file() || !entry.path().string().ends_with(".mso")) continue;
+      LOG_F(1, "Loading plugin: %s", entry.path().string().c_str());
       register_plugin(entry.path().string());
     }
   }
 }
+} // namespace detail
 
 bool register_plugin(const std::string& path) {
   // プラグインを読み込む
@@ -44,11 +54,11 @@ bool register_plugin(const std::string& path) {
   }
 
   // プラグインのエントリーポイントを取得
-  PluginEntryPointType entry = nullptr;
+  detail::PluginEntryPointType entry = nullptr;
 #ifdef MOVUTL_PLATFORM_WINDOWS
   entry = (PluginEntryPointType)GetProcAddress(mod, "plugin_entry");
 #else
-  entry = (PluginEntryPointType)dlsym(mod, "plugin_entry");
+  entry = (detail::PluginEntryPointType)dlsym(mod, "plugin_entry");
 #endif
 
   if(entry == nullptr) {
@@ -58,15 +68,13 @@ bool register_plugin(const std::string& path) {
 
   // プラグインのエントリーポイントを実行
   ExeData exdata;
-  PluginData data;
+  detail::PluginData data;
   // TODO: get exe data
   entry(&exdata, &data.table);
   data.mod = mod;
   data.entry = entry;
-  AppMain::Get()->plugins.push_back(data);
+  detail::AppMain::Get()->plugins.push_back(data);
   return true;
 }
-
-} // namespace detail
 
 } // namespace mu

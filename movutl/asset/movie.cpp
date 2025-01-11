@@ -1,5 +1,8 @@
+#include <movutl/app/app.hpp>
 #include <movutl/asset/movie.hpp>
 #include <movutl/asset/project.hpp>
+#include <movutl/core/logger.hpp>
+#include <movutl/plugin/input.hpp>
 
 namespace mu {
 Ref<Movie> Movie::Create(const char* name, const char* path) {
@@ -24,6 +27,17 @@ bool Movie::render(Composition* cmp) {
   int base_x = img_->width / 2 + trk.anchor_x - cw / 2;
   int base_y = img_->height / 2 + trk.anchor_y - ch / 2;
   img_->copyto(cmp->frame_final.get(), Vec2d(base_x, base_y));
+  return true;
+}
+
+bool Movie::load_file(const char* path) {
+  auto p = get_compatible_plugin(path, EntityType_Movie);
+  if(!p) {
+    LOG_F(WARNING, "No compatible plugin found for file: %s", path);
+    return false;
+  }
+  this->in_plg_ = p;
+  this->in_handle_ = p->fn_open(path);
   return true;
 }
 

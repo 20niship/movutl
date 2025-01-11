@@ -31,7 +31,8 @@ struct PluginData {
   PluginEntryPointType entry;
 };
 
-void init_plugins();
+void init_external_plugins();
+void activate_all_plugins();
 
 } // namespace detail
 

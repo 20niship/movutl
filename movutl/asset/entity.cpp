@@ -36,4 +36,19 @@ Ref<Entity> Entity::Find(const char* name) {
   return nullptr;
 }
 
+Composition* Entity::get_comp() const {
+  auto pj = Project::Get();
+  for(int i = 0; i < pj->compos_.size(); i++) {
+    for(auto& layer : pj->compos_[i].layers) {
+      for(auto& e : layer.entts) {
+        if(e.get() == this) return &pj->compos_[i];
+      }
+    }
+  }
+}
+
+Entity::~Entity() {
+  if(in_plg_ && in_handle_) in_plg_->fn_close(in_handle_);
+}
+
 } // namespace mu
