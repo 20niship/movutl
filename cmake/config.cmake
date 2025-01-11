@@ -64,6 +64,9 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
  elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" AND NOT CMAKE_BUILD_TYPE STREQUAL "Coverage")
    add_compile_options (-fcolor-diagnostics)
 endif()
+if(APPLE)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color=always")
+endif()
 
 if(MSVC)
   set(

@@ -13,8 +13,8 @@ public:
   void init();
   void exit();
 
-  std::unordered_map<uint64_t, FilterPluginTable*> filters;
-  std::unordered_map<uint64_t, InputPluginTable*> input_plugins;
+  std::vector<FilterPluginTable> filters;
+  std::vector<InputPluginTable> input_plugins;
   std::vector<PluginData> plugins;
 };
 

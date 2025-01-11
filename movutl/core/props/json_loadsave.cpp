@@ -25,7 +25,7 @@ static Props::Value parse_json_data_impl(const nlohmann::json& v) {
   /*else if(v.is_null()) {*/
   /*  LOG_F(2, "json object is null");*/
   else if(v.is_string()) {
-    auto str = v.get<std::string>();
+    std::string str = v.get<std::string>();
     if(is_vector<2>(str))
       d = get_vec<2>(str);
     else if(is_vector<3>(str))
@@ -89,7 +89,7 @@ struct ToJsonVisitor {
   void operator()(const Vec3& value) const { *js = dumpjson<3>(value); }
   void operator()(const Vec4& value) const { *js = dumpjson<4>(value); }
   void operator()(const Vec4b& value) const { *js = dumpjson<4>(value); }
-  void operator()(const Entity* value) const { *js = (value == nullptr) ? nullptr : value->name_; }
+  void operator()(const Entity* value) const { *js = (value == nullptr) ? nullptr : value->name; }
   void operator()(const Props& value) const {
     if(value.is_array()) {
       for(auto& [k, v] : value.values) {

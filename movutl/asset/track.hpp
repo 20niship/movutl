@@ -1,8 +1,6 @@
 #pragma once
 
 #include <movutl/core/anim.hpp>
-#include <movutl/asset/entity.hpp>
-#include <movutl/asset/image.hpp>
 #include <movutl/core/props.hpp>
 #include <movutl/core/ref.hpp>
 
@@ -28,17 +26,14 @@ enum BlendType {
 
 /**
  * あるレイヤ上に存在する一つのオブジェクト
- * そのオブジェクトは１つのEntityを持ち、
+ * これはEntityのデータの中に含まれる
  */
 struct TrackObject {
 public:
   uint32_t guid;
-  char dispname[MAX_DISPNAME];
 
   int fstart = -1; // スタート位置(frame)
   int fend = -1;   // 最終位置(frame)
-  int width = 0;
-  int height = 0;
   float anchor_x = 0; // 基準点のX座標　（デフォルトでは width / 2）
   float anchor_y = 0;
 
@@ -58,7 +53,7 @@ public:
 
   struct FilterParam {
     uint32_t guid = 0; // フィルタID
-    AnimProps props;        // フィルタプロパティ
+    AnimProps props;   // フィルタプロパティ
     bool enabled = true;
   };
   FilterParam filters[MAX_FILTER];

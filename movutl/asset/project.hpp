@@ -21,6 +21,9 @@ public:
 
   std::vector<Ref<Entity>> entities;
   std::vector<Composition> compos_;
+  int main_comp_idx = -1;
+
+  void init();
 };
 
 } // namespace mu

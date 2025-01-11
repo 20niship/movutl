@@ -1,7 +1,12 @@
 #pragma once
+
+#include <movutl/asset/track.hpp>
 #include <string>
 
 namespace mu {
+
+struct InputPluginTable;
+class Composition;
 
 enum EntityType {
   EntityType_Movie,
@@ -23,10 +28,23 @@ enum EntityType {
 };
 
 class Entity {
+private:
+  InputPluginTable* in_plg_ = nullptr;
+
 public:
-  std::string name_;
-  uint32_t guid_;
+  char name[MAX_DISPNAME];
+  uint64_t guid_ = 0;
+  TrackObject trk_;
+
   virtual constexpr EntityType getType() const = 0;
+  int width = 0;
+  int height = 0;
+
+  static Ref<Entity> Create(const char* name, EntityType type);
+  static Ref<Entity> Find(const char* name);
+  static Ref<Entity> LoadFile(const char* name, const char* path);
+
+  Ref<Composition> get_comp() const;
 };
 
 } // namespace mu

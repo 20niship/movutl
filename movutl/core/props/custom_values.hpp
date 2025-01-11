@@ -39,7 +39,7 @@ template <int N> inline bool is_vector(const std::string& str) {
   std::cmatch matches;
   if(!std::regex_search(str.c_str(), matches, patternReg)) return false;
   if(matches.size() != N + 1) return false;
-  for(int i = 1; i < matches.size(); i++) {
+  for(int i = 1; i < (int)matches.size(); i++) {
     try {
       [[maybe_unused]] float f = std::stof(matches[i]);
     } catch(...) {
