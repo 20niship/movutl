@@ -6,6 +6,7 @@
 
 struct GLFWwindow;
 namespace mu {
+class Entity;
 
 class UIPanel {
 public:
@@ -30,6 +31,8 @@ public:
   void init();
   void terminate();
 };
+
+const char* get_entt_icon(const Ref<Entity>& entt);
 
 namespace detail {
 

@@ -24,6 +24,8 @@ enum BlendType {
   HardLight = 9,
 };
 
+struct FilterPluginTable;
+
 /**
  * あるレイヤ上に存在する一つのオブジェクト
  * これはEntityのデータの中に含まれる
@@ -52,11 +54,12 @@ public:
   bool alpha_ = false;      // アルファを使って合成する
 
   struct FilterParam {
+    FilterPluginTable* plg_ = nullptr;
     uint32_t guid = 0; // フィルタID
     AnimProps props;   // フィルタプロパティ
     bool enabled = true;
   };
-  FilterParam filters[MAX_FILTER];
+  std::vector<FilterParam> filters;
 
   bool visible(int frame) const { return fstart <= frame && frame <= fend && active_; }
 };

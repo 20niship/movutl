@@ -13,6 +13,7 @@ public:
   std::vector<FilterPluginTable> filters;
   std::vector<InputPluginTable> input_plugins;
   std::vector<PluginData> plugins;
+  std::vector<Ref<Entity>> entt_selected;
 };
 
 } // namespace mu::detail

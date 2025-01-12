@@ -40,12 +40,11 @@ enum FilterInfoType {
 struct FilterPluginTable {
   uint64_t guid;
   FilterInfoType flag;
-  std::string name;
-  std::string infomation;
+  char name[64];
+  char infomation[256];
   uint32_t version = 0;
   std::string version_str;
-
-  PropInfos (*fn_get_props)();
+  PropsInfo props;
 
   void (*fn_cutstom_wnd)() = nullptr;
   void (*fn_update_value)();

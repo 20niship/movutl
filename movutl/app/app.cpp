@@ -17,4 +17,17 @@ InputPluginTable* get_compatible_plugin(const char* path, EntityType type) {
   return nullptr;
 }
 
+std::vector<Ref<Entity>> get_selected_entts() {
+  return detail::AppMain::Get()->entt_selected;
+}
+void clear_selected_entts() {
+  detail::AppMain::Get()->entt_selected.clear();
+}
+void select_entt(const Ref<Entity>& entt) {
+  detail::AppMain::Get()->entt_selected.push_back(entt);
+}
+void select_entts(const std::vector<Ref<Entity>>& entts) {
+  detail::AppMain::Get()->entt_selected = entts;
+}
+
 } // namespace mu
