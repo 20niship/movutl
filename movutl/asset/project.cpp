@@ -13,6 +13,17 @@ void Project::New(int width, int height, int fps) {
   pj->main_comp_idx = 0;
 }
 
+Composition* Project::GetActiveCompo() {
+  auto pj = Project::Get();
+  if(pj->main_comp_idx < 0 || pj->main_comp_idx >= pj->compos_.size()) return nullptr;
+  return &pj->compos_[pj->main_comp_idx];
+}
+
+void Project::SetActiveCompo(int idx) {
+  auto pj = Project::Get();
+  pj->main_comp_idx = idx;
+}
+
 Project* Project::singleton_ = nullptr;
 
 } // namespace mu

@@ -53,7 +53,7 @@ inline Props parse_json_data_impl_wrapper(const std::string& str, const std::str
   } catch(json::parse_error& ex) {
     auto input_str = str.size() > 100 ? str.substr(0, 100) + "......" : str;
     auto input = filename.empty() ? input_str : filename;
-    LOG_F(ERROR, "[json::parse] Failed to parse \"%s\" :%s last token=%d", input.c_str(), ex.what(), ex.byte);
+    LOG_F(ERROR, "[json::parse] Failed to parse \"%s\" :%s last token=%d", input.c_str(), ex.what(), (int)ex.byte);
   } catch(std::exception& ex) {
     auto input = filename.empty() ? str : filename;
     LOG_F(ERROR, "[std::exception] Failed to parse \"%s\" :%s", input.c_str(), ex.what());

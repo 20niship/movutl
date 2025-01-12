@@ -33,7 +33,6 @@ bool IsTimeline_LineHovered();
 bool IsTimelineClickedLeftButton(); // タイムラインのプロパティ名の左側にあるボタンをクリックしたか
 void SetTimelineViewRange(FrameT start, FrameT end);
 
-bool ShouldHideTimelineTabBar();
 void ResetTimelineState();
 
 } // namespace mu

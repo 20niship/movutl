@@ -45,8 +45,9 @@ public:
   int32_t framerate_nu = 30;
   int32_t framerate_de = 1;
 
-  int32_t frame_n = 100;
-  int32_t frame = 0; // 現在の表示フレーム
+  int32_t fstart = 0; // 表示開始フレーム
+  int32_t fend = 200; // 表示終了フレーム
+  int32_t frame = 0;  // 現在の表示フレーム
 
   // ---------- audio ----------
   int16_t* audio_p;

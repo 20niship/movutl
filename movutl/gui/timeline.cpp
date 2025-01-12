@@ -27,13 +27,12 @@ struct TimelineContext {
   int hidx = 0;
   int trackname_width = 100;
   bool toggle_play = false;
-  int visible_start = 0;
   int height = 16;
   int lasy_mouse_x = 0;
   Entity* last_entt_hov = nullptr;
   int header_h = 20;
-  int visible_end = 100;
-  bool hide_tabbar = false;
+  int vis_start = -10;
+  int vis_end = 100;
   int cur_frame = 0;
   bool first = true;
   std::vector<Entity*> sel; // TODO: 複数選択を可能にする
@@ -52,14 +51,17 @@ struct TimelineContext {
   }
 
   int f2view(FrameT f) {
-    if(visible_start >= visible_end) return visible_start;
-    auto d = f - visible_start;
-    return tl_area().x.min + tl_area().w() * d / (visible_end - visible_start);
+    if(vis_start >= vis_end) return vis_start;
+    auto d = f - vis_start;
+    return tl_area().x.min + tl_area().w() * d / (vis_end - vis_start);
   }
   int view2f(int x) {
     auto d = x - tl_area().x.min;
-    return visible_start + (visible_end - visible_start) * d / tl_area().w();
+    return vis_start + (vis_end - vis_start) * d / tl_area().w();
   }
+
+  int layer_y1() const { return all_area.y.min + header_h + hidx * height; }
+  int layer_y2() const { return all_area.y.min + header_h + (hidx + 1) * height; }
 };
 
 static TimelineContext ctx_;
@@ -138,8 +140,8 @@ bool BeginTimeline(const char* name, FrameT* frame, FrameT* start, FrameT* end, 
   dl->AddRect(ImVec2(all.left(), all.top()), ImVec2(all.right(), all.bottom()), col_.border);
 
   if(ctx_.first) {
-    ctx_.visible_start = *start - 20;
-    ctx_.visible_end = *end + 20;
+    ctx_.vis_start = *start - 20;
+    ctx_.vis_end = *end + 20;
     ctx_.first = false;
   }
 
@@ -151,7 +153,7 @@ bool BeginTimeline(const char* name, FrameT* frame, FrameT* start, FrameT* end, 
 
     int di = 10;
     if(he.w() > 1) {
-      float pi = (ctx_.visible_end - ctx_.visible_start) / he.w();
+      float pi = (ctx_.vis_end - ctx_.vis_start) / he.w();
       if(pi < 0.1)
         di = 10;
       else if(pi < 1.1)
@@ -163,14 +165,14 @@ bool BeginTimeline(const char* name, FrameT* frame, FrameT* start, FrameT* end, 
       else
         di = 500;
     }
-    for(FrameT i = (ctx_.visible_start / di) * di; i < ctx_.visible_end; i += di) {
+    for(FrameT i = (ctx_.vis_start / di) * di; i < ctx_.vis_end; i += di) {
       auto x = ctx_.f2view(i);
       dl->AddLine(ImVec2(x, ctx_.all_area.y.min), ImVec2(x, ctx_.all_area.y.min + 20), IM_COL32(255, 255, 255, 100));
       dl->AddText(ImVec2(x, ctx_.all_area.y.min), IM_COL32(255, 255, 255, 100), std::to_string(i).c_str());
     }
 
     int di2 = std::max(1, di / 10);
-    for(FrameT i = ctx_.visible_start; i < ctx_.visible_end; i += di2) {
+    for(FrameT i = ctx_.vis_start; i < ctx_.vis_end; i += di2) {
       auto x = ctx_.f2view(i);
       dl->AddLine(ImVec2(x, ctx_.all_area.y.min), ImVec2(x, ctx_.all_area.y.min + 8), IM_COL32(255, 255, 255, 50));
     }
@@ -217,20 +219,20 @@ bool BeginTimeline(const char* name, FrameT* frame, FrameT* start, FrameT* end, 
     }
   }
 
-  ctx_.hidx = 1;
+  ctx_.hidx = 0;
   ctx_.cur_frame = *frame;
-  ctx_.visible_start = *start;
-  ctx_.visible_end = *end;
+  ctx_.vis_start = *start;
+  ctx_.vis_end = *end;
   return open;
 }
 
 int EndTimeline() {
-  // scrolling
+  int return_value = ctx_.cur_frame;
   if(ImGui::IsWindowHovered()) {
     if(ImGui::IsMouseDragging(ImGuiMouseButton_Middle)) {
       auto delta = ImGui::GetIO().MouseDelta.x;
-      ctx_.visible_start -= delta;
-      ctx_.visible_end -= delta;
+      ctx_.vis_start -= delta;
+      ctx_.vis_end -= delta;
     }
 
     // 拡大縮小(マウスホイール)
@@ -238,21 +240,21 @@ int EndTimeline() {
       auto delta = ImGui::GetIO().MouseWheel;
       auto center = ctx_.view2f(ImGui::GetMousePos().x);
       auto scale = 1.0f + delta / 15.0f;
-      ctx_.visible_start = center + (ctx_.visible_start - center) * scale;
-      ctx_.visible_end = center + (ctx_.visible_end - center) * scale;
+      ctx_.vis_start = center + (ctx_.vis_start - center) * scale;
+      ctx_.vis_end = center + (ctx_.vis_end - center) * scale;
     }
-    return ctx_.cur_frame;
+    return_value = ctx_.cur_frame;
   }
 
-  if(ctx_.cur_frame && ctx_.visible_start && ctx_.visible_end) {
-    ctx_.cur_frame = std::clamp<int>(ctx_.cur_frame, ctx_.visible_start, ctx_.visible_end);
+  if(ctx_.cur_frame && ctx_.vis_start && ctx_.vis_end) {
+    ctx_.cur_frame = std::clamp<int>(ctx_.cur_frame, ctx_.vis_start, ctx_.vis_end);
   }
 
   auto dl = ImGui::GetWindowDrawList();
   auto all = ctx_.all_area;
   auto line_col = ImGui::GetStyle().Colors[ImGuiCol_Border];
-  ImVec2 p1(all.left(), all.top());
-  ImVec2 p2(all.right(), all.top());
+  ImVec2 p1(all.left(), all.y.min + ctx_.header_h);
+  ImVec2 p2(all.right(), all.y.min + ctx_.header_h);
   int header_height = ImGui::GetTextLineHeightWithSpacing();
   for(int i = 0; i < ctx_.hidx + 1; i++) {
     dl->AddLine(p1, p2, IM_COL32(line_col.x * 255, line_col.y * 255, line_col.z * 255, line_col.w * 255), 1.5);
@@ -260,60 +262,32 @@ int EndTimeline() {
     p2.y += header_height;
   }
 
-  bool open_config = false;
-  {
-    ImGui::SetCursorScreenPos(ImVec2(all.left(), all.top()));
-    /*auto str = ctx_.playing ? ICON_FA_PAUSE : ICON_FA_PLAY;*/
-    /*if(wd_checkbox_txt(str, &ctx_.locked)) ctx_.toggle_play = true;*/
-    if(ImGui::IsItemHovered() && ImGui::IsMouseClicked(1)) open_config = true;
-
-    ImGui::SameLine();
-    ImGui::SetNextItemWidth(60);
-    ImGui::DragInt("## frame", &ctx_.cur_frame);
-    ImGui::SameLine();
-    ImGui::Text("/");
-    ImGui::SameLine();
-    ImGui::SetNextItemWidth(70);
-    int range[2] = {ctx_.visible_start, ctx_.visible_end};
-    ImGui::DragInt2("## start", range);
-    ctx_.visible_start = range[0];
-    ctx_.visible_end = range[1];
-  }
-
+  ImGui::SameLine();
+  ImGui::SetNextItemWidth(60);
+  ImGui::DragInt("## frame", &ctx_.cur_frame);
   ImGui::EndChild();
-
-
-  if(open_config) ImGui::OpenPopup("Timeline Config");
-  if(ImGui::BeginPopup("Timeline Config")) {
-    /*ImGui::Checkbox(ICON_FA_LOCK " Lock", &ctx_.locked);*/
-    if(ImGui::Button("タブバー表示を切り替え")) ctx_.hide_tabbar = !ctx_.hide_tabbar;
-    ImGui::EndPopup();
-  }
-  /*ctx_.last_mouse_x = ImGui::GetMousePos().x;*/
-  /*if(!ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {*/
-  /*  ctx_.state = None;*/
-  /*  ctx_.selected.clear();*/
-  /*}*/
+  return return_value;
 }
 
 bool BeginLayer(TrackLayer* layer) {
+  MU_ASSERT(layer);
   auto dl = ImGui::GetWindowDrawList();
   auto inside = ctx_.tl_area();
 
-  int x = inside.left() + ImGui::GetStyle().ItemSpacing.x;
+  int x = ctx_.all_area.left() + ImGui::GetStyle().ItemSpacing.x;
+  int htop = ctx_.layer_y1();
+  int hbtm = ctx_.layer_y2();
 
-  float clipre[4] = {x, inside.top() + ctx_.height * ctx_.hidx, inside.right(), inside.top() + ctx_.height * (ctx_.hidx + 1)};
-  if(ImGui::IsMouseHoveringRect(ImVec2(clipre[0], clipre[1]), ImVec2(clipre[2], clipre[3]))) //
-    ImGui::SetTooltip("name=%s", layer->name);
+  ImRect sidebar(ImVec2(x, htop), ImVec2(inside.left(), hbtm));
+  if(ImGui::IsMouseHoveringRect(sidebar.Min, sidebar.Max)) ImGui::SetTooltip("name=%s", layer->name);
 
-  ImRect R(ImVec2(inside.left(), inside.top() + ctx_.height * ctx_.hidx), ImVec2(inside.right(), inside.top() + ctx_.height * (ctx_.hidx + 1)));
+  // レイヤーにマウスが載っていたらlayer全体をハイライトする
+  ImRect R(ImVec2(inside.left(), htop), ImVec2(inside.right(), hbtm));
   bool line_hovered = ImGui::IsMouseHoveringRect(R.Min, R.Max);
   if(line_hovered) dl->AddRectFilled(R.Min, R.Max, IM_COL32(255, 255, 255, 20));
 
-  ImRect sidebar(ImVec2(ctx_.all_area.left(), inside.top() + ctx_.height * ctx_.hidx), //
-                 ImVec2(inside.left() + ctx_.trackname_width, inside.top() + ctx_.height * (ctx_.hidx + 1)));
   dl->AddRectFilled(sidebar.Min, sidebar.Max, IM_COL32(40, 40, 40, 255));
-  dl->AddText(ImVec2(x, ctx_.all_area.top() + ctx_.height * ctx_.hidx), IM_COL32(255, 255, 255, 100), layer->name);
+  dl->AddText(ImVec2(x, htop), IM_COL32(255, 255, 255, 100), layer->name);
   return true;
 }
 
@@ -345,7 +319,7 @@ bool BeginTrack(const Ref<Entity>& entity) {
   const char* name = entity->name;
   int* start = &entity->trk.fstart;
   int* end = &entity->trk.fend;
-  int htop = ctx_.tl_area().y.min + ctx_.height * ctx_.hidx;
+  int htop = ctx_.layer_y1();
 
   auto col = IM_COL32(255, 0, 0, 100);
   auto dl = ImGui::GetWindowDrawList();
@@ -366,13 +340,9 @@ bool BeginTrack(const Ref<Entity>& entity) {
 
 void EndTrack() {}
 
-bool ShouldHideTimelineTabBar() {
-  return ctx_.hide_tabbar;
-}
-
 void SetTimelineViewRange(FrameT start, FrameT end) {
-  ctx_.visible_start = start;
-  ctx_.visible_end = end;
+  ctx_.vis_start = start;
+  ctx_.vis_end = end;
 }
 
 void ResetTimelineState() {
