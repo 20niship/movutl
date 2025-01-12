@@ -23,6 +23,8 @@ public:
 
   std::vector<Ref<UIPanel>> panels;
 
+  int dockspace_id = 0;
+
   GLFWwindow* glfw_window = nullptr;
   bool should_close = false;
   void init();

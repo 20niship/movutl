@@ -28,3 +28,6 @@
 [submodule "ext/json"]
 	path = ext/json
 	url = https://github.com/nlohmann/json.git
+[submodule "assets"]
+	path = assets
+	url = https://github.com/20niship/melchior-assets.git
