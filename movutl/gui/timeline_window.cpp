@@ -51,6 +51,9 @@ void TimelineWindow::Update() {
       if(!layer.entts[ei]) continue;
       auto& entt = layer.entts[ei];
       bool hovered = BeginTrack(entt);
+      if(hovered) {
+        ImGui::SetTooltip("Entity %s", entt->name);
+      }
       if(hovered && ImGui::IsMouseClicked(0)) {
         select_entt(entt);
       }

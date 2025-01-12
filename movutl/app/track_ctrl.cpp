@@ -19,6 +19,7 @@ Ref<Entity> add_new_video_track(const char* name, const char* path, int start, i
     return nullptr;
   }
   e->trk.fstart = start;
+  e->trk.fend = start + 1; // 動画が読み込めなかった時用
   e->load_file(path);
   auto pj = Project::Get();
   Composition* main_comp = pj->get_main_comp();
