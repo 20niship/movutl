@@ -28,13 +28,16 @@ class SolWriter:
             "#include <lua.hpp>\n"
             "#include <movutl/core/props.hpp>\n"
             "#include <movutl/app/app.hpp>\n"
-            "#include <movutl/asset/entity.hpp>\n"
+            "#include <movutl/plugin/input.hpp>\n"
+            "#include <movutl/plugin/filter.hpp>\n"
+            "#include <movutl/plugin/plugin.hpp>\n"
             "#include <movutl/asset/text.hpp>\n"
             "#include <movutl/asset/image.hpp>\n"
             "#include <movutl/asset/project.hpp>\n"
             "#include <movutl/asset/movie.hpp>\n"
             "#include <movutl/core/anim.hpp>\n"
             "#include <movutl/asset/track.hpp>\n"
+            "#include <movutl/asset/entity.hpp>\n"
             "#include <movutl/asset/composition.hpp>\n"
             "namespace mu { \n"
             f"void generated_lua_binding_{self.PREFIX}(sol::state &lua){{\n"
@@ -54,6 +57,9 @@ class SolWriter:
         self.autogen_text += f'lua["{func.name}"] = &{func.name};\n'
 
     def register_class(self, cls: MClass):
+        if cls.name == "Entity":
+            return
+
         self.autogen_text += (
             (f"// {cls.desc}\n" if cls.desc else "")
             + f'lua.new_usertype<{cls.name}>("{cls.name}", // \n'
@@ -62,6 +68,8 @@ class SolWriter:
 
         for f in cls.funcs:
             if cls.name == f.name:
+                continue
+            if "operator" in f.name:
                 continue
             self.autogen_text += f'  "{f.name}", &{cls.name}::{f.name}, // \n'
         for p in cls.props:

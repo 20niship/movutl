@@ -3,13 +3,16 @@
 #include <lua.hpp>
 #include <movutl/core/props.hpp>
 #include <movutl/app/app.hpp>
-#include <movutl/asset/entity.hpp>
+#include <movutl/plugin/input.hpp>
+#include <movutl/plugin/filter.hpp>
+#include <movutl/plugin/plugin.hpp>
 #include <movutl/asset/text.hpp>
 #include <movutl/asset/image.hpp>
 #include <movutl/asset/project.hpp>
 #include <movutl/asset/movie.hpp>
 #include <movutl/core/anim.hpp>
 #include <movutl/asset/track.hpp>
+#include <movutl/asset/entity.hpp>
 #include <movutl/asset/composition.hpp>
 namespace mu { 
 void generated_lua_binding_pygen_(sol::state &lua){
@@ -34,21 +37,6 @@ lua.new_usertype<Composition>("Composition", //
   "audio_ch", &Composition::audio_ch, //
   "layers", &Composition::layers
 );
-lua.new_usertype<Entity>("Entity", // 
-    sol::constructors<sol::types<>>(), // 
-  "getType", &Entity::getType, // 
-  "CreateEntity", &Entity::CreateEntity, // 
-  "Find", &Entity::Find, // 
-  "get_comp", &Entity::get_comp, // 
-  "render", &Entity::render, // 
-  "visible", &Entity::visible, // 
-  "getPropsInfo", &Entity::getPropsInfo, // 
-  "getProps", &Entity::getProps, // 
-  "setProps", &Entity::setProps, // 
-  "name", &Entity::name, //
-  "guid_", &Entity::guid_, //
-  "trk", &Entity::trk
-);
 lua.new_usertype<EntityInfo>("EntityInfo", // 
     sol::constructors<sol::types<>>(), // 
   "str", &EntityInfo::str, // 
@@ -68,31 +56,18 @@ lua.new_usertype<Image>("Image", //
     sol::constructors<sol::types<>>(), // 
   "set_rgb", &Image::set_rgb, // 
   "set_rgba", &Image::set_rgba, // 
-  "copyto", &Image::copyto, // 
-  "copyto", &Image::copyto, // 
-  "copyto", &Image::copyto, // 
-  "copyto", &Image::copyto, // 
   "data", &Image::data, // 
   "size", &Image::size, // 
   "size_in_bytes", &Image::size_in_bytes, // 
   "reset", &Image::reset, // 
   "fill", &Image::fill, // 
   "channels", &Image::channels, // 
-  "resize", &Image::resize, // 
-  "resize", &Image::resize, // 
-  "at", &Image::at, // 
-  "operator[]", &Image::operator[], // 
-  "operator[]", &Image::operator[], // 
   "rgba", &Image::rgba, // 
-  "operator()", &Image::operator(), // 
-  "operator()", &Image::operator(), // 
   "set_cv_img", &Image::set_cv_img, // 
   "to_cv_img", &Image::to_cv_img, // 
   "imshow", &Image::imshow, // 
   "render", &Image::render, // 
   "getType", &Image::getType, // 
-  "Create", &Image::Create, // 
-  "Create", &Image::Create, // 
   "width", &Image::width, //
   "height", &Image::height, //
   "pos", &Image::pos, //
