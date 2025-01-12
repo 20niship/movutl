@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.10...3.30)
 project(movutl C CXX)
 
+set(CMAKE_BUILD_TYPE Release)
+
 option(BUILD_DOC "Build documentation" OFF)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/config.cmake)
 

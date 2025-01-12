@@ -61,19 +61,17 @@ void Image::to_cv_img(cv::Mat* cv_img) const {
   } else if(channels() == 3) {
     for(int y = 0; y < (int)height; y++) {
       uint8_t* cv_ptr = cv_img->ptr<uint8_t>(y);
+      const uint8_t* src_p = &data_[0] + y * width * 3;
       for(int x = 0; x < (int)width; x++) {
-        for(int c = 0; c < channels(); c++) {
-          cv_ptr[x * channels() + c] = data_[(y * width + x) * channels() + c];
-        }
+        for(int c = 0; c < 3; c++) cv_ptr[x * 3 + c] = src_p[x * 3 + c];
       }
     }
   } else if(channels() == 4) {
     for(int y = 0; y < (int)height; y++) {
       uint8_t* cv_ptr = cv_img->ptr<uint8_t>(y);
+      const uint8_t* src_p = &data_[0] + y * width * 4;
       for(int x = 0; x < (int)width; x++) {
-        for(int c = 0; c < channels(); c++) {
-          cv_ptr[x * channels() + c] = data_[(y * width + x) * channels() + c];
-        }
+        for(int c = 0; c < 4; c++) cv_ptr[x * 4 + c] = src_p[x * 4 + c];
       }
     }
   }
@@ -140,11 +138,10 @@ Ref<Image> Image::Create(const char* name, int w, int h, ImageFormat format, boo
   return img;
 }
 
-void Image::imshow() const {
+void Image::imshow(const char* name) const {
   cv::Mat cv_img;
   to_cv_img(&cv_img);
-  cv::imshow("Image", cv_img);
-  cv_waitkey();
+  cv::imshow(name, cv_img);
 }
 
 void cv_waitkey(int time) {

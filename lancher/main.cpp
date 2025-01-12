@@ -14,8 +14,6 @@ void util_show_main_cmp_result() {
   render_comp(cmp);
   auto frame = cmp->frame_final;
   MU_ASSERT(frame);
-  /*frame->imshow();*/
-  /*cv_waitkey(1);*/
 }
 
 void create_sample_video_data() {

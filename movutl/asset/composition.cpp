@@ -1,8 +1,8 @@
 #define NOMINMAX
 
-#include <cmath>
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/entity.hpp>
+#include <movutl/asset/project.hpp>
 
 namespace mu {
 
@@ -71,4 +71,7 @@ std::string Composition::summary() const {
   return str;
 }
 
+Composition* Composition::GetActiveComp() {
+  return Project::GetActiveCompo();
+}
 } // namespace mu

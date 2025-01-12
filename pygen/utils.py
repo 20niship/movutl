@@ -1,5 +1,6 @@
 from typing import List
 from pygen_types import MArgument, ArgumentType
+import os
 
 
 class ColoredLogger:
@@ -123,3 +124,13 @@ def get_prop_type(argtype: str) -> ArgumentType:
         return ArgumentType.ArgType_Entity
     logger.error(f"Unsupported type: {argtype}")
     return ArgumentType.ArgType_Undefined
+
+
+def write_if_different(filename: str, output: str):
+    if os.path.exists(filename):
+        with open(filename, "r") as f:
+            if f.read() == output:
+                return
+
+    with open(filename, "w") as f:
+        f.write(output)

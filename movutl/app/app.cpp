@@ -1,6 +1,8 @@
 #include <movutl/app/app.hpp>
 #include <movutl/app/app_impl.hpp>
+#include <movutl/asset/composition.hpp>
 #include <movutl/core/filesystem.hpp>
+#include <movutl/render2d/render2d.hpp>
 
 namespace mu {
 
@@ -30,4 +32,13 @@ void select_entts(const std::vector<Ref<Entity>>& entts) {
   detail::AppMain::Get()->entt_selected = entts;
 }
 
+namespace detail {
+void update_renderer_thread() {
+  auto cmp = Composition::GetActiveComp();
+  if(!cmp) return;
+  render_comp(cmp);
+  cmp->frame_final->imshow();
+  cv_waitkey(1);
+}
+} // namespace detail
 } // namespace mu

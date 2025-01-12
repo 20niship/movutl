@@ -21,6 +21,7 @@ lua.new_usertype<Composition>("Composition", //
   "resize", &Composition::resize, // 
   "str", &Composition::str, // 
   "summary", &Composition::summary, // 
+  "GetActiveComp", &Composition::GetActiveComp, // 
   "guid", &Composition::guid, //
   "name", &Composition::name, //
   "flag", &Composition::flag, //

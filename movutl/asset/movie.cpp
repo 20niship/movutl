@@ -34,8 +34,8 @@ bool Movie::render(Composition* cmp) {
   if(cw <= 0 || ch <= 0) return false;
 
   MU_ASSERT(img_);
-  int base_x = img_->width / 2 + trk.anchor[0] - cw / 2;
-  int base_y = img_->height / 2 + trk.anchor[1] - ch / 2;
+  int base_x = trk.anchor[0] + (cw - img_->width) / 2;
+  int base_y = trk.anchor[1] + (ch - img_->height) / 2;
   img_->copyto(cmp->frame_final.get(), Vec2d(base_x, base_y));
   return true;
 }

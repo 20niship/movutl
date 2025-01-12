@@ -1,5 +1,6 @@
 #include <movutl/asset/image.hpp>
 #include <movutl/core/logger.hpp>
+#include <movutl/core/time.hpp>
 #include <movutl/render2d/render2d.hpp>
 
 namespace mu {
@@ -19,6 +20,7 @@ bool render_comp(Composition* comp) {
     if(!layer.active) continue;
     auto e = layer.find_entt(frame);
     if(!e) continue;
+    printf("Rendering layer: %s\n", (const char*)layer.name);
     e->render(comp);
   }
 

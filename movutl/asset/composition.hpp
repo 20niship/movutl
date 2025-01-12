@@ -63,6 +63,8 @@ public:
   Composition(const char* name, int32_t w = 1920, int32_t h = 1080, int32_t fps = 30);
   std::string str() const;
   std::string summary() const;
+
+  static Composition* GetActiveComp();
 };
 
 } // namespace mu

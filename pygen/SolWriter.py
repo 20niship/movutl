@@ -1,5 +1,6 @@
 from pygen_types import MFunction, MEnum, MClass, MArgument
 from typing import List
+from utils import write_if_different
 
 
 class SolWriter:
@@ -46,11 +47,13 @@ class SolWriter:
         self.output_filename = "../movutl/generated/" + filename
 
     def save(self):
-        with open(self.output_filename, "w") as f:
-            f.write(self.STUB_COMMENT)
-            f.write(self.autogen_text)
-            f.write("}\n")
-            f.write("} // namespace mu\n")
+        output = (  #
+            self.STUB_COMMENT  #
+            + self.autogen_text  #
+            + "}\n"  #
+            + "} // namespace mu\n"  #
+        )
+        write_if_different(self.output_filename, output)
 
     def register_func(self, func: MFunction):
         # sol::overload ?

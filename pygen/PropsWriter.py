@@ -1,6 +1,6 @@
 from pygen_types import MFunction, MEnum, MClass, MArgument, ArgumentType
 from typing import List
-from utils import logger
+from utils import logger, write_if_different
 
 
 class PropsWriter:
@@ -32,10 +32,12 @@ class PropsWriter:
         self.output_filename = "../movutl/generated/" + filename
 
     def save(self):
-        with open(self.output_filename, "w") as f:
-            f.write(self.STUB_COMMENT)
-            f.write(self.autogen_text)
-            f.write("} // namespace mu\n")
+        output = (  #
+            self.STUB_COMMENT  #
+            + self.autogen_text  #
+            + "} // namespace mu\n"  #
+        )
+        write_if_different(self.output_filename, output)
 
     def _should_write(self, cls: MClass, funcname: str):
         for f in cls.funcs:

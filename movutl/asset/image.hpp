@@ -67,9 +67,7 @@ public:
     height = 0;
     data_.clear();
   }
-  void fill(const uint8_t& v) {
-    for(size_t i = 0; i < size(); i++) data_[i] = v;
-  }
+  void fill(const uint8_t& v) { std::memset(data_.data(), v, size_in_bytes()); }
 
   int channels() const {
     switch(fmt) {
@@ -124,7 +122,7 @@ public:
 
   void set_cv_img(const cv::Mat* cv_img);
   void to_cv_img(cv::Mat* cv_img) const;
-  void imshow() const;
+  void imshow(const char* name = "img") const;
   virtual bool render(Composition* cmp) override;
   virtual EntityType getType() const override { return EntityType_Image; }
 

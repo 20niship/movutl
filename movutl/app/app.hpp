@@ -3,6 +3,9 @@
 #include <vector>
 
 namespace mu {
+namespace detail {
+void update_renderer_thread();
+}
 
 void init();
 void update();

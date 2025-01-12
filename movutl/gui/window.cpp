@@ -3,6 +3,7 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 // --
+#include <movutl/app/app.hpp>
 #include <movutl/core/filesystem.hpp>
 #include <movutl/core/logger.hpp>
 #include <movutl/core/vector.hpp>
@@ -136,11 +137,15 @@ void gui_render_to_screen() {
 } // namespace detail
 
 void update() {
-  detail::gui_new_frame();
+  { // gui thread
+    detail::gui_new_frame();
+    detail::update_gui_panels();
+    detail::gui_render_to_screen();
+  }
 
-  detail::update_gui_panels();
-
-  detail::gui_render_to_screen();
+  { // renderer thread
+    detail::update_renderer_thread();
+  }
 }
 
 void GUIManager::terminate() {
