@@ -81,6 +81,7 @@ set(MOVUTL_INCLUDES
   ${MOVUTL_ROOT_DIR}/ext/imgui
   ${MOVUTL_ROOT_DIR}/ext/imgui/backends
   ${MOVUTL_ROOT_DIR}/ext/filewatch
+  ${MOVUTL_ROOT_DIR}/ext/json/include
 )
 file(GLOB MOVUTL_EXT_SRC 
   ${MOVUTL_ROOT_DIR}/ext/loguru/loguru.cpp
