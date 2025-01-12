@@ -24,23 +24,29 @@ class SolWriter:
 
     def __init__(self, filename: str):
         self.autogen_text = (
-            "#include <sol.hpp>\n"
             "#include <sol/sol.hpp>\n"
-            "#include <sol/forward.hpp>\n"
             "#include <lua.hpp>\n"
+            "#include <movutl/core/props.hpp>\n"
+            "#include <movutl/app/app.hpp>\n"
+            "#include <movutl/asset/entity.hpp>\n"
+            "#include <movutl/asset/text.hpp>\n"
+            "#include <movutl/asset/image.hpp>\n"
+            "#include <movutl/asset/project.hpp>\n"
+            "#include <movutl/asset/movie.hpp>\n"
+            "#include <movutl/core/anim.hpp>\n"
+            "#include <movutl/asset/track.hpp>\n"
+            "#include <movutl/asset/composition.hpp>\n"
             "namespace mu { \n"
-            f"void generated_lua_binding_{self.PREFIX}(){{\n"
-            "  sol::state_view lua;\n"
+            f"void generated_lua_binding_{self.PREFIX}(sol::state &lua){{\n"
         )
 
         self.output_filename = "../movutl/generated/" + filename
 
     def save(self):
-        self.autogen_text += "# ---- end of file ----"
-
         with open(self.output_filename, "w") as f:
             f.write(self.STUB_COMMENT)
             f.write(self.autogen_text)
+            f.write("}\n")
             f.write("} // namespace mu\n")
 
     def register_func(self, func: MFunction):
@@ -50,12 +56,17 @@ class SolWriter:
     def register_class(self, cls: MClass):
         self.autogen_text += (
             (f"// {cls.desc}\n" if cls.desc else "")
-            + f'lua.new_usertype<{cls.name}>("{cls.name}",\n'
-            + "    sol::constructors<sol::types<>>(),\n"
+            + f'lua.new_usertype<{cls.name}>("{cls.name}", // \n'
+            + "    sol::constructors<sol::types<>>(), // \n"
         )
 
         for f in cls.funcs:
-            self.autogen_text += f'  "{f.name}", &{cls.name}::{f.name},\n'
+            if cls.name == f.name:
+                continue
+            self.autogen_text += f'  "{f.name}", &{cls.name}::{f.name}, // \n'
         for p in cls.props:
-            self.autogen_text += f'  "{p.name}", &{cls.name}::{p.name},\n'
+            self.autogen_text += f'  "{p.name}", &{cls.name}::{p.name}, //\n'
+
+        if self.autogen_text.endswith(", //\n"):
+            self.autogen_text = self.autogen_text[:-5] + "\n"
         self.autogen_text += ");\n"

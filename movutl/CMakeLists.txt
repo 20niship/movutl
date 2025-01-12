@@ -16,8 +16,9 @@ if(NOT DEFINED CMAKE_SUPPRESS_DEVELOPER_WARNINGS)
    set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS 1 CACHE INTERNAL "No dev warnings")
 endif()
 
+find_package(PkgConfig REQUIRED)
+
 if(APPLE)
-  find_package(PkgConfig REQUIRED)
   pkg_check_modules(JSONCPP jsoncpp)
   find_package(JsonCpp  QUIET REQUIRED)
   if(NOT JSONCPP_FOUND)
@@ -29,6 +30,10 @@ if(APPLE)
   cmake_policy(SET CMP0074 NEW) # OpenMP_ROOTの環境変数を使用してパッケージを探す
   set(OpenMP_ROOT "/opt/homebrew/opt/libomp")
 endif()
+
+pkg_check_modules(LuaJIT REQUIRED IMPORTED_TARGET luajit)
+# target_link_libraries(<your_target> PRIVATE PkgConfig::LuaJIT)
+
 
 # --------------------------------------------------------------
 # ------------     Renderer (OpenGL / Vulkan) ------------------
@@ -46,10 +51,12 @@ set(MOVUTL_LIBRARIES
   ${OpenCV_LIBRARIES}
   # ${assimp_LIBRARIES}
   assimp::assimp
+  PkgConfig::LuaJIT
 )
 
 set(MOVUTL_INCLUDES 
   ${MOVUTL_INCLUDES}
+  ${LUAJIT_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS} 
   ${assimp_INCLUDE_DIR}
   ${glm_INCLUDE_DIRS}
@@ -82,6 +89,7 @@ set(MOVUTL_INCLUDES
   ${MOVUTL_ROOT_DIR}/ext/imgui/backends
   ${MOVUTL_ROOT_DIR}/ext/filewatch
   ${MOVUTL_ROOT_DIR}/ext/json/include
+  ${MOVUTL_ROOT_DIR}/ext/sol2/include
 )
 file(GLOB MOVUTL_EXT_SRC 
   ${MOVUTL_ROOT_DIR}/ext/loguru/loguru.cpp
