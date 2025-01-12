@@ -6,7 +6,14 @@ from pygen_types import MFunction, MEnum, MClass, MArgument, ArgumentType
 from SolWriter import SolWriter
 from PropsWriter import PropsWriter
 from config import ignore_symbols
-from utils import logger, invalid_args, invalid_return_type
+from utils import (
+    logger,
+    invalid_args,
+    invalid_return_type,
+    parse_mprop_info,
+    should_autogen_func,
+    get_prop_type,
+)
 
 import CppHeaderParser
 
@@ -46,6 +53,10 @@ class Parser:
                 continue
             f.constructor = f.name == classname
             f.destructor = f.name == "~" + classname
+            lines = self.basestr.split("\n")
+            if len(lines) >= method["line_number"]:
+                line = lines[method["line_number"] - 1]
+                f.should_autogen = should_autogen_func(line)
             member_funcs.append(f)
 
         for field in node["properties"]["public"]:
@@ -55,9 +66,14 @@ class Parser:
                 continue
             field_type = field["type"]
             comment = field["doxygen"] if "doxygen" in field else ""
-            member_fields.append(
-                MArgument(name, field_type, ArgumentType.ArgType_Undefined, comment)
-            )
+            ptype = get_prop_type(field_type)
+            arg = MArgument(name, field_type, "", ptype, "")
+            arg.desc = comment
+            lines = self.basestr.split("\n")
+            if len(lines) >= field["line_number"]:
+                line = lines[field["line_number"] - 1]
+                arg = parse_mprop_info(arg, line)
+            member_fields.append(arg)
 
         if len(member_funcs) == 0 and len(member_fields) == 0:
             return
@@ -99,7 +115,7 @@ class Parser:
         args: List[MArgument] = []
         for arg in v["parameters"]:
             a = MArgument(arg["name"], arg["type"])
-            a.detault_value = arg["default"] if "default" in arg else ""
+            a.detault = arg["default"] if "default" in arg else ""
             args.append(a)
         f.args = args
 
@@ -133,8 +149,8 @@ class Parser:
                 return
 
             registered_funcions.append((name, len(f.args)))
-            f.module_name = self.get_module_name()
-            f.filename = self.filename
+            # f.module_name = self.get_module_name()
+            # f.filename = self.filename
             self.funcs.append(f)
 
     def _parse_enums(self, node: CppHeaderParser.CppHeader):
@@ -236,12 +252,17 @@ class Parser:
             logger.error("Fileが存在しません！" + header_file)
             return
 
+        tmp_fname = "tmp.hpp"
+        with open(tmp_fname, "w") as f:
+            f.write(fstr)
+        self.basestr = fstr
+
         header = CppHeaderParser.CppHeader(header_file)
         self._parse_functions(header)
         self._parse_enums(header)
         self._parse_classes(header)
 
-        os.system(f"rm {header_file}")
+        os.remove(tmp_fname)
 
     def get_module_name(self) -> str:
         return "_".join(self.module_stack)

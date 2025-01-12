@@ -38,6 +38,10 @@ public:
     MU_ASSERT(std::holds_alternative<T>(it->second));
     return std::get<T>(it->second);
   }
+  template <typename T> bool has(const std::string& key) const {
+    if(!values.contains(key)) return false;
+    return std::holds_alternative<T>(values.at(key));
+  }
 
   template <typename T> void set(const std::string& key, const T& value) { values[key] = value; }
   template <typename T> T get_or(const std::string& key, const T& value) const {
@@ -109,12 +113,14 @@ struct PropInfoBase {
   PropType type = PropT_Undefined;
 
 public:
-  std::string name;
+  std::string name;     // getProp / setPropで使用する名前と同系列のもの
+  std::string dispname; // インスペクター画面などに表示するためのもの
   std::string categ;
   std::string desc;
   float min = 0.0f;
   float max = 1.0f;
   float step = 0.1f;
+  bool readonly = false;
 
   PropInfoBase() = default;
   ~PropInfoBase() = default;
@@ -198,6 +204,11 @@ struct PropsInfo {
                      Vec3 def, float min, float max, float step = 0.1f);
   void add_selection_prop(const char* name, const char* cat, const char* desc, //
                           const char* items[], uint8_t count, uint8_t def);
+
+  void set_last_prop_dispname(const char* dispname);
+  void set_last_prop_category(const char* category);
+  void set_last_prop_desc(const char* desc);
+  void set_last_prop_readonly(bool readonly);
 };
 
 

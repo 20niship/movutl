@@ -115,5 +115,4 @@ void PropsInfo::set_last_prop_readonly(bool readonly) {
   if(props.size() == 0) return;
   props.back().readonly = readonly;
 }
-
 } // namespace mu

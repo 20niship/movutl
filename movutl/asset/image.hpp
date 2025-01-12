@@ -21,14 +21,14 @@ public:
   Image() = default;
   ~Image() = default;
 
-  unsigned int width = 0;  // MUPROPERTY(name="幅", readonly=true)
-  unsigned int height = 0; // MUPROPERTY(name="高さ", readonly=true)
-  Vec3 pos;                // MUPROPERTY(name="位置" viewer_anchor=true, position=true)
-  float scale_x = 1.0f;    // MUPROPERTY(name="拡大率X, scale_x)
-  float scale_y = 1.0f;    // MUPROPERTY(name="拡大率Y, scale_y)
-  float rotation = 0.0f;   // MUPROPERTY(name="回転", angle=true, radians=true)
-  float alpha = 1.0f;      // MUPROPERTY(name="透明度")
-  std::string path;        // MUPROPERTY(name="ファイル", type="path")
+  unsigned int width = 0;  // MPROPERTY(name="幅", readonly=true)
+  unsigned int height = 0; // MPROPERTY(name="高さ", readonly=true)
+  Vec3 pos;                // MPROPERTY(name="位置" viewer_anchor=true, position=true)
+  float scale_x = 1.0f;    // MPROPERTY(name="拡大率X, scale_x)
+  float scale_y = 1.0f;    // MPROPERTY(name="拡大率Y, scale_y)
+  float rotation = 0.0f;   // MPROPERTY(name="回転", angle=true, radians=true)
+  float alpha = 1.0f;      // MPROPERTY(name="透明度")
+  std::string path;        // MPROPERTY(name="ファイル", type="path")
 
   void set_rgb(const size_t x, const size_t y, const Vec3b& rgb) {
     MU_ASSERT(channels() >= 3);

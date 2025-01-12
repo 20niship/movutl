@@ -1,5 +1,6 @@
 from pygen_types import MFunction, MEnum, MClass, MArgument, ArgumentType
 from typing import List
+from utils import logger
 
 
 class PropsWriter:
@@ -17,23 +18,24 @@ class PropsWriter:
 
     def __init__(self, filename: str):
         self.autogen_text = (
-            "#include <sol.hpp>\n"
-            "#include <sol/sol.hpp>\n"
-            "#include <sol/forward.hpp>\n"
-            "#include <lua.hpp>\n"
+            "#include <movutl/core/props.hpp>\n"
+            "#include <movutl/app/app.hpp>\n"
+            "#include <movutl/asset/entity.hpp>\n"
+            "#include <movutl/asset/text.hpp>\n"
+            "#include <movutl/asset/image.hpp>\n"
+            "#include <movutl/asset/movie.hpp>\n"
+            "#include <movutl/core/anim.hpp>\n"
+            "#include <movutl/asset/track.hpp>\n"
+            "#include <movutl/asset/composition.hpp>\n"
             "namespace mu { \n"
-            f"void generated_props_parser_{self.PREFIX}(){{\n"
-            "  sol::state_view lua;\n"
         )
-
-        self.output_filename = "../../runtime/melchior/" + filename
+        self.output_filename = "../movutl/generated/" + filename
 
     def save(self):
-        self.autogen_text += "# ---- end of file ----"
-
         with open(self.output_filename, "w") as f:
             f.write(self.STUB_COMMENT)
             f.write(self.autogen_text)
+            f.write("} // namespace mu\n")
 
     def _should_write(self, cls: MClass, funcname: str):
         for f in cls.funcs:
@@ -46,14 +48,14 @@ class PropsWriter:
             self._write_setProps(cls)
         if self._should_write(cls, "getPropsInfo"):
             self._write_getPropsInfo_fn(cls)
-        if self._should_write(cls, "getPropsInfo"):
-            self._write_getPropsInfo_fn(cls)
+        if self._should_write(cls, "getProps"):
+            self._write_getProps(cls)
 
     def _write_setProps(self, cls: MClass):
         self.autogen_text += f"void {cls.name}::setProps(const Props& p) {{\n "  #
 
         for p in cls.props:
-            match p.ptype_:
+            match p.ptype:
                 case ArgumentType.ArgType_Float:
                     self.autogen_text += f'  if(p.has<float>("{p.name}")) {p.name} = p.get<float>("{p.name}");\n'
                 case ArgumentType.ArgType_Int:
@@ -67,12 +69,19 @@ class PropsWriter:
                 case ArgumentType.ArgType_Color:
                     self.autogen_text += f'  if(p.has<Vec4b>("{p.name}")) {p.name} = p.get<Vec4b>("{p.name}");\n'
                 case ArgumentType.ArgType_Vec3:
-                    self.autogen_text += f'  if(p.has<Vec3f>("{p.name}")) {p.name} = p.get<Vec3f>("{p.name}");\n'
+                    self.autogen_text += f'  if(p.has<Vec3>("{p.name}")) {p.name} = p.get<Vec3>("{p.name}");\n'
                 case ArgumentType.ArgType_Selection:
                     self.autogen_text += f'  if(p.has<int>("{p.name}")) {p.name} = p.get<int>("{p.name}");\n'
                 case _:
                     self.autogen_text += f"// {p.name} has an unsupported type\n"
         self.autogen_text += "}\n"
+
+    def _write_getProps(self, cls: MClass):
+        self.autogen_text += f"Props {cls.name}::getProps() const {{\n "
+        self.autogen_text += "  Props p;\n"
+        for p in cls.props:
+            self.autogen_text += f'  p["{p.name}"] = {p.name};\n'
+        self.autogen_text += "  return p;\n}\n"
 
     def _write_getPropsInfo_fn(self, cls: MClass):
         self.autogen_text += (
@@ -81,32 +90,57 @@ class PropsWriter:
         )
 
         for p in cls.props:
-            match p.ptype_:
+            wrote_ = True
+            match p.ptype:
                 case ArgumentType.ArgType_Float:
+                    d = p.detault if p.detault != "" else "0.0f"
+                    is_angle = "true" if p.is_angle else "false"
                     self.autogen_text += (
-                        f'  info.add_float_prop("{p.name}", "{p.category}", "{p.desc}", {p.detault_value}, '
-                        + "     0, 0, 0, {p.is_angle}, false);\n"
+                        f'  info.add_float_prop("{p.name}", "{p.category}", "{p.desc}", {d}, '
+                        + f" 0, 0, 0, {is_angle}, false);\n"
                     )
                 case ArgumentType.ArgType_Int:
+                    default = p.detault if p.detault != "" else "0"
                     self.autogen_text += (
-                        f'  info.add_int_prop("{p.name}", "{p.category}", "{p.desc}", {p.detault_value}, '
-                        + "     0, 0, 0);\n"
+                        f'  info.add_int_prop("{p.name}", "{p.category}", "{p.desc}", {default}, '
+                        + " 0, 0, 0);\n"
                     )
                 case ArgumentType.ArgType_Bool:
-                    self.autogen_text += f'  info.add_bool_prop("{p.name}", "{p.category}", "{p.desc}", {p.detault_value});\n'
+                    d = p.detault if p.detault != "" else "false"
+                    self.autogen_text += f'  info.add_bool_prop("{p.name}", "{p.category}", "{p.desc}", {d});\n'
                 case ArgumentType.ArgType_String:
-                    self.autogen_text += f'  info.add_string_prop("{p.name}", "{p.category}", "{p.desc}", "{p.detault_value}");\n'
+                    d = p.detault if p.detault != "" else '""'
+                    self.autogen_text += f'  info.add_string_prop("{p.name}", "{p.category}", "{p.desc}", "{d}");\n'
                 case ArgumentType.ArgType_Path:
-                    self.autogen_text += f'  info.add_path_prop("{p.name}", "{p.category}", "{p.desc}", "{p.detault_value}");\n'
+                    d = p.detault if p.detault != "" else '""'
+                    self.autogen_text += f'  info.add_path_prop("{p.name}", "{p.category}", "{p.desc}", "{d}");\n'
                 case ArgumentType.ArgType_Color:
-                    self.autogen_text += f'  info.add_color_prop("{p.name}", "{p.category}", "{p.desc}", {p.detault_value});\n'
+                    d = p.detault if p.detault != "" else "Vec4b(0, 0, 0, 255)"
+                    self.autogen_text += f'  info.add_color_prop("{p.name}", "{p.category}", "{p.desc}", {d});\n'
                 case ArgumentType.ArgType_Vec3:
+                    d = p.detault if p.detault != "" else "Vec3(0, 0, 0)"
                     self.autogen_text += (
-                        f'  info.add_vec3_prop("{p.name}", "{p.category}", "{p.desc}", {p.detault_value}, '
-                        + "     0, 0, 0);\n"
+                        f'  info.add_vec3_prop("{p.name}", "{p.category}", "{p.desc}", {d}, '
+                        + "0, 0, 0);\n"
                     )
                 case ArgumentType.ArgType_Selection:
-                    self.autogen_text += f'  info.add_selection_prop("{p.name}", "{p.category}", "{p.desc}", {p.detault_value});\n'
+                    self.autogen_text += f'  info.add_selection_prop("{p.name}", "{p.category}", "{p.desc}", {p.detault});\n'
                 case _:
+                    logger.error(f"Unsupported type {p.ptype}, {p.name}")
                     self.autogen_text += f"// {p.name} has an unsupported type\n"
-        self.autogen_text += "  return props;\n}\n"
+                    wrote_ = False
+
+            if wrote_:
+                if p.dispname != "":
+                    self.autogen_text += (
+                        f'  info.set_last_prop_dispname("{p.dispname}");\n'
+                    )
+                if p.category != "":
+                    self.autogen_text += (
+                        f'  info.set_last_prop_category("{p.category}");\n'
+                    )
+                if p.desc != "":
+                    self.autogen_text += f'  info.set_last_prop_desc("{p.desc}");\n'
+                if p.readonly:
+                    self.autogen_text += "  info.set_last_prop_readonly(true);\n"
+        self.autogen_text += "  return info;\n}\n"

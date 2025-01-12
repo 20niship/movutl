@@ -11,7 +11,7 @@ namespace mu {
 inline constexpr size_t MAX_DISPNAME = 64;
 inline constexpr size_t MAX_FILTER = 16;
 
-enum BlendType { // MU_PROPERTY(name="合成モード")
+enum BlendType { // MPROPERTY(name="合成モード")
   Blend_Alpha = 0,
   Blend_Add = 1,
   Blend_Sub = 2,
@@ -34,15 +34,15 @@ struct TrackObject {
 public:
   uint32_t guid;
 
-  int fstart = -1;                // MU_PROPERTY(name="開始位置(frame)" hidden_inspector=true)
-  int fend = -1;                  // MU_PROPERTY(name="終了位置(frame)" hidden_inspector=true)
-  Vec2 anchor;                    // MU_PROPERTY(name="アンカー", viewer_anchor=true, position=true)
-  BlendType blend_ = Blend_Alpha; // MU_PROPERTY(name="合成モード")
-  uint32_t group_guid = 0;        // MU_PROPERTY(name="グループID", desc="グループ化されている時のグループID", hidden_inspector=true)
-  bool active_ = true;            // MU_PROPERTY(name="アクティブ", desc="オブジェクトが有効かどうか")
-  bool solo_ = false;             // MU_PROPERTY(name="ソロモード", desc="(音声のみ)他のレイヤを非表示にする")
-  bool clipping_up = false;       // MU_PROPERTY(name="上レイヤでクリッピング",  hidden_inspector=true)
-  bool camera_ctrl = false;       // MU_PROPERTY(name="カメラ制御", desc="カメラ制御の対象", hidden_inspector=true)
+  int fstart = -1;                // MPROPERTY(name="開始位置(frame)" hidden_inspector=true)
+  int fend = -1;                  // MPROPERTY(name="終了位置(frame)" hidden_inspector=true)
+  Vec2 anchor;                    // MPROPERTY(name="アンカー", viewer_anchor=true, position=true)
+  BlendType blend_ = Blend_Alpha; // MPROPERTY(name="合成モード")
+  uint32_t group_guid = 0;        // MPROPERTY(name="グループID", desc="グループ化されている時のグループID", hidden_inspector=true)
+  bool active_ = true;            // MPROPERTY(name="アクティブ", desc="オブジェクトが有効かどうか")
+  bool solo_ = false;             // MPROPERTY(name="ソロモード", desc="(音声のみ)他のレイヤを非表示にする")
+  bool clipping_up = false;       // MPROPERTY(name="上レイヤでクリッピング",  hidden_inspector=true)
+  bool camera_ctrl = false;       // MPROPERTY(name="カメラ制御", desc="カメラ制御の対象", hidden_inspector=true)
 
   struct FilterParam {
     FilterPluginTable* plg_ = nullptr;

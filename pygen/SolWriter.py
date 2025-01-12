@@ -41,10 +41,11 @@ class SolWriter:
         with open(self.output_filename, "w") as f:
             f.write(self.STUB_COMMENT)
             f.write(self.autogen_text)
+            f.write("} // namespace mu\n")
 
     def register_func(self, func: MFunction):
         # sol::overload ?
-        self.autogen_text += f'lua.["{func.name}"] = &{func.name};\n'
+        self.autogen_text += f'lua["{func.name}"] = &{func.name};\n'
 
     def register_class(self, cls: MClass):
         self.autogen_text += (

@@ -62,9 +62,9 @@ protected:
   EntityInfo info;
 
 public:
-  char name[MAX_DISPNAME]; // MU_PROPERTY(name="名前")
-  uint64_t guid_ = 0;      // MU_PROPERTY(name="GUID")
-  TrackObject trk;         // MU_PROPERTY(name="トラック")
+  char name[MAX_DISPNAME]; // MPROPERTY(name="名前")
+  uint64_t guid_ = 0;      // MPROPERTY(name="GUID")
+  TrackObject trk;         // MPROPERTY(name="トラック")
 
   virtual constexpr EntityType getType() const = 0;
 

@@ -21,9 +21,10 @@ class ArgumentType(Enum):
 @dataclass
 class MArgument:
     name: str = ""
+    dispname: str = ""
     c_type: str = ""
-    ptype_: ArgumentType = ArgumentType.ArgType_Undefined
-    detault_value: str = ""
+    ptype: ArgumentType = ArgumentType.ArgType_Undefined
+    detault: str = ""
     category: str = ""
     desc: str = ""
     is_angle: bool = False

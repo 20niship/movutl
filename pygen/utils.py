@@ -1,5 +1,5 @@
 from typing import List
-from pygen_types import MArgument, MFunction, MEnum, MClass
+from pygen_types import MArgument, ArgumentType
 
 
 class ColoredLogger:
@@ -54,3 +54,72 @@ def invalid_args(args: List[MArgument]):
 
 def invalid_return_type(ret: MArgument):
     return False
+
+
+def should_autogen_func(line: str) -> bool:
+    return "MUFUNC_AUTOGEN" in line
+
+
+def parse_mprop_info(arg: MArgument, line: str) -> MArgument:
+    # 正規表現でkey=value形式をパース
+    start = line.find("MPROPERTY(")
+    if start == -1:
+        return arg
+    comment = line[start + len("MPROPERTY(") :]
+    if comment[-1] == ")":
+        comment = comment[:-1]
+
+    for match in comment.split(","):
+        kv = match.split("=")
+        if len(kv) < 2:
+            print(f"Invalid key-value pair: {match}")
+            continue
+        key = kv[0].strip()
+        value = kv[1].strip()
+        if key == "name":
+            arg.dispname = value
+        if key == "category":
+            arg.category = value
+        if key == "readonly":
+            arg.readonly = value.lower() == "true"
+        if key == "desc":
+            arg.desc = value
+    arg.dispname = arg.dispname.replace('"', "")
+    arg.category = arg.category.replace('"', "")
+    arg.desc = arg.desc.replace('"', "")
+    return arg
+
+
+def get_prop_type(argtype: str) -> ArgumentType:
+    argtype = argtype.replace("const ", "").replace(" ", "").replace("&", "")
+    if argtype in [
+        "float",
+        "double",
+        "uint8_t",
+        "int32_t",
+        "uint32_t",
+        "unsignedint",
+        "uint16_t",
+        "int16_t",
+        "uint64_t",
+        "int64_t",
+    ]:
+        return ArgumentType.ArgType_Float
+    if argtype in ["int", "long"]:
+        return ArgumentType.ArgType_Int
+    if argtype == "bool":
+        return ArgumentType.ArgType_Bool
+    if argtype == "std::string":
+        return ArgumentType.ArgType_String
+    if argtype == "std::filesystem::path":
+        return ArgumentType.ArgType_Path
+    if argtype == "Vec3":
+        return ArgumentType.ArgType_Vec3
+    if argtype == "Vec4":
+        return ArgumentType.ArgType_Vec4
+    if argtype == "Vec4b":
+        return ArgumentType.ArgType_Color
+    if argtype == "Entity":
+        return ArgumentType.ArgType_Entity
+    logger.error(f"Unsupported type: {argtype}")
+    return ArgumentType.ArgType_Undefined
