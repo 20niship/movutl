@@ -1,5 +1,4 @@
 #include <chrono>
-#include <iostream>
 #include <movutl/app/app.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/asset/project.hpp>
@@ -21,7 +20,7 @@ void util_show_main_cmp_result() {
 
 void create_sample_video_data() {
   Project::New();
-  add_new_video_track("testname", "../sample-5s.mp4", 30, 0);
+  add_new_video_track("testname", "../sample.mp4", 30, 0);
 }
 
 int main() {

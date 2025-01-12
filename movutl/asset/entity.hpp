@@ -62,9 +62,9 @@ protected:
   EntityInfo info;
 
 public:
-  char name[MAX_DISPNAME];
-  uint64_t guid_ = 0;
-  TrackObject trk;
+  char name[MAX_DISPNAME]; // MU_PROPERTY(name="名前")
+  uint64_t guid_ = 0;      // MU_PROPERTY(name="GUID")
+  TrackObject trk;         // MU_PROPERTY(name="トラック")
 
   virtual constexpr EntityType getType() const = 0;
 
@@ -76,6 +76,10 @@ public:
 
   bool visible(int frame) const { return trk.visible(frame); }
   virtual ~Entity();
+
+  virtual PropsInfo getPropsInfo() const { return {}; }
+  virtual Props getProps() const { return {}; }
+  virtual void setProps(const Props& props) { (void)props; }
 };
 
 } // namespace mu

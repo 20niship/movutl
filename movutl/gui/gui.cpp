@@ -6,6 +6,7 @@
 #include <movutl/gui/gui.hpp>
 #include <movutl/gui/inspector.hpp>
 #include <movutl/gui/timeline.hpp>
+#include <movutl/gui/utilities.hpp>
 #include <movutl/gui/timeline_window.hpp>
 #include <movutl/gui/viewer.hpp>
 
@@ -18,6 +19,7 @@ void init_gui_panels() {
     std::make_shared<InspectorWindow>(),
     std::make_shared<TimelineWindow>(),
     std::make_shared<ViewerWindow>(),
+    std::make_shared<UtilityWindow>(),
   };
 }
 
