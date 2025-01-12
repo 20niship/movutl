@@ -94,7 +94,7 @@ struct PropInfoBase {
     uint8_t count = 0;
     uint8_t default_ = 0;
   };
-  union PropUnion{
+  union PropUnion {
     FloatProp float_;
     int int_;
     bool bool_;
@@ -138,7 +138,8 @@ public:
     if constexpr(std::is_same_v<T, Vec3>) {value_.vec3_ = value; type = PropT_Vec3; return *this; }
     if constexpr(std::is_same_v<T, Vec4>) {value_.vec4_ = value; type = PropT_Vec4; return *this; }
     if constexpr(std::is_same_v<T, Vec4b>) {value_.color_ = value; type = PropT_Color; return *this; }
-    MU_ASSERT(false);
+    MU_FAIL("Invalid type");
+    return *this;
   }
   // clang-format on
   PropType getType() const { return type; }
@@ -157,14 +158,15 @@ struct PropsInfo {
     for(auto& p : props) keys.push_back(p.name);
     return keys;
   }
-  template <typename T> T get(const std::string& key) const {
+  PropInfoBase get(const std::string& key) const {
     for(auto& p : props)
-      if(p.name == key) return p.get<T>();
-    return T();
+      if(p.name == key) return p;
+    return PropInfoBase();
   }
-  template <typename T> void set(const std::string& key, const T& value) {
+  void set(const std::string& key, const PropInfoBase& value) {
     for(auto& p : props)
       if(p.name == key) p.set(value);
+    props.push_back(value);
   }
 
   PropInfoBase& operator[](size_t idx) { return props[idx]; }
@@ -181,6 +183,21 @@ struct PropsInfo {
     MU_FAIL("[PropsInfoBase] key not found");
     return props[0];
   }
+
+  void add_float_prop(                                   //
+    const char* name, const char* cat, const char* desc, //
+    float def, float min, float max,                     //
+    float step = 1.0, bool is_angle = false, bool is_radian = false);
+
+  void add_int_prop(const char* name, const char* cat, const char* desc, int def, int min, int max, int step = 1);
+  void add_bool_prop(const char* name, const char* category, const char* desc, bool def);
+  void add_string_prop(const char* name, const char* cat, const char* desc, const char* def);
+  void add_path_prop(const char* name, const char* category, const char* desc, const char* def);
+  void add_color_prop(const char* name, const char* category, const char* desc, Vec4b def);
+  void add_vec3_prop(const char* name, const char* cat, const char* desc, //
+                     Vec3 def, float min, float max, float step = 0.1f);
+  void add_selection_prop(const char* name, const char* cat, const char* desc, //
+                          const char* items[], uint8_t count, uint8_t def);
 };
 
 
