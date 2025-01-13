@@ -2,6 +2,7 @@
 #include <movutl/app/app_impl.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/core/filesystem.hpp>
+#include <movutl/core/time.hpp>
 #include <movutl/render2d/render2d.hpp>
 
 namespace mu {
@@ -36,9 +37,8 @@ namespace detail {
 void update_renderer_thread() {
   auto cmp = Composition::GetActiveComp();
   if(!cmp) return;
+  ScopeTimer timer("update_renderer_thread");
   render_comp(cmp);
-  cmp->frame_final->imshow();
-  cv_waitkey(1);
 }
 } // namespace detail
 } // namespace mu

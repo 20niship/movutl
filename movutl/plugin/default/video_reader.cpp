@@ -65,6 +65,7 @@ int fn_read_video(InputHandle ih, const EntityInfo* iip, Movie* entity) {
 static int fn_set_frame(InputHandle ih, int frame) {
   if(!ih) return 0;
   auto cap = (InHandleCVVideo*)ih;
+  if(cap->frame == frame) return frame;
   cap->frame = frame;
   cap->cap.set(cv::CAP_PROP_POS_FRAMES, frame);
   return frame;

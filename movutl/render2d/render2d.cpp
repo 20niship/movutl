@@ -20,7 +20,6 @@ bool render_comp(Composition* comp) {
     if(!layer.active) continue;
     auto e = layer.find_entt(frame);
     if(!e) continue;
-    printf("Rendering layer: %s\n", (const char*)layer.name);
     e->render(comp);
   }
 

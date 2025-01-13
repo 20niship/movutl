@@ -19,8 +19,6 @@
 #endif
 
 #include <cstdlib>
-#include <iostream>
-
 
 inline const std::string cout_yellow = "\033[33m";
 inline const std::string cout_clear = "\033[0m";
@@ -28,11 +26,13 @@ inline const std::string cout_clear = "\033[0m";
 namespace mu::detail {
 
 void _mu_assert_fail(const char* file, int line, const char* msg1) {
+  printf("AAAAAAAAAAAAAAAAAAAAAAA\n");
   LOG_F(FATAL, "_mu_assert_fail: %s:%d: %s", file, line, msg1);
   auto backtrace = get_backtrace();
   for(auto& bt : backtrace) {
     printf("  %s\n", bt.c_str());
   }
+  printf("BBBBBBBBBBBBBBBBBBBBBBB\n");
 #ifdef _WIN32
   std::exit(1);
 #else
@@ -133,7 +133,6 @@ std::vector<std::string> get_backtrace() {
     result.push_back(demangled.toString());
   }
   ::free(symbols);
-
 #endif
   return result;
 }

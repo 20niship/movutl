@@ -5,6 +5,7 @@
 #include <movutl/asset/entity.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/gui/inspector.hpp>
+#include <movutl/gui/widgets.hpp>
 #include <movutl/plugin/plugin.hpp>
 
 namespace mu {
@@ -23,6 +24,8 @@ void InspectorWindow::Update() {
     const std::string str = get_entt_icon(e) + std::string(" ") + e->name;
     ImGui::SmallButton(str.c_str());
   }
+  wd_entt_props_editor(e.get());
+
   for(int i = 0; i < e->trk.filters.size(); i++) {
     auto& f = e->trk.filters[i];
     MU_ASSERT(f.plg_ != nullptr);

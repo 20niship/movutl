@@ -80,6 +80,8 @@ public:
   virtual PropsInfo getPropsInfo() const { return {}; }
   virtual Props getProps() const { return {}; }
   virtual void setProps(const Props& props) { (void)props; }
+
+  PropsInfo propinfo_; // getPropsInfo()の結果をキャッシュして表示する用
 };
 
 } // namespace mu

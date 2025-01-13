@@ -15,6 +15,7 @@ enum PropType {
   PropT_String,    //
   PropT_Path,      //
   PropT_Selection, //
+  PropT_Vec2,      //
   PropT_Vec3,      //
   PropT_Vec4,      //
   PropT_Entity,    //
@@ -24,7 +25,7 @@ enum PropType {
 
 struct Props {
 public:
-  using Value = std::variant<int, float, std::string, bool, Vec2, Vec3, Vec4b, Entity*, Props>;
+  using Value = std::variant<int, float, std::string, bool, Vec2, Vec3, Vec4, Vec4b, Entity*, Props>;
   std::map<std::string, Value> values;
 
   bool contains(const std::string& key) const { return values.contains(key); }
@@ -76,6 +77,7 @@ public:
     if(is_type<int>(key)) return PropT_Int;
     if(is_type<bool>(key)) return PropT_Bool;
     if(is_type<std::string>(key)) return PropT_String;
+    if(is_type<Vec2>(key)) return PropT_Vec2;
     if(is_type<Vec3>(key)) return PropT_Vec3;
     if(is_type<Vec4b>(key)) return PropT_Color;
     if(is_type<Entity*>(key)) return PropT_Entity;
@@ -131,6 +133,7 @@ public:
     if constexpr(std::is_same_v<T, int>) return value_.int_;
     if constexpr(std::is_same_v<T, bool>) return value_.bool_;
     if constexpr(std::is_same_v<T, std::string>) return value_.str_;
+    if constexpr(std::is_same_v<T, Vec2>) return value_.vec3_;
     if constexpr(std::is_same_v<T, Vec3>) return value_.vec3_;
     if constexpr(std::is_same_v<T, Vec4>) return value_.vec4_;
     if constexpr(std::is_same_v<T, Vec4b>) return value_.color_;
@@ -141,6 +144,7 @@ public:
     if constexpr(std::is_same_v<T, int>) {value_.int_ = value; type = PropT_Int; return *this; }
     if constexpr(std::is_same_v<T, bool>) {value_.bool_ = value; type = PropT_Bool; return *this; }
     if constexpr(std::is_same_v<T, std::string>) {value_.str_ = value; type = PropT_String; return *this; }
+    if constexpr(std::is_same_v<T, Vec2>) {value_.vec3_ = value; type = PropT_Vec2; return *this;}
     if constexpr(std::is_same_v<T, Vec3>) {value_.vec3_ = value; type = PropT_Vec3; return *this; }
     if constexpr(std::is_same_v<T, Vec4>) {value_.vec4_ = value; type = PropT_Vec4; return *this; }
     if constexpr(std::is_same_v<T, Vec4b>) {value_.color_ = value; type = PropT_Color; return *this; }
@@ -154,6 +158,7 @@ public:
 struct PropsInfo {
   std::vector<PropInfoBase> props;
   size_t size() const { return props.size(); }
+  bool empty() const { return props.empty(); }
   bool contains(const std::string& key) const {
     for(auto& p : props)
       if(p.name == key) return true;
@@ -200,6 +205,8 @@ struct PropsInfo {
   void add_string_prop(const char* name, const char* cat, const char* desc, const char* def);
   void add_path_prop(const char* name, const char* category, const char* desc, const char* def);
   void add_color_prop(const char* name, const char* category, const char* desc, Vec4b def);
+  void add_vec2_prop(const char* name, const char* cat, const char* desc, //
+                     Vec3 def, float min, float max, float step = 0.1f);
   void add_vec3_prop(const char* name, const char* cat, const char* desc, //
                      Vec3 def, float min, float max, float step = 0.1f);
   void add_selection_prop(const char* name, const char* cat, const char* desc, //

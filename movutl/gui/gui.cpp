@@ -6,8 +6,8 @@
 #include <movutl/gui/gui.hpp>
 #include <movutl/gui/inspector.hpp>
 #include <movutl/gui/timeline.hpp>
-#include <movutl/gui/utilities.hpp>
 #include <movutl/gui/timeline_window.hpp>
+#include <movutl/gui/utilities.hpp>
 #include <movutl/gui/viewer.hpp>
 
 namespace mu {
@@ -26,6 +26,15 @@ void init_gui_panels() {
 void update_gui_panels() {
   auto a = GUIManager::Get();
   for(auto& panel : a->panels) panel->Update();
+  { // show fps in top panel transparent
+    ImGui::SetNextWindowBgAlpha(0.35f);
+    ImGui::SetNextWindowSize(ImVec2(100, 50));
+    ImGui::Begin("FPS", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
+    ImGui::Text("%.1f FPS", ImGui::GetIO().Framerate);
+    float ms = 1000.0f / ImGui::GetIO().Framerate;
+    ImGui::Text("%.2f ms", ms);
+    ImGui::End();
+  }
 }
 
 } // namespace detail
