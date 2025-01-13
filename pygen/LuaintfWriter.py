@@ -28,6 +28,7 @@ class LuaIntfWriter:
             "#define LUAINTF_LINK_LUA_COMPILED_IN_CXX 0\n"
             "#include <LuaIntf/LuaIntf.h>\n"
             "#include <lua.hpp>\n"
+            "#include <imgui.h>\n"
             "#include <movutl/core/props.hpp>\n"
             "#include <movutl/app/app.hpp>\n"
             "#include <movutl/plugin/input.hpp>\n"
@@ -50,6 +51,7 @@ class LuaIntfWriter:
             "namespace mu::detail { \n"
             "\n"
             "using namespace LuaIntf;\n"
+            "using namespace ImGui;\n"
             "\n"
             f"void generated_lua_binding_{self.PREFIX}(lua_State* L) {{\n"
             '    LuaBinding(L).beginModule("movutl")\n'
@@ -68,7 +70,13 @@ class LuaIntfWriter:
         write_if_different(self.output_filename, output)
 
     def register_func(self, func: MFunction):
-        self.autogen_text += f'    .addFunction("{func.name}", &{func.name})\n'
+        self.autogen_text += f'    .addFunction("{func.name}", '
+        self.autogen_text += f'static_cast<{func.returns.c_type}(*)( '
+        for idx , a in enumerate(func.args):
+            self.autogen_text += a.c_type
+            if idx < len(func.args) - 1:
+                self.autogen_text += ", "
+        self.autogen_text += f')>(&{func.name}))\n'
 
     def register_class(self, cls: MClass):
         if cls.name == "Entity":
@@ -87,6 +95,6 @@ class LuaIntfWriter:
                 self.autogen_text += f'    .addFunction("{f.name}", &{cls.name}::{f.name})\n'
 
         for p in cls.props:
-            self.autogen_text += f'    .addVariable("{p.name}", &{cls.name}::{p.name})\n'
+            self.autogen_text += f'    .addVariable("{p.name}", &{cls.name}::{p.name}) // {p.c_type}\n'
         self.autogen_text += "  .endClass()\n"
 

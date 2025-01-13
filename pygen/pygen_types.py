@@ -32,7 +32,17 @@ class MArgument:
     readonly: bool = False
     minvalue: str = ""
     maxvalue: str = ""
+    namespace :str = ""
     step: str = ""
+
+    def valid(self) -> bool:
+        if self.c_type in ["void", "void *"]:
+            return False
+        if "*" in self.c_type and "const char *" not in self.c_type:
+            return False
+        if "[" in self.c_type and "]" in self.c_type:
+            return False
+        return True
 
 
 @dataclass
@@ -45,8 +55,15 @@ class MFunction:
     is_static: bool = False
     is_const: bool = False
     constructor: bool = False
+    namespace :str = ""
     destructor: bool = False
+    filename :str = ""
 
+    def valid_args(self) -> bool:
+        for a in self.args:
+            if not a.valid():
+                return False
+        return True
 
 @dataclass
 class MEnum:
@@ -61,3 +78,8 @@ class MClass:
     desc: str
     funcs: List[MFunction]
     props: List[MArgument]
+    namespace :str = ""
+    filename :str = ""
+
+    def has_multi_funcs(self, fname: str) -> bool:
+        return len([f for f in self.funcs if f.name == fname]) > 1

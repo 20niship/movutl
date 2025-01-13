@@ -58,6 +58,9 @@ class Parser:
             if len(lines) >= method["line_number"]:
                 line = lines[method["line_number"] - 1]
                 f.should_autogen = should_autogen_func(line)
+            if not f.valid_args():
+                logger.warning(f"関数 {f.name} invalid ARGS : {f.args}")
+                continue
             member_funcs.append(f)
 
         for field in node["properties"]["public"]:
@@ -71,10 +74,14 @@ class Parser:
             arg = MArgument(name, field_type, "", ptype, "")
             arg.desc = comment
             arg.detault = field["default"] if "default" in field else ""
+            arg.c_type = field_type
             lines = self.basestr.split("\n")
             if len(lines) >= field["line_number"]:
                 line = lines[field["line_number"] - 1]
                 arg = parse_mprop_info(arg, line)
+            if not arg.valid():
+                logger.warning(f"メンバー {name} invalid ARGS : {arg}")
+                continue
             member_fields.append(arg)
 
         if len(member_funcs) == 0 and len(member_fields) == 0:
@@ -85,6 +92,8 @@ class Parser:
         registered_classes.append(classname)
 
         c = MClass(classname, "", member_funcs, member_fields)
+        c.namespace = node["namespace"]
+        c.filename = self.filename
         logger.info(
             f"class: {classname} <-- Fx={len(member_funcs)}, Args={len(member_fields)}"
         )
@@ -98,8 +107,6 @@ class Parser:
         if (
             "std" in namespce
             or "filemanager" in namespce
-            or "melchior::detail" in namespce
-            or "experimental" in namespce
             or "detail" in namespce
         ):
             return False
@@ -114,10 +121,13 @@ class Parser:
         f.desc = v["doxygen"] if "doxygen" in v else ""
         f.is_static = v["static"]
         f.is_const = v["const"]
+        f.namespace = v["namespace"]
+        f.filename = self.filename
         args: List[MArgument] = []
         for arg in v["parameters"]:
-            a = MArgument(arg["name"], arg["type"])
+            a = MArgument(arg["name"], "")
             a.detault = arg["default"] if "default" in arg else ""
+            a.c_type = arg["type"]
             args.append(a)
         f.args = args
 
@@ -147,7 +157,11 @@ class Parser:
             if f == None:
                 continue
 
+            f.namespace = namespce
             if (name, len(f.args)) in registered_funcions:
+                return
+            if not f.valid_args():
+                logger.warning(f"関数 {f.name} invalid ARGS : {f.args}")
                 return
 
             registered_funcions.append((name, len(f.args)))
@@ -259,7 +273,7 @@ class Parser:
             f.write(fstr)
         self.basestr = fstr
 
-        header = CppHeaderParser.CppHeader(header_file)
+        header = CppHeaderParser.CppHeader(tmp_fname)
         self._parse_functions(header)
         self._parse_enums(header)
         self._parse_classes(header)
@@ -281,6 +295,7 @@ def run():
         root / "movutl/core/anim.hpp",
         root / "movutl/asset/text.hpp",
         root / "movutl/app/app.hpp",
+        root / "ext/imgui/imgui.h",
         root / "movutl/gui/gui.hpp",
     ]
 
@@ -305,12 +320,25 @@ def run():
     enums_list.sort(key=lambda x: x.name)
     classes_list.sort(key=lambda x: x.name)
 
-    stub_generater = LuaIntfWriter("generated_lua.cpp")
-    stub_generater.set(funcs_list, enums_list, classes_list)
+    fn_imgui = [f for f in funcs_list if "ImGui" in f.namespace or "imgui" in f.filename]
+    fn_movtl = [f for f in funcs_list if "ImGui" not in f.namespace and "imgui" not in f.filename]
+
+    enu_imgui = [e for e in enums_list if "ImGui" in e.name]
+    enu_movtl = [e for e in enums_list if "ImGui" not in e.name]
+
+    cls_imgui = [c for c in classes_list if "ImGui" in c.name or "imgui" in c.filename]
+    cls_movtl = [c for c in classes_list if "ImGui" not in c.name and "imgui" not in c.filename]
+
+    stub_generater = LuaIntfWriter("generated_lua_movutl.cpp")
+    stub_generater.set(fn_movtl, enu_movtl, cls_movtl)
+    stub_generater.save()
+
+    stub_generater = LuaIntfWriter("generated_lua_imgui.cpp")
+    stub_generater.set(fn_imgui, enu_imgui, cls_imgui)
     stub_generater.save()
 
     stub_generater = PropsWriter("generated_props.cpp")
-    stub_generater.set(funcs_list, enums_list, classes_list)
+    stub_generater.set(fn_movtl, enu_movtl, cls_movtl)
     stub_generater.save()
 
 
