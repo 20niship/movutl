@@ -72,6 +72,8 @@ class PropsWriter:
                     self.autogen_text += f'  if(p.has<Vec4b>("{p.name}")) {p.name} = p.get<Vec4b>("{p.name}");\n'
                 case ArgumentType.ArgType_Vec3:
                     self.autogen_text += f'  if(p.has<Vec3>("{p.name}")) {p.name} = p.get<Vec3>("{p.name}");\n'
+                case ArgumentType.ArgType_Vec2:
+                    self.autogen_text += f'  if(p.has<Vec2>("{p.name}")) {p.name} = p.get<Vec2>("{p.name}");\n'
                 case ArgumentType.ArgType_Selection:
                     self.autogen_text += f'  if(p.has<int>("{p.name}")) {p.name} = p.get<int>("{p.name}");\n'
                 case _:
@@ -93,13 +95,17 @@ class PropsWriter:
 
         for p in cls.props:
             wrote_ = True
+            d = p.detault if p.detault != "" else "0.0"
+            d = d.replace(" ", "")
+            is_angle = "true" if p.is_angle else "false"
+            minvalue = p.minvalue if p.minvalue != "" else "0"
+            maxvalue = p.maxvalue if p.maxvalue != "" else "0"
+            step = p.step if p.step != "" else "1"
             match p.ptype:
                 case ArgumentType.ArgType_Float:
-                    d = p.detault if p.detault != "" else "0.0f"
-                    is_angle = "true" if p.is_angle else "false"
                     self.autogen_text += (
                         f'  info.add_float_prop("{p.name}", "{p.category}", "{p.desc}", {d}, '
-                        + f" 0, 0, 0, {is_angle}, false);\n"
+                        + f" {minvalue}, {maxvalue}, {step}, {is_angle}, false);\n"
                     )
                 case ArgumentType.ArgType_Int:
                     default = p.detault if p.detault != "" else "0"
@@ -123,7 +129,13 @@ class PropsWriter:
                     d = p.detault if p.detault != "" else "Vec3(0, 0, 0)"
                     self.autogen_text += (
                         f'  info.add_vec3_prop("{p.name}", "{p.category}", "{p.desc}", {d}, '
-                        + "0, 0, 0);\n"
+                        + f"{minvalue}, {maxvalue}, {step});\n"
+                    )
+                case ArgumentType.ArgType_Vec2:
+                    d = p.detault if p.detault != "" else "Vec2(0, 0, 0)"
+                    self.autogen_text += (
+                        f'  info.add_vec2_prop("{p.name}", "{p.category}", "{p.desc}", {d}, '
+                        + f"{minvalue}, {maxvalue}, {step});\n"
                     )
                 case ArgumentType.ArgType_Selection:
                     self.autogen_text += f'  info.add_selection_prop("{p.name}", "{p.category}", "{p.desc}", {p.detault});\n'

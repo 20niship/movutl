@@ -47,6 +47,7 @@ static bool fn_info_get(InputHandle ih, EntityInfo* iip) {
   iip->nframes = c->cap.get(cv::CAP_PROP_FRAME_COUNT);
   iip->width = c->cap.get(cv::CAP_PROP_FRAME_WIDTH);
   iip->height = c->cap.get(cv::CAP_PROP_FRAME_HEIGHT);
+  iip->format = ImageFormatRGBA;
   iip->handler = 0;
   return true;
 }
@@ -55,11 +56,22 @@ int fn_read_video(InputHandle ih, const EntityInfo* iip, Movie* entity) {
   if(!ih) return 0;
   InHandleCVVideo* cap = (InHandleCVVideo*)ih;
   if(!cap->cap.isOpened()) return 0;
-  cv::Mat image;
-  cap->cap.retrieve(image);
-  if(image.empty()) return 0;
-  entity->img_->set_cv_img(&image);
-  return image.total() * image.elemSize();
+
+  bool same_size = entity->img_ &&                      //
+                   entity->img_->channels() == 3 &&     //
+                   entity->img_->width == iip->width && //
+                   entity->img_->height == iip->height;
+  if(same_size) {
+    cv::Mat image(entity->img_->height, entity->img_->width, CV_8UC3, entity->img_->data());
+    cap->cap.retrieve(image);
+  } else {
+    cv::Mat image;
+    cap->cap.retrieve(image);
+    if(image.empty()) return 0;
+    cv::cvtColor(image, image, cv::COLOR_BGR2RGBA);
+    entity->img_->set_cv_img(&image);
+  }
+  return 0;
 }
 
 static int fn_set_frame(InputHandle ih, int frame) {

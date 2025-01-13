@@ -11,11 +11,12 @@ class ArgumentType(Enum):
     ArgType_String = 4
     ArgType_Path = 5
     ArgType_Selection = 6
-    ArgType_Vec3 = 7
-    ArgType_Vec4 = 8
-    ArgType_Entity = 9
-    ArgType_Color = 10
-    ArgType_Undefined = 11
+    ArgType_Vec2 = 7
+    ArgType_Vec3 = 8
+    ArgType_Vec4 = 9
+    ArgType_Entity = 10
+    ArgType_Color = 11
+    ArgType_Undefined = 12
 
 
 @dataclass
@@ -29,6 +30,9 @@ class MArgument:
     desc: str = ""
     is_angle: bool = False
     readonly: bool = False
+    minvalue: str = ""
+    maxvalue: str = ""
+    step: str = ""
 
 
 @dataclass

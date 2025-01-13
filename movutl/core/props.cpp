@@ -53,7 +53,7 @@ void PropsInfo::add_string_prop(const char* name, const char* category, const ch
   props.push_back(prop);
 }
 
-void PropsInfo::add_vec2_prop(const char* name, const char* cat, const char* desc, Vec3 def, float min, float max, float step) {
+void PropsInfo::add_vec2_prop(const char* name, const char* cat, const char* desc, Vec2 def, float min, float max, float step) {
   PropInfoBase prop;
   prop.name = name;
   prop.categ = cat;
@@ -61,8 +61,8 @@ void PropsInfo::add_vec2_prop(const char* name, const char* cat, const char* des
   prop.min = min;
   prop.max = max;
   prop.step = step;
-  prop.value_.vec3_ = def;
-  prop.type = PropT_Vec3;
+  prop.value_.vec2_ = def;
+  prop.type = PropT_Vec2;
   props.push_back(prop);
 }
 

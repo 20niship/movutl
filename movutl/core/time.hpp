@@ -11,13 +11,13 @@ struct ScopeTimer {
     auto dur = end - start;
     using namespace std::chrono;
     auto d_us = duration_cast<microseconds>(dur).count();
-    if(d_us < 1000) {
+    if(d_us < 10000) {
       LOG_F(1, "%s: %d us", name, (int)d_us);
       return;
     }
 
     auto d_ms = duration_cast<milliseconds>(dur).count();
-    if(d_ms < 1000) {
+    if(d_ms < 10000) {
       LOG_F(1, "%s: %d ms", name, (int)d_ms);
       return;
     }

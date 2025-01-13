@@ -10,7 +10,10 @@
 #include <movutl/asset/composition.hpp>
 namespace mu { 
 void Movie::setProps(const Props& p) {
-   if(p.has<int>("start_frame_")) start_frame_ = p.get<int>("start_frame_");
+   if(p.has<Vec3>("pos")) pos = p.get<Vec3>("pos");
+  if(p.has<Vec2>("scale")) scale = p.get<Vec2>("scale");
+  if(p.has<float>("rotation")) rotation = p.get<float>("rotation");
+  if(p.has<int>("start_frame_")) start_frame_ = p.get<int>("start_frame_");
   if(p.has<float>("speed")) speed = p.get<float>("speed");
   if(p.has<float>("alpha_")) alpha_ = p.get<float>("alpha_");
   if(p.has<bool>("loop_")) loop_ = p.get<bool>("loop_");
@@ -19,11 +22,17 @@ void Movie::setProps(const Props& p) {
 }
 PropsInfo Movie::getPropsInfo() const {
   PropsInfo info;
+  info.add_vec3_prop("pos", "", "", Vec3 ( 0 , 0 , 0 ), 0, 0, 1);
+  info.set_last_prop_dispname("位置");
+  info.add_vec2_prop("scale", "", "", Vec2 ( 100 , 100 ), 0, 0, 1);
+  info.set_last_prop_dispname("拡大率");
+  info.add_float_prop("rotation", "", "", 0,  0, 0, 1, false, false);
+  info.set_last_prop_dispname("回転");
   info.add_int_prop("start_frame_", "", "", 0,  0, 0, 0);
   info.set_last_prop_dispname("開始フレーム");
-  info.add_float_prop("speed", "", "", 0.0f,  0, 0, 0, false, false);
+  info.add_float_prop("speed", "", "", 100.0,  0.0, 10000.0, 5.0, false, false);
   info.set_last_prop_dispname("再生速度");
-  info.add_float_prop("alpha_", "", "", 0.0f,  0, 0, 0, false, false);
+  info.add_float_prop("alpha_", "", "", 255,  0, 0, 1, false, false);
   info.set_last_prop_dispname("透明度");
   info.add_bool_prop("loop_", "", "", false);
   info.set_last_prop_dispname("ループ再生");
@@ -35,6 +44,9 @@ PropsInfo Movie::getPropsInfo() const {
 }
 Props Movie::getProps() const {
    Props p;
+  p["pos"] = pos;
+  p["scale"] = scale;
+  p["rotation"] = rotation;
   p["start_frame_"] = start_frame_;
   p["speed"] = speed;
   p["alpha_"] = alpha_;
@@ -56,17 +68,17 @@ void TextEntt::setProps(const Props& p) {
 }
 PropsInfo TextEntt::getPropsInfo() const {
   PropsInfo info;
-  info.add_vec3_prop("pos_", "", "", Vec3(0, 0, 0), 0, 0, 0);
+  info.add_vec3_prop("pos_", "", "", Vec3(0, 0, 0), 0, 0, 1);
   info.set_last_prop_dispname("位置 viewer_anchor");
-  info.add_float_prop("scale_x_", "", "", 0.0f,  0, 0, 0, false, false);
+  info.add_float_prop("scale_x_", "", "", 1.0,  0, 0, 1, false, false);
   info.set_last_prop_dispname("拡大率X");
-  info.add_float_prop("scale_y_", "", "", 0.0f,  0, 0, 0, false, false);
+  info.add_float_prop("scale_y_", "", "", 1.0,  0, 0, 1, false, false);
   info.set_last_prop_dispname("拡大率Y");
-  info.add_float_prop("rot_", "", "", 0.0f,  0, 0, 0, false, false);
+  info.add_float_prop("rot_", "", "", 0.0,  0, 0, 1, false, false);
   info.set_last_prop_dispname("回転");
-  info.add_float_prop("speed", "", "", 0.0f,  0, 0, 0, false, false);
+  info.add_float_prop("speed", "", "", 100.0,  0, 0, 1, false, false);
   info.set_last_prop_dispname("再生速度");
-  info.add_float_prop("alpha_", "", "", 0.0f,  0, 0, 0, false, false);
+  info.add_float_prop("alpha_", "", "", 255,  0, 0, 1, false, false);
   info.set_last_prop_dispname("透明度");
   info.add_string_prop("font", "", "", """");
   info.set_last_prop_dispname("フォント");

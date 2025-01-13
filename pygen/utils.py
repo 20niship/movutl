@@ -85,6 +85,12 @@ def parse_mprop_info(arg: MArgument, line: str) -> MArgument:
             arg.readonly = value.lower() == "true"
         if key == "desc":
             arg.desc = value
+        if key == "min":
+            arg.minvalue = value
+        if key == "max":
+            arg.maxvalue = value
+        if key == "step":
+            arg.step = value
     arg.dispname = arg.dispname.replace('"', "")
     arg.category = arg.category.replace('"', "")
     arg.desc = arg.desc.replace('"', "")
@@ -116,6 +122,8 @@ def get_prop_type(argtype: str) -> ArgumentType:
         return ArgumentType.ArgType_Path
     if argtype == "Vec3":
         return ArgumentType.ArgType_Vec3
+    if argtype == "Vec2":
+        return ArgumentType.ArgType_Vec2
     if argtype == "Vec4":
         return ArgumentType.ArgType_Vec4
     if argtype == "Vec4b":

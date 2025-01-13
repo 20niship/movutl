@@ -26,7 +26,7 @@ bool Movie::render(Composition* cmp) {
   if(tlocal < 0 || tlocal >= trk.fend - trk.fstart) return false;
   if(in_plg_->fn_set_frame(in_handle_, tlocal)) in_plg_->fn_set_frame(in_handle_, tlocal);
 
-  if(!img_) img_ = Image::Create("!movie", info.width, info.height, info.format, false);
+  if(!img_) img_ = Image::Create("!movie", info.width, info.height, ImageFormatRGBA, false);
   MU_ASSERT(in_plg_->fn_read_video);
   in_plg_->fn_read_video(in_handle_, &info, this);
   int cw = cmp->size[0];
@@ -34,9 +34,14 @@ bool Movie::render(Composition* cmp) {
   if(cw <= 0 || ch <= 0) return false;
 
   MU_ASSERT(img_);
-  int base_x = trk.anchor[0] + (cw - img_->width) / 2;
-  int base_y = trk.anchor[1] + (ch - img_->height) / 2;
-  img_->copyto(cmp->frame_final.get(), Vec2d(base_x, base_y));
+  MU_ASSERT(img_->fmt == ImageFormatRGBA);
+  int base_x = trk.anchor[0] + (cw - img_->width) / 2 + pos[0];
+  int base_y = trk.anchor[1] + (ch - img_->height) / 2 + pos[1];
+  Vec2 center = Vec2(base_x, base_y) + trk.anchor;
+  printf("center: %s\n", center.str().c_str());
+
+    img_->copyto(cmp->frame_final.get(), center, this->scale.avg() / 100, this->rotation);
+
   cmp->frame_final->dirty();
   return true;
 }

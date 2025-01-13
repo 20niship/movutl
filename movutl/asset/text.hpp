@@ -15,10 +15,10 @@ public:
   Ref<Image> img_;
 
   Vec3 pos_;             // MPROPERTY(name="位置" viewer_anchor=true, position=true)
-  float scale_x_ = 1.0f; // MPROPERTY(name="拡大率X, scale_x")
-  float scale_y_ = 1.0f; // MPROPERTY(name="拡大率Y, scale_y")
+  float scale_x_ = 1.0; // MPROPERTY(name="拡大率X, scale_x")
+  float scale_y_ = 1.0; // MPROPERTY(name="拡大率Y, scale_y")
   float rot_;            // MPROPERTY(name="回転", angle=true, radians=true)
-  float speed = 100.0f;  // MPROPERTY(name="再生速度")
+  float speed = 100.0;  // MPROPERTY(name="再生速度")
   uint8_t alpha_ = 255;  // MPROPERTY(name="透明度")
   std::string font;      // MPROPERTY(name="フォント", type="font")
   std::string text;      // MPROPERTY(name="テキスト")

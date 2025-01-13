@@ -25,8 +25,8 @@ public:
   unsigned int height = 0;           // MPROPERTY(name="高さ", readonly=true)
   Vec3 pos;                          // MPROPERTY(name="位置" viewer_anchor=true, position=true)
   Vec2 scale = Vec2(1.0, 1.0);       // MPROPERTY(name="拡大率X, scale=true)
-  float rotation = 0.0f;             // MPROPERTY(name="回転", angle=true, radians=true)
-  float alpha = 1.0f;                // MPROPERTY(name="透明度")
+  float rotation = 0.0;             // MPROPERTY(name="回転", angle=true, radians=true)
+  float alpha = 1.0;                // MPROPERTY(name="透明度")
   std::string path;                  // MPROPERTY(name="ファイル", type="path")
   int16_t dirty_ = 1;
 
@@ -57,8 +57,8 @@ public:
     ptr[0] = rgba[0];
   }
 
+  bool copyto_rgba(Image* dst, const Vec2d& pmin) const;
   bool copyto(Image* dst, const Vec2d& pmin) const;
-  bool copyto(Image* dst, const Vec2d& pmin, float scale, const Vec2d& offset) const;
   bool copyto(Image* dst, const Vec2d& pmin, const Vec2d& pmax) const;
   bool copyto(Image* dst, const Vec2d& center, float scale, float angle) const;
 

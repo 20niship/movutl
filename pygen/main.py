@@ -1,4 +1,5 @@
 import os
+from time import sleep
 from typing import List
 from pathlib import Path
 import glob
@@ -69,6 +70,7 @@ class Parser:
             ptype = get_prop_type(field_type)
             arg = MArgument(name, field_type, "", ptype, "")
             arg.desc = comment
+            arg.detault = field["default"] if "default" in field else ""
             lines = self.basestr.split("\n")
             if len(lines) >= field["line_number"]:
                 line = lines[field["line_number"] - 1]
@@ -314,3 +316,4 @@ def run():
 
 if __name__ == "__main__":
     run()
+    sleep(0.01)

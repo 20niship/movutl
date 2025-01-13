@@ -105,6 +105,7 @@ struct PropInfoBase {
     int int_;
     bool bool_;
     char str_[255];
+    Vec2 vec2_;
     Vec3 vec3_;
     Vec4 vec4_;
     Vec4b color_;
@@ -120,8 +121,8 @@ public:
   std::string categ;
   std::string desc;
   float min = 0.0f;
-  float max = 1.0f;
-  float step = 0.1f;
+  float max = 0.0f;
+  float step = 1.0f;
   bool readonly = false;
 
   PropInfoBase() = default;
@@ -206,7 +207,7 @@ struct PropsInfo {
   void add_path_prop(const char* name, const char* category, const char* desc, const char* def);
   void add_color_prop(const char* name, const char* category, const char* desc, Vec4b def);
   void add_vec2_prop(const char* name, const char* cat, const char* desc, //
-                     Vec3 def, float min, float max, float step = 0.1f);
+                     Vec2 def, float min, float max, float step = 0.1f);
   void add_vec3_prop(const char* name, const char* cat, const char* desc, //
                      Vec3 def, float min, float max, float step = 0.1f);
   void add_selection_prop(const char* name, const char* cat, const char* desc, //

@@ -59,6 +59,7 @@ lua.new_usertype<Image>("Image", //
   "data", &Image::data, // 
   "set_rgb", &Image::set_rgb, // 
   "set_rgba", &Image::set_rgba, // 
+  "copyto_rgba", &Image::copyto_rgba, // 
   "size", &Image::size, // 
   "size_in_bytes", &Image::size_in_bytes, // 
   "reset", &Image::reset, // 
@@ -89,6 +90,9 @@ lua.new_usertype<Movie>("Movie", //
   "getPropsInfo", &Movie::getPropsInfo, // 
   "getProps", &Movie::getProps, // 
   "setProps", &Movie::setProps, // 
+  "pos", &Movie::pos, //
+  "scale", &Movie::scale, //
+  "rotation", &Movie::rotation, //
   "start_frame_", &Movie::start_frame_, //
   "speed", &Movie::speed, //
   "alpha_", &Movie::alpha_, //
