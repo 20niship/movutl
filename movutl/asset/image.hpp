@@ -12,7 +12,6 @@ namespace mu {
 class Image final : public Entity {
 public:
 private:
-  ImageFormat fmt = ImageFormatRGB;
   Vec<uint8_t> data_;
 
   void reserve(size_t new_capacity) { data_.resize(new_capacity); }
@@ -21,14 +20,19 @@ public:
   Image() = default;
   ~Image() = default;
 
-  unsigned int width = 0;  // MPROPERTY(name="幅", readonly=true)
-  unsigned int height = 0; // MPROPERTY(name="高さ", readonly=true)
-  Vec3 pos;                // MPROPERTY(name="位置" viewer_anchor=true, position=true)
-  float scale_x = 1.0f;    // MPROPERTY(name="拡大率X, scale_x)
-  float scale_y = 1.0f;    // MPROPERTY(name="拡大率Y, scale_y)
-  float rotation = 0.0f;   // MPROPERTY(name="回転", angle=true, radians=true)
-  float alpha = 1.0f;      // MPROPERTY(name="透明度")
-  std::string path;        // MPROPERTY(name="ファイル", type="path")
+  ImageFormat fmt = ImageFormatRGB; // MPROPERTY(name="フォーマット", readonly=true)
+  unsigned int width = 0;           // MPROPERTY(name="幅", readonly=true)
+  unsigned int height = 0;          // MPROPERTY(name="高さ", readonly=true)
+  Vec3 pos;                         // MPROPERTY(name="位置" viewer_anchor=true, position=true)
+  float scale_x = 1.0f;             // MPROPERTY(name="拡大率X, scale_x)
+  float scale_y = 1.0f;             // MPROPERTY(name="拡大率Y, scale_y)
+  float rotation = 0.0f;            // MPROPERTY(name="回転", angle=true, radians=true)
+  float alpha = 1.0f;               // MPROPERTY(name="透明度")
+  std::string path;                 // MPROPERTY(name="ファイル", type="path")
+  int16_t dirty_ = 1;
+
+  void dirty() { dirty_++; }
+  uint8_t* data() { return data_.data(); }
 
   void set_rgb(const size_t x, const size_t y, const Vec3b& rgb) {
     MU_ASSERT(channels() >= 3);
@@ -59,7 +63,6 @@ public:
   bool copyto(Image* dst, const Vec2d& pmin, const Vec2d& pmax) const;
   bool copyto(Image* dst, const Vec2d& center, float scale, float angle) const;
 
-  uint8_t* data() { return data_.data(); }
   size_t size() const { return width * height; }
   size_t size_in_bytes() const { return size() * channels(); }
   void reset() {

@@ -37,6 +37,7 @@ bool Movie::render(Composition* cmp) {
   int base_x = trk.anchor[0] + (cw - img_->width) / 2;
   int base_y = trk.anchor[1] + (ch - img_->height) / 2;
   img_->copyto(cmp->frame_final.get(), Vec2d(base_x, base_y));
+  cmp->frame_final->dirty();
   return true;
 }
 

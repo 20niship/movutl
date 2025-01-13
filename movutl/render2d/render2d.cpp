@@ -14,7 +14,6 @@ bool render_comp(Composition* comp) {
   }
   comp->frame_final->fill(0);
 
-  LOG_F(1, "Rendering composition: %s", (const char*)comp->name);
   int frame = comp->frame;
   for(auto& layer : comp->layers) {
     if(!layer.active) continue;
@@ -22,7 +21,6 @@ bool render_comp(Composition* comp) {
     if(!e) continue;
     e->render(comp);
   }
-
   return true;
 }
 

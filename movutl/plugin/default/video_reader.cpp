@@ -56,7 +56,7 @@ int fn_read_video(InputHandle ih, const EntityInfo* iip, Movie* entity) {
   InHandleCVVideo* cap = (InHandleCVVideo*)ih;
   if(!cap->cap.isOpened()) return 0;
   cv::Mat image;
-  cap->cap >> image;
+  cap->cap.retrieve(image);
   if(image.empty()) return 0;
   entity->img_->set_cv_img(&image);
   return image.total() * image.elemSize();

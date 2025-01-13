@@ -55,9 +55,10 @@ lua.new_usertype<EntityInfo>("EntityInfo", //
 );
 lua.new_usertype<Image>("Image", // 
     sol::constructors<sol::types<>>(), // 
+  "dirty", &Image::dirty, // 
+  "data", &Image::data, // 
   "set_rgb", &Image::set_rgb, // 
   "set_rgba", &Image::set_rgba, // 
-  "data", &Image::data, // 
   "size", &Image::size, // 
   "size_in_bytes", &Image::size_in_bytes, // 
   "reset", &Image::reset, // 
@@ -69,6 +70,7 @@ lua.new_usertype<Image>("Image", //
   "imshow", &Image::imshow, // 
   "render", &Image::render, // 
   "getType", &Image::getType, // 
+  "fmt", &Image::fmt, //
   "width", &Image::width, //
   "height", &Image::height, //
   "pos", &Image::pos, //
@@ -76,7 +78,8 @@ lua.new_usertype<Image>("Image", //
   "scale_y", &Image::scale_y, //
   "rotation", &Image::rotation, //
   "alpha", &Image::alpha, //
-  "path", &Image::path
+  "path", &Image::path, //
+  "dirty_", &Image::dirty_
 );
 lua.new_usertype<Movie>("Movie", // 
     sol::constructors<sol::types<>>(), // 
