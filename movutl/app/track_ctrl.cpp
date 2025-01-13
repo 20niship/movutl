@@ -42,4 +42,26 @@ bool add_new_audio_track(const char* name, const char* path, int start, int laye
   MU_UNUSED(layer);
   return false;
 }
+
+bool add_new_track(const char* name, EntityType type, int start, int end){
+  MU_ASSERT(name != nullptr);
+  MU_ASSERT(start >= 0);
+  MU_ASSERT(end >= start);
+  MU_FAIL("Not implemented yet");
+  /* auto pj = Project::Get(); */
+  /* Composition* main_comp = pj->get_main_comp(); */
+  /* if(!main_comp) { */
+  /*   Project::New(); */
+  /*   main_comp = pj->get_main_comp(); */
+  /* } */
+  /* MU_ASSERT(main_comp); */
+  /* TrackLayer trk; */
+  /* trk.name = name; */
+  /* trk.type = type; */
+  /* trk.fstart = start; */
+  /* trk.fend = end; */
+  /* main_comp->tracks.push_back(trk); */
+  return true;
+}
+
 } // namespace mu

@@ -4,7 +4,7 @@ from typing import List
 from pathlib import Path
 import glob
 from pygen_types import MFunction, MEnum, MClass, MArgument, ArgumentType
-from SolWriter import SolWriter
+from LuaintfWriter import LuaIntfWriter
 from PropsWriter import PropsWriter
 from config import ignore_symbols
 from utils import (
@@ -305,7 +305,7 @@ def run():
     enums_list.sort(key=lambda x: x.name)
     classes_list.sort(key=lambda x: x.name)
 
-    stub_generater = SolWriter("generated_sol.cpp")
+    stub_generater = LuaIntfWriter("generated_lua.cpp")
     stub_generater.set(funcs_list, enums_list, classes_list)
     stub_generater.save()
 

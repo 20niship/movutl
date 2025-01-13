@@ -102,7 +102,6 @@ bool Image::copyto_rgba(Image* dst, const Vec2d& pmin) const {
 }
 
 bool Image::copyto(Image* dst, const Vec2d& pmin) const {
-  ScopeTimer st("Image::copyto");
   MU_ASSERT(dst);
   if(this->width <= 0 || this->height <= 0 || dst->width <= 0 || dst->height <= 0) return false;
   if(this->channels() == 4 && dst->channels() == 4) return copyto_rgba(dst, pmin);

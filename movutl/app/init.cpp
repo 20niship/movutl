@@ -1,6 +1,7 @@
 #include <movutl/app/app.hpp>
 #include <movutl/app/app_impl.hpp>
 #include <movutl/gui/gui.hpp>
+#include <movutl/binding/binding.hpp>
 #include <movutl/asset/config.hpp>
 #include <movutl/plugin/plugin.hpp>
 
@@ -17,6 +18,7 @@ void init() {
   detail::activate_all_plugins();
   Config::Load();
   LOG_F(1, "Initialization complete");
+  detail::init_lua_binding();
 }
 
 } // namespace mu

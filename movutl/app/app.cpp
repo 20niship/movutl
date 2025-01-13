@@ -37,8 +37,22 @@ namespace detail {
 void update_renderer_thread() {
   auto cmp = Composition::GetActiveComp();
   if(!cmp) return;
-  ScopeTimer timer("update_renderer_thread");
   render_comp(cmp);
 }
 } // namespace detail
+
+void new_project() {
+  Project::New();
+}
+void save_project() {
+  MU_FAIL("Not implemented");
+}
+void save_project_as(const char* path) {
+  MU_FAIL("Not implemented");
+}
+
+void open_project(const char* path) {
+  MU_FAIL("Not implemented");
+}
+
 } // namespace mu

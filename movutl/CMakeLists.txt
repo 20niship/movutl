@@ -32,7 +32,6 @@ if(APPLE)
 endif()
 
 pkg_check_modules(LuaJIT REQUIRED IMPORTED_TARGET luajit)
-# target_link_libraries(<your_target> PRIVATE PkgConfig::LuaJIT)
 
 
 # --------------------------------------------------------------
@@ -89,7 +88,8 @@ set(MOVUTL_INCLUDES
   ${MOVUTL_ROOT_DIR}/ext/imgui/backends
   ${MOVUTL_ROOT_DIR}/ext/filewatch
   ${MOVUTL_ROOT_DIR}/ext/json/include
-  ${MOVUTL_ROOT_DIR}/ext/sol2/include
+  ${MOVUTL_ROOT_DIR}/ext/lua-intf/
+  ${MOVUTL_ROOT_DIR}/ext/lua-intf/LuaIntf
 )
 file(GLOB MOVUTL_EXT_SRC 
   ${MOVUTL_ROOT_DIR}/ext/loguru/loguru.cpp
@@ -100,6 +100,17 @@ file(GLOB MOVUTL_EXT_SRC
   ${MOVUTL_ROOT_DIR}/ext/imgui/backends/imgui_impl_glfw.cpp
   ${MOVUTL_ROOT_DIR}/ext/imgui/backends/imgui_impl_opengl3.cpp
   ${MOVUTL_ROOT_DIR}/ext/filewatch/FileWatcher.cpp
+
+  # -- luaintf
+  ${MOVUTL_ROOT_DIR}/ext/lua-intf/LuaIntf/src/LuaRef.cpp
+  ${MOVUTL_ROOT_DIR}/ext/lua-intf/LuaIntf/src/LuaState.cpp 
+  ${MOVUTL_ROOT_DIR}/ext/lua-intf/LuaIntf/src/LuaFunction.cpp 
+  ${MOVUTL_ROOT_DIR}/ext/lua-intf/LuaIntf/src/LuaRefLink.cpp 
+  ${MOVUTL_ROOT_DIR}/ext/lua-intf/LuaIntf/src/CppBindModule.cpp 
+  ${MOVUTL_ROOT_DIR}/ext/lua-intf/LuaIntf/src/CppBindFunction.cpp 
+  ${MOVUTL_ROOT_DIR}/ext/lua-intf/LuaIntf/src/CppBindClass.cpp 
+  ${MOVUTL_ROOT_DIR}/ext/lua-intf/LuaIntf/src/LuaCompat.cpp
+  ${MOVUTL_ROOT_DIR}/ext/lua-intf/LuaIntf/src/QtLuaIntf.cpp
 )
 
 include_directories(${MOVUTL_INCLUDES})
