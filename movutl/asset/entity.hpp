@@ -2,6 +2,7 @@
 
 #include <movutl/asset/track.hpp>
 #include <movutl/core/defines.hpp>
+#include <movutl/core/string.hpp>
 #include <string>
 
 #define BITMAPINFOHEADER void
@@ -51,7 +52,7 @@ struct EntityInfo {
   WAVEFORMATEX* audio_format = nullptr; // 音声フォーマットへのポインタ(次に関数が呼ばれるまで内容を有効にしておく)
   int32_t audio_format_size;            // 音声フォーマットのサイズ
   void* handler;                        // 画像codecハンドラ
-  int32_t reserve[7];
+  int32_t reserved[7];
   std::string str() const;
 };
 
@@ -62,9 +63,9 @@ protected:
   EntityInfo info;
 
 public:
-  char name[MAX_DISPNAME]; // MPROPERTY(name="名前")
-  uint64_t guid_ = 0;      // MPROPERTY(name="GUID")
-  TrackObject trk;         // MPROPERTY(name="トラック")
+  FixString name;     // MPROPERTY(name="名前")
+  uint64_t guid_ = 0; // MPROPERTY(name="GUID")
+  TrackObject trk;    // MPROPERTY(name="トラック")
 
   virtual constexpr EntityType getType() const = 0;
 

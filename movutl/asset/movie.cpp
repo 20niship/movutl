@@ -7,7 +7,7 @@
 namespace mu {
 Ref<Movie> Movie::Create(const char* name, const char* path) {
   auto mov = std::make_shared<Movie>();
-  strncpy(mov->name, name, MAX_DISPNAME);
+  mov->name = name;
   Project::Get()->entities.push_back(mov);
   mov->guid_ = Project::Get()->entities.size();
   // TODO: Load movie from file
@@ -16,7 +16,7 @@ Ref<Movie> Movie::Create(const char* name, const char* path) {
 
 bool Movie::render(Composition* cmp) {
   if(!in_plg_ || info.width <= 0 || info.height <= 0 || info.nframes <= 0) {
-    LOG_F(WARNING, "Invalid movie info: %s -> %s", name, info.str().c_str());
+    LOG_F(WARNING, "Invalid movie info: %s -> %s", name.c_str(), info.str().c_str());
     return false;
   }
 

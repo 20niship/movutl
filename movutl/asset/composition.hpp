@@ -1,6 +1,7 @@
 #pragma once
 
 #include <movutl/asset/image.hpp>
+#include <movutl/core/string.hpp>
 
 namespace mu {
 
@@ -10,7 +11,7 @@ class Entity;
  */
 struct TrackLayer {
 public:
-  char name[MAX_DISPNAME];
+  FixString name = "Layer";
   bool active = true;
   std::vector<Ref<Entity>> entts;
 
@@ -22,7 +23,7 @@ public:
 class Composition {
 public:
   uint32_t guid;
-  char name[MAX_DISPNAME] = "Main";
+  FixString name = "Main";
 
   enum Flag : uint32_t {
     setting_dialog = 1 << 4,      // そのオブジェクトの設定ダイアログが表示されている

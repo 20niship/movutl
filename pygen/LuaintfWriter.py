@@ -41,13 +41,18 @@ class LuaIntfWriter:
             "#include <movutl/asset/track.hpp>\n"
             "#include <movutl/asset/entity.hpp>\n"
             "#include <movutl/asset/composition.hpp>\n"
+            "extern \"C\" {\n" 
+            "#include <lua.h>\n" 
+            "#include <lauxlib.h>\n" 
+            "#include <lualib.h>\n" 
+            "}\n" 
+            "\n"
             "namespace mu::detail { \n"
             "\n"
             "using namespace LuaIntf;\n"
             "\n"
             f"void generated_lua_binding_{self.PREFIX}(lua_State* L) {{\n"
-            '    auto module = LuaBinding(L).beginModule("movutl");\n'
-            "    module"
+            '    LuaBinding(L).beginModule("movutl")\n'
         )
 
         self.output_filename = "../movutl/generated/" + filename

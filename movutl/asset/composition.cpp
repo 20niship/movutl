@@ -14,7 +14,7 @@ Ref<Entity> TrackLayer::find_entt(uint32_t frame) const {
 
 
 std::string TrackLayer::str() const {
-  std::string str = "Layer<" + std::string(name) + " / entt:" + std::to_string(entts.size()) + ">";
+  std::string str = "Layer<" + std::string(name.c_str()) + " / entt:" + std::to_string(entts.size()) + ">";
   return str;
 }
 std::string TrackLayer::summary() const {
@@ -22,7 +22,7 @@ std::string TrackLayer::summary() const {
   if(entts.size() > 0) {
     str += " [";
     for(int i = 0; i < std::min(5, (int)entts.size()); i++) {
-      str += entts[i]->name;
+      str += entts[i]->name.c_str();
       if(i < std::min(5, (int)entts.size()) - 1) str += ",";
     }
     str += "]";
@@ -43,17 +43,17 @@ Composition::Composition(const char* name, int32_t w, int32_t h, int32_t fps) {
   this->size[0] = w;
   this->size[1] = h;
   this->framerate_nu = fps;
-  std::strncpy(cmp->name, name, MAX_DISPNAME);
+  cmp->name = name;
   for(int i = 0; i < 10; i++) {
     TrackLayer layer;
     std::string name_str = "Layer" + std::to_string(i + 1);
-    std::strncpy(layer.name, name_str.c_str(), MAX_DISPNAME);
+    layer.name = name_str;
     this->layers.push_back(layer);
   }
 }
 
 std::string Composition::str() const {
-  std::string str = "Composition<" + std::string(name) + "/" + std::to_string(layers.size()) + ">";
+  std::string str = "Composition<" + std::string(name.c_str()) + "/" + std::to_string(layers.size()) + ">";
   return str;
 }
 

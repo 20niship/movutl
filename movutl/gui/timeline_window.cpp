@@ -23,7 +23,7 @@ void TimelineWindow::Update() {
   auto cp = Project::GetActiveCompo();
   if(ImGui::BeginTabBar("## MOVUTL TIMELINE TABS")) {
     for(int i = 0; i < pj->compos_.size(); ++i) {
-      const std::string str = ICON_FA_FILE + std::string(" ") + pj->compos_[i].name;
+      const std::string str = ICON_FA_FILE + std::string(" ") + pj->compos_[i].name.c_str();
       if(ImGui::BeginTabItem(str.c_str())) {
         Project::SetActiveCompo(i);
         cp = Project::GetActiveCompo();
@@ -35,7 +35,7 @@ void TimelineWindow::Update() {
   MU_ASSERT(cp);
 
   bool playing = false;
-  if(!BeginTimeline(cp->name, &cp->frame, &cp->fstart, &cp->fend, &playing)) {
+  if(!BeginTimeline(cp->name.c_str(), &cp->frame, &cp->fstart, &cp->fend, &playing)) {
     EndTimeline();
     ImGui::End();
     return;
@@ -52,7 +52,7 @@ void TimelineWindow::Update() {
       auto& entt = layer.entts[ei];
       bool hovered = BeginTrack(entt);
       if(hovered) {
-        ImGui::SetTooltip("Entity %s", entt->name);
+        ImGui::SetTooltip("Entity %s", entt->name.c_str());
       }
       if(hovered && ImGui::IsMouseClicked(0)) {
         select_entt(entt);

@@ -174,7 +174,7 @@ bool Image::render(Composition* cmp) {
 Ref<Image> Image::Create(const char* name, const char* path, bool add_to_pj) {
   MU_ASSERT(name && path);
   auto img = std::make_shared<Image>();
-  strncpy(img->name, name, sizeof(img->name));
+  img->name = name;
   img->path = path;
   if(add_to_pj) {
     auto pj = Project::Get();
@@ -188,7 +188,7 @@ Ref<Image> Image::Create(const char* name, int w, int h, ImageFormat format, boo
   MU_ASSERT(name && w > 0 && h > 0);
   auto img = std::make_shared<Image>();
   MU_ASSERT(img);
-  strncpy(img->name, name, sizeof(img->name));
+  img->name = name;
   img->fmt = format;
   img->resize(w, h);
   if(add_to_pj) {

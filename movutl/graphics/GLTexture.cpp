@@ -29,7 +29,7 @@ void GLTexture::set(const std::shared_ptr<Image>& image) {
   Image* i = img_.lock().get();
 
   if(i->width == 0 || i->height == 0) {
-    LOG_F(ERROR, "Image size is zero. %s (%d, %d)", i->name, i->width, i->height);
+    LOG_F(ERROR, "Image size is zero. %s (%d, %d)", i->name.c_str(), i->width, i->height);
     return;
   }
   auto format = get_opengl_format(i->fmt);

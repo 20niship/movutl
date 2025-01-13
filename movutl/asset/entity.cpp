@@ -23,7 +23,7 @@ Ref<Entity> Entity::CreateEntity(const char* name, EntityType type) {
     LOG_F(ERROR, "[Entity::Create] Unknown type %d", type);
     return nullptr;
   }
-  strncpy(e->name, name, MAX_DISPNAME);
+  e->name = name;
   Project::Get()->entities.push_back(e);
   e->guid_ = Project::Get()->entities.size();
   return e;
@@ -31,7 +31,7 @@ Ref<Entity> Entity::CreateEntity(const char* name, EntityType type) {
 
 Ref<Entity> Entity::Find(const char* name) {
   for(auto& e : Project::Get()->entities) {
-    if(strncmp(e->name, name, MAX_DISPNAME) == 0) return e;
+    if(e->name == name) return e;
   }
   return nullptr;
 }

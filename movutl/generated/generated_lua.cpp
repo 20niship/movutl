@@ -15,13 +15,19 @@
 #include <movutl/asset/track.hpp>
 #include <movutl/asset/entity.hpp>
 #include <movutl/asset/composition.hpp>
+extern "C" {
+#include <lua.h>
+#include <lauxlib.h>
+#include <lualib.h>
+}
+
 namespace mu::detail { 
 
 using namespace LuaIntf;
 
 void generated_lua_binding_(lua_State* L) {
-    auto module = LuaBinding(L).beginModule("movutl");
-    module  .beginClass<Composition>("Composition")
+    LuaBinding(L).beginModule("movutl")
+  .beginClass<Composition>("Composition")
     .addFunction("resize", &Composition::resize)
     .addFunction("str", &Composition::str)
     .addFunction("summary", &Composition::summary)
@@ -53,8 +59,6 @@ void generated_lua_binding_(lua_State* L) {
     .addVariable("audio_n", &EntityInfo::audio_n)
     .addVariable("audio_format", &EntityInfo::audio_format)
     .addVariable("audio_format_size", &EntityInfo::audio_format_size)
-    .addVariable("handler", &EntityInfo::handler)
-    .addVariable("reserve", &EntityInfo::reserve)
   .endClass()
   .beginClass<Image>("Image")
     .addFunction("dirty", &Image::dirty)

@@ -21,7 +21,7 @@ void InspectorWindow::Update() {
   Ref<Entity> e = entts[0];
 
   {
-    const std::string str = get_entt_icon(e) + std::string(" ") + e->name;
+    const std::string str = get_entt_icon(e) + std::string(" ") + e->name.c_str();
     ImGui::SmallButton(str.c_str());
   }
   wd_entt_props_editor(e.get());

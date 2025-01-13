@@ -25,7 +25,7 @@ void wd_entt_props_editor(Entity* e) {
   for(int i = 0; i < e->propinfo_.size(); i++) {
     auto pi = e->propinfo_[i];
     if(!p.contains(pi.name)) {
-      LOG_F(WARNING, "Property %s -> %s not found", e->name, pi.name.c_str());
+      LOG_F(WARNING, "Property %s -> %s not found", e->name.c_str(), pi.name.c_str());
       continue;
     }
     ImGui::PushID(i + 1);
@@ -34,9 +34,9 @@ void wd_entt_props_editor(Entity* e) {
     { // type check
       int tt = p.type(pi.name);
       if(tt != pi.type) {
-        LOG_F(WARNING, "Property %s -> %s type mismatch %d != %d", e->name, pi.name.c_str(), tt, pi.type);
+        LOG_F(WARNING, "Property %s -> %s type mismatch %d != %d", e->name.c_str(), pi.name.c_str(), tt, pi.type);
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0, 0, 1));
-        ImGui::TextWrapped("Type mismatch: prop %s->%s %d != %d", e->name, pi.name.c_str(), tt, pi.type);
+        ImGui::TextWrapped("Type mismatch: prop %s->%s %d != %d", e->name.c_str(), pi.name.c_str(), tt, pi.type);
         ImGui::PopStyleColor();
         ImGui::PopID();
         continue;

@@ -15,4 +15,6 @@ ignore_symbols = [  #
     ("", "get_entt_icon"),
     ("", "PropAnimClip"),
     ("Project", "MOVUTL_DECLARE_SINGLETON"),
+    ("EntityInfo", "reserved"),
+    ("EntityInfo", "handler"),
 ]

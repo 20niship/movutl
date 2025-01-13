@@ -8,7 +8,7 @@
 
 namespace mu {
 
-inline constexpr size_t MAX_DISPNAME = 64;
+inline constexpr size_t MU_MAX_NAME = 32;
 inline constexpr size_t MAX_FILTER = 16;
 
 enum BlendType { // MPROPERTY(name="合成モード")

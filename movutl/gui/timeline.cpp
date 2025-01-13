@@ -279,7 +279,7 @@ bool BeginLayer(TrackLayer* layer) {
   int hbtm = ctx_.layer_y2();
 
   ImRect sidebar(ImVec2(x, htop), ImVec2(inside.left(), hbtm));
-  if(ImGui::IsMouseHoveringRect(sidebar.Min, sidebar.Max)) ImGui::SetTooltip("name=%s", layer->name);
+  if(ImGui::IsMouseHoveringRect(sidebar.Min, sidebar.Max)) ImGui::SetTooltip("name=%s", layer->name.c_str());
 
   // レイヤーにマウスが載っていたらlayer全体をハイライトする
   ImRect R(ImVec2(inside.left(), htop), ImVec2(inside.right(), hbtm));
@@ -287,7 +287,7 @@ bool BeginLayer(TrackLayer* layer) {
   if(line_hovered) dl->AddRectFilled(R.Min, R.Max, IM_COL32(255, 255, 255, 20));
 
   dl->AddRectFilled(sidebar.Min, sidebar.Max, IM_COL32(40, 40, 40, 255));
-  dl->AddText(ImVec2(x, htop), IM_COL32(255, 255, 255, 100), layer->name);
+  dl->AddText(ImVec2(x, htop), IM_COL32(255, 255, 255, 100), layer->name.c_str());
   return true;
 }
 
@@ -316,7 +316,7 @@ bool IsTimelineClickedLeftButton() {
 
 bool BeginTrack(const Ref<Entity>& entity) {
   MU_ASSERT(entity);
-  const char* name = entity->name;
+  const char* name = entity->name.c_str();
   int* start = &entity->trk.fstart;
   int* end = &entity->trk.fend;
   int htop = ctx_.layer_y1();

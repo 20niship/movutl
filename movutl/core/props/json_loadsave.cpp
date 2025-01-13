@@ -89,7 +89,7 @@ struct ToJsonVisitor {
   void operator()(const Vec3& value) const { *js = dumpjson<3>(value); }
   void operator()(const Vec4& value) const { *js = dumpjson<4>(value); }
   void operator()(const Vec4b& value) const { *js = dumpjson<4>(value); }
-  void operator()(const Entity* value) const { *js = (value == nullptr) ? nullptr : value->name; }
+  void operator()(const Entity* value) const { *js = (value == nullptr) ? nullptr : value->name.c_str(); }
   void operator()(const Props& value) const {
     if(value.is_array()) {
       for(auto& [k, v] : value.values) {
