@@ -10,9 +10,6 @@
 [submodule "ext/nanobind"]
 	path = ext/nanobind
 	url = https://github.com/wjakob/nanobind.git
-[submodule "ext/lua-intf"]
-	path = ext/lua-intf
-	url = https://github.com/SteveKChiu/lua-intf.git
 [submodule "ext/IconFontCppHeaders"]
 	path = ext/IconFontCppHeaders
 	url = https://github.com/juliettef/IconFontCppHeaders.git
