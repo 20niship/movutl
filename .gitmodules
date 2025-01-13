@@ -31,3 +31,6 @@
 [submodule "ext/sol2"]
 	path = ext/sol2
 	url = https://github.com/ThePhD/sol2.git
+[submodule "ext/lua-intf"]
+	path = ext/lua-intf
+	url = https://github.com/20niship/lua-intf.git

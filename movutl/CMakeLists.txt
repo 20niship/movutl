@@ -102,15 +102,15 @@ file(GLOB MOVUTL_EXT_SRC
   ${MOVUTL_ROOT_DIR}/ext/filewatch/FileWatcher.cpp
 
   # -- luaintf
-  ${MOVUTL_ROOT_DIR}/ext/lua-intf/LuaIntf/src/LuaRef.cpp
-  ${MOVUTL_ROOT_DIR}/ext/lua-intf/LuaIntf/src/LuaState.cpp 
-  ${MOVUTL_ROOT_DIR}/ext/lua-intf/LuaIntf/src/LuaFunction.cpp 
-  ${MOVUTL_ROOT_DIR}/ext/lua-intf/LuaIntf/src/LuaRefLink.cpp 
-  ${MOVUTL_ROOT_DIR}/ext/lua-intf/LuaIntf/src/CppBindModule.cpp 
-  ${MOVUTL_ROOT_DIR}/ext/lua-intf/LuaIntf/src/CppBindFunction.cpp 
-  ${MOVUTL_ROOT_DIR}/ext/lua-intf/LuaIntf/src/CppBindClass.cpp 
-  ${MOVUTL_ROOT_DIR}/ext/lua-intf/LuaIntf/src/LuaCompat.cpp
-  ${MOVUTL_ROOT_DIR}/ext/lua-intf/LuaIntf/src/QtLuaIntf.cpp
+  # ${MOVUTL_ROOT_DIR}/ext/lua-intf/LuaIntf/src/LuaRef.cpp
+  # ${MOVUTL_ROOT_DIR}/ext/lua-intf/LuaIntf/src/LuaState.cpp 
+  # ${MOVUTL_ROOT_DIR}/ext/lua-intf/LuaIntf/src/LuaFunction.cpp 
+  # ${MOVUTL_ROOT_DIR}/ext/lua-intf/LuaIntf/src/LuaRefLink.cpp 
+  # ${MOVUTL_ROOT_DIR}/ext/lua-intf/LuaIntf/src/CppBindModule.cpp 
+  # ${MOVUTL_ROOT_DIR}/ext/lua-intf/LuaIntf/src/CppBindFunction.cpp 
+  # ${MOVUTL_ROOT_DIR}/ext/lua-intf/LuaIntf/src/CppBindClass.cpp 
+  # ${MOVUTL_ROOT_DIR}/ext/lua-intf/LuaIntf/src/LuaCompat.cpp
+  # ${MOVUTL_ROOT_DIR}/ext/lua-intf/LuaIntf/src/QtLuaIntf.cpp
 )
 
 include_directories(${MOVUTL_INCLUDES})

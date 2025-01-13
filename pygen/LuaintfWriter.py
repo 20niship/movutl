@@ -25,6 +25,7 @@ class LuaIntfWriter:
 
     def __init__(self, filename: str):
         self.autogen_text = (
+            "#define LUAINTF_LINK_LUA_COMPILED_IN_CXX 0\n"
             "#include <LuaIntf/LuaIntf.h>\n"
             "#include <lua.hpp>\n"
             "#include <movutl/core/props.hpp>\n"
@@ -41,36 +42,13 @@ class LuaIntfWriter:
             "#include <movutl/asset/entity.hpp>\n"
             "#include <movutl/asset/composition.hpp>\n"
             "namespace mu::detail { \n"
-            f"void generated_lua_binding_{self.PREFIX}(Lua_State* L) {{\n"
+            "\n"
+            "using namespace LuaIntf;\n"
+            "\n"
+            f"void generated_lua_binding_{self.PREFIX}(lua_State* L) {{\n"
             '    auto module = LuaBinding(L).beginModule("movutl");\n'
-            "    module \\"
+            "    module"
         )
-
-        # LuaBinding(L)
-        # .beginModule(string module_name)
-        # .addFactory(function* func)
-        # .addConstant(string constant_name, VALUE_TYPE value)
-        # .addVariable(string property_name, VARIABLE_TYPE* var, bool writable = true)
-        # .addVariableRef(string property_name, VARIABLE_TYPE* var, bool writable = true)
-        # .addProperty(string property_name, FUNCTION_TYPE getter, FUNCTION_TYPE setter)
-        # .addProperty(string property_name, FUNCTION_TYPE getter)
-        # .addFunction(string function_name, FUNCTION_TYPE func)
-        # .beginModule(string sub_module_name)
-        #     ...
-        # .endModule()
-
-        # .beginClass<CXX_TYPE>(string class_name)
-        #     ...
-        # .endClass()
-
-        # .beginExtendClass<CXX_TYPE, SUPER_CXX_TYPE>(string sub_class_name)
-        #     ...
-        # .endClass()
-        # .endModule()
-
-        # .beginExtendClass<CXX_TYPE, SUPER_CXX_TYPE>(string sub_class_name)
-        # ...
-        # .endClass()
 
         self.output_filename = "../movutl/generated/" + filename
 
@@ -78,7 +56,7 @@ class LuaIntfWriter:
         output = (  #
             self.STUB_COMMENT  #
             + self.autogen_text  #
-            + "   module.endModule();\n"  #
+            + "   .endModule();\n"  #
             + "}\n"  #
             + "} // namespace mu::detail\n"  #
         )
@@ -98,8 +76,12 @@ class LuaIntfWriter:
                 continue
             if "operator" in f.name:
                 continue
-            self.autogen_text += f'    .addFunction("{f.name}", &{cls.name}::{f.name})\n'
+            if f.is_static:
+                self.autogen_text += f'    .addStaticFunction("{f.name}", &{cls.name}::{f.name})\n'
+            else:
+                self.autogen_text += f'    .addFunction("{f.name}", &{cls.name}::{f.name})\n'
+
         for p in cls.props:
-            self.autogen_text += f'    .addProperty("{p.name}", &{cls.name}::{p.name})\n'
+            self.autogen_text += f'    .addVariable("{p.name}", &{cls.name}::{p.name})\n'
         self.autogen_text += "  .endClass()\n"
 

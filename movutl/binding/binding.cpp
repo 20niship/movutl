@@ -1,7 +1,7 @@
 #include <movutl/binding/binding.hpp>
 #include <movutl/core/defines.hpp>
 #include <movutl/core/logger.hpp>
-#include <sol/sol.hpp>
+#include <LuaIntf/LuaIntf.h>
 
 namespace mu {
 namespace detail {
@@ -10,15 +10,18 @@ public:
   MOVUTL_DECLARE_SINGLETON(LuaBindingContext);
   LuaBindingContext() = default;
   ~LuaBindingContext() = default;
-  sol::state lua;
+  lua_State* lua = nullptr;
 };
 
 void init_lua_binding() {
   auto ctx = LuaBindingContext::Get();
-  generated_lua_binding_(&ctx->lua);
+  ctx->lua = luaL_newstate();
+  luaL_openlibs(ctx->lua);
 }
 
 void terminate_lua_binding() {
+  auto ctx = LuaBindingContext::Get();
+  lua_close(ctx->lua);
   LOG_F(INFO, "Terminate Lua binding");
 }
 

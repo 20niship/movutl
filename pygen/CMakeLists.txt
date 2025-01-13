@@ -10,5 +10,5 @@ add_custom_target(
   COMMENT "movutlのプロパティのパースやLua bindingコードを生成しています"
 )
 
-add_dependencies(mucore pygen)
+# add_dependencies(mucore pygen)
 
