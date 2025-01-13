@@ -74,8 +74,7 @@ lua.new_usertype<Image>("Image", //
   "width", &Image::width, //
   "height", &Image::height, //
   "pos", &Image::pos, //
-  "scale_x", &Image::scale_x, //
-  "scale_y", &Image::scale_y, //
+  "scale", &Image::scale, //
   "rotation", &Image::rotation, //
   "alpha", &Image::alpha, //
   "path", &Image::path, //

@@ -21,5 +21,4 @@ add_subdirectory(pygen)
 
 add_executable(movutl_main ${CMAKE_CURRENT_SOURCE_DIR}/lancher/main.cpp)
 target_link_libraries(movutl_main mucore)
-add_dependencies(movutl_main pygen)
 

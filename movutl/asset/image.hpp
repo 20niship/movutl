@@ -20,15 +20,14 @@ public:
   Image() = default;
   ~Image() = default;
 
-  ImageFormat fmt = ImageFormatRGB; // MPROPERTY(name="フォーマット", readonly=true)
-  unsigned int width = 0;           // MPROPERTY(name="幅", readonly=true)
-  unsigned int height = 0;          // MPROPERTY(name="高さ", readonly=true)
-  Vec3 pos;                         // MPROPERTY(name="位置" viewer_anchor=true, position=true)
-  float scale_x = 1.0f;             // MPROPERTY(name="拡大率X, scale_x)
-  float scale_y = 1.0f;             // MPROPERTY(name="拡大率Y, scale_y)
-  float rotation = 0.0f;            // MPROPERTY(name="回転", angle=true, radians=true)
-  float alpha = 1.0f;               // MPROPERTY(name="透明度")
-  std::string path;                 // MPROPERTY(name="ファイル", type="path")
+  ImageFormat fmt = ImageFormatRGBA; // MPROPERTY(name="フォーマット", readonly=true)
+  unsigned int width = 0;            // MPROPERTY(name="幅", readonly=true)
+  unsigned int height = 0;           // MPROPERTY(name="高さ", readonly=true)
+  Vec3 pos;                          // MPROPERTY(name="位置" viewer_anchor=true, position=true)
+  Vec2 scale = Vec2(1.0, 1.0);       // MPROPERTY(name="拡大率X, scale=true)
+  float rotation = 0.0f;             // MPROPERTY(name="回転", angle=true, radians=true)
+  float alpha = 1.0f;                // MPROPERTY(name="透明度")
+  std::string path;                  // MPROPERTY(name="ファイル", type="path")
   int16_t dirty_ = 1;
 
   void dirty() { dirty_++; }
@@ -130,7 +129,7 @@ public:
   virtual EntityType getType() const override { return EntityType_Image; }
 
   static Ref<Image> Create(const char* name, const char* path, bool add_to_pj = true);
-  static Ref<Image> Create(const char* name, int w, int h, ImageFormat format = ImageFormatRGB, bool add_to_pj = true);
+  static Ref<Image> Create(const char* name, int w, int h, ImageFormat format = ImageFormatRGBA, bool add_to_pj = true);
 };
 
 void cv_waitkey(int time = 0);

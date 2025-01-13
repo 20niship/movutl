@@ -6,14 +6,6 @@ namespace mu {
 
 class Movie final : public Entity {
 public:
-  enum Format {
-    FormatRGB = 0,
-    FormatRGBA = 2,
-    FormatGRAYSCALE = 1,
-    FormatBGR = 3,
-  };
-
-public:
   Movie() = default;
   Movie(const char* path);
   ~Movie() = default;
