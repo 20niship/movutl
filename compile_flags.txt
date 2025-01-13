@@ -1,7 +1,0 @@
--c
--I.
--I./src
--I./examples/room-mapping
--std=c++2a
--fno-exceptions
-

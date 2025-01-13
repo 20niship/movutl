@@ -26,13 +26,11 @@ inline const std::string cout_clear = "\033[0m";
 namespace mu::detail {
 
 void _mu_assert_fail(const char* file, int line, const char* msg1) {
-  printf("AAAAAAAAAAAAAAAAAAAAAAA\n");
-  LOG_F(FATAL, "_mu_assert_fail: %s:%d: %s", file, line, msg1);
+  LOG_F(ERROR, "_mu_assert_fail: %s:%d: %s", file, line, msg1);
   auto backtrace = get_backtrace();
   for(auto& bt : backtrace) {
     printf("  %s\n", bt.c_str());
   }
-  printf("BBBBBBBBBBBBBBBBBBBBBBB\n");
 #ifdef _WIN32
   std::exit(1);
 #else
@@ -99,7 +97,6 @@ std::vector<std::string> get_backtrace() {
   std::vector<std::string> result;
   constexpr int trace_size = 100;
 #if defined(WIN32) || defined(_WIN32)
-  /* トレースリスト */
   void* traces[trace_size] = {};
   HANDLE process = GetCurrentProcess();
   SymInitialize(process, NULL, TRUE);
@@ -121,8 +118,6 @@ std::vector<std::string> get_backtrace() {
     result.push_back(std::string(symbol->Name));
   }
   free(symbol);
-#elif defined(MELCHIOR_PLATFORM_EMSCRIPTEN)
-  return {};
 #else
   void* callstack[trace_size];
   int frames = ::backtrace(callstack, trace_size);
