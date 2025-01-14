@@ -129,4 +129,14 @@ void PropsInfo::set_last_prop_readonly(bool readonly) {
   props.back().readonly = readonly;
 }
 
+std::string PropsInfo::str() const {
+  return "PropsInfo(" + std::to_string(props.size()) + ")";
+}
+
+std::string PropsInfo::summary() const {
+  std::string s;
+  for(auto& p : props) s += p.name + " " + std::to_string(p.type) + " ";
+  return s;
+}
+
 } // namespace mu

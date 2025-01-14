@@ -83,6 +83,8 @@ public:
     if(is_type<Entity*>(key)) return PropT_Entity;
     return PropT_Undefined;
   }
+  std::string str() const;
+  std::string summary() const;
 };
 
 struct PropInfoBase {
@@ -217,6 +219,8 @@ struct PropsInfo {
   void set_last_prop_category(const char* category);
   void set_last_prop_desc(const char* desc);
   void set_last_prop_readonly(bool readonly);
+  std::string str() const;
+  std::string summary() const;
 };
 
 

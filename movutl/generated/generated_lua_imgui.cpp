@@ -65,7 +65,6 @@ void generated_lua_binding_(lua_State* L) {
     .addVariable("IniFilename", &ImGuiIO::IniFilename) // const char *
     .addVariable("LogFilename", &ImGuiIO::LogFilename) // const char *
     .addVariable("FontGlobalScale", &ImGuiIO::FontGlobalScale) // float
-    .addVariable("FontAllowUserScaling", &ImGuiIO::FontAllowUserScaling) // bool
     .addVariable("DisplayFramebufferScale", &ImGuiIO::DisplayFramebufferScale) // ImVec2
     .addVariable("ConfigNavSwapGamepadButtons", &ImGuiIO::ConfigNavSwapGamepadButtons) // bool
     .addVariable("ConfigNavMoveSetMousePos", &ImGuiIO::ConfigNavMoveSetMousePos) // bool
@@ -76,8 +75,6 @@ void generated_lua_binding_(lua_State* L) {
     .addVariable("ConfigNavCursorVisibleAlways", &ImGuiIO::ConfigNavCursorVisibleAlways) // bool
     .addVariable("ConfigDockingNoSplit", &ImGuiIO::ConfigDockingNoSplit) // bool
     .addVariable("ConfigDockingWithShift", &ImGuiIO::ConfigDockingWithShift) // bool
-    .addVariable("ConfigDockingAlwaysTabBar", &ImGuiIO::ConfigDockingAlwaysTabBar) // bool
-    .addVariable("ConfigDockingTransparentPayload", &ImGuiIO::ConfigDockingTransparentPayload) // bool
     .addVariable("ConfigViewportsNoAutoMerge", &ImGuiIO::ConfigViewportsNoAutoMerge) // bool
     .addVariable("ConfigViewportsNoTaskBarIcon", &ImGuiIO::ConfigViewportsNoTaskBarIcon) // bool
     .addVariable("ConfigViewportsNoDecoration", &ImGuiIO::ConfigViewportsNoDecoration) // bool
@@ -86,11 +83,8 @@ void generated_lua_binding_(lua_State* L) {
     .addVariable("ConfigMacOSXBehaviors", &ImGuiIO::ConfigMacOSXBehaviors) // bool
     .addVariable("ConfigInputTrickleEventQueue", &ImGuiIO::ConfigInputTrickleEventQueue) // bool
     .addVariable("ConfigInputTextCursorBlink", &ImGuiIO::ConfigInputTextCursorBlink) // bool
-    .addVariable("ConfigInputTextEnterKeepActive", &ImGuiIO::ConfigInputTextEnterKeepActive) // bool
-    .addVariable("ConfigDragClickToInputText", &ImGuiIO::ConfigDragClickToInputText) // bool
     .addVariable("ConfigWindowsResizeFromEdges", &ImGuiIO::ConfigWindowsResizeFromEdges) // bool
     .addVariable("ConfigWindowsMoveFromTitleBarOnly", &ImGuiIO::ConfigWindowsMoveFromTitleBarOnly) // bool
-    .addVariable("ConfigWindowsCopyContentsWithCtrlC", &ImGuiIO::ConfigWindowsCopyContentsWithCtrlC) // bool
     .addVariable("ConfigScrollbarScrollByPage", &ImGuiIO::ConfigScrollbarScrollByPage) // bool
     .addVariable("ConfigMemoryCompactTimer", &ImGuiIO::ConfigMemoryCompactTimer) // float
     .addVariable("MouseDoubleClickTime", &ImGuiIO::MouseDoubleClickTime) // float
@@ -124,7 +118,6 @@ void generated_lua_binding_(lua_State* L) {
     .addVariable("MetricsActiveWindows", &ImGuiIO::MetricsActiveWindows) // int
     .addVariable("MouseDelta", &ImGuiIO::MouseDelta) // ImVec2
     .addVariable("MousePos", &ImGuiIO::MousePos) // ImVec2
-    .addVariable("MouseDown", &ImGuiIO::MouseDown) // bool
     .addVariable("MouseWheel", &ImGuiIO::MouseWheel) // float
     .addVariable("MouseWheelH", &ImGuiIO::MouseWheelH) // float
     .addVariable("MouseSource", &ImGuiIO::MouseSource) // ImGuiMouseSource
@@ -134,28 +127,14 @@ void generated_lua_binding_(lua_State* L) {
     .addVariable("KeyAlt", &ImGuiIO::KeyAlt) // bool
     .addVariable("KeySuper", &ImGuiIO::KeySuper) // bool
     .addVariable("KeyMods", &ImGuiIO::KeyMods) // ImGuiKeyChord
-    .addVariable("KeysData", &ImGuiIO::KeysData) // ImGuiKeyData
     .addVariable("WantCaptureMouseUnlessPopupClose", &ImGuiIO::WantCaptureMouseUnlessPopupClose) // bool
     .addVariable("MousePosPrev", &ImGuiIO::MousePosPrev) // ImVec2
-    .addVariable("MouseClicked", &ImGuiIO::MouseClicked) // bool
-    .addVariable("MouseDoubleClicked", &ImGuiIO::MouseDoubleClicked) // bool
-    .addVariable("MouseClickedCount", &ImGuiIO::MouseClickedCount) // ImU16
-    .addVariable("MouseClickedLastCount", &ImGuiIO::MouseClickedLastCount) // ImU16
-    .addVariable("MouseReleased", &ImGuiIO::MouseReleased) // bool
-    .addVariable("MouseDownOwned", &ImGuiIO::MouseDownOwned) // bool
-    .addVariable("MouseDownOwnedUnlessPopupClose", &ImGuiIO::MouseDownOwnedUnlessPopupClose) // bool
     .addVariable("MouseWheelRequestAxisSwap", &ImGuiIO::MouseWheelRequestAxisSwap) // bool
     .addVariable("MouseCtrlLeftAsRightClick", &ImGuiIO::MouseCtrlLeftAsRightClick) // bool
-    .addVariable("MouseDownDurationPrev", &ImGuiIO::MouseDownDurationPrev) // float
-    .addVariable("MouseDragMaxDistanceAbs", &ImGuiIO::MouseDragMaxDistanceAbs) // ImVec2
-    .addVariable("MouseDragMaxDistanceSqr", &ImGuiIO::MouseDragMaxDistanceSqr) // float
-    .addVariable("PenPressure", &ImGuiIO::PenPressure) // float
     .addVariable("AppFocusLost", &ImGuiIO::AppFocusLost) // bool
     .addVariable("AppAcceptingEvents", &ImGuiIO::AppAcceptingEvents) // bool
     .addVariable("InputQueueSurrogate", &ImGuiIO::InputQueueSurrogate) // ImWchar16
     .addVariable("InputQueueCharacters", &ImGuiIO::InputQueueCharacters) // ImVector<ImWchar>
-    .addVariable("GetClipboardTextFn", &ImGuiIO::GetClipboardTextFn) // const char * ( * ) ( void * user_data )
-    .addVariable("SetClipboardTextFn", &ImGuiIO::SetClipboardTextFn) // void ( * ) ( void * user_data, const char * text )
   .endClass()
   .beginClass<ImGuiKeyData>("ImGuiKeyData")
     .addVariable("Down", &ImGuiKeyData::Down) // bool
@@ -171,8 +150,6 @@ void generated_lua_binding_(lua_State* L) {
     .addFunction("GetStorageIdFromIndex", &ImGuiSelectionBasicStorage::GetStorageIdFromIndex)
     .addVariable("Size", &ImGuiSelectionBasicStorage::Size) // int
     .addVariable("PreserveOrder", &ImGuiSelectionBasicStorage::PreserveOrder) // bool
-    .addVariable("_SelectionOrder", &ImGuiSelectionBasicStorage::_SelectionOrder) // int
-    .addVariable("_Storage", &ImGuiSelectionBasicStorage::_Storage) // ImGuiStorage
   .endClass()
   .beginClass<ImGuiSelectionRequest>("ImGuiSelectionRequest")
     .addVariable("Type", &ImGuiSelectionRequest::Type) // ImGuiSelectionRequestType
@@ -234,8 +211,6 @@ void generated_lua_binding_(lua_State* L) {
     .addVariable("FocusRouteParentWindowId", &ImGuiWindowClass::FocusRouteParentWindowId) // ImGuiID
     .addVariable("ViewportFlagsOverrideSet", &ImGuiWindowClass::ViewportFlagsOverrideSet) // ImGuiViewportFlags
     .addVariable("ViewportFlagsOverrideClear", &ImGuiWindowClass::ViewportFlagsOverrideClear) // ImGuiViewportFlags
-    .addVariable("TabItemFlagsOverrideSet", &ImGuiWindowClass::TabItemFlagsOverrideSet) // ImGuiTabItemFlags
-    .addVariable("DockNodeFlagsOverrideSet", &ImGuiWindowClass::DockNodeFlagsOverrideSet) // ImGuiDockNodeFlags
     .addVariable("DockingAlwaysTabBar", &ImGuiWindowClass::DockingAlwaysTabBar) // bool
     .addVariable("DockingAllowUnclassed", &ImGuiWindowClass::DockingAllowUnclassed) // bool
   .endClass()

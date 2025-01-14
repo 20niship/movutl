@@ -5,7 +5,7 @@ set(PYGEN_OUTPUTS
 
 add_custom_target(
   pygen
-  COMMAND python3 main.py
+  COMMAND python3.13 main.py
   WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/
   COMMENT "movutlのプロパティのパースやLua bindingコードを生成しています"
 )

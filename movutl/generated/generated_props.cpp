@@ -13,9 +13,9 @@ void Movie::setProps(const Props& p) {
    if(p.has<Vec3>("pos")) pos = p.get<Vec3>("pos");
   if(p.has<Vec2>("scale")) scale = p.get<Vec2>("scale");
   if(p.has<float>("rotation")) rotation = p.get<float>("rotation");
-  if(p.has<int>("start_frame_")) start_frame_ = p.get<int>("start_frame_");
+// start_frame_ has an unsupported type
   if(p.has<float>("speed")) speed = p.get<float>("speed");
-  if(p.has<float>("alpha_")) alpha_ = p.get<float>("alpha_");
+  if(p.has<int>("alpha_")) alpha_ = p.get<int>("alpha_");
   if(p.has<bool>("loop_")) loop_ = p.get<bool>("loop_");
   if(p.has<bool>("with_alpha_")) with_alpha_ = p.get<bool>("with_alpha_");
   if(p.has<std::string>("path_")) path_ = p.get<std::string>("path_");
@@ -28,11 +28,10 @@ PropsInfo Movie::getPropsInfo() const {
   info.set_last_prop_dispname("拡大率");
   info.add_float_prop("rotation", "", "", 0,  0, 0, 1, false, false);
   info.set_last_prop_dispname("回転");
-  info.add_int_prop("start_frame_", "", "", 0,  0, 0, 0);
-  info.set_last_prop_dispname("開始フレーム");
+// start_frame_ has an unsupported type
   info.add_float_prop("speed", "", "", 100.0,  0.0, 10000.0, 5.0, false, false);
   info.set_last_prop_dispname("再生速度");
-  info.add_float_prop("alpha_", "", "", 255,  0, 0, 1, false, false);
+  info.add_int_prop("alpha_", "", "", 255,  0, 0, 0);
   info.set_last_prop_dispname("透明度");
   info.add_bool_prop("loop_", "", "", false);
   info.set_last_prop_dispname("ループ再生");
@@ -61,7 +60,7 @@ void TextEntt::setProps(const Props& p) {
   if(p.has<float>("scale_y_")) scale_y_ = p.get<float>("scale_y_");
   if(p.has<float>("rot_")) rot_ = p.get<float>("rot_");
   if(p.has<float>("speed")) speed = p.get<float>("speed");
-  if(p.has<float>("alpha_")) alpha_ = p.get<float>("alpha_");
+  if(p.has<int>("alpha_")) alpha_ = p.get<int>("alpha_");
   if(p.has<std::string>("font")) font = p.get<std::string>("font");
   if(p.has<std::string>("text")) text = p.get<std::string>("text");
   if(p.has<bool>("separate")) separate = p.get<bool>("separate");
@@ -78,7 +77,7 @@ PropsInfo TextEntt::getPropsInfo() const {
   info.set_last_prop_dispname("回転");
   info.add_float_prop("speed", "", "", 100.0,  0, 0, 1, false, false);
   info.set_last_prop_dispname("再生速度");
-  info.add_float_prop("alpha_", "", "", 255,  0, 0, 1, false, false);
+  info.add_int_prop("alpha_", "", "", 255,  0, 0, 0);
   info.set_last_prop_dispname("透明度");
   info.add_string_prop("font", "", "", """");
   info.set_last_prop_dispname("フォント");

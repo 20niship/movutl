@@ -37,7 +37,7 @@ void generated_lua_binding_(lua_State* L) {
     .addVariable("guid", &Composition::guid) // uint32_t
     .addVariable("name", &Composition::name) // FixString
     .addVariable("flag", &Composition::flag) // Flag
-    .addVariable("frame_", &Composition::frame_) // Ref<Image>
+    .addVariable("frame_final", &Composition::frame_final) // Ref<Image>
     .addVariable("frame_edit", &Composition::frame_edit) // Ref<Image>
     .addVariable("frame_temp", &Composition::frame_temp) // Ref<Image>
     .addVariable("framerate_nu", &Composition::framerate_nu) // int32_t

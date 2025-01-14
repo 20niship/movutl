@@ -59,5 +59,7 @@ ignore_symbols = [  #
     ("ImGuiIO", "MouseClickedTime"),
     ("ImGuiIO", "MouseClickedPos"),
     ("ImGuiIO", "MouseDownDuration"),
+    ("ImGuiIO", "GetClipboardTextFn"),
+    ("ImGuiIO", "SetClipboardTextFn"),
     ("ImGuiInputTextCallbackData", ""),
 ]

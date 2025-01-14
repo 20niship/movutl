@@ -64,6 +64,8 @@ class Parser:
             member_funcs.append(f)
 
         for field in node["properties"]["public"]:
+            if classname =="Composition":
+                print(field)
             name = field["name"]
             if (classname, name) in ignore_symbols:
                 logger.warning(f"メンバー {name} は無視します")
@@ -76,6 +78,11 @@ class Parser:
             arg.detault = field["default"] if "default" in field else ""
             arg.c_type = field_type
             lines = self.basestr.split("\n")
+            if name == "MouseDown":
+                line = lines[field["line_number"] - 1]
+                print(line)
+                arg = parse_mprop_info(arg, line)
+                print(arg)
             if len(lines) >= field["line_number"]:
                 line = lines[field["line_number"] - 1]
                 arg = parse_mprop_info(arg, line)
@@ -214,10 +221,9 @@ class Parser:
         with open(header_file, "r") as f:
             fstr = f.read()
         delete_strs = [
-            "final",
             "[[maybe_unused]]",
             "[[nodiscard]]",  #
-            "final",
+            " final ",
             "override",
             "inline",
             "constexpr",

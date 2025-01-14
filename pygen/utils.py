@@ -62,6 +62,10 @@ def should_autogen_func(line: str) -> bool:
 
 
 def parse_mprop_info(arg: MArgument, line: str) -> MArgument:
+    if "[" in line and "]" in line and "[" not in arg.c_type:
+        n = line[line.find("[") + 1 : line.find("]")]
+        arg.c_type += "[" + n + "]"
+
     # 正規表現でkey=value形式をパース
     start = line.find("MPROPERTY(")
     if start == -1:
@@ -100,8 +104,6 @@ def parse_mprop_info(arg: MArgument, line: str) -> MArgument:
 def get_prop_type(argtype: str) -> ArgumentType:
     argtype = argtype.replace("const ", "").replace(" ", "").replace("&", "")
     if argtype in [
-        "float",
-        "double",
         "uint8_t",
         "int32_t",
         "uint32_t",
@@ -111,9 +113,9 @@ def get_prop_type(argtype: str) -> ArgumentType:
         "uint64_t",
         "int64_t",
     ]:
-        return ArgumentType.ArgType_Float
-    if argtype in ["int", "long"]:
         return ArgumentType.ArgType_Int
+    if argtype in ["float", "double"]:
+        return ArgumentType.ArgType_Float
     if argtype == "bool":
         return ArgumentType.ArgType_Bool
     if argtype == "std::string":

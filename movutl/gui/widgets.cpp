@@ -34,6 +34,8 @@ void wd_entt_props_editor(Entity* e) {
     { // type check
       int tt = p.type(pi.name);
       if(tt != pi.type) {
+        printf("getprops %s \n", p.summary().c_str());
+        printf("info %s \n", e->propinfo_.summary().c_str());
         LOG_F(WARNING, "Property %s -> %s type mismatch %d != %d", e->name.c_str(), pi.name.c_str(), tt, pi.type);
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0, 0, 1));
         ImGui::TextWrapped("Type mismatch: prop %s->%s %d != %d", e->name.c_str(), pi.name.c_str(), tt, pi.type);

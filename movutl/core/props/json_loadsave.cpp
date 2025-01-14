@@ -77,6 +77,13 @@ Props Props::LoadJsonFile(const std::string& json) {
   std::string str((std::istreambuf_iterator<char>(fs)), std::istreambuf_iterator<char>());
   return parse_json_data_impl_wrapper(str, json);
 }
+std::string Props::str() const {
+  return "Props(" + std::to_string(values.size()) + ")";
+}
+
+std::string Props::summary() const {
+  return this->dump_json();
+}
 
 struct ToJsonVisitor {
   nlohmann::json* js;
