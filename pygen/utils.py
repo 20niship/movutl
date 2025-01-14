@@ -112,6 +112,7 @@ def get_prop_type(argtype: str) -> ArgumentType:
         "int16_t",
         "uint64_t",
         "int64_t",
+        "int",
     ]:
         return ArgumentType.ArgType_Int
     if argtype in ["float", "double"]:
@@ -132,7 +133,7 @@ def get_prop_type(argtype: str) -> ArgumentType:
         return ArgumentType.ArgType_Color
     if argtype == "Entity":
         return ArgumentType.ArgType_Entity
-    logger.error(f"Unsupported type: {argtype}")
+    # logger.error(f"Unsupported type: {argtype}")
     return ArgumentType.ArgType_Undefined
 
 

@@ -27,7 +27,7 @@ namespace mu::detail {
 using namespace LuaIntf;
 using namespace ImGui;
 
-void generated_lua_binding_(lua_State* L) {
+void generated_lua_binding_movutl(lua_State* L) {
     LuaBinding(L).beginModule("movutl")
   .beginClass<Composition>("Composition")
     .addFunction("resize", &Composition::resize)

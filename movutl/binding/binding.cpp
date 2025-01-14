@@ -25,7 +25,8 @@ void init_lua_binding() {
   luaL_openlibs(ctx->lua);
 
   // load lua file
-  generated_lua_binding_(ctx->lua);
+  generated_lua_binding_movutl(ctx->lua);
+  generated_lua_binding_imgui(ctx->lua);
 
   const char* init_file = "../lancher/runtime/init.lua";
   if(luaL_dofile(ctx->lua, init_file)) {
