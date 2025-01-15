@@ -70,9 +70,10 @@ class LuaIntfWriter:
 
     def register_func(self, func: MFunction):
         self.autogen_text += f'    .addFunction("{func.name}", '
-        self.autogen_text += f'static_cast<{func.returns.c_type}(*)( '
+        ret_t = func.returns.c_type.replace("static", "")
+        self.autogen_text += f'static_cast<{ret_t}(*)( '
         for idx , a in enumerate(func.args):
-            self.autogen_text += a.c_type
+            self.autogen_text += a.c_type.replace("static", "")
             if idx < len(func.args) - 1:
                 self.autogen_text += ", "
         self.autogen_text += f')>(&{func.name}))\n'
@@ -86,7 +87,7 @@ class LuaIntfWriter:
         for f in cls.funcs:
             if cls.name == f.name:
                 continue
-            if "operator" in f.name:
+            if f.name.startswith("operator"):
                 continue
             if f.is_static:
                 self.autogen_text += f'    .addStaticFunction("{f.name}", &{cls.name}::{f.name})\n'

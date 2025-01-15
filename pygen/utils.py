@@ -49,14 +49,6 @@ def cvt_type(t: str) -> str:
     return "ArgType_Undefined"
 
 
-def invalid_args(args: List[MArgument]):
-    return False
-
-
-def invalid_return_type(ret: MArgument):
-    return False
-
-
 def should_autogen_func(line: str) -> bool:
     return "MUFUNC_AUTOGEN" in line
 

@@ -5,12 +5,11 @@ from pathlib import Path
 import glob
 from pygen_types import MFunction, MEnum, MClass, MArgument, ArgumentType
 from LuaintfWriter import LuaIntfWriter
+from pprint import pprint
 from PropsWriter import PropsWriter
 from config import ignore_symbols
 from utils import (
     logger,
-    invalid_args,
-    invalid_return_type,
     parse_mprop_info,
     should_autogen_func,
     get_prop_type,
@@ -111,6 +110,7 @@ class Parser:
     def _parse_function(self, v: CppHeaderParser.CppMethod) -> MFunction | None:
         if v["name"] == ",":
             return None
+
         f = MFunction(v["name"])
         return_type = v["rtnType"]
         f.returns.c_type = return_type
@@ -127,15 +127,6 @@ class Parser:
             args.append(a)
         f.args = args
 
-        if invalid_args(args):
-            logger.warning(f"関数 {f.name} invalid ARGS : {args}")
-            return None
-        if invalid_return_type(return_type):
-            logger.warning(f"関数 {f.name} invalid RETURN : {return_type}")
-            return None
-
-        if (f.name, len(args)) in registered_funcions:
-            return None
         return f
 
     def _parse_functions(self, node: CppHeaderParser.CppHeader):
@@ -148,6 +139,8 @@ class Parser:
                 continue
             if ("", name) in ignore_symbols:
                 continue
+            if name.startswith("operator"):
+                return
 
             f = self._parse_function(v)
             if f == None:
@@ -157,7 +150,7 @@ class Parser:
             f.filename = self.filename
             if (name, len(f.args)) in registered_funcions:
                 continue
-            if not f.valid_args():
+            if not f.valid_args() or not f.valid_returns():
                 logger.warning(f"関数 {f.name} invalid ARGS : {f.args}")
                 continue
 
