@@ -97,6 +97,7 @@ file(GLOB MOVUTL_EXT_SRC
   ${MOVUTL_ROOT_DIR}/ext/imgui/imgui_draw.cpp
   ${MOVUTL_ROOT_DIR}/ext/imgui/imgui_widgets.cpp
   ${MOVUTL_ROOT_DIR}/ext/imgui/imgui_tables.cpp
+  ${MOVUTL_ROOT_DIR}/ext/imgui/imgui_demo.cpp
   ${MOVUTL_ROOT_DIR}/ext/imgui/backends/imgui_impl_glfw.cpp
   ${MOVUTL_ROOT_DIR}/ext/imgui/backends/imgui_impl_opengl3.cpp
   ${MOVUTL_ROOT_DIR}/ext/filewatch/FileWatcher.cpp

@@ -129,36 +129,6 @@ public:
     return t;
   }
 
-#ifdef VKUI_USE_CONCEPTS
-  template <RealNumberConcept U> inline _Vec operator+(const U& other) const {
-    _Vec<T, LEN> t;
-    for(size_t i = 0; i < LEN; i++) {
-      t[i] = value[i] + other;
-    }
-    return t;
-  }
-  template <RealNumberConcept U> inline _Vec operator-(const U& other) const {
-    _Vec<T, LEN> t;
-    for(size_t i = 0; i < LEN; i++) {
-      t[i] = value[i] - other;
-    }
-    return t;
-  }
-  template <RealNumberConcept U> inline _Vec operator*(const U& other) const {
-    _Vec<T, LEN> t;
-    for(size_t i = 0; i < LEN; i++) {
-      t[i] = value[i] * other;
-    }
-    return t;
-  }
-  template <RealNumberConcept U> inline _Vec operator/(const U& other) const {
-    _Vec<T, LEN> t;
-    for(size_t i = 0; i < LEN; i++) {
-      t[i] = value[i] / other;
-    }
-    return t;
-  }
-#else
   inline _Vec operator+(const double& other) const {
     _Vec<T, LEN> t;
     for(size_t i = 0; i < LEN; i++) t[i] = value[i] + other;
@@ -179,9 +149,8 @@ public:
     for(size_t i = 0; i < LEN; i++) t[i] = value[i] / other;
     return t;
   }
-#endif
 
-  template <typename U> inline double dot(const _Vec<U, LEN>& other) const {
+  inline double dot(const _Vec<T, LEN>& other) const {
     double s{0};
     for(size_t i = 0; i < LEN; i++) {
       s += value[i] * other[i];
@@ -232,34 +201,8 @@ public:
     }
     return true;
   }
-  // template<typename U, int LEN2> inline _Mat outer_product(const _Vec<U, LEN2>& other)     {
-  //     _Mat<T, LEN1, LEN2> s; for(size_t i=0; i<LEN; i++){ for(int j=0; j<LEN2; j++){ s(i, j) = value[i] * other[j]; } }
-  //     return s;
-  // }
 
-  inline const T& operator[](int i) const {
-    MU_ASSERT((size_t)i < LEN);
-    return value[i];
-  }
-  inline T& operator[](int i) {
-    MU_ASSERT((size_t)i < LEN);
-    return value[i];
-  }
-  inline double norm() const {
-    double s = 0;
-    for(size_t i = 0; i < LEN; i++) s += value[i] * value[i];
-    return sqrtf(s);
-  }
-  inline double norm_sq() const {
-    double s = 0;
-    for(size_t i = 0; i < LEN; i++) s += value[i] * value[i];
-    return s;
-  }
-  inline _Vec normalize() const {
-    const auto n = norm();
-    return n == 0 ? (*this) : (*this) / norm();
-  }
-  template <typename U> inline _Vec<T, 3> cross(const _Vec<U, 3>& other) const {
+  inline _Vec<T, 3> cross(const _Vec<T, 3>& other) const {
     static_assert(LEN == 3);
     _Vec<T, 3> res;
     res[0] = value[1] * other[2] - value[2] * other[1];
@@ -268,30 +211,36 @@ public:
     return res;
   }
 
-  inline _Vec all(const T& v) {
-    for(size_t i = 0; i < LEN; i++) value[i] = v;
-    return *this;
-  }
+  // clang-format off
+  inline const T& operator[](int i) const { MU_ASSERT((size_t)i < LEN); return value[i]; }
+  inline T& operator[](int i) { MU_ASSERT((size_t)i < LEN); return value[i]; }
+
+  inline double norm() const { double s = 0; for(size_t i = 0; i < LEN; i++) s += value[i] * value[i]; return sqrtf(s); }
+  inline double norm_sq() const { double s = 0; for(size_t i = 0; i < LEN; i++) s += value[i] * value[i]; return s; }
+  inline _Vec normalize() const { const auto n = norm(); return n == 0 ? (*this) : (*this) / norm(); }
+
+  inline _Vec all(const T& v) { for(size_t i = 0; i < LEN; i++) value[i] = v; return *this; }
   inline void setMax() { all(std::numeric_limits<T>::max()); }
   inline void setMin() { all(std::numeric_limits<T>::lowest()); }
   inline void zero() { all(0); }
   inline void ones() { all(1); }
-  T min() const {
-    T m = value[0];
-    for(size_t i = 1; i < LEN; i++) m = std::min<T>(m, value[i]);
-    return m;
-  }
-  T max() const {
-    T m = value[0];
-    for(size_t i = 1; i < LEN; i++) m = std::max<T>(m, value[i]);
-    return m;
-  }
-  T sum() const {
-    T m = value[0];
-    for(size_t i = 1; i < LEN; i++) m += m;
-    return m;
-  }
+
+  T min() const { T m = value[0]; for(size_t i = 1; i < LEN; i++) m = std::min<T>(m, value[i]); return m; }
+  T max() const { T m = value[0]; for(size_t i = 1; i < LEN; i++) m = std::max<T>(m, value[i]); return m; }
+  T sum() const { T m = value[0]; for(size_t i = 1; i < LEN; i++) m += m; return m; }
   double avg() const { return (double)sum() / LEN; }
+  
+  T x() const { static_assert(LEN >= 1); return value[0]; }
+  T y() const { static_assert(LEN >= 2); return value[1]; }
+  T z() const { static_assert(LEN >= 3); return value[2]; }
+  T& x() { static_assert(LEN >= 1); return value[0]; }
+  T& y() { static_assert(LEN >= 2); return value[1]; }
+  T& z() { static_assert(LEN >= 3); return value[2]; }
+
+  void x(T v) { static_assert(LEN >= 1); value[0] = v; }
+  void y(T v) { static_assert(LEN >= 2); value[1] = v; }
+  void z(T v) { static_assert(LEN >= 3); value[2] = v; }
+  // clang-format on
 
   [[nodiscard]] std::string str() const {
     std::string str = " Vec" + std::string(typeid(T).name()) + std::to_string(LEN) + "[ ";

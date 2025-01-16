@@ -5,12 +5,11 @@ from pathlib import Path
 import glob
 from pygen_types import MFunction, MEnum, MClass, MArgument, ArgumentType
 from LuaintfWriter import LuaIntfWriter
+from pprint import pprint
 from PropsWriter import PropsWriter
 from config import ignore_symbols
 from utils import (
     logger,
-    invalid_args,
-    invalid_return_type,
     parse_mprop_info,
     should_autogen_func,
     get_prop_type,
@@ -64,8 +63,6 @@ class Parser:
             member_funcs.append(f)
 
         for field in node["properties"]["public"]:
-            if classname =="Composition":
-                print(field)
             name = field["name"]
             if (classname, name) in ignore_symbols:
                 logger.warning(f"メンバー {name} は無視します")
@@ -78,11 +75,6 @@ class Parser:
             arg.detault = field["default"] if "default" in field else ""
             arg.c_type = field_type
             lines = self.basestr.split("\n")
-            if name == "MouseDown":
-                line = lines[field["line_number"] - 1]
-                print(line)
-                arg = parse_mprop_info(arg, line)
-                print(arg)
             if len(lines) >= field["line_number"]:
                 line = lines[field["line_number"] - 1]
                 arg = parse_mprop_info(arg, line)
@@ -111,17 +103,14 @@ class Parser:
     #                 self._parse_enum(enum, classname_full)
 
     def _namespace_check(self, namespce: str) -> bool:
-        if (
-            "std" in namespce
-            or "filemanager" in namespce
-            or "detail" in namespce
-        ):
+        if "std" in namespce or "detail" in namespce:
             return False
         return True
 
     def _parse_function(self, v: CppHeaderParser.CppMethod) -> MFunction | None:
         if v["name"] == ",":
             return None
+
         f = MFunction(v["name"])
         return_type = v["rtnType"]
         f.returns.c_type = return_type
@@ -138,15 +127,6 @@ class Parser:
             args.append(a)
         f.args = args
 
-        if invalid_args(args):
-            logger.warning(f"関数 {f.name} invalid ARGS : {args}")
-            return None
-        if invalid_return_type(return_type):
-            logger.warning(f"関数 {f.name} invalid RETURN : {return_type}")
-            return None
-
-        if (f.name, len(args)) in registered_funcions:
-            return None
         return f
 
     def _parse_functions(self, node: CppHeaderParser.CppHeader):
@@ -159,21 +139,22 @@ class Parser:
                 continue
             if ("", name) in ignore_symbols:
                 continue
+            if name.startswith("operator"):
+                return
 
             f = self._parse_function(v)
             if f == None:
                 continue
 
             f.namespace = namespce
+            f.filename = self.filename
             if (name, len(f.args)) in registered_funcions:
-                return
-            if not f.valid_args():
+                continue
+            if not f.valid_args() or not f.valid_returns():
                 logger.warning(f"関数 {f.name} invalid ARGS : {f.args}")
-                return
+                continue
 
             registered_funcions.append((name, len(f.args)))
-            # f.module_name = self.get_module_name()
-            # f.filename = self.filename
             self.funcs.append(f)
 
     def _parse_enums(self, node: CppHeaderParser.CppHeader):
@@ -236,28 +217,31 @@ class Parser:
             "explicit",
             "constexpr",
             "[[nodiscard]]",  #
+            "#define \n",
+            "#ifndef \n#endif",
         ]
         for d in delete_strs:
             fstr = fstr.replace(d, "")
 
         if "imgui" in header_file:
             strs_ = [
-                """#ifndef IMGUI_DISABLE_OBSOLETE_FUNCTIONS
+"""#ifndef IMGUI_DISABLE_OBSOLETE_FUNCTIONS
     ImGuiTreeNodeFlags_AllowItemOverlap     = ImGuiTreeNodeFlags_AllowOverlap,  // Renamed in 1.89.7
-#endif
-""",
-                """
-#ifndef IMGUI_DISABLE_OBSOLETE_FUNCTIONS
-    ImGuiSelectableFlags_AllowItemOverlap   = ImGuiSelectableFlags_AllowOverlap,  // Renamed in 1.89.7
-#endif
-""",
-                """
+#endif""",
+
+"""#ifndef IMGUI_DISABLE_OBSOLETE_FUNCTIONS
+    ImGuiWindowFlags_AlwaysUseWindowPadding = 1 << 30,  // Obsoleted in 1.90.0: Use ImGuiChildFlags_AlwaysUseWindowPadding in BeginChild() call.
+    ImGuiWindowFlags_NavFlattened           = 1 << 31,  // Obsoleted in 1.90.9: Use ImGuiChildFlags_NavFlattened in BeginChild() call.
+#endif""",
+
+"""
 #ifndef IMGUI_DISABLE_OBSOLETE_FUNCTIONS
     ImGuiKey_ModCtrl = ImGuiMod_Ctrl, ImGuiKey_ModShift = ImGuiMod_Shift, ImGuiKey_ModAlt = ImGuiMod_Alt, ImGuiKey_ModSuper = ImGuiMod_Super, // Renamed in 1.89
     ImGuiKey_KeyPadEnter = ImGuiKey_KeypadEnter,    // Renamed in 1.87
 #endif
 """,
-                """
+
+"""
 #ifdef IMGUI_DISABLE_OBSOLETE_KEYIO
     ImGuiKey_KeysData_SIZE          = ImGuiKey_NamedKey_COUNT,  // Size of KeysData[]: only hold named keys
     ImGuiKey_KeysData_OFFSET        = ImGuiKey_NamedKey_BEGIN,  // Accesses to io.KeysData[] must use (key - ImGuiKey_KeysData_OFFSET) index.
@@ -283,7 +267,6 @@ class Parser:
         self._parse_functions(header)
         self._parse_enums(header)
         self._parse_classes(header)
-
         os.remove(tmp_fname)
 
     def get_module_name(self) -> str:
@@ -301,6 +284,7 @@ def run():
         root / "movutl/core/anim.hpp",
         root / "movutl/asset/text.hpp",
         root / "movutl/app/app.hpp",
+        root / "movutl/binding/imgui_binding.hpp",
         root / "ext/imgui/imgui.h",
         root / "movutl/gui/gui.hpp",
     ]
@@ -335,11 +319,11 @@ def run():
     cls_imgui = [c for c in classes_list if "ImGui" in c.name or "imgui" in c.filename]
     cls_movtl = [c for c in classes_list if "ImGui" not in c.name and "imgui" not in c.filename]
 
-    stub_generater = LuaIntfWriter("generated_lua_movutl.cpp")
+    stub_generater = LuaIntfWriter("generated_lua_movutl.cpp", "movutl")
     stub_generater.set(fn_movtl, enu_movtl, cls_movtl)
     stub_generater.save()
 
-    stub_generater = LuaIntfWriter("generated_lua_imgui.cpp")
+    stub_generater = LuaIntfWriter("generated_lua_imgui.cpp", "imgui")
     stub_generater.set(fn_imgui, enu_imgui, cls_imgui)
     stub_generater.save()
 

@@ -65,6 +65,9 @@ class MFunction:
                 return False
         return True
 
+    def valid_returns(self) -> bool:
+        return "*" not in self.returns.name
+
 @dataclass
 class MEnum:
     name: str
