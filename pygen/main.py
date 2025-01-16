@@ -284,6 +284,7 @@ def run():
         root / "movutl/core/anim.hpp",
         root / "movutl/asset/text.hpp",
         root / "movutl/app/app.hpp",
+        root / "movutl/binding/imgui_binding.hpp",
         root / "ext/imgui/imgui.h",
         root / "movutl/gui/gui.hpp",
     ]

@@ -40,6 +40,7 @@ class LuaIntfWriter:
             "#include <movutl/core/anim.hpp>\n"
             "#include <movutl/asset/track.hpp>\n"
             "#include <movutl/asset/entity.hpp>\n"
+            "#include <movutl/binding/imgui_binding.hpp>\n"
             "#include <movutl/asset/composition.hpp>\n"
             "extern \"C\" {\n" 
             "#include <lua.h>\n" 
@@ -69,7 +70,10 @@ class LuaIntfWriter:
         write_if_different(self.output_filename, output)
 
     def register_func(self, func: MFunction):
-        self.autogen_text += f'    .addFunction("{func.name}", '
+        fname = func.name
+        if "ImGui" in func.namespace and fname.endswith("_"):
+            fname = fname[:-1]
+        self.autogen_text += f'    .addFunction("{fname}", '
         ret_t = func.returns.c_type.replace("static", "")
         self.autogen_text += f'static_cast<{ret_t}(*)( '
         for idx , a in enumerate(func.args):

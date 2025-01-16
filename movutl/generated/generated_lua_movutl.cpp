@@ -15,6 +15,7 @@
 #include <movutl/core/anim.hpp>
 #include <movutl/asset/track.hpp>
 #include <movutl/asset/entity.hpp>
+#include <movutl/binding/imgui_binding.hpp>
 #include <movutl/asset/composition.hpp>
 extern "C" {
 #include <lua.h>
