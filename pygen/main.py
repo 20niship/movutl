@@ -5,7 +5,7 @@ from pathlib import Path
 import glob
 from pygen_types import MFunction, MEnum, MClass, MArgument, ArgumentType
 from LuaintfWriter import LuaIntfWriter
-from pprint import pprint
+from LuaTypeWriter import LuaTypeWriter
 from PropsWriter import PropsWriter
 from config import ignore_symbols
 from utils import (
@@ -58,7 +58,7 @@ class Parser:
                 line = lines[method["line_number"] - 1]
                 f.should_autogen = should_autogen_func(line)
             if not f.valid_args():
-                logger.warning(f"関数 {f.name} invalid ARGS : {f.args}")
+                logger.warning(f"関数 {f.name} invalid ARGS ")
                 continue
             member_funcs.append(f)
 
@@ -79,7 +79,7 @@ class Parser:
                 line = lines[field["line_number"] - 1]
                 arg = parse_mprop_info(arg, line)
             if not arg.valid():
-                logger.warning(f"メンバー {name} invalid ARGS : {arg}")
+                logger.warning(f"メンバー {name} invalid ARGS ")
                 continue
             member_fields.append(arg)
 
@@ -98,9 +98,9 @@ class Parser:
         )
         self.classes.append(c)
 
-    #         if "enums" in node and "public" in node["enums"]:
-    #             for enum in node["enums"]["public"]:
-    #                 self._parse_enum(enum, classname_full)
+        if "enums" in node and "public" in node["enums"]:
+            for enum in node["enums"]["public"]:
+                self._parse_enum(enum, "")
 
     def _namespace_check(self, namespce: str) -> bool:
         if "std" in namespce or "detail" in namespce:
@@ -151,7 +151,7 @@ class Parser:
             if (name, len(f.args)) in registered_funcions:
                 continue
             if not f.valid_args() or not f.valid_returns():
-                logger.warning(f"関数 {f.name} invalid ARGS : {f.args}")
+                logger.warning(f"関数 {f.name} invalid ARGS ")
                 continue
 
             registered_funcions.append((name, len(f.args)))
@@ -160,20 +160,17 @@ class Parser:
     def _parse_enums(self, node: CppHeaderParser.CppHeader):
         for enum in node.enums:
             namespce = enum["namespace"]
-            if (
-                namespce == "std"
-                or "filemanager" in namespce
-                or "melchior::detail" in namespce
-                or "experimental" in namespce
-            ):
+            if namespce == "std" or "detail" in namespce:
                 return
             self._parse_enum(enum, "")
 
     def _parse_enum(self, enum: CppHeaderParser.CppEnum, parent_str: str):
         if "name" not in enum:
+            print("enum name not found")
             return
 
         enumname = enum["name"]
+        print(enumname)
         if ("", enumname) in ignore_symbols:
             return
         if enumname == "" or enumname[0] == "_" or "(" in enumname or "/" in enumname:
@@ -219,40 +216,17 @@ class Parser:
             "[[nodiscard]]",  #
             "#define \n",
             "#ifndef \n#endif",
+"""
+#ifndef IMGUI_DISABLE_OBSOLETE_FUNCTIONS
+    ImGuiCol_TabActive = ImGuiCol_TabSelected,                  // [renamed in 1.90.9]
+    ImGuiCol_TabUnfocused = ImGuiCol_TabDimmed,                 // [renamed in 1.90.9]
+    ImGuiCol_TabUnfocusedActive = ImGuiCol_TabDimmedSelected,   // [renamed in 1.90.9]
+    ImGuiCol_NavHighlight = ImGuiCol_NavCursor,                 // [renamed in 1.91.4]
+#endif
+"""
         ]
         for d in delete_strs:
             fstr = fstr.replace(d, "")
-
-        if "imgui" in header_file:
-            strs_ = [
-"""#ifndef IMGUI_DISABLE_OBSOLETE_FUNCTIONS
-    ImGuiTreeNodeFlags_AllowItemOverlap     = ImGuiTreeNodeFlags_AllowOverlap,  // Renamed in 1.89.7
-#endif""",
-
-"""#ifndef IMGUI_DISABLE_OBSOLETE_FUNCTIONS
-    ImGuiWindowFlags_AlwaysUseWindowPadding = 1 << 30,  // Obsoleted in 1.90.0: Use ImGuiChildFlags_AlwaysUseWindowPadding in BeginChild() call.
-    ImGuiWindowFlags_NavFlattened           = 1 << 31,  // Obsoleted in 1.90.9: Use ImGuiChildFlags_NavFlattened in BeginChild() call.
-#endif""",
-
-"""
-#ifndef IMGUI_DISABLE_OBSOLETE_FUNCTIONS
-    ImGuiKey_ModCtrl = ImGuiMod_Ctrl, ImGuiKey_ModShift = ImGuiMod_Shift, ImGuiKey_ModAlt = ImGuiMod_Alt, ImGuiKey_ModSuper = ImGuiMod_Super, // Renamed in 1.89
-    ImGuiKey_KeyPadEnter = ImGuiKey_KeypadEnter,    // Renamed in 1.87
-#endif
-""",
-
-"""
-#ifdef IMGUI_DISABLE_OBSOLETE_KEYIO
-    ImGuiKey_KeysData_SIZE          = ImGuiKey_NamedKey_COUNT,  // Size of KeysData[]: only hold named keys
-    ImGuiKey_KeysData_OFFSET        = ImGuiKey_NamedKey_BEGIN,  // Accesses to io.KeysData[] must use (key - ImGuiKey_KeysData_OFFSET) index.
-#else
-    ImGuiKey_KeysData_SIZE          = ImGuiKey_COUNT,           // Size of KeysData[]: hold legacy 0..512 keycodes + named keys
-    ImGuiKey_KeysData_OFFSET        = 0,                        // Accesses to io.KeysData[] must use (key - ImGuiKey_KeysData_OFFSET) index.
-#endif
-""",
-            ]
-            for s in strs_:
-                fstr = fstr.replace(s, "")
 
         if not os.path.exists(header_file):
             logger.error("Fileが存在しません！" + header_file)
@@ -264,6 +238,7 @@ class Parser:
         self.basestr = fstr
 
         header = CppHeaderParser.CppHeader(tmp_fname)
+
         self._parse_functions(header)
         self._parse_enums(header)
         self._parse_classes(header)
@@ -284,9 +259,9 @@ def run():
         root / "movutl/core/anim.hpp",
         root / "movutl/asset/text.hpp",
         root / "movutl/app/app.hpp",
+        root / "movutl/gui/gui.hpp",
         root / "movutl/binding/imgui_binding.hpp",
         root / "ext/imgui/imgui.h",
-        root / "movutl/gui/gui.hpp",
     ]
 
     logger.info(f"{len(headers)} headers found")
@@ -327,10 +302,13 @@ def run():
     stub_generater.set(fn_imgui, enu_imgui, cls_imgui)
     stub_generater.save()
 
-    stub_generater = PropsWriter("generated_props.cpp")
-    stub_generater.set(fn_movtl, enu_movtl, cls_movtl)
+    stub_generater = LuaTypeWriter("imgui.lua", "imgui")
+    stub_generater.set(fn_imgui, enu_imgui, cls_imgui)
     stub_generater.save()
 
+    stub_generater = LuaTypeWriter("movutl.lua", "movutl")
+    stub_generater.set(fn_movtl, enu_movtl, cls_movtl)
+    stub_generater.save()
 
 if __name__ == "__main__":
     run()

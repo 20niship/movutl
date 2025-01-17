@@ -31,7 +31,8 @@ public:
 };
 
 enum FilterInfoType {
-  FilterAlwaysActive = 0,
+  FilterDefault = 0,
+  FilterAlwaysActive,
   Filter_ManualRedraw,
   Filter_NoInitData,
   // TODO: AEとかの設定を読み込んでくる
@@ -44,7 +45,6 @@ struct FilterPluginTable {
   char infomation[256];
   uint32_t version = 0;
   std::string version_str;
-  PropsInfo props;
 
   void (*fn_cutstom_wnd)() = nullptr;
   void (*fn_update_value)();
@@ -83,5 +83,7 @@ struct FilterPluginTable {
   //	max_title 	: titleのバッファサイズ
   //  戻り値	: 成功ならTRUE
   int reserve[2]; //	拡張用に予約されてます。NULLにしてください。
+
+  PropsInfo props;
 };
 } // namespace mu
