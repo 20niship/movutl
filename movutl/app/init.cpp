@@ -13,6 +13,7 @@ void init() {
   GUIManager::Get()->init();
   LOG_F(1, "Loading plugins...");
   detail::register_default_plugins();
+  detail::register_default_filters();
   detail::init_external_plugins();
   LOG_F(1, "Loading plugins...");
   detail::activate_all_plugins();

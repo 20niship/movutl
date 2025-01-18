@@ -133,6 +133,26 @@ std::string PropsInfo::str() const {
   return "PropsInfo(" + std::to_string(props.size()) + ")";
 }
 
+Props PropsInfo::get_default() const {
+  Props p;
+  for(auto& prop : props) {
+    switch(prop.type) {
+      case PropT_Float: p[prop.name] = prop.value_.float_.default_; break;
+      case PropT_Int: p[prop.name] = prop.value_.int_; break;
+      case PropT_Bool: p[prop.name] = prop.value_.bool_; break;
+      case PropT_String: p[prop.name] = prop.value_.str_; break;
+      case PropT_Vec2: p[prop.name] = prop.value_.vec2_; break;
+      case PropT_Vec3: p[prop.name] = prop.value_.vec3_; break;
+      case PropT_Vec4: p[prop.name] = prop.value_.vec4_; break;
+      case PropT_Color: p[prop.name] = prop.value_.color_; break;
+      case PropT_Selection: p[prop.name] = prop.value_.selection_.default_; break;
+      case PropT_Path: p[prop.name] = prop.value_.str_; break;
+      case PropT_Undefined: break;
+    }
+  }
+  return p;
+}
+
 std::string PropsInfo::summary() const {
   std::string s;
   for(auto& p : props) s += p.name + " " + std::to_string(p.type) + " ";

@@ -62,6 +62,9 @@ public:
 
   static Ref<Image> Create(const char* name, const char* path, bool add_to_pj = true);
   static Ref<Image> Create(const char* name, int w, int h, ImageFormat format = ImageFormatRGBA, bool add_to_pj = true);
+
+  inline Vec4b& operator[](const size_t i) { return img[i]; }
+  inline const Vec4b& operator[](const size_t i) const { return img[i]; }
 };
 
 } // namespace mu

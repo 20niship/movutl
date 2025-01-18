@@ -225,4 +225,6 @@ template <size_t N = 64> struct FixStringBase {
 
 typedef FixStringBase<64> FixString;
 
+bool fuzzy_match(const char* src, const char* filter);
+
 } // namespace mu
