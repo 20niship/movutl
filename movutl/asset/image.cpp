@@ -7,83 +7,41 @@
 
 namespace mu {
 
-void Image::set_cv_img(const cv::Mat* cv_img) {
+void ImageRGBA::set_cv_img(const cv::Mat* cv_img) {
   MU_ASSERT(cv_img);
-  if(cv_img->channels() == 1)
-    this->fmt = ImageFormatGRAYSCALE;
-  else if(cv_img->channels() == 3)
-    this->fmt = ImageFormatRGB;
-  else if(cv_img->channels() == 4)
-    this->fmt = ImageFormatRGBA;
+  cv::Mat out;
+  if(cv_img->channels() == 4)
+    out = *cv_img;
   else
-    MU_ASSERT(false);
+    cv::cvtColor(*cv_img, out, cv::COLOR_BGR2BGRA);
 
   MU_ASSERT(cv_img->rows > 0 && cv_img->cols > 0);
   MU_ASSERT(cv_img->channels() == 1 || cv_img->channels() == 3 || cv_img->channels() == 4);
-  MU_ASSERT(cv_img->channels() == this->channels());
+  MU_ASSERT(out.channels() == 4);
 
   resize(cv_img->cols, cv_img->rows);
-  if(channels() == 1) {
-    for(int y = 0; y < cv_img->rows; y++) {
-      const uint8_t* cv_ptr = cv_img->ptr<uint8_t>(y);
-      uint8_t* dst_p = &data_[0] + y * width;
-      for(int x = 0; x < cv_img->cols; x++) dst_p[x] = cv_ptr[x];
-    }
-  } else if(channels() == 3) {
-    for(int y = 0; y < cv_img->rows; y++) {
-      const uint8_t* cv_ptr = cv_img->ptr<uint8_t>(y);
-      uint8_t* dst_p = &data_[0] + y * width * 3;
-      for(int x = 0; x < cv_img->cols; x++) {
-        for(int c = 0; c < 3; c++) dst_p[x * 3 + c] = cv_ptr[x * 3 + c];
-      }
-    }
-  } else if(channels() == 4) {
-    for(int y = 0; y < cv_img->rows; y++) {
-      const uint8_t* cv_ptr = cv_img->ptr<uint8_t>(y);
-      uint8_t* dst_p = &data_[0] + y * width * 4;
-      for(int x = 0; x < cv_img->cols; x++) {
-        for(int c = 0; c < 4; c++) dst_p[x * 4 + c] = cv_ptr[x * 4 + c];
-      }
-    }
-  } else {
-    MU_FAIL("Invalid channels");
+  for(int y = 0; y < cv_img->rows; y++) {
+    const uint32_t* cv_ptr = reinterpret_cast<const uint32_t*>(cv_img->ptr<uint8_t>(y));
+    uint32_t* dst_p = reinterpret_cast<uint32_t*>(&data_[y * width]);
+    /*for(int x = 0; x < cv_img->cols; x++) dst_p[x] = cv_ptr[x];*/
+    std::memcpy(dst_p, cv_ptr, cv_img->cols * 4);
   }
 }
 
-void Image::to_cv_img(cv::Mat* cv_img) const {
+void ImageRGBA::to_cv_img(cv::Mat* cv_img) const {
   MU_ASSERT(cv_img);
-  cv_img->create(height, width, CV_MAKETYPE(CV_8U, channels()));
-  if(channels() == 1) {
-    for(int y = 0; y < (int)height; y++) {
-      uint8_t* cv_ptr = cv_img->ptr<uint8_t>(y);
-      for(int x = 0; x < (int)width; x++) {
-        cv_ptr[x] = data_[y * width + x];
-      }
-    }
-  } else if(channels() == 3) {
-    for(int y = 0; y < (int)height; y++) {
-      uint8_t* cv_ptr = cv_img->ptr<uint8_t>(y);
-      const uint8_t* src_p = &data_[0] + y * width * 3;
-      for(int x = 0; x < (int)width; x++) {
-        for(int c = 0; c < 3; c++) cv_ptr[x * 3 + c] = src_p[x * 3 + c];
-      }
-    }
-  } else if(channels() == 4) {
-    for(int y = 0; y < (int)height; y++) {
-      uint8_t* cv_ptr = cv_img->ptr<uint8_t>(y);
-      const uint8_t* src_p = &data_[0] + y * width * 4;
-      for(int x = 0; x < (int)width; x++) {
-        for(int c = 0; c < 4; c++) cv_ptr[x * 4 + c] = src_p[x * 4 + c];
-      }
-    }
+  cv_img->create(height, width, CV_8UC4);
+  for(int y = 0; y < (int)height; y++) {
+    uint32_t* cv_ptr = cv_img->ptr<uint32_t>(y);
+    const uint32_t* src_p = reinterpret_cast<const uint32_t*>(&data_[0] + y * width);
+    std::memcpy(cv_ptr, src_p, width * 4);
+    /*for(int x = 0; x < (int)width; x++) cv_ptr[x] = src_p[x];*/
   }
 }
 
-bool Image::copyto_rgba(Image* dst, const Vec2d& pmin) const {
+bool ImageRGBA::copyto(ImageRGBA* dst, const Vec2d& pmin) const {
   MU_ASSERT(dst);
   if(this->width <= 0 || this->height <= 0 || dst->width <= 0 || dst->height <= 0) return false;
-  MU_ASSERT(this->channels() == 4);
-  MU_ASSERT(dst->channels() == 4);
   int cw = dst->width;
   int ch = dst->height;
   if(cw <= 0 || ch <= 0) return false;
@@ -101,28 +59,7 @@ bool Image::copyto_rgba(Image* dst, const Vec2d& pmin) const {
   }
 }
 
-bool Image::copyto(Image* dst, const Vec2d& pmin) const {
-  MU_ASSERT(dst);
-  if(this->width <= 0 || this->height <= 0 || dst->width <= 0 || dst->height <= 0) return false;
-  if(this->channels() == 4 && dst->channels() == 4) return copyto_rgba(dst, pmin);
-  int cw = dst->width;
-  int ch = dst->height;
-  if(cw <= 0 || ch <= 0) return false;
-
-  for(int y = 0; y < this->height; y++) {
-    int dy = pmin[1] + y;
-    if(dy < 0 || dy >= ch) continue;
-    for(int x = 0; x < this->width; x++) {
-      int dx = pmin[0] + x;
-      if(dx < 0 || dx >= cw) continue;
-      auto rgba = this->rgba(x, y);
-      dst->set_rgba(dx, dy, rgba);
-    }
-  }
-  return true;
-}
-
-bool Image::copyto(Image* dst, const Vec2d& center, float scale, float angle) const {
+bool ImageRGBA::copyto(ImageRGBA* dst, const Vec2d& center, float scale, float angle) const {
   if(angle == 0 && scale == 1.0) return this->copyto(dst, center);
   // 角度をラジアンに変換
   float rad = angle * M_PI / 180.0f;
@@ -151,8 +88,9 @@ bool Image::copyto(Image* dst, const Vec2d& center, float scale, float angle) co
       int src_y_int = static_cast<int>(std::floor(src_y));
       if(src_y_int < 0 || src_y_int >= this->height) continue;
 
-      auto rgba = this->rgba(src_x_int, src_y_int);
-      dst->set_rgba(x, y, rgba);
+      uint32_t* dst_p = (uint32_t*)&dst->data_[0] + y * dst->width;
+      uint32_t* src_p = (uint32_t*)&data_[0] + src_y_int * width;
+      dst_p[x] = src_p[src_x_int];
     }
   }
   return true;
@@ -161,13 +99,13 @@ bool Image::copyto(Image* dst, const Vec2d& center, float scale, float angle) co
 bool Image::render(Composition* cmp) {
   MU_ASSERT(cmp);
   MU_ASSERT(cmp->frame_final);
-  if(this->width <= 0 || this->height <= 0) return false;
+  if(this->width() <= 0 || this->height() <= 0) return false;
   int cw = cmp->size[0];
   int ch = cmp->size[1];
   if(cw <= 0 || ch <= 0) return false;
 
-  int base_x = this->width / 2 + trk.anchor[0] - cw / 2;
-  int base_y = this->height / 2 + trk.anchor[1] - ch / 2;
+  int base_x = this->width() / 2 + trk.anchor[0] - cw / 2;
+  int base_y = this->height() / 2 + trk.anchor[1] - ch / 2;
   this->copyto(cmp->frame_final.get(), Vec2d(base_x, base_y));
 }
 
@@ -199,7 +137,7 @@ Ref<Image> Image::Create(const char* name, int w, int h, ImageFormat format, boo
   return img;
 }
 
-void Image::imshow(const char* name) const {
+void ImageRGBA::imshow(const char* name) const {
   cv::Mat cv_img;
   to_cv_img(&cv_img);
   cv::imshow(name, cv_img);

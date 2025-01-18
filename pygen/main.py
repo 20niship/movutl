@@ -170,7 +170,6 @@ class Parser:
             return
 
         enumname = enum["name"]
-        print(enumname)
         if ("", enumname) in ignore_symbols:
             return
         if enumname == "" or enumname[0] == "_" or "(" in enumname or "/" in enumname:
@@ -257,6 +256,7 @@ def run():
         root / "movutl/asset/composition.hpp",
         root / "movutl/asset/project.hpp",
         root / "movutl/core/anim.hpp",
+        root / "movutl/core/imagebase.hpp",
         root / "movutl/asset/text.hpp",
         root / "movutl/app/app.hpp",
         root / "movutl/gui/gui.hpp",

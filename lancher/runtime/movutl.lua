@@ -147,40 +147,23 @@ movutl.EntityInfo = {}
 function movutl.EntityInfo:str( ) end
 
 ---@class Image
+---@field img ImageRGBA
 ---@field fmt ImageFormat
----@field width number
----@field height number
 ---@field pos Vec3
 ---@field scale Vec2
 ---@field rotation number
 ---@field alpha number
 ---@field path string
----@field dirty_ number
 movutl.Image = {}
-
----@return nil
-function movutl.Image:dirty( ) end
-
----@return number
-function movutl.Image:data( ) end
-
----@param x size_t
----@param y size_t
----@param rgb Vec3b 
----@return nil
-function movutl.Image:set_rgb( x, y, rgb, ) end
-
----@param x size_t
----@param y size_t
----@param rgba Vec4b 
----@return nil
-function movutl.Image:set_rgba( x, y, rgba, ) end
 
 ---@return size_t
 function movutl.Image:size( ) end
 
----@return size_t
-function movutl.Image:size_in_bytes( ) end
+---@return number
+function movutl.Image:width( ) end
+
+---@return number
+function movutl.Image:height( ) end
 
 ---@return nil
 function movutl.Image:reset( ) end
@@ -189,13 +172,17 @@ function movutl.Image:reset( ) end
 ---@return nil
 function movutl.Image:fill( v, ) end
 
+---@return Vec4b 
+function movutl.Image:data( ) end
+
+---@return nil
+function movutl.Image:dirty( ) end
+
+---@return number
+function movutl.Image:get_dirty( ) end
+
 ---@return number
 function movutl.Image:channels( ) end
-
----@param x size_t
----@param y size_t
----@return Vec4b
-function movutl.Image:rgba( x, y, ) end
 
 ---@param name string
 ---@return nil
@@ -203,6 +190,53 @@ function movutl.Image:imshow( name, ) end
 
 ---@return EntityType
 function movutl.Image:getType( ) end
+
+---@class ImageRGBA
+---@field width number
+---@field height number
+---@field dirty_ number
+---@field alpha boolean
+movutl.ImageRGBA = {}
+
+---@return nil
+function movutl.ImageRGBA:dirty( ) end
+
+---@return Vec4b 
+function movutl.ImageRGBA:data( ) end
+
+---@param x size_t
+---@param y size_t
+---@param rgb Vec3b 
+---@return nil
+function movutl.ImageRGBA:set_rgb( x, y, rgb, ) end
+
+---@param x size_t
+---@param y size_t
+---@param rgba Vec4b 
+---@return nil
+function movutl.ImageRGBA:set_rgba( x, y, rgba, ) end
+
+---@return size_t
+function movutl.ImageRGBA:size( ) end
+
+---@return size_t
+function movutl.ImageRGBA:size_in_bytes( ) end
+
+---@return nil
+function movutl.ImageRGBA:reset( ) end
+
+---@param v number
+---@return nil
+function movutl.ImageRGBA:fill( v, ) end
+
+---@param x size_t
+---@param y size_t
+---@return Vec4b
+function movutl.ImageRGBA:rgba( x, y, ) end
+
+---@param name string
+---@return nil
+function movutl.ImageRGBA:imshow( name, ) end
 
 ---@class Movie
 ---@field pos Vec3
