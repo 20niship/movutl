@@ -3,6 +3,7 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 // --
+#include <movutl/app/app_impl.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/gui/inspector.hpp>
 #include <movutl/gui/timeline.hpp>
@@ -61,6 +62,28 @@ const char* get_entt_icon(const Ref<Entity>& entt) {
     default: return ICON_FA_QUESTION;
   }
   return ICON_FA_QUESTION;
+}
+
+
+void register_imgui_style(const char* name, const ImGuiStyle& style) {
+  auto app = detail::AppMain::Get();
+  app->imgui_styles[name] = style;
+}
+
+void apply_imgui_style(const char* name) {
+  auto app = detail::AppMain::Get();
+  if(!app->imgui_styles.contains(name)) {
+    LOG_F(1, "apply_imgui_style: style %s not found", name);
+    return;
+  }
+  LOG_F(1, "apply_imgui_style: %s", name);
+  auto it = app->imgui_styles[name];
+  ImGui::GetStyle() = it;
+}
+
+void remove_imgui_style(const char* name) {
+  auto app = detail::AppMain::Get();
+  app->imgui_styles.erase(name);
 }
 
 } // namespace mu

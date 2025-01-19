@@ -1,4 +1,5 @@
 #pragma once
+#include <imgui.h>
 #include <movutl/core/defines.hpp>
 #include <movutl/plugin/plugin.hpp>
 
@@ -14,6 +15,8 @@ public:
   std::vector<InputPluginTable> input_plugins;
   std::vector<PluginData> plugins;
   std::vector<Ref<Entity>> entt_selected;
+
+  std::map<std::string, ImGuiStyle> imgui_styles;
 };
 
 } // namespace mu::detail

@@ -100,7 +100,7 @@ class Parser:
 
         if "enums" in node and "public" in node["enums"]:
             for enum in node["enums"]["public"]:
-                self._parse_enum(enum, "")
+                self._parse_enum(enum, classname)
 
     def _namespace_check(self, namespce: str) -> bool:
         if "std" in namespce or "detail" in namespce:
@@ -183,6 +183,9 @@ class Parser:
             enumname = parent_str + "::" + enumname
         values = [v["name"] for v in enum["values"]]
         e = MEnum(enumname, comment, values)
+        e.parent_str = parent_str
+        e.namespace= enum["namespace"]
+        e.filename = self.filename
         self.enums.append(e)
 
     def _parse_classes(self, node: CppHeaderParser.CppHeader):
@@ -222,7 +225,9 @@ class Parser:
     ImGuiCol_TabUnfocusedActive = ImGuiCol_TabDimmedSelected,   // [renamed in 1.90.9]
     ImGuiCol_NavHighlight = ImGuiCol_NavCursor,                 // [renamed in 1.91.4]
 #endif
-"""
+""",
+"IM_MSVC_RUNTIME_CHECKS_OFF",
+"IM_MSVC_RUNTIME_CHECKS_RESTORE"
         ]
         for d in delete_strs:
             fstr = fstr.replace(d, "")
@@ -288,8 +293,8 @@ def run():
     fn_imgui = [f for f in funcs_list if "ImGui" in f.namespace or "imgui" in f.filename]
     fn_movtl = [f for f in funcs_list if "ImGui" not in f.namespace and "imgui" not in f.filename]
 
-    enu_imgui = [e for e in enums_list if "ImGui" in e.name]
-    enu_movtl = [e for e in enums_list if "ImGui" not in e.name]
+    enu_imgui = [e for e in enums_list if "ImGui" in e.namespace or "imgui" in e.filename]
+    enu_movtl = [e for e in enums_list if "ImGui" not in e.namespace and "imgui" not in e.filename]
 
     cls_imgui = [c for c in classes_list if "ImGui" in c.name or "imgui" in c.filename]
     cls_movtl = [c for c in classes_list if "ImGui" not in c.name and "imgui" not in c.filename]

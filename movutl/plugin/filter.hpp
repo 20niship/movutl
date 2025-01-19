@@ -9,25 +9,19 @@ namespace mu {
 
 struct FilterInData {
 public:
-  int flag;          //	フィルタのフラグ
-                     //	FILTER_PROC_INFO_FLAG_INVERT_FIELD_ORDER	: フィールドオーダーを標準と逆に扱う ( 標準はボトム->トップになっています )
-                     //	FILTER_PROC_INFO_FLAG_INVERT_INTERLACE		: 解除方法を反転する ( インターレース解除フィルタのみ )
-  Image* ycp_edit;   //	画像データへのポインタ ( ycp_editとycp_tempは入れ替えれます )
-  Image* ycp_temp;   //	テンポラリ領域へのポインタ
-  int w, h;          //	現在の画像のサイズ ( 画像サイズは変更出来ます )
-  int max_w, max_h;  //	画像領域のサイズ
-  int frame;         //	現在のフレーム番号( 番号は0から )
-  int frame_n;       //	総フレーム数
-  int org_w, org_h;  //	元の画像のサイズ
-  short* audiop;     //	オーディオデータへのポインタ ( オーディオフィルタの時のみ )
-                     //	オーディオ形式はPCM16bitです ( 1サンプルは mono = 2byte , stereo = 4byte )
-  int audio_n;       //	オーディオサンプルの総数
-  int audio_ch;      //	オーディオチャンネル数
-  Ref<Image> pixelp; //	現在は使用されていません
-  ExeData* editp;    //	エディットハンドル
-  int yc_size;       //	画像領域の画素のバイトサイズ
-  int line_size;     //	画像領域の幅のバイトサイズ
-  int reserve[8];    //	拡張用に予約されてます
+  int flag;                     //	フィルタのフラグ
+                                //	FILTER_PROC_INFO_FLAG_INVERT_FIELD_ORDER	: フィールドオーダーを標準と逆に扱う ( 標準はボトム->トップになっています )
+                                //	FILTER_PROC_INFO_FLAG_INVERT_INTERLACE		: 解除方法を反転する ( インターレース解除フィルタのみ )
+  ImageRGBA* img = nullptr;     //	画像データへのポインタ ( ycp_editとycp_tempは入れ替えれます )
+  Composition* compo = nullptr; //	コンポジション
+  Entity* entt = nullptr;       //	フィルタが適用されるエンティティ
+  Vec2d max_size;               //	画像領域のサイズ
+  Vec2d org_size;               //	オリジナル画像のサイズ
+  short* audiop = nullptr;      //	オーディオデータへのポインタ ( オーディオフィルタの時のみ )
+                                //	オーディオ形式はPCM16bitです ( 1サンプルは mono = 2byte , stereo = 4byte )
+  int audio_n = 0;              //	オーディオサンプルの総数
+  int audio_ch = 0;             //	オーディオチャンネル数
+  int reserve[8];               //	拡張用に予約されてます
 };
 
 enum FilterInfoType {
@@ -41,15 +35,15 @@ enum FilterInfoType {
 struct FilterPluginTable {
   uint64_t guid;
   FilterInfoType flag;
-  char name[64];
-  char infomation[256];
+  FixString name;
+  FixStringBase<256> info;
   uint32_t version = 0;
   std::string version_str;
 
   void (*fn_cutstom_wnd)() = nullptr;
   void (*fn_update_value)();
-  bool (*fn_init)(void* fp, void* editp); //	開始時に呼ばれる関数へのポインタ (NULLなら呼ばれせん)
-  bool (*fn_exit)(void* fp);              //	終了時に呼ばれる関数へのポインタ (NULLなら呼ばれません)
+  bool (*fn_init)(void* fp, ExeData* editp, PropsInfo* props); //	開始時に呼ばれる関数へのポインタ (NULLなら呼ばれせん)
+  bool (*fn_exit)(void* fp);                                   //	終了時に呼ばれる関数へのポインタ (NULLなら呼ばれません)
 
   bool (*fn_proc)(void* fp, FilterInData* fpip, const Props& p); //	フィルタ処理関数へのポインタ (NULLなら呼ばれません)
   bool (*fn_update)(void* fp, int status);

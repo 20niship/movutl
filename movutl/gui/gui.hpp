@@ -1,5 +1,6 @@
 #pragma once
 
+#include <imgui.h>
 #include <movutl/core/defines.hpp>
 #include <movutl/core/ref.hpp>
 #include <vector>
@@ -41,5 +42,11 @@ void update_gui_panels();
 void gui_new_frame();
 void gui_render_to_screen();
 } // namespace detail
+
+void register_imgui_style(const char* name, const ImGuiStyle& style);
+void apply_imgui_style(const char* name);
+void remove_imgui_style(const char* name);
+
+void render_main_menu_bar();
 
 } // namespace mu

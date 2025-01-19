@@ -22,7 +22,7 @@ void activate_all_plugins() {
   for(auto& p : app->input_plugins)
     if(p.fn_init) p.fn_init();
   for(auto& p : app->filters)
-    if(p.fn_init) p.fn_init(nullptr, nullptr);
+    if(p.fn_init) p.fn_init(nullptr, nullptr, &p.props);
 }
 
 void init_external_plugins() {

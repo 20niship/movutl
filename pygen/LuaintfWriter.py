@@ -12,8 +12,8 @@ class LuaIntfWriter:
         enums_list: List[MEnum],
         classes_list: List[MClass],
     ):
-        # for e in enums_list:
-        #     self.register_enum(e)
+        for e in enums_list:
+            self.register_enum(e)
         for c in classes_list:
             self.register_class(c)
         for f in funcs_list:
@@ -38,6 +38,8 @@ class LuaIntfWriter:
             "#include <movutl/asset/project.hpp>\n"
             "#include <movutl/asset/movie.hpp>\n"
             "#include <movutl/core/anim.hpp>\n"
+            "#include <movutl/gui/gui.hpp>\n"
+            "#include <movutl/binding/imgui_binding.hpp>\n"
             "#include <movutl/asset/track.hpp>\n"
             "#include <movutl/asset/entity.hpp>\n"
             "#include <movutl/binding/imgui_binding.hpp>\n"
@@ -81,6 +83,19 @@ class LuaIntfWriter:
             if idx < len(func.args) - 1:
                 self.autogen_text += ", "
         self.autogen_text += f')>(&{func.name}))\n'
+
+    def register_enum(self, enum: MEnum):
+        ename = enum.name
+        if enum.parent_str:
+            ename = enum.parent_str + "_" + ename
+
+        self.autogen_text += f'  .beginModule("{ename}")\n'
+        for e in enum.values:
+            if enum.parent_str:
+                self.autogen_text += f'    .addConstant("{e}", {enum.parent_str}::{enum.name}::{e})\n'
+            else:
+                self.autogen_text += f'    .addConstant("{e}", {enum.name}::{e})\n'
+        self.autogen_text += "  .endModule()\n"
 
     def register_class(self, cls: MClass):
         if cls.name == "Entity":

@@ -19,6 +19,38 @@ imgui.ImVec4= {}
 ---@field Value ImVec4
 imgui.ImColor= {}
 
+---@class ImDrawFlags_
+---@field ImDrawFlags_None number
+---@field ImDrawFlags_Closed number
+---@field ImDrawFlags_RoundCornersTopLeft number
+---@field ImDrawFlags_RoundCornersTopRight number
+---@field ImDrawFlags_RoundCornersBottomLeft number
+---@field ImDrawFlags_RoundCornersBottomRight number
+---@field ImDrawFlags_RoundCornersNone number
+---@field ImDrawFlags_RoundCornersTop number
+---@field ImDrawFlags_RoundCornersBottom number
+---@field ImDrawFlags_RoundCornersLeft number
+---@field ImDrawFlags_RoundCornersRight number
+---@field ImDrawFlags_RoundCornersAll number
+---@field ImDrawFlags_RoundCornersDefault_ number
+---@field ImDrawFlags_RoundCornersMask_ number
+imgui.ImDrawFlags_ = {}
+
+---@class ImDrawListFlags_
+---@field ImDrawListFlags_None number
+---@field ImDrawListFlags_AntiAliasedLines number
+---@field ImDrawListFlags_AntiAliasedLinesUseTex number
+---@field ImDrawListFlags_AntiAliasedFill number
+---@field ImDrawListFlags_AllowVtxOffset number
+imgui.ImDrawListFlags_ = {}
+
+---@class ImFontAtlasFlags_
+---@field ImFontAtlasFlags_None number
+---@field ImFontAtlasFlags_NoPowerOfTwoHeight number
+---@field ImFontAtlasFlags_NoMouseCursors number
+---@field ImFontAtlasFlags_NoBakedLines number
+imgui.ImFontAtlasFlags_ = {}
+
 ---@class ImGuiBackendFlags_
 ---@field ImGuiBackendFlags_None number
 ---@field ImGuiBackendFlags_HasGamepad number
@@ -520,12 +552,6 @@ imgui.ImGuiTableRowFlags_ = {}
 ---@field ImGuiViewportFlags_IsFocused number
 imgui.ImGuiViewportFlags_ = {}
 
----@class ImDrawVert
----@field pos ImVec2
----@field uv ImVec2
----@field col ImU32
-imgui.ImDrawVert = {}
-
 ---@class ImGuiIO
 ---@field ConfigFlags ImGuiConfigFlags
 ---@field BackendFlags ImGuiBackendFlags
@@ -606,6 +632,84 @@ imgui.ImDrawVert = {}
 ---@field InputQueueSurrogate ImWchar16
 ---@field InputQueueCharacters ImVector<ImWchar>
 imgui.ImGuiIO = {}
+imgui.ImGuiIO.ConfigFlags = nil
+imgui.ImGuiIO.BackendFlags = nil
+imgui.ImGuiIO.DisplaySize = ImVec2()
+imgui.ImGuiIO.DeltaTime = 0
+imgui.ImGuiIO.IniSavingRate = 0
+imgui.ImGuiIO.IniFilename = ""
+imgui.ImGuiIO.LogFilename = ""
+imgui.ImGuiIO.FontGlobalScale = 0
+imgui.ImGuiIO.DisplayFramebufferScale = ImVec2()
+imgui.ImGuiIO.ConfigNavSwapGamepadButtons = false
+imgui.ImGuiIO.ConfigNavMoveSetMousePos = false
+imgui.ImGuiIO.ConfigNavCaptureKeyboard = false
+imgui.ImGuiIO.ConfigNavEscapeClearFocusItem = false
+imgui.ImGuiIO.ConfigNavEscapeClearFocusWindow = false
+imgui.ImGuiIO.ConfigNavCursorVisibleAuto = false
+imgui.ImGuiIO.ConfigNavCursorVisibleAlways = false
+imgui.ImGuiIO.ConfigDockingNoSplit = false
+imgui.ImGuiIO.ConfigDockingWithShift = false
+imgui.ImGuiIO.ConfigViewportsNoAutoMerge = false
+imgui.ImGuiIO.ConfigViewportsNoTaskBarIcon = false
+imgui.ImGuiIO.ConfigViewportsNoDecoration = false
+imgui.ImGuiIO.ConfigViewportsNoDefaultParent = false
+imgui.ImGuiIO.MouseDrawCursor = false
+imgui.ImGuiIO.ConfigMacOSXBehaviors = false
+imgui.ImGuiIO.ConfigInputTrickleEventQueue = false
+imgui.ImGuiIO.ConfigInputTextCursorBlink = false
+imgui.ImGuiIO.ConfigWindowsResizeFromEdges = false
+imgui.ImGuiIO.ConfigWindowsMoveFromTitleBarOnly = false
+imgui.ImGuiIO.ConfigScrollbarScrollByPage = false
+imgui.ImGuiIO.ConfigMemoryCompactTimer = 0
+imgui.ImGuiIO.MouseDoubleClickTime = 0
+imgui.ImGuiIO.MouseDoubleClickMaxDist = 0
+imgui.ImGuiIO.MouseDragThreshold = 0
+imgui.ImGuiIO.KeyRepeatDelay = 0
+imgui.ImGuiIO.KeyRepeatRate = 0
+imgui.ImGuiIO.ConfigErrorRecovery = false
+imgui.ImGuiIO.ConfigErrorRecoveryEnableAssert = false
+imgui.ImGuiIO.ConfigErrorRecoveryEnableDebugLog = false
+imgui.ImGuiIO.ConfigErrorRecoveryEnableTooltip = false
+imgui.ImGuiIO.ConfigDebugIsDebuggerPresent = false
+imgui.ImGuiIO.ConfigDebugHighlightIdConflicts = false
+imgui.ImGuiIO.ConfigDebugBeginReturnValueOnce = false
+imgui.ImGuiIO.ConfigDebugBeginReturnValueLoop = false
+imgui.ImGuiIO.ConfigDebugIgnoreFocusLoss = false
+imgui.ImGuiIO.ConfigDebugIniSettings = false
+imgui.ImGuiIO.BackendPlatformName = ""
+imgui.ImGuiIO.BackendRendererName = ""
+imgui.ImGuiIO.WantCaptureMouse = false
+imgui.ImGuiIO.WantCaptureKeyboard = false
+imgui.ImGuiIO.WantTextInput = false
+imgui.ImGuiIO.WantSetMousePos = false
+imgui.ImGuiIO.WantSaveIniSettings = false
+imgui.ImGuiIO.NavActive = false
+imgui.ImGuiIO.NavVisible = false
+imgui.ImGuiIO.Framerate = 0
+imgui.ImGuiIO.MetricsRenderVertices = 0
+imgui.ImGuiIO.MetricsRenderIndices = 0
+imgui.ImGuiIO.MetricsRenderWindows = 0
+imgui.ImGuiIO.MetricsActiveWindows = 0
+imgui.ImGuiIO.MouseDelta = ImVec2()
+imgui.ImGuiIO.MousePos = ImVec2()
+imgui.ImGuiIO.MouseWheel = 0
+imgui.ImGuiIO.MouseWheelH = 0
+imgui.ImGuiIO.MouseSource = nil
+imgui.ImGuiIO.MouseHoveredViewport = nil
+imgui.ImGuiIO.KeyCtrl = false
+imgui.ImGuiIO.KeyShift = false
+imgui.ImGuiIO.KeyAlt = false
+imgui.ImGuiIO.KeySuper = false
+imgui.ImGuiIO.KeyMods = nil
+imgui.ImGuiIO.WantCaptureMouseUnlessPopupClose = false
+imgui.ImGuiIO.MousePosPrev = ImVec2()
+imgui.ImGuiIO.MouseWheelRequestAxisSwap = false
+imgui.ImGuiIO.MouseCtrlLeftAsRightClick = false
+imgui.ImGuiIO.AppFocusLost = false
+imgui.ImGuiIO.AppAcceptingEvents = false
+imgui.ImGuiIO.InputQueueSurrogate = nil
+imgui.ImGuiIO.InputQueueCharacters = nil
 
 ---@param key ImGuiKey
 ---@param down boolean
@@ -686,108 +790,123 @@ function imgui.ImGuiIO:ClearInputCharacters( ) end
 ---@field DownDurationPrev number
 ---@field AnalogValue number
 imgui.ImGuiKeyData = {}
+imgui.ImGuiKeyData.Down = false
+imgui.ImGuiKeyData.DownDuration = 0
+imgui.ImGuiKeyData.DownDurationPrev = 0
+imgui.ImGuiKeyData.AnalogValue = 0
 
----@class ImGuiSelectionBasicStorage
----@field Size number
----@field PreserveOrder boolean
-imgui.ImGuiSelectionBasicStorage = {}
+---@class ImGuiStyle
+---@field Alpha number
+---@field DisabledAlpha number
+---@field WindowPadding ImVec2
+---@field WindowRounding number
+---@field WindowBorderSize number
+---@field WindowMinSize ImVec2
+---@field WindowTitleAlign ImVec2
+---@field WindowMenuButtonPosition ImGuiDir
+---@field ChildRounding number
+---@field ChildBorderSize number
+---@field PopupRounding number
+---@field PopupBorderSize number
+---@field FramePadding ImVec2
+---@field FrameRounding number
+---@field FrameBorderSize number
+---@field ItemSpacing ImVec2
+---@field ItemInnerSpacing ImVec2
+---@field CellPadding ImVec2
+---@field TouchExtraPadding ImVec2
+---@field IndentSpacing number
+---@field ColumnsMinSpacing number
+---@field ScrollbarSize number
+---@field ScrollbarRounding number
+---@field GrabMinSize number
+---@field GrabRounding number
+---@field LogSliderDeadzone number
+---@field TabRounding number
+---@field TabBorderSize number
+---@field TabMinWidthForCloseButton number
+---@field TabBarBorderSize number
+---@field TabBarOverlineSize number
+---@field TableAngledHeadersAngle number
+---@field TableAngledHeadersTextAlign ImVec2
+---@field ColorButtonPosition ImGuiDir
+---@field ButtonTextAlign ImVec2
+---@field SelectableTextAlign ImVec2
+---@field SeparatorTextBorderSize number
+---@field SeparatorTextAlign ImVec2
+---@field SeparatorTextPadding ImVec2
+---@field DisplayWindowPadding ImVec2
+---@field DisplaySafeAreaPadding ImVec2
+---@field DockingSeparatorSize number
+---@field MouseCursorScale number
+---@field AntiAliasedLines boolean
+---@field AntiAliasedLinesUseTex boolean
+---@field AntiAliasedFill boolean
+---@field CurveTessellationTol number
+---@field CircleTessellationMaxError number
+---@field HoverStationaryDelay number
+---@field HoverDelayShort number
+---@field HoverDelayNormal number
+---@field HoverFlagsForTooltipMouse ImGuiHoveredFlags
+---@field HoverFlagsForTooltipNav ImGuiHoveredFlags
+imgui.ImGuiStyle = {}
+imgui.ImGuiStyle.Alpha = 0
+imgui.ImGuiStyle.DisabledAlpha = 0
+imgui.ImGuiStyle.WindowPadding = ImVec2()
+imgui.ImGuiStyle.WindowRounding = 0
+imgui.ImGuiStyle.WindowBorderSize = 0
+imgui.ImGuiStyle.WindowMinSize = ImVec2()
+imgui.ImGuiStyle.WindowTitleAlign = ImVec2()
+imgui.ImGuiStyle.WindowMenuButtonPosition = nil
+imgui.ImGuiStyle.ChildRounding = 0
+imgui.ImGuiStyle.ChildBorderSize = 0
+imgui.ImGuiStyle.PopupRounding = 0
+imgui.ImGuiStyle.PopupBorderSize = 0
+imgui.ImGuiStyle.FramePadding = ImVec2()
+imgui.ImGuiStyle.FrameRounding = 0
+imgui.ImGuiStyle.FrameBorderSize = 0
+imgui.ImGuiStyle.ItemSpacing = ImVec2()
+imgui.ImGuiStyle.ItemInnerSpacing = ImVec2()
+imgui.ImGuiStyle.CellPadding = ImVec2()
+imgui.ImGuiStyle.TouchExtraPadding = ImVec2()
+imgui.ImGuiStyle.IndentSpacing = 0
+imgui.ImGuiStyle.ColumnsMinSpacing = 0
+imgui.ImGuiStyle.ScrollbarSize = 0
+imgui.ImGuiStyle.ScrollbarRounding = 0
+imgui.ImGuiStyle.GrabMinSize = 0
+imgui.ImGuiStyle.GrabRounding = 0
+imgui.ImGuiStyle.LogSliderDeadzone = 0
+imgui.ImGuiStyle.TabRounding = 0
+imgui.ImGuiStyle.TabBorderSize = 0
+imgui.ImGuiStyle.TabMinWidthForCloseButton = 0
+imgui.ImGuiStyle.TabBarBorderSize = 0
+imgui.ImGuiStyle.TabBarOverlineSize = 0
+imgui.ImGuiStyle.TableAngledHeadersAngle = 0
+imgui.ImGuiStyle.TableAngledHeadersTextAlign = ImVec2()
+imgui.ImGuiStyle.ColorButtonPosition = nil
+imgui.ImGuiStyle.ButtonTextAlign = ImVec2()
+imgui.ImGuiStyle.SelectableTextAlign = ImVec2()
+imgui.ImGuiStyle.SeparatorTextBorderSize = 0
+imgui.ImGuiStyle.SeparatorTextAlign = ImVec2()
+imgui.ImGuiStyle.SeparatorTextPadding = ImVec2()
+imgui.ImGuiStyle.DisplayWindowPadding = ImVec2()
+imgui.ImGuiStyle.DisplaySafeAreaPadding = ImVec2()
+imgui.ImGuiStyle.DockingSeparatorSize = 0
+imgui.ImGuiStyle.MouseCursorScale = 0
+imgui.ImGuiStyle.AntiAliasedLines = false
+imgui.ImGuiStyle.AntiAliasedLinesUseTex = false
+imgui.ImGuiStyle.AntiAliasedFill = false
+imgui.ImGuiStyle.CurveTessellationTol = 0
+imgui.ImGuiStyle.CircleTessellationMaxError = 0
+imgui.ImGuiStyle.HoverStationaryDelay = 0
+imgui.ImGuiStyle.HoverDelayShort = 0
+imgui.ImGuiStyle.HoverDelayNormal = 0
+imgui.ImGuiStyle.HoverFlagsForTooltipMouse = nil
+imgui.ImGuiStyle.HoverFlagsForTooltipNav = nil
 
----@param id ImGuiID
----@return boolean
-function imgui.ImGuiSelectionBasicStorage:Contains( id, ) end
-
+---@param scale_factor number
 ---@return nil
-function imgui.ImGuiSelectionBasicStorage:Clear( ) end
-
----@param r ImGuiSelectionBasicStorage 
----@return nil
-function imgui.ImGuiSelectionBasicStorage:Swap( r, ) end
-
----@param id ImGuiID
----@param selected boolean
----@return nil
-function imgui.ImGuiSelectionBasicStorage:SetItemSelected( id, selected, ) end
-
----@param idx number
----@return ImGuiID
-function imgui.ImGuiSelectionBasicStorage:GetStorageIdFromIndex( idx, ) end
-
----@class ImGuiSelectionRequest
----@field Type ImGuiSelectionRequestType
----@field Selected boolean
----@field RangeDirection ImS8
----@field RangeFirstItem ImGuiSelectionUserData
----@field RangeLastItem ImGuiSelectionUserData
-imgui.ImGuiSelectionRequest = {}
-
----@class ImGuiSizeCallbackData
----@field Pos ImVec2
----@field CurrentSize ImVec2
----@field DesiredSize ImVec2
-imgui.ImGuiSizeCallbackData = {}
-
----@class ImGuiStorage
----@field Data ImVector<ImGuiStoragePair>
-imgui.ImGuiStorage = {}
-
----@return nil
-function imgui.ImGuiStorage:Clear( ) end
-
----@param key ImGuiID
----@param default_val number
----@return number
-function imgui.ImGuiStorage:GetInt( key, default_val, ) end
-
----@param key ImGuiID
----@param val number
----@return nil
-function imgui.ImGuiStorage:SetInt( key, val, ) end
-
----@param key ImGuiID
----@param default_val boolean
----@return boolean
-function imgui.ImGuiStorage:GetBool( key, default_val, ) end
-
----@param key ImGuiID
----@param val boolean
----@return nil
-function imgui.ImGuiStorage:SetBool( key, val, ) end
-
----@param key ImGuiID
----@param default_val number
----@return number
-function imgui.ImGuiStorage:GetFloat( key, default_val, ) end
-
----@param key ImGuiID
----@param val number
----@return nil
-function imgui.ImGuiStorage:SetFloat( key, val, ) end
-
----@param key ImGuiID
----@return void 
-function imgui.ImGuiStorage:GetVoidPtr( key, ) end
-
----@param key ImGuiID
----@param default_val number
----@return number
-function imgui.ImGuiStorage:GetIntRef( key, default_val, ) end
-
----@param key ImGuiID
----@param default_val boolean
----@return bool 
-function imgui.ImGuiStorage:GetBoolRef( key, default_val, ) end
-
----@param key ImGuiID
----@param default_val number
----@return float 
-function imgui.ImGuiStorage:GetFloatRef( key, default_val, ) end
-
----@return nil
-function imgui.ImGuiStorage:BuildSortByKey( ) end
-
----@param val number
----@return nil
-function imgui.ImGuiStorage:SetAllInt( val, ) end
+function imgui.ImGuiStyle:ScaleAllSizes( scale_factor, ) end
 
 ---@class ImGuiTableColumnSortSpecs
 ---@field ColumnUserID ImGuiID
@@ -795,11 +914,17 @@ function imgui.ImGuiStorage:SetAllInt( val, ) end
 ---@field SortOrder ImS16
 ---@field SortDirection ImGuiSortDirection
 imgui.ImGuiTableColumnSortSpecs = {}
+imgui.ImGuiTableColumnSortSpecs.ColumnUserID = nil
+imgui.ImGuiTableColumnSortSpecs.ColumnIndex = nil
+imgui.ImGuiTableColumnSortSpecs.SortOrder = nil
+imgui.ImGuiTableColumnSortSpecs.SortDirection = nil
 
 ---@class ImGuiTableSortSpecs
 ---@field SpecsCount number
 ---@field SpecsDirty boolean
 imgui.ImGuiTableSortSpecs = {}
+imgui.ImGuiTableSortSpecs.SpecsCount = 0
+imgui.ImGuiTableSortSpecs.SpecsDirty = false
 
 ---@class ImGuiViewport
 ---@field ID ImGuiID
@@ -815,6 +940,18 @@ imgui.ImGuiTableSortSpecs = {}
 ---@field PlatformRequestResize boolean
 ---@field PlatformRequestClose boolean
 imgui.ImGuiViewport = {}
+imgui.ImGuiViewport.ID = nil
+imgui.ImGuiViewport.Flags = nil
+imgui.ImGuiViewport.Pos = ImVec2()
+imgui.ImGuiViewport.Size = ImVec2()
+imgui.ImGuiViewport.WorkPos = ImVec2()
+imgui.ImGuiViewport.WorkSize = ImVec2()
+imgui.ImGuiViewport.DpiScale = 0
+imgui.ImGuiViewport.ParentViewportId = nil
+imgui.ImGuiViewport.PlatformWindowCreated = false
+imgui.ImGuiViewport.PlatformRequestMove = false
+imgui.ImGuiViewport.PlatformRequestResize = false
+imgui.ImGuiViewport.PlatformRequestClose = false
 
 ---@return ImVec2
 function imgui.ImGuiViewport:GetCenter( ) end
@@ -831,6 +968,13 @@ function imgui.ImGuiViewport:GetWorkCenter( ) end
 ---@field DockingAlwaysTabBar boolean
 ---@field DockingAllowUnclassed boolean
 imgui.ImGuiWindowClass = {}
+imgui.ImGuiWindowClass.ClassId = nil
+imgui.ImGuiWindowClass.ParentViewportId = nil
+imgui.ImGuiWindowClass.FocusRouteParentWindowId = nil
+imgui.ImGuiWindowClass.ViewportFlagsOverrideSet = nil
+imgui.ImGuiWindowClass.ViewportFlagsOverrideClear = nil
+imgui.ImGuiWindowClass.DockingAlwaysTabBar = false
+imgui.ImGuiWindowClass.DockingAllowUnclassed = false
 
 ---@param type string
 ---@param flags ImGuiDragDropFlags
@@ -2106,5 +2250,14 @@ function imgui.Value( prefix, b, )end
 ---@param float_format string
 ---@return nil
 function imgui.Value( prefix, v, float_format, )end
+
+---@return ImGuiStyle
+function imgui.new_style( )end
+
+---@param style ImGuiStyle
+---@param idx number
+---@param color ImVec4 
+---@return ImGuiStyle
+function imgui.set_imgui_style_color( style, idx, color, )end
 
    return imgui

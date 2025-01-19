@@ -47,5 +47,15 @@ inline void ColorPicker3_(S label, Vec3& color) { ColorPicker3(label.c_str(), &c
 inline void ColorPicker4_(S label, Vec4& color) { ColorPicker4(label.c_str(), &color[0]); }
 
 inline bool TreeNodeEx_(S label, ImGuiTreeNodeFlags flags = 0) { return TreeNodeEx(label.c_str(), flags); }
+// clang-format on
+
+// utility functions
+inline ImGuiStyle new_style() {
+  return ImGuiStyle();
+}
+inline ImGuiStyle set_imgui_style_color(ImGuiStyle style, int idx, const ImVec4& color) {
+  style.Colors[idx] = color;
+  return style;
+}
 
 } // namespace ImGui

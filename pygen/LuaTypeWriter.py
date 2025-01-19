@@ -30,6 +30,23 @@ def lua_cvt_type(ctype) -> str:
             return "string"
     return ctype
 
+def get_default(arg: MArgument) -> str:
+    ctype = lua_cvt_type(arg.c_type)
+    match ctype:
+        case "number":
+            return "0"
+        case "string":
+            return '""'
+        case "boolean":
+            return "false"
+        case "table":
+            return "{}"
+        case "nil":
+            return "nil"
+    if ctype in ["ImVec2", "ImVec4", "ImColor", "ImTextureID", "Vec2", "Vec3", "Vec4"]:
+        return f"{ctype}()"
+    return "nil"
+
 default_types = """
 ---@class ImVec2
 ---@field x number
@@ -113,6 +130,9 @@ class LuaTypeWriter:
         for p in cls.props:
             self.autogen_text += f'---@field {p.name} {lua_cvt_type(p.c_type)}\n'
         self.autogen_text += f"{self.PREFIX}.{cls.name} = {{}}\n"
+        for p in cls.props:
+            default = p.detault if p.detault else get_default(p)
+            self.autogen_text += f'{self.PREFIX}.{cls.name}.{p.name} = {default}\n'
 
         for f in cls.funcs:
             if cls.name == f.name:

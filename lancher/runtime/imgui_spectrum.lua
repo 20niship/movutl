@@ -1,5 +1,5 @@
 -- Pick one theme
-SPECTRUM_USE_LIGHT_THEME = true
+SPECTRUM_USE_LIGHT_THEME = false
 -- SPECTRUM_USE_DARK_THEME = true
 
 local Spectrum = {}
@@ -10,22 +10,17 @@ Spectrum.CHECKBOX_ROUNDING = 2.0
 
 -- Function to convert color format
 local function Color(c)
-  -- Add alpha and swap red and blue channels
+  -- -- Add alpha and swap red and blue channels
   local a = 0xFF
-  local r = (c >> 16) & 0xFF
-  local g = (c >> 8) & 0xFF
-  local b = (c >> 0) & 0xFF
-  return (a << 24) | (r << 0) | (g << 8) | (b << 16)
-end
-
--- Function to apply alpha to a color
-function Spectrum.color_alpha(alpha, c)
-  return ((alpha & 0xFF) << 24) | (c & 0x00FFFFFF)
+  local r = (c / 0xFFFF) % 0xFF
+  local g = (c / 0xFF) % 0xFF
+  local b = (c / 0x1) % 0xFF
+  return imgui.ImVec4(r / 255, g / 255, b / 255, a / 255)
 end
 
 -- Static colors
-Spectrum.Static = {
-  NONE = 0x00000000,
+Spectrum = {
+  NONE = Color(0x00000000),
   WHITE = Color(0xFFFFFF),
   BLACK = Color(0x000000),
   GRAY200 = Color(0xF4F4F4),
@@ -86,4 +81,3 @@ if SPECTRUM_USE_LIGHT_THEME then
 end
 
 return Spectrum
-

@@ -4,7 +4,7 @@
  */
 #include <movutl/plugin/filter.hpp>
 
-namespace mu {
+namespace mu::detail {
 
 extern FilterPluginTable f_color_correction;
 extern FilterPluginTable f_single_color;

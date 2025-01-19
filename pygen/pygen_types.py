@@ -72,7 +72,10 @@ class MFunction:
 class MEnum:
     name: str
     desc: str
+    parent_str = ""
     values: List[str]
+    namespace :str = ""
+    filename :str = ""
 
 
 @dataclass

@@ -40,5 +40,6 @@ bool register_plugin(const std::string& filepath);
 
 namespace detail {
 void register_default_plugins();
-}
+void register_default_filters();
+} // namespace detail
 } // namespace mu
