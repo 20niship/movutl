@@ -257,7 +257,9 @@ def run():
     headers = [
         root / "movutl/asset/entity.hpp",
         root / "movutl/asset/movie.hpp",
+        root / "movutl/asset/text.hpp",
         root / "movutl/asset/image.hpp",
+        root / "movutl/asset/track.hpp",
         root / "movutl/asset/composition.hpp",
         root / "movutl/asset/project.hpp",
         root / "movutl/core/anim.hpp",
@@ -315,6 +317,11 @@ def run():
     stub_generater.set(fn_movtl, enu_movtl, cls_movtl)
     stub_generater.save()
 
+    stub_generater = PropsWriter("generated_props.cpp")
+    stub_generater.set(fn_movtl, enu_movtl, cls_movtl)
+    stub_generater.save()
+
+    
 if __name__ == "__main__":
     run()
     sleep(0.01)

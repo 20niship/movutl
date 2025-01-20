@@ -118,6 +118,12 @@ file(GLOB MOVUTL_EXT_SRC
 include_directories(${MOVUTL_INCLUDES})
 
 set(MOVUTL_SRC ${MOVUTL_SOURCE_1} ${MOVUTL_SOURCE_2} ${MOVUTL_SOURCE_3} ${MOVUTL_SOURCE_4} ${MOVUTL_EXT_SRC} ${MOVUTL_SOURCE_5})
+if(APPLE)
+  file(GLOB MOVUTL_SRC_MAC ${CMAKE_CURRENT_SOURCE_DIR}/core/*.mm)
+  set(MOVUTL_SRC ${MOVUTL_SRC} ${MOVUTL_SRC_MAC})
+
+  set(MOVUTL_LIBRARIES ${MOVUTL_LIBRARIES} "-framework Cocoa")
+endif()
 add_library(mucore ${MOVUTL_SRC})
 target_include_directories(mucore PUBLIC ${MOVUTL_INCLUDES})
 target_link_libraries(mucore ${MOVUTL_LIBRARIES})

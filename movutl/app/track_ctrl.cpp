@@ -3,6 +3,7 @@
 #include <movutl/asset/entity.hpp>
 #include <movutl/asset/movie.hpp>
 #include <movutl/asset/project.hpp>
+#include <movutl/asset/text.hpp>
 #include <movutl/asset/track.hpp>
 #include <movutl/core/logger.hpp>
 #include <movutl/plugin/input.hpp>
@@ -43,24 +44,41 @@ bool add_new_audio_track(const char* name, const char* path, int start, int laye
   return false;
 }
 
-bool add_new_track(const char* name, EntityType type, int start, int end){
+bool add_new_track(const char* name, EntityType type, int start, int end) {
   MU_ASSERT(name != nullptr);
   MU_ASSERT(start >= 0);
   MU_ASSERT(end >= start);
-  MU_FAIL("Not implemented yet");
-  /* auto pj = Project::Get(); */
-  /* Composition* main_comp = pj->get_main_comp(); */
-  /* if(!main_comp) { */
-  /*   Project::New(); */
-  /*   main_comp = pj->get_main_comp(); */
-  /* } */
-  /* MU_ASSERT(main_comp); */
-  /* TrackLayer trk; */
-  /* trk.name = name; */
-  /* trk.type = type; */
-  /* trk.fstart = start; */
-  /* trk.fend = end; */
-  /* main_comp->tracks.push_back(trk); */
+  switch(type) {
+    case EntityType_Image: {
+      auto img = Image::Create(name, "");
+      Composition* main_comp = Composition::GetActiveComp();
+      MU_ASSERT(main_comp);
+      img->trk.fstart = start;
+      img->trk.fend = end;
+      main_comp->insert_entity(img);
+      break;
+    }
+    case EntityType_Movie: {
+      auto mov = Movie::Create(name, "");
+      Composition* main_comp = Composition::GetActiveComp();
+      MU_ASSERT(main_comp);
+      mov->trk.fstart = start;
+      mov->trk.fend = end;
+      main_comp->insert_entity(mov);
+      break;
+    }
+    case EntityType_3DText: {
+      auto txt = TextEntt::Create(name, "");
+      Composition* main_comp = Composition::GetActiveComp();
+      MU_ASSERT(main_comp);
+      txt->trk.fstart = start;
+      txt->trk.fend = end;
+      main_comp->insert_entity(txt);
+      break;
+    }
+    case EntityType_Audio: MU_FAIL("Not implemented yet");
+    default: MU_FAIL("Not implemented yet"); break;
+  }
   return true;
 }
 

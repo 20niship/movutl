@@ -106,20 +106,18 @@ bool Image::render(Composition* cmp) {
 
   int base_x = this->width() / 2 + trk.anchor[0] - cw / 2;
   int base_y = this->height() / 2 + trk.anchor[1] - ch / 2;
-  this->copyto(cmp->frame_final.get(), Vec2d(base_x, base_y));
+  this->img.copyto(cmp->frame_final.get(), Vec2d(base_x, base_y));
 }
 
-Ref<Image> Image::Create(const char* name, const char* path, bool add_to_pj) {
-  MU_ASSERT(name && path);
+Ref<Image> Image::Create(const char* name, const char* path) {
+  MU_ASSERT(name);
   auto img = std::make_shared<Image>();
   img->name = name;
-  img->path = path;
-  if(add_to_pj) {
-    auto pj = Project::Get();
-    MU_ASSERT(pj);
-    pj->entities.push_back(img);
-  }
-  MU_FAIL("Not implemented (loading image using plugin...)");
+  if(path) img->path = path;
+  auto pj = Project::Get();
+  MU_ASSERT(pj);
+  pj->entities.push_back(img);
+  return img;
 }
 
 Ref<Image> Image::Create(const char* name, int w, int h, ImageFormat format, bool add_to_pj) {

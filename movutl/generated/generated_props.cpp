@@ -9,6 +9,39 @@
 #include <movutl/asset/track.hpp>
 #include <movutl/asset/composition.hpp>
 namespace mu { 
+void Image::setProps(const Props& p) {
+ // fmt has an unsupported type
+  if(p.has<Vec3>("pos")) pos = p.get<Vec3>("pos");
+  if(p.has<Vec2>("scale")) scale = p.get<Vec2>("scale");
+  if(p.has<float>("rotation")) rotation = p.get<float>("rotation");
+  if(p.has<float>("alpha")) alpha = p.get<float>("alpha");
+  if(p.has<std::string>("path")) path = p.get<std::string>("path");
+}
+PropsInfo Image::getPropsInfo() const {
+  PropsInfo info;
+// fmt has an unsupported type
+  info.add_vec3_prop("pos", "", "", Vec3(0, 0, 0), 0, 0, 1);
+  info.set_last_prop_dispname("位置 viewer_anchor");
+  info.add_vec2_prop("scale", "", "", Vec2 ( 1.0 , 1.0 ), 0, 0, 1);
+  info.set_last_prop_dispname("拡大率X");
+  info.add_float_prop("rotation", "", "", 0.0,  0, 0, 1, false, false);
+  info.set_last_prop_dispname("回転");
+  info.add_float_prop("alpha", "", "", 1.0,  0, 0, 1, false, false);
+  info.set_last_prop_dispname("透明度");
+  info.add_string_prop("path", "", "", """");
+  info.set_last_prop_dispname("ファイル");
+  return info;
+}
+Props Image::getProps() const {
+   Props p;
+  p["fmt"] = fmt;
+  p["pos"] = pos;
+  p["scale"] = scale;
+  p["rotation"] = rotation;
+  p["alpha"] = alpha;
+  p["path"] = path;
+  return p;
+}
 void Movie::setProps(const Props& p) {
    if(p.has<Vec3>("pos")) pos = p.get<Vec3>("pos");
   if(p.has<Vec2>("scale")) scale = p.get<Vec2>("scale");
@@ -56,7 +89,8 @@ Props Movie::getProps() const {
   return p;
 }
 void TextEntt::setProps(const Props& p) {
-   if(p.has<Vec3>("pos_")) pos_ = p.get<Vec3>("pos_");
+   if(p.has<int>("dirty_")) dirty_ = p.get<int>("dirty_");
+  if(p.has<Vec3>("pos_")) pos_ = p.get<Vec3>("pos_");
   if(p.has<float>("scale_x_")) scale_x_ = p.get<float>("scale_x_");
   if(p.has<float>("scale_y_")) scale_y_ = p.get<float>("scale_y_");
   if(p.has<float>("rot_")) rot_ = p.get<float>("rot_");
@@ -68,6 +102,8 @@ void TextEntt::setProps(const Props& p) {
 }
 PropsInfo TextEntt::getPropsInfo() const {
   PropsInfo info;
+  info.add_int_prop("dirty_", "", "", 0,  0, 0, 0);
+  info.set_last_prop_dispname("更新フラグ");
   info.add_vec3_prop("pos_", "", "", Vec3(0, 0, 0), 0, 0, 1);
   info.set_last_prop_dispname("位置 viewer_anchor");
   info.add_float_prop("scale_x_", "", "", 1.0,  0, 0, 1, false, false);
@@ -90,6 +126,7 @@ PropsInfo TextEntt::getPropsInfo() const {
 }
 Props TextEntt::getProps() const {
    Props p;
+  p["dirty_"] = dirty_;
   p["pos_"] = pos_;
   p["scale_x_"] = scale_x_;
   p["scale_y_"] = scale_y_;
@@ -99,6 +136,50 @@ Props TextEntt::getProps() const {
   p["font"] = font;
   p["text"] = text;
   p["separate"] = separate;
+  return p;
+}
+void TrackObject::setProps(const Props& p) {
+   if(p.has<int>("fstart")) fstart = p.get<int>("fstart");
+  if(p.has<int>("fend")) fend = p.get<int>("fend");
+  if(p.has<Vec2>("anchor")) anchor = p.get<Vec2>("anchor");
+// blend_ has an unsupported type
+  if(p.has<bool>("active_")) active_ = p.get<bool>("active_");
+  if(p.has<bool>("solo_")) solo_ = p.get<bool>("solo_");
+  if(p.has<bool>("clipping_up")) clipping_up = p.get<bool>("clipping_up");
+  if(p.has<bool>("camera_ctrl")) camera_ctrl = p.get<bool>("camera_ctrl");
+}
+PropsInfo TrackObject::getPropsInfo() const {
+  PropsInfo info;
+  info.add_int_prop("fstart", "", "", - 1,  0, 0, 0);
+  info.set_last_prop_dispname("開始位置(frame) hidden_inspector");
+  info.add_int_prop("fend", "", "", - 1,  0, 0, 0);
+  info.set_last_prop_dispname("終了位置(frame) hidden_inspector");
+  info.add_vec2_prop("anchor", "", "", Vec2(0, 0), 0, 0, 1);
+  info.set_last_prop_dispname("アンカー");
+// blend_ has an unsupported type
+  info.add_bool_prop("active_", "", "オブジェクトが有効かどうか", true);
+  info.set_last_prop_dispname("アクティブ");
+  info.set_last_prop_desc("オブジェクトが有効かどうか");
+  info.add_bool_prop("solo_", "", "(音声のみ)他のレイヤを非表示にする", false);
+  info.set_last_prop_dispname("ソロモード");
+  info.set_last_prop_desc("(音声のみ)他のレイヤを非表示にする");
+  info.add_bool_prop("clipping_up", "", "", false);
+  info.set_last_prop_dispname("上レイヤでクリッピング");
+  info.add_bool_prop("camera_ctrl", "", "カメラ制御の対象", false);
+  info.set_last_prop_dispname("カメラ制御");
+  info.set_last_prop_desc("カメラ制御の対象");
+  return info;
+}
+Props TrackObject::getProps() const {
+   Props p;
+  p["fstart"] = fstart;
+  p["fend"] = fend;
+  p["anchor"] = anchor;
+  p["blend_"] = blend_;
+  p["active_"] = active_;
+  p["solo_"] = solo_;
+  p["clipping_up"] = clipping_up;
+  p["camera_ctrl"] = camera_ctrl;
   return p;
 }
 } // namespace mu

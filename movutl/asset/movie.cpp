@@ -39,7 +39,7 @@ bool Movie::render(Composition* cmp) {
   int base_x = trk.anchor[0] + (cw - img_->width) / 2 + pos[0];
   int base_y = trk.anchor[1] + (ch - img_->height) / 2 + pos[1];
   Vec2 center = Vec2(base_x, base_y) + trk.anchor;
-  img_->copyto(&cmp->frame_final->img, center, this->scale.avg() / 100, this->rotation);
+  img_->copyto(cmp->frame_final.get(), center, this->scale.avg() / 100, this->rotation);
 
   cmp->frame_final->dirty();
   return true;

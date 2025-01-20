@@ -38,7 +38,7 @@ public:
   Flag flag;
 
   // ---------- video ----------
-  Ref<Image> frame_final;
+  Ref<ImageRGBA> frame_final;
   Ref<Image> frame_edit;
   Ref<Image> frame_temp;
 
@@ -66,6 +66,9 @@ public:
   std::string summary() const;
 
   static Composition* GetActiveComp();
+
+  int insertable_layer_index() const;
+  void insert_entity(Ref<Entity> entt, int layer = -1);
 };
 
 } // namespace mu

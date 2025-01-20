@@ -15,7 +15,7 @@ local function impl_register_style(name, style)
   local new_style = imgui.new_style()
   for i, v in ipairs(style.colors) do
     if v[1] == nil or v[2] == nil then
-      print("invalid color scheme" .. name .. " " .. inspect(v))
+      -- print("invalid color scheme" .. name .. " " .. inspect(v))
       goto continue
     end
     new_style = imgui.set_imgui_style_color(new_style, v[1], v[2])

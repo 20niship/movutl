@@ -237,6 +237,10 @@ public:
   T& y() { static_assert(LEN >= 2); return value[1]; }
   T& z() { static_assert(LEN >= 3); return value[2]; }
 
+  _Vec<float, 2> xy() const { static_assert(LEN >= 2); return {value[0], value[1]}; }
+  _Vec<float, 3> xyz() const { static_assert(LEN >= 3); return {value[0], value[1], value[2]}; }
+  _Vec<float, 4> xyzw() const { static_assert(LEN >= 4); return {value[0], value[1], value[2], value[3]}; }
+
   void x(T v) { static_assert(LEN >= 1); value[0] = v; }
   void y(T v) { static_assert(LEN >= 2); value[1] = v; }
   void z(T v) { static_assert(LEN >= 3); value[2] = v; }

@@ -33,6 +33,19 @@ imgui.ImColor= {}
 ---@field Custom number
 movutl.AniInterpType = {}
 
+---@class BlendType
+---@field Blend_Alpha number
+---@field Blend_Add number
+---@field Blend_Sub number
+---@field Blend_Mul number
+---@field Blend_Div number
+---@field Blend_Screen number
+---@field Blend_Overlay number
+---@field Blend_Darken number
+---@field Blend_Lighten number
+---@field Blend_HardLight number
+movutl.BlendType = {}
+
 ---@class Composition::Flag
 ---@field setting_dialog number
 ---@field frame_alpha number
@@ -114,6 +127,14 @@ function movutl.Composition:summary( ) end
 ---@return Composition 
 function movutl.Composition:GetActiveComp( ) end
 
+---@return number
+function movutl.Composition:insertable_layer_index( ) end
+
+---@param entt Ref<Entity>
+---@param layer number
+---@return nil
+function movutl.Composition:insert_entity( entt, layer, ) end
+
 ---@class EntityInfo
 ---@field flag EntityType
 ---@field framerate number
@@ -137,7 +158,6 @@ movutl.EntityInfo.audio_format_size = 0
 function movutl.EntityInfo:str( ) end
 
 ---@class Image
----@field img ImageRGBA
 ---@field fmt ImageFormat
 ---@field pos Vec3
 ---@field scale Vec2
@@ -145,7 +165,6 @@ function movutl.EntityInfo:str( ) end
 ---@field alpha number
 ---@field path string
 movutl.Image = {}
-movutl.Image.img = nil
 movutl.Image.fmt = ImageFormatRGBA
 movutl.Image.pos = Vec3()
 movutl.Image.scale = Vec2 ( 1.0 , 1.0 )
@@ -187,6 +206,16 @@ function movutl.Image:imshow( name, ) end
 
 ---@return EntityType
 function movutl.Image:getType( ) end
+
+---@return PropsInfo
+function movutl.Image:getPropsInfo( ) end
+
+---@return Props
+function movutl.Image:getProps( ) end
+
+---@param props Props 
+---@return nil
+function movutl.Image:setProps( props, ) end
 
 ---@class ImageRGBA
 ---@field width number
@@ -312,6 +341,7 @@ function movutl.Project:GetActiveCompo( ) end
 function movutl.Project:SetActiveCompo( idx, ) end
 
 ---@class TextEntt
+---@field dirty_ number
 ---@field pos_ Vec3
 ---@field scale_x_ number
 ---@field scale_y_ number
@@ -322,6 +352,7 @@ function movutl.Project:SetActiveCompo( idx, ) end
 ---@field text string
 ---@field separate boolean
 movutl.TextEntt = {}
+movutl.TextEntt.dirty_ = 0
 movutl.TextEntt.pos_ = Vec3()
 movutl.TextEntt.scale_x_ = 1.0
 movutl.TextEntt.scale_y_ = 1.0
@@ -368,6 +399,39 @@ function movutl.TrackLayer:str( ) end
 
 ---@return string
 function movutl.TrackLayer:summary( ) end
+
+---@class TrackObject
+---@field fstart number
+---@field fend number
+---@field anchor Vec2
+---@field blend_ BlendType
+---@field active_ boolean
+---@field solo_ boolean
+---@field clipping_up boolean
+---@field camera_ctrl boolean
+movutl.TrackObject = {}
+movutl.TrackObject.fstart = - 1
+movutl.TrackObject.fend = - 1
+movutl.TrackObject.anchor = Vec2()
+movutl.TrackObject.blend_ = Blend_Alpha
+movutl.TrackObject.active_ = true
+movutl.TrackObject.solo_ = false
+movutl.TrackObject.clipping_up = false
+movutl.TrackObject.camera_ctrl = false
+
+---@param frame number
+---@return boolean
+function movutl.TrackObject:visible( frame, ) end
+
+---@return PropsInfo
+function movutl.TrackObject:getPropsInfo( ) end
+
+---@return Props
+function movutl.TrackObject:getProps( ) end
+
+---@param props Props 
+---@return nil
+function movutl.TrackObject:setProps( props, ) end
 
 ---@param name string
 ---@param path string
@@ -427,6 +491,9 @@ function movutl.register_imgui_style( name, style, )end
 ---@param name string
 ---@return nil
 function movutl.remove_imgui_style( name, )end
+
+---@return nil
+function movutl.render_main_menu_bar( )end
 
 ---@return nil
 function movutl.save_project( )end

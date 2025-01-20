@@ -1,6 +1,6 @@
 #include <filesystem>
-#include <string>
 #include <movutl/core/assert.hpp>
+#include <string>
 
 namespace sfs = std::filesystem;
 
@@ -67,6 +67,25 @@ std::string fs_extension(const std::string& path) {
   auto ext = sfs::path(path).extension().string();
   if(!ext.empty() && ext[0] == '.') ext = ext.substr(1);
   return ext;
+}
+
+std::vector<std::string> get_available_fonts() {
+  std::vector<std::string> fonts;
+
+#if defined(__APPLE__)
+  const std::string dir = "/System/Library/Fonts";
+#elif defined(__linux__)
+  const std::string dir = "/usr/share/fonts";
+#elif defined(_WIN32)
+  const std::string dir = "C:/Windows/Fonts";
+#endif
+
+  for(auto& entry : sfs::directory_iterator(dir)) {
+    if(entry.is_regular_file()) {
+      fonts.push_back(sfs::path(entry).string());
+    }
+  }
+  return fonts;
 }
 
 } // namespace mu

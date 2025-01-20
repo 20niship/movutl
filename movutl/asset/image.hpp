@@ -11,7 +11,6 @@ class Mat;
 namespace mu {
 
 class Image final : public Entity {
-private:
 public:
   Image() = default;
   ~Image() = default;
@@ -60,11 +59,15 @@ public:
   virtual bool render(Composition* cmp) override;
   virtual EntityType getType() const override { return EntityType_Image; }
 
-  static Ref<Image> Create(const char* name, const char* path, bool add_to_pj = true);
+  static Ref<Image> Create(const char* name, const char* path = "");
   static Ref<Image> Create(const char* name, int w, int h, ImageFormat format = ImageFormatRGBA, bool add_to_pj = true);
 
   inline Vec4b& operator[](const size_t i) { return img[i]; }
   inline const Vec4b& operator[](const size_t i) const { return img[i]; }
+
+  virtual PropsInfo getPropsInfo() const override;    // MUFUNC_AUTOGEN
+  virtual Props getProps() const override;            // MUFUNC_AUTOGEN
+  virtual void setProps(const Props& props) override; // MUFUNC_AUTOGEN
 };
 
 } // namespace mu

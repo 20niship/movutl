@@ -16,6 +16,7 @@ private:
 
 public:
   ImageRGBA() = default;
+  ImageRGBA(int w, int h) { resize(w, h); }
   ~ImageRGBA() = default;
 
   unsigned int width = 0;  // MPROPERTY(name="幅", readonly=true)
@@ -94,6 +95,7 @@ public:
   void set_cv_img(const cv::Mat* cv_img);
   void to_cv_img(cv::Mat* cv_img) const;
   void imshow(const char* name = "img") const;
+  bool empty() const { return width == 0 || height == 0; }
 };
 
 void cv_waitkey(int time = 0);
