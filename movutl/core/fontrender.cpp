@@ -43,6 +43,10 @@ void FontRenderManager::shutdown() {
 }
 
 FontRenderManager::FontFace::FontFace(const std::string& path, int width) {
+  if(!fs_exists(path)) {
+    LOG_F(ERROR, "Font file not found: %s", path.c_str());
+    return;
+  }
   auto library = FontRenderManager::Get()->library;
   MU_ASSERT(library);
   auto error = FT_New_Face(library, path.c_str(), 0, &face);
@@ -86,13 +90,16 @@ Vec2d FontRenderManager::FontFace::get_size(const char* text) {
 void FontRenderManager::FontFace::set_fontsize(int size) {
   if(fontsize_ == size) return;
   MU_ASSERT(face);
+  printf("set_fontsize: %d\n", size);
   /*auto error = FT_Set_Char_Size(face, 0, size * size * 2, 300, 300);*/
   auto error = FT_Set_Pixel_Sizes(face, 0, 48);
   if(error) {
     LOG_F(ERROR, "Failed to set font size: %d", error);
   }
+  MU_ASSERT(face);
   fontsize_ = size;
   slot = face->glyph; // グリフへのショートカット
+  printf("set_fontsize: %d\n", size);
 }
 
 void FontRenderManager::FontFace::render_text(const char* text, int space_x, int space_y, ImageRGBA* img) {
@@ -101,6 +108,7 @@ void FontRenderManager::FontFace::render_text(const char* text, int space_x, int
   MU_ASSERT(img);
   auto size = get_size(text);
   img->resize(size[0], size[1]);
+  img->fill(0);
 
   std::u32string u32str = std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t>().from_bytes(text);
 
@@ -123,6 +131,7 @@ void FontRenderManager::FontFace::render_text(const char* text, int space_x, int
 
     curPosX += slot->advance.x >> 6;
     curPosY += slot->advance.y >> 6;
+    curPosX += space_x;
   }
 };
 

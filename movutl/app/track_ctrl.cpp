@@ -68,7 +68,7 @@ bool add_new_track(const char* name, EntityType type, int start, int end) {
       break;
     }
     case EntityType_3DText: {
-      auto txt = TextEntt::Create(name, "");
+      auto txt = TextEntt::Create(name);
       Composition* main_comp = Composition::GetActiveComp();
       MU_ASSERT(main_comp);
       txt->trk.fstart = start;

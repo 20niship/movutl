@@ -6,6 +6,7 @@
 
 namespace mu {
 bool TextEntt::render(Composition* cmp) {
+  if(text.empty()) return true;
   re_render_image();
   if(!img_) return false;
   img_->copyto(cmp->frame_final.get(), Vec2d(pos_.xy()));
@@ -32,12 +33,14 @@ Ref<TextEntt> TextEntt::Create(const char* text, const char* font) {
   auto ent = Ref<TextEntt>(new TextEntt());
   ent->name = "text";
   ent->text = text;
-  auto all_fonts = get_available_fonts();
-  if(font && std::string(font).size() > 0) {
+
+  if(fs_exists(ent->font)) {
     ent->font = font;
-  } else if(all_fonts.size() > 0) {
+  } else {
+    auto all_fonts = get_available_fonts();
     for(auto f : all_fonts) {
-      if(f.ends_with(".ttf")) {
+      ent->font = f;
+      if(f.find("明朝") != std::string::npos) {
         ent->font = f;
         break;
       }
