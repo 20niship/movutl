@@ -1,32 +1,43 @@
+#include <movutl/core/defines.hpp>
 #include <movutl/core/filesystem.hpp>
+
+MOVUTL_WARNING_PUSH
+MOVUTL_DISABLE_ALL_WARNINGS
+_Pragma("clang diagnostic ignored \"-Wavailability\"")
+_Pragma("clang diagnostic ignored \"-Wmissing-method-return-type\"")
+
 //
-#include <Cocoa/Cocoa.h>
+#include <AppKit/AppKit.h>
 #include <sstream>
 #include <string>
 #include <vector>
 
-namespace mu {
+    MOVUTL_WARNING_POP
 
-std::string select_file_dialog(const std::vector<std::string> &extensions) {
-  @autoreleasepool {
-    NSOpenPanel *panel = [NSOpenPanel openPanel];
-    [panel setAllowsMultipleSelection:NO];
-    [panel setCanChooseDirectories:NO];
-    [panel setCanChooseFiles:YES];
+    namespace mu {
 
-    NSMutableArray<NSString *> *types = [NSMutableArray array];
-    for (const auto &ext : extensions) {
-      [types addObject:[NSString stringWithUTF8String:ext.c_str()]];
+  std::string select_file_dialog(const std::vector<std::string> &extensions) {
+    @autoreleasepool {
+      NSOpenPanel *panel = [NSOpenPanel openPanel];
+      [panel setAllowsMultipleSelection:NO];
+      [panel setCanChooseDirectories:NO];
+      [panel setCanChooseFiles:YES];
+
+      panel.title = @"Select a file";
+      NSMutableArray<NSString *> *types = [NSMutableArray array];
+      for (const auto &ext : extensions) {
+        [types addObject:[NSString stringWithUTF8String:ext.c_str()]];
+      }
+      [panel setAllowedFileTypes:types];
+
+      if ([panel runModal] == NSModalResponseOK) {
+        NSURL *url = [[panel URLs] firstObject];
+        return std::string([[url path] UTF8String]);
+      }
     }
-    [panel setAllowedFileTypes:types];
 
-    if ([panel runModal] == NSModalResponseOK) {
-      NSURL *url = [[panel URLs] firstObject];
-      return std::string([[url path] UTF8String]);
-    }
+    return "";
   }
-  return "";
-}
 
 #if 0
 std::vector<std::string> get_available_fonts() {

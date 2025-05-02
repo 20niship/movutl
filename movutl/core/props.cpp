@@ -147,6 +147,7 @@ Props PropsInfo::get_default() const {
       case PropT_Color: p[prop.name] = prop.value_.color_; break;
       case PropT_Selection: p[prop.name] = prop.value_.selection_.default_; break;
       case PropT_Path: p[prop.name] = prop.value_.str_; break;
+      case PropT_Entity:
       case PropT_Undefined: break;
     }
   }
