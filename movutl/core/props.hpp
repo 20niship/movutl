@@ -221,6 +221,8 @@ struct PropsInfo {
   void set_last_prop_readonly(bool readonly);
   std::string str() const;
   std::string summary() const;
+
+  Props get_default() const;
 };
 
 

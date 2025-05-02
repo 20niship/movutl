@@ -57,20 +57,11 @@ int fn_read_video(InputHandle ih, const EntityInfo* iip, Movie* entity) {
   InHandleCVVideo* cap = (InHandleCVVideo*)ih;
   if(!cap->cap.isOpened()) return 0;
 
-  bool same_size = entity->img_ &&                      //
-                   entity->img_->channels() == 3 &&     //
-                   entity->img_->width == iip->width && //
-                   entity->img_->height == iip->height;
-  if(same_size) {
-    cv::Mat image(entity->img_->height, entity->img_->width, CV_8UC3, entity->img_->data());
-    cap->cap.retrieve(image);
-  } else {
-    cv::Mat image;
-    cap->cap.retrieve(image);
-    if(image.empty()) return 0;
-    cv::cvtColor(image, image, cv::COLOR_BGR2RGBA);
-    entity->img_->set_cv_img(&image);
-  }
+  cv::Mat image;
+  cap->cap.retrieve(image);
+  if(image.empty()) return 0;
+  cv::cvtColor(image, image, cv::COLOR_BGR2RGBA);
+  entity->img_->set_cv_img(&image);
   return 0;
 }
 

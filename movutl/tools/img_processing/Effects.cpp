@@ -1,7 +1,7 @@
 #include "Effects.h"
 
 ///////////////////////////////////////////////////
-//                  reference   @@@@@@@@ //
+//                  reference   ã€€ã€€ã€€ã€€ã€€ã€€ã€€ã€€ //
 ///////////////////////////////////////////////////
 
 // http://opencv.jp/opencv-2svn/cpp/imgproc_image_filtering.html
@@ -10,7 +10,7 @@
 
 
 ///////////////////////////////////////////////////
-//                  Šô‰½Šw“I•ÏŠ·@@@@@@@@ //
+//                  å¹¾ä½•å­¦çš„å¤‰æ›ã€€ã€€ã€€ã€€ã€€ã€€ã€€ã€€ //
 ///////////////////////////////////////////////////
 
 bool rotate(cv::Mat *img_before, float angle = 0.0) {
@@ -32,10 +32,10 @@ bool rotate(cv::Mat *img_before, float angle = 0.0) {
 }
 
 
-// ‰æ‘œŠg‘åBcenter_x,@center_y‚ÍŠg‘å’†S‚ğ•\‚µA-1‚Ì‚Í‰æ‘œ‚Ì’†S‚ğŠg‘å’†S‚Æ‚·‚é
+// ç”»åƒæ‹¡å¤§ã€‚center_x,ã€€center_yã¯æ‹¡å¤§ä¸­å¿ƒã‚’è¡¨ã—ã€-1ã®æ™‚ã¯ç”»åƒã®ä¸­å¿ƒã‚’æ‹¡å¤§ä¸­å¿ƒã¨ã™ã‚‹
 bool Zoom(cv::Mat *img_before, float zoom_x, float zoom_y, float center_x=-1, float center_y=-1) {
 	if (zoom_x == 100 && zoom_y == 100) return false;
-	if (zoom_x == 0 || zoom_y == 0) return false;  //TODOF‚±‚Ì‚Ü‚Ü‚¾‚Æ‰æ‘œ‚ğ‰½‚à‚µ‚È‚¢‚Ü‚Ü•Ô‚µ‚Ä‚µ‚Ü‚¤‚Ì‚ÅA“§–¾“x‚ğ100“‚É‚µ‚Ä•\¦‚µ‚È‚¢‚æ‚¤‚É‚·‚é
+	if (zoom_x == 0 || zoom_y == 0) return false;  //TODOï¼šã“ã®ã¾ã¾ã ã¨ç”»åƒã‚’ä½•ã‚‚ã—ãªã„ã¾ã¾è¿”ã—ã¦ã—ã¾ã†ã®ã§ã€é€æ˜åº¦ã‚’100ï¼…ã«ã—ã¦è¡¨ç¤ºã—ãªã„ã‚ˆã†ã«ã™ã‚‹
 
 	if (center_x < 0 && center_y < 0) {
 		// https://stackoverflow.com/questions/58216668/opencv-c-zoom-function
@@ -48,20 +48,20 @@ bool Zoom(cv::Mat *img_before, float zoom_x, float zoom_y, float center_x=-1, fl
 			int width = (*img_before).cols;
 			int height = (*img_before).rows;
 
-			//TODO: center_x > width‚Ì‚æ‚¤‚È‚Æ‚«‚É
+			//TODO: center_x > widthã®ã‚ˆã†ãªã¨ãã«
 			center_x = MIN(MAX(center_x, 0), width);
 			center_y = MIN(MAX(center_y, 0), height);
 			return false;
 		}
 		if (zoom_x < 100 && zoom_y < 100) {
 			return false;
-			//TODO: ‰æ‘œk¬‚É‚æ‚èA‰æ‘œ‚Ì‘Š‘ÎÀ•W‚ğ•Ï‚¦‚é
+			//TODO: ç”»åƒç¸®å°ã«ã‚ˆã‚Šã€ç”»åƒã®ç›¸å¯¾åº§æ¨™ã‚’å¤‰ãˆã‚‹
 		}
 
 	}
 }
 
-//@‰æ‘œ’†S‚ğŠg‘å’†S‚Æ‚·‚éƒY[ƒ€ƒGƒtƒFƒNƒg
+//ã€€ç”»åƒä¸­å¿ƒã‚’æ‹¡å¤§ä¸­å¿ƒã¨ã™ã‚‹ã‚ºãƒ¼ãƒ ã‚¨ãƒ•ã‚§ã‚¯ãƒˆ
 bool Zoom_simple(cv::Mat *img_before, float zoom_x, float zoom_y) {
 	// https://stackoverflow.com/questions/58216668/opencv-c-zoom-function
 	cv::Mat dst;
@@ -70,11 +70,11 @@ bool Zoom_simple(cv::Mat *img_before, float zoom_x, float zoom_y) {
 }
 
 bool Clipping(cv::Mat *img_before, float left, float top, float right, float bottom) {
-	//TODO: •ÏŠ·‚³‚ê‚½cv::Mat‚Ì•\¦ˆÊ’u‚ğ‚¸‚ç‚·
+	//TODO: å¤‰æ›ã•ã‚ŒãŸcv::Matã®è¡¨ç¤ºä½ç½®ã‚’ãšã‚‰ã™
 	int width = (*img_before).cols - left - right;
 	int height = (*img_before).rows - top - bottom;
 	cv::Rect roi(cv::Point(left, top), cv::Size(MAX(width, 0), MAX(height, 0)));
-	(*img_before) = (*img_before)(roi); // Ø‚èo‚µ‰æ‘œ
+	(*img_before) = (*img_before)(roi); // åˆ‡ã‚Šå‡ºã—ç”»åƒ
 	return true;
 }
 
@@ -110,7 +110,7 @@ bool ColorTragger(cv::Mat *img_before, int degree, int Rpos, int Gpos, int Bpos)
 		int left = ((*img_before).cols - size.width) / 2;
 		int top = ((*img_before).rows - size.height) / 2;
 		cv::Rect roi(cv::Point(left, top), size);
-		(*img_before) = (*img_before)(roi); // Ø‚èo‚µ‰æ‘œ
+		(*img_before) = (*img_before)(roi); // åˆ‡ã‚Šå‡ºã—ç”»åƒ
 	}
 	return true;
 }
@@ -138,7 +138,7 @@ bool Flip(cv::Mat *img_before, int FlipRL, int FlipTD) {
 
 
 ///////////////////////////////////////////////////
-//                 ŠeíƒtƒBƒ‹ƒ^ @@@@@@@@ //
+//                 å„ç¨®ãƒ•ã‚£ãƒ«ã‚¿ ã€€ã€€ã€€ã€€ã€€ã€€ã€€ã€€ //
 ///////////////////////////////////////////////////
 
 bool ToneCorrection(cv::Mat *img_before, float brightness, float contrast) {
@@ -162,7 +162,7 @@ bool ColorCorrection(cv::Mat *img_before, int Hue_Offset, int Saturation_Offset,
 
 bool ColorCorrectionRGB(cv::Mat *img_before, int R_Offset, int G_Offset, int B_Offset, float R_Gamma, float G_Gamma, float B_Gamma) {
 
-	// TODO: at<...>‚©‚çƒ|ƒCƒ“ƒ^[‚ğg‚Á‚½‚â‚Â‚É•ÏX¨‚‘¬‰»
+	// TODO: at<...>ã‹ã‚‰ãƒã‚¤ãƒ³ã‚¿ãƒ¼ã‚’ä½¿ã£ãŸã‚„ã¤ã«å¤‰æ›´â†’é«˜é€ŸåŒ–
 	for (int x = 0; x < (*img_before).cols - 1; x++) {
 		for (int y = 0; y < (*img_before).rows - 1; y++) {
 			(*img_before).at<cv::Vec3b>(y, x)[0] = MIN(254, MAX((*img_before).at<cv::Vec3b>(y, x)[0] * R_Gamma / 100.0 + R_Offset - 100, 0));
@@ -177,15 +177,15 @@ bool blur(cv::Mat *img_before, int kernel_size_x, int kernel_size_y) {
 	kernel_size_x = MAX(1, kernel_size_x);
 	kernel_size_y = MAX(1, kernel_size_y);
 
-	cv::blur((*img_before), (*img_before), cv::Size(kernel_size_x, kernel_size_y));  /* ROI‚ğİ’è‚µ‚½‰æ‘œ‚Å“üo—Í‚ğs‚¤ */
+	cv::blur((*img_before), (*img_before), cv::Size(kernel_size_x, kernel_size_y));  /* ROIã‚’è¨­å®šã—ãŸç”»åƒã§å…¥å‡ºåŠ›ã‚’è¡Œã† */
 	return true;
 }
 
 bool blur_g(cv::Mat *img_before, int kernel_size_x, int kernel_size_y, int sigma) {
 	if (!(*img_before).data) return -1;
 	cv::Mat dst;
-	// ƒKƒEƒVƒAƒ“‚ğ—p‚¢‚½•½ŠŠ‰»
-	// “ü—Í‰æ‘œCo—Í‰æ‘œCƒJ[ƒlƒ‹ƒTƒCƒYC•W€•Î·x, y
+	// ã‚¬ã‚¦ã‚·ã‚¢ãƒ³ã‚’ç”¨ã„ãŸå¹³æ»‘åŒ–
+	// å…¥åŠ›ç”»åƒï¼Œå‡ºåŠ›ç”»åƒï¼Œã‚«ãƒ¼ãƒãƒ«ã‚µã‚¤ã‚ºï¼Œæ¨™æº–åå·®x, y
 	cv::GaussianBlur((*img_before), (*img_before), cv::Size(kernel_size_x * 2 + 1, kernel_size_y * 2 + 1), sigma, 0);
 
 	return true;
@@ -199,21 +199,21 @@ bool toGray(cv::Mat *img_before) {
 }
 
 bool Binarize(cv::Mat *img_before, int type) {
-	// ŒÅ’è‚Ìè‡’lˆ—
+	// å›ºå®šã®é–¾å€¤å‡¦ç†
 	cv::Mat gray_img;
 	cvtColor((*img_before), gray_img, CV_RGBA2GRAY);
 
 	cv::Mat bin_img, bininv_img, trunc_img, tozero_img, tozeroinv_img;
-	// “ü—Í‰æ‘œCo—Í‰æ‘œCè‡’lCmaxValCè‡’lˆ—è–@
+	// å…¥åŠ›ç”»åƒï¼Œå‡ºåŠ›ç”»åƒï¼Œé–¾å€¤ï¼ŒmaxValï¼Œé–¾å€¤å‡¦ç†æ‰‹æ³•
 	cv::threshold(gray_img, bin_img, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
 	cv::threshold(gray_img, bininv_img, 0, 255, cv::THRESH_BINARY_INV | cv::THRESH_OTSU);
 	cv::threshold(gray_img, trunc_img, 0, 255, cv::THRESH_TRUNC | cv::THRESH_OTSU);
 	cv::threshold(gray_img, tozero_img, 0, 255, cv::THRESH_TOZERO | cv::THRESH_OTSU);
 	cv::threshold(gray_img, tozeroinv_img, 0, 255, cv::THRESH_TOZERO_INV | cv::THRESH_OTSU);
 
-	// “K‰“I‚Èè‡’lˆ—
+	// é©å¿œçš„ãªé–¾å€¤å‡¦ç†
 	cv::Mat adaptive_img;
-	// “ü—Í‰æ‘œCo—Í‰æ‘œCmaxValCè‡’lŒˆ’èè–@Cè‡’lˆ—è–@CblockSizeCC
+	// å…¥åŠ›ç”»åƒï¼Œå‡ºåŠ›ç”»åƒï¼ŒmaxValï¼Œé–¾å€¤æ±ºå®šæ‰‹æ³•ï¼Œé–¾å€¤å‡¦ç†æ‰‹æ³•ï¼ŒblockSizeï¼ŒC
 	cv::adaptiveThreshold(gray_img, adaptive_img, 255, cv::ADAPTIVE_THRESH_GAUSSIAN_C, cv::THRESH_BINARY, 7, 8);
 	cv::imshow("test", gray_img);
 	(*img_before) = adaptive_img;
@@ -227,7 +227,7 @@ bool MultiSlicer(cv::Mat *img_before, float angle = 0.0) {
 
 bool Radiation_blur(cv::Mat *img_before, int center_x, int center_y, int zoom_rate, int smoothness=3) {
     // http://shira.hatenadiary.jp/entry/2018/06/30/022357
-	// TODO:  center‚ÌÀ‘•
+	// TODO:  centerã®å®Ÿè£…
 	int width = (*img_before).cols;
 	int height = (*img_before).rows;
 
@@ -246,7 +246,7 @@ bool Radiation_blur(cv::Mat *img_before, int center_x, int center_y, int zoom_ra
 		int top = (zoomed.rows - height) / 2;
  
 		cv::Rect roi(cv::Point(left, top), cv::Size(width, height));
-		zoomed = zoomed(roi); // Ø‚èo‚µ‰æ‘œ
+		zoomed = zoomed(roi); // åˆ‡ã‚Šå‡ºã—ç”»åƒ
 
 		double alpha = 0.9 + float(i-1) / float(smoothness*10);
 		cv::addWeighted((*img_before), alpha, zoomed, 1.0f-alpha, 0, (*img_before));

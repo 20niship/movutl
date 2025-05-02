@@ -39,7 +39,7 @@ void _mu_assert_fail(const char* file, int line, const char* msg1) {
 }
 
 void enable_signal_handlers() {
-  std::signal(SIGINT, [](int) { MU_FAIL("Interrupted by user"); });
+  /*std::signal(SIGINT, [](int) { MU_FAIL("Interrupted by user"); });*/
   signal(SIGSEGV, [](int) { MU_FAIL("Segmentation fault"); });
   signal(SIGFPE, [](int) { MU_FAIL("Floating point exception"); });
 }

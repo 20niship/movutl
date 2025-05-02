@@ -2,6 +2,7 @@
 #include <movutl/app/app_impl.hpp>
 #include <movutl/asset/entity.hpp>
 #include <movutl/asset/project.hpp>
+#include <movutl/plugin/filter.hpp>
 #include <movutl/plugin/plugin.hpp>
 //
 #include <movutl/asset/camera.hpp>
@@ -55,6 +56,29 @@ std::string EntityInfo::str() const {
   char buf[256];
   sprintf(buf, "EntityInfo: Flag%d %dx%d %d frames %f fps", (int)flag, width, height, nframes, framerate);
   return std::string(buf);
+}
+
+bool Entity::render_filters(Composition* cmp, ImageRGBA* img) {
+  MU_ASSERT(cmp != nullptr);
+  for(int i = 0; i < trk.filters.size(); i++) {
+    auto& f = trk.filters[i];
+    if(!f.enabled) continue;
+    MU_ASSERT(f.plg_ != nullptr);
+    if(!f.plg_->fn_proc) {
+      LOG_F(ERROR, "Plugin %s has no render function", f.plg_->name.c_str());
+      continue;
+    }
+    void* fp = f.plg_;
+    FilterInData in;
+    in.img = img;
+    in.compo = cmp;
+    Props props = f.props.get(cmp->frame);
+    if(!f.plg_->fn_proc(fp, &in, f.props.get(cmp->frame))) {
+      LOG_F(ERROR, "Plugin %s render failed", f.plg_->name.c_str());
+      return false;
+    }
+  }
+  return true;
 }
 
 } // namespace mu

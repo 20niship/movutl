@@ -73,8 +73,9 @@ file(COPY ${DATA_FILES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 file(GLOB MOVUTL_SOURCE_1 ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp) 
 file(GLOB MOVUTL_SOURCE_2 ${CMAKE_CURRENT_SOURCE_DIR}/**/*.cpp) 
-file(GLOB MOVUTL_SOURCE_3 ${CMAKE_CURRENT_SOURCE_DIR}/*/*/*.cpp) 
-file(GLOB MOVUTL_SOURCE_4 ${CMAKE_CURRENT_SOURCE_DIR}/*/*/*/*.cpp) 
+file(GLOB MOVUTL_SOURCE_3 ${CMAKE_CURRENT_SOURCE_DIR}/*/*.cpp) 
+file(GLOB MOVUTL_SOURCE_4 ${CMAKE_CURRENT_SOURCE_DIR}/*/*/*.cpp) 
+file(GLOB MOVUTL_SOURCE_5 ${CMAKE_CURRENT_SOURCE_DIR}/*/*/*/*.cpp) 
 
 # --------------------------------------------------------------
 # ------------     Third Party Libraries -----------------------
@@ -97,6 +98,7 @@ file(GLOB MOVUTL_EXT_SRC
   ${MOVUTL_ROOT_DIR}/ext/imgui/imgui_draw.cpp
   ${MOVUTL_ROOT_DIR}/ext/imgui/imgui_widgets.cpp
   ${MOVUTL_ROOT_DIR}/ext/imgui/imgui_tables.cpp
+  ${MOVUTL_ROOT_DIR}/ext/imgui/imgui_demo.cpp
   ${MOVUTL_ROOT_DIR}/ext/imgui/backends/imgui_impl_glfw.cpp
   ${MOVUTL_ROOT_DIR}/ext/imgui/backends/imgui_impl_opengl3.cpp
   ${MOVUTL_ROOT_DIR}/ext/filewatch/FileWatcher.cpp
@@ -115,7 +117,13 @@ file(GLOB MOVUTL_EXT_SRC
 
 include_directories(${MOVUTL_INCLUDES})
 
-set(MOVUTL_SRC ${MOVUTL_SOURCE_1} ${MOVUTL_SOURCE_2} ${MOVUTL_SOURCE_3} ${MOVUTL_SOURCE_4} ${MOVUTL_EXT_SRC})
+set(MOVUTL_SRC ${MOVUTL_SOURCE_1} ${MOVUTL_SOURCE_2} ${MOVUTL_SOURCE_3} ${MOVUTL_SOURCE_4} ${MOVUTL_EXT_SRC} ${MOVUTL_SOURCE_5})
+if(APPLE)
+  file(GLOB MOVUTL_SRC_MAC ${CMAKE_CURRENT_SOURCE_DIR}/core/*.mm)
+  set(MOVUTL_SRC ${MOVUTL_SRC} ${MOVUTL_SRC_MAC})
+
+  set(MOVUTL_LIBRARIES ${MOVUTL_LIBRARIES} "-framework Cocoa")
+endif()
 add_library(mucore ${MOVUTL_SRC})
 target_include_directories(mucore PUBLIC ${MOVUTL_INCLUDES})
 target_link_libraries(mucore ${MOVUTL_LIBRARIES})

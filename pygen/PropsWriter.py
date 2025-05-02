@@ -132,7 +132,7 @@ class PropsWriter:
                         + f"{minvalue}, {maxvalue}, {step});\n"
                     )
                 case ArgumentType.ArgType_Vec2:
-                    d = p.detault if p.detault != "" else "Vec2(0, 0, 0)"
+                    d = p.detault if p.detault != "" else "Vec2(0, 0)"
                     self.autogen_text += (
                         f'  info.add_vec2_prop("{p.name}", "{p.category}", "{p.desc}", {d}, '
                         + f"{minvalue}, {maxvalue}, {step});\n"

@@ -55,6 +55,7 @@ void TimelineWindow::Update() {
         ImGui::SetTooltip("Entity %s", entt->name.c_str());
       }
       if(hovered && ImGui::IsMouseClicked(0)) {
+        clear_selected_entts();
         select_entt(entt);
       }
       EndTrack();

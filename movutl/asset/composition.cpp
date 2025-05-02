@@ -74,4 +74,23 @@ std::string Composition::summary() const {
 Composition* Composition::GetActiveComp() {
   return Project::GetActiveCompo();
 }
+
+
+int Composition::insertable_layer_index() const {
+  for(int i = 0; i < layers.size(); i++) {
+    if(layers[i].entts.size() == 0) return i;
+  }
+  return -1;
+}
+
+void Composition::insert_entity(Ref<Entity> entt, int layer) {
+  if(layer < 0) layer = insertable_layer_index();
+  if(layer < 0) {
+    this->layers.push_back(TrackLayer());
+    layer = this->layers.size() - 1;
+  }
+  MU_ASSERT(layer >= 0 && layer <= layers.size());
+  this->layers[layer].entts.push_back(entt);
+}
+
 } // namespace mu

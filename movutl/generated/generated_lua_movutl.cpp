@@ -13,8 +13,11 @@
 #include <movutl/asset/project.hpp>
 #include <movutl/asset/movie.hpp>
 #include <movutl/core/anim.hpp>
+#include <movutl/gui/gui.hpp>
+#include <movutl/binding/imgui_binding.hpp>
 #include <movutl/asset/track.hpp>
 #include <movutl/asset/entity.hpp>
+#include <movutl/binding/imgui_binding.hpp>
 #include <movutl/asset/composition.hpp>
 extern "C" {
 #include <lua.h>
@@ -27,13 +30,73 @@ namespace mu::detail {
 using namespace LuaIntf;
 using namespace ImGui;
 
-void generated_lua_binding_(lua_State* L) {
+void generated_lua_binding_movutl(lua_State* L) {
     LuaBinding(L).beginModule("movutl")
+  .beginModule("AniInterpType")
+    .addConstant("LINEAR", AniInterpType::LINEAR)
+    .addConstant("EaseIn", AniInterpType::EaseIn)
+    .addConstant("EaseOut", AniInterpType::EaseOut)
+    .addConstant("EaseInOut", AniInterpType::EaseInOut)
+    .addConstant("EaseInQuad", AniInterpType::EaseInQuad)
+    .addConstant("EaseOutQuad", AniInterpType::EaseOutQuad)
+    .addConstant("EaseInOutQuad", AniInterpType::EaseInOutQuad)
+    .addConstant("EaseInCubic", AniInterpType::EaseInCubic)
+    .addConstant("EaseOutCubic", AniInterpType::EaseOutCubic)
+    .addConstant("EaseInOutCubic", AniInterpType::EaseInOutCubic)
+    .addConstant("Custom", AniInterpType::Custom)
+  .endModule()
+  .beginModule("BlendType")
+    .addConstant("Blend_Alpha", BlendType::Blend_Alpha)
+    .addConstant("Blend_Add", BlendType::Blend_Add)
+    .addConstant("Blend_Sub", BlendType::Blend_Sub)
+    .addConstant("Blend_Mul", BlendType::Blend_Mul)
+    .addConstant("Blend_Div", BlendType::Blend_Div)
+    .addConstant("Blend_Screen", BlendType::Blend_Screen)
+    .addConstant("Blend_Overlay", BlendType::Blend_Overlay)
+    .addConstant("Blend_Darken", BlendType::Blend_Darken)
+    .addConstant("Blend_Lighten", BlendType::Blend_Lighten)
+    .addConstant("Blend_HardLight", BlendType::Blend_HardLight)
+  .endModule()
+  .beginModule("Composition_Composition::Flag")
+    .addConstant("setting_dialog", Composition::Composition::Flag::setting_dialog)
+    .addConstant("frame_alpha", Composition::Composition::Flag::frame_alpha)
+    .addConstant("fast_preview", Composition::Composition::Flag::fast_preview)
+    .addConstant("preprocessing", Composition::Composition::Flag::preprocessing)
+    .addConstant("hide_output_gui", Composition::Composition::Flag::hide_output_gui)
+    .addConstant("nesting", Composition::Composition::Flag::nesting)
+    .addConstant("invert_field_order", Composition::Composition::Flag::invert_field_order)
+    .addConstant("invert_interlace", Composition::Composition::Flag::invert_interlace)
+  .endModule()
+  .beginModule("EntityType")
+    .addConstant("EntityType_Movie", EntityType::EntityType_Movie)
+    .addConstant("EntityType_Audio", EntityType::EntityType_Audio)
+    .addConstant("EntityType_Image", EntityType::EntityType_Image)
+    .addConstant("EntityType_3DText", EntityType::EntityType_3DText)
+    .addConstant("EntityType_Primitive", EntityType::EntityType_Primitive)
+    .addConstant("EntityType_Framebuffer", EntityType::EntityType_Framebuffer)
+    .addConstant("EntityType_Polygon", EntityType::EntityType_Polygon)
+    .addConstant("EntityType_Group", EntityType::EntityType_Group)
+    .addConstant("EntityType_Scene", EntityType::EntityType_Scene)
+    .addConstant("EntityType_SceneAudio", EntityType::EntityType_SceneAudio)
+    .addConstant("EntityType_LayerCopy", EntityType::EntityType_LayerCopy)
+    .addConstant("EntityType_Particle", EntityType::EntityType_Particle)
+    .addConstant("EntityType_Custom", EntityType::EntityType_Custom)
+    .addConstant("EntityType_3DModel", EntityType::EntityType_3DModel)
+    .addConstant("EntityType_Camera", EntityType::EntityType_Camera)
+    .addConstant("EntityType_Effect", EntityType::EntityType_Effect)
+  .endModule()
+  .beginModule("ImageFormat")
+    .addConstant("ImageFormatRGB", ImageFormat::ImageFormatRGB)
+    .addConstant("ImageFormatRGBA", ImageFormat::ImageFormatRGBA)
+    .addConstant("ImageFormatGRAYSCALE", ImageFormat::ImageFormatGRAYSCALE)
+  .endModule()
   .beginClass<Composition>("Composition")
     .addFunction("resize", &Composition::resize)
     .addFunction("str", &Composition::str)
     .addFunction("summary", &Composition::summary)
     .addStaticFunction("GetActiveComp", &Composition::GetActiveComp)
+    .addFunction("insertable_layer_index", &Composition::insertable_layer_index)
+    .addFunction("insert_entity", &Composition::insert_entity)
     .addVariable("guid", &Composition::guid) // uint32_t
     .addVariable("name", &Composition::name) // FixString
     .addVariable("flag", &Composition::flag) // Flag
@@ -61,27 +124,42 @@ void generated_lua_binding_(lua_State* L) {
     .addVariable("audio_format_size", &EntityInfo::audio_format_size) // int32_t
   .endClass()
   .beginClass<Image>("Image")
-    .addFunction("dirty", &Image::dirty)
-    .addFunction("data", &Image::data)
-    .addFunction("set_rgb", &Image::set_rgb)
-    .addFunction("set_rgba", &Image::set_rgba)
     .addFunction("size", &Image::size)
-    .addFunction("size_in_bytes", &Image::size_in_bytes)
+    .addFunction("width", &Image::width)
+    .addFunction("height", &Image::height)
     .addFunction("reset", &Image::reset)
     .addFunction("fill", &Image::fill)
+    .addFunction("data", &Image::data)
+    .addFunction("dirty", &Image::dirty)
+    .addFunction("get_dirty", &Image::get_dirty)
     .addFunction("channels", &Image::channels)
-    .addFunction("rgba", &Image::rgba)
     .addFunction("imshow", &Image::imshow)
     .addFunction("getType", &Image::getType)
+    .addFunction("getPropsInfo", &Image::getPropsInfo)
+    .addFunction("getProps", &Image::getProps)
+    .addFunction("setProps", &Image::setProps)
     .addVariable("fmt", &Image::fmt) // ImageFormat
-    .addVariable("width", &Image::width) // unsigned int
-    .addVariable("height", &Image::height) // unsigned int
     .addVariable("pos", &Image::pos) // Vec3
     .addVariable("scale", &Image::scale) // Vec2
     .addVariable("rotation", &Image::rotation) // float
     .addVariable("alpha", &Image::alpha) // float
     .addVariable("path", &Image::path) // std::string
-    .addVariable("dirty_", &Image::dirty_) // int16_t
+  .endClass()
+  .beginClass<ImageRGBA>("ImageRGBA")
+    .addFunction("dirty", &ImageRGBA::dirty)
+    .addFunction("data", &ImageRGBA::data)
+    .addFunction("set_rgb", &ImageRGBA::set_rgb)
+    .addFunction("set_rgba", &ImageRGBA::set_rgba)
+    .addFunction("size", &ImageRGBA::size)
+    .addFunction("size_in_bytes", &ImageRGBA::size_in_bytes)
+    .addFunction("reset", &ImageRGBA::reset)
+    .addFunction("fill", &ImageRGBA::fill)
+    .addFunction("rgba", &ImageRGBA::rgba)
+    .addFunction("imshow", &ImageRGBA::imshow)
+    .addVariable("width", &ImageRGBA::width) // unsigned int
+    .addVariable("height", &ImageRGBA::height) // unsigned int
+    .addVariable("dirty_", &ImageRGBA::dirty_) // int16_t
+    .addVariable("alpha", &ImageRGBA::alpha) // bool
   .endClass()
   .beginClass<Movie>("Movie")
     .addStaticFunction("Create", &Movie::Create)
@@ -117,6 +195,7 @@ void generated_lua_binding_(lua_State* L) {
     .addFunction("getPropsInfo", &TextEntt::getPropsInfo)
     .addFunction("getProps", &TextEntt::getProps)
     .addFunction("setProps", &TextEntt::setProps)
+    .addVariable("dirty_", &TextEntt::dirty_) // int32_t
     .addVariable("pos_", &TextEntt::pos_) // Vec3
     .addVariable("scale_x_", &TextEntt::scale_x_) // float
     .addVariable("scale_y_", &TextEntt::scale_y_) // float
@@ -135,9 +214,24 @@ void generated_lua_binding_(lua_State* L) {
     .addVariable("active", &TrackLayer::active) // bool
     .addVariable("entts", &TrackLayer::entts) // std::vector<Ref<Entity> >
   .endClass()
+  .beginClass<TrackObject>("TrackObject")
+    .addFunction("visible", &TrackObject::visible)
+    .addFunction("getPropsInfo", &TrackObject::getPropsInfo)
+    .addFunction("getProps", &TrackObject::getProps)
+    .addFunction("setProps", &TrackObject::setProps)
+    .addVariable("fstart", &TrackObject::fstart) // int
+    .addVariable("fend", &TrackObject::fend) // int
+    .addVariable("anchor", &TrackObject::anchor) // Vec2
+    .addVariable("blend_", &TrackObject::blend_) // BlendType
+    .addVariable("active_", &TrackObject::active_) // bool
+    .addVariable("solo_", &TrackObject::solo_) // bool
+    .addVariable("clipping_up", &TrackObject::clipping_up) // bool
+    .addVariable("camera_ctrl", &TrackObject::camera_ctrl) // bool
+  .endClass()
     .addFunction("add_new_audio_track", static_cast<bool(*)( const char *, const char *, int, int)>(&add_new_audio_track))
     .addFunction("add_new_track", static_cast<bool(*)( const char *, EntityType, int, int)>(&add_new_track))
     .addFunction("add_new_video_track", static_cast<Ref<Entity>(*)( const char *, const char *, int, int)>(&add_new_video_track))
+    .addFunction("apply_imgui_style", static_cast<void(*)( const char *)>(&apply_imgui_style))
     .addFunction("clear_selected_entts", static_cast<void(*)( )>(&clear_selected_entts))
     .addFunction("cv_waitkey", static_cast<void(*)( int)>(&cv_waitkey))
     .addFunction("get_compatible_plugin", static_cast<InputPluginTable *(*)( const char *, EntityType)>(&get_compatible_plugin))
@@ -145,6 +239,9 @@ void generated_lua_binding_(lua_State* L) {
     .addFunction("init", static_cast<void(*)( )>(&init))
     .addFunction("new_project", static_cast<void(*)( )>(&new_project))
     .addFunction("open_project", static_cast<void(*)( const char *)>(&open_project))
+    .addFunction("register_imgui_style", static_cast<void(*)( const char *, const ImGuiStyle &)>(&register_imgui_style))
+    .addFunction("remove_imgui_style", static_cast<void(*)( const char *)>(&remove_imgui_style))
+    .addFunction("render_main_menu_bar", static_cast<void(*)( )>(&render_main_menu_bar))
     .addFunction("save_project", static_cast<void(*)( )>(&save_project))
     .addFunction("save_project_as", static_cast<void(*)( const char *)>(&save_project_as))
     .addFunction("select_entt", static_cast<void(*)( const Ref<Entity> &)>(&select_entt))

@@ -1,6 +1,6 @@
 #pragma once
 #include <movutl/asset/entity.hpp>
-#include <movutl/asset/image.hpp>
+#include <movutl/core/imagebase.hpp>
 
 namespace mu {
 
@@ -10,7 +10,7 @@ public:
   Movie(const char* path);
   ~Movie() = default;
 
-  Ref<Image> img_;
+  Ref<ImageRGBA> img_;
   Vec3 pos = Vec3(0, 0, 0);    // MPROPERTY(name="位置", viewer_anchor=true)
   Vec2 scale = Vec2(100, 100); // MPROPERTY(name="拡大率", scale=true)
   float rotation = 0;          // MPROPERTY(name="回転")

@@ -12,6 +12,7 @@ namespace mu {
 
 struct InputPluginTable;
 class Composition;
+class ImageRGBA;
 
 enum EntityType {
   EntityType_Movie = 1,
@@ -61,6 +62,8 @@ protected:
   InputPluginTable* in_plg_ = nullptr;
   InputHandle in_handle_ = nullptr;
   EntityInfo info;
+
+  bool render_filters(Composition* cmp, ImageRGBA* img);
 
 public:
   FixString name;     // MPROPERTY(name="名前")

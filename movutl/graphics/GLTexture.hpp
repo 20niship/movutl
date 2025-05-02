@@ -6,7 +6,7 @@ namespace mu {
 class GLTexture {
 private:
   uint32_t tex_id = 0;
-  std::weak_ptr<Image> img_;
+  std::weak_ptr<ImageRGBA> img_;
   uint16_t last_dirty_ = 0;
   int gpu_width_;
   int gpu_height_;
@@ -14,8 +14,8 @@ private:
 
 public:
   GLTexture();
-  GLTexture(const std::shared_ptr<Image>& img);
-  void set(const std::shared_ptr<Image>& img);
+  GLTexture(const std::shared_ptr<ImageRGBA>& img);
+  void set(const std::shared_ptr<ImageRGBA>& img);
   void bind() const;
   void unbind() const;
   void update_if_necessary();

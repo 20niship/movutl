@@ -127,6 +127,14 @@ void wd_entt_props_editor(Entity* e) {
           changed = true;
         }
       } break;
+      case PropT_Entity: {
+        auto e = p.get<Entity*>(pi.name);
+        if(e) {
+          ImGui::Text("%s", e->name.c_str());
+        } else {
+          ImGui::Text("None");
+        }
+      }
     }
 
     if(changed) {

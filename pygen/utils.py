@@ -49,14 +49,6 @@ def cvt_type(t: str) -> str:
     return "ArgType_Undefined"
 
 
-def invalid_args(args: List[MArgument]):
-    return False
-
-
-def invalid_return_type(ret: MArgument):
-    return False
-
-
 def should_autogen_func(line: str) -> bool:
     return "MUFUNC_AUTOGEN" in line
 
@@ -112,6 +104,7 @@ def get_prop_type(argtype: str) -> ArgumentType:
         "int16_t",
         "uint64_t",
         "int64_t",
+        "int",
     ]:
         return ArgumentType.ArgType_Int
     if argtype in ["float", "double"]:
@@ -132,7 +125,7 @@ def get_prop_type(argtype: str) -> ArgumentType:
         return ArgumentType.ArgType_Color
     if argtype == "Entity":
         return ArgumentType.ArgType_Entity
-    logger.error(f"Unsupported type: {argtype}")
+    # logger.error(f"Unsupported type: {argtype}")
     return ArgumentType.ArgType_Undefined
 
 

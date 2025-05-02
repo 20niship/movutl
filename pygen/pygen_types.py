@@ -65,11 +65,17 @@ class MFunction:
                 return False
         return True
 
+    def valid_returns(self) -> bool:
+        return "*" not in self.returns.name
+
 @dataclass
 class MEnum:
     name: str
     desc: str
+    parent_str = ""
     values: List[str]
+    namespace :str = ""
+    filename :str = ""
 
 
 @dataclass

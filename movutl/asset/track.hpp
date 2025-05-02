@@ -49,6 +49,9 @@ public:
     uint32_t guid = 0; // フィルタID
     AnimProps props;   // フィルタプロパティ
     bool enabled = true;
+    FilterParam() = default;
+    FilterParam(FilterPluginTable* plg, uint32_t guid) : plg_(plg), guid(guid) {}
+    ~FilterParam() = default;
   };
   std::vector<FilterParam> filters;
 

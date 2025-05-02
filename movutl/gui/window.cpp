@@ -109,6 +109,8 @@ void gui_new_frame() {
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
 
+  render_main_menu_bar();
+
   const auto c = ImGui::GetStyle().Colors;
   ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(c[ImGuiCol_WindowBg].x, c[ImGuiCol_WindowBg].y, c[ImGuiCol_WindowBg].z, 0.0f));
   ImGui::PushStyleColor(ImGuiCol_DockingEmptyBg, ImVec4(c[ImGuiCol_DockingEmptyBg].x, c[ImGuiCol_DockingEmptyBg].y, c[ImGuiCol_DockingEmptyBg].z, 0.0f));
