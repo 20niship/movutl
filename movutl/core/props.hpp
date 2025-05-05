@@ -51,6 +51,12 @@ public:
     return value;
   }
 
+  Props::Value get_(const std::string& key) const {
+    MU_ASSERT(values.contains(key));
+    auto it = values.find(key);
+    return it->second;
+  }
+
   void push_back(const Props::Value& p) {
     std::string key = std::to_string(values.size());
     values[key] = p;
