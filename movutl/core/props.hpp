@@ -1,5 +1,6 @@
 #pragma once
 #include <map>
+#include <movutl/core/defines.hpp>
 #include <movutl/core/vector.hpp>
 #include <string>
 #include <variant>
@@ -50,6 +51,12 @@ public:
     return value;
   }
 
+  Props::Value get_(const std::string& key) const {
+    MU_ASSERT(values.contains(key));
+    auto it = values.find(key);
+    return it->second;
+  }
+
   void push_back(const Props::Value& p) {
     std::string key = std::to_string(values.size());
     values[key] = p;
@@ -87,11 +94,24 @@ public:
   std::string summary() const;
 };
 
+
+enum PropInfoFlags : uint16_t {
+  PInfo_ReadOnly = 1 << 1,
+  PInfo_NotVisibleInspector = 1 << 2,
+  PInfo_Angle = 1 << 3,
+  PInfo_Radian = 1 << 4,
+  PInfo_Slider = 1 << 5,
+  PInfo_PositionProp = 1 << 6,
+  PInfo_RotationProp = 1 << 7,
+  PInfo_ScaleProp = 1 << 8,
+  PInfo_BlueprintReadWrite = 1 << 9,
+};
+
+MOVUTL_DEFINE_ENUM_ATTR_BITFLAGS(PropInfoFlags);
+
 struct PropInfoBase {
   struct FloatProp {
     float default_ = 0.5f;
-    bool is_angle = false;
-    bool is_radian = false;
     FloatProp() = default;
     FloatProp(float def) : default_(def) {}
     ~FloatProp() = default;
@@ -125,7 +145,8 @@ public:
   float min = 0.0f;
   float max = 0.0f;
   float step = 1.0f;
-  bool readonly = false;
+
+  PropInfoFlags flag_;
 
   PropInfoBase() = default;
   ~PropInfoBase() = default;

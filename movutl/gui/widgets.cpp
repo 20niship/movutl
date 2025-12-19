@@ -1,5 +1,6 @@
 #include <IconsFontAwesome6.h>
 #include <imgui.h>
+#include <imgui_internal.h>
 #include <movutl/asset/entity.hpp>
 #include <movutl/core/assert.hpp>
 #include <movutl/core/logger.hpp>
@@ -21,8 +22,16 @@ void wd_entt_props_editor(Entity* e) {
   if(e->propinfo_.empty()) {
     e->propinfo_ = e->getPropsInfo();
   }
+
+  // 戻るアクションを指定するために使用
+  int64_t focus_id = ImGui::GetFocusID();
+  static int64_t last_focus_id = 0;
+  int focus_idx_ = -1;
+  Props::Value v_comfirmed, v_before;
+
   const auto p = e->getProps();
   for(int i = 0; i < e->propinfo_.size(); i++) {
+
     auto pi = e->propinfo_[i];
     if(!p.contains(pi.name)) {
       LOG_F(WARNING, "Property %s -> %s not found", e->name.c_str(), pi.name.c_str());
@@ -137,6 +146,17 @@ void wd_entt_props_editor(Entity* e) {
       }
     }
 
+
+    auto item_id_ = ImGui::GetItemID();
+    if(item_id_ == last_focus_id && last_focus_id != 0) { // 編集中
+      if(focus_id != item_id_) {                          // 編集終了
+        v_comfirmed = p.get_(pi.name);
+        focus_idx_ = i;
+        LOG_F(1, "end editing %s %s -> %s", pi.name.c_str());
+      }
+    } else if(focus_id != last_focus_id && focus_id == item_id_ && focus_id != 0) {
+      v_before = p.get_(pi.name);
+    }
     if(changed) {
       e->setProps(newp);
       e->propinfo_ = e->getPropsInfo();
@@ -144,6 +164,7 @@ void wd_entt_props_editor(Entity* e) {
     ImGui::PopID();
   }
   ImGui::PopID();
+  last_focus_id = focus_id;
 }
 
 void wd_movie_inspector(Entity* e) {

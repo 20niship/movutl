@@ -14,8 +14,8 @@ void PropsInfo::add_float_prop(                             //
   prop.max = max;
   prop.step = step;
   prop.value_.float_ = def;
-  prop.value_.float_.is_angle = is_angle;
-  prop.value_.float_.is_radian = is_radian;
+  if(is_angle) prop.flag_ |= PropInfoFlags::PInfo_Angle;
+  if(is_radian) prop.flag_ |= PropInfoFlags::PInfo_Radian;
   prop.type = PropT_Float;
   props.push_back(prop);
 }
@@ -126,7 +126,10 @@ void PropsInfo::set_last_prop_desc(const char* desc) {
 
 void PropsInfo::set_last_prop_readonly(bool readonly) {
   if(props.size() == 0) return;
-  props.back().readonly = readonly;
+  if(readonly)
+    props.back().flag_ |= PropInfoFlags::PInfo_ReadOnly;
+  else
+    props.back().flag_ ^= PropInfoFlags::PInfo_ReadOnly;
 }
 
 std::string PropsInfo::str() const {
