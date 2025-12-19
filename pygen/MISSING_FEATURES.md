@@ -4,6 +4,13 @@
 
 ## 現状の実装状況
 
+### ⚠️ 既存コードの改善点
+以下の軽微な問題が既存コードに存在します：
+- `pygen_types.py`の`MArgument.detault`はタイポ（`default`が正しい）
+- `pygen_types.py`の`namespace :str`は不要なスペースがある（`namespace: str`が正しい）
+
+これらは後方互換性のため、新機能実装時に合わせて修正することを推奨します。
+
 ### ✅ 実装済みの機能
 
 1. **基本的なプロパティ情報の抽出** (`main.py`, `pygen_types.py`)
@@ -114,9 +121,9 @@ namespace mu {
 #### 2.1 拡張されたプロパティフラグ
 **実装場所**: `movutl/core/props.hpp`の`PropInfoFlags`
 
+現状のフラグ定義:
 ```cpp
 enum PropInfoFlags : uint16_t {
-    // 既存のフラグ
     PInfo_ReadOnly = 1 << 1,
     PInfo_NotVisibleInspector = 1 << 2,
     PInfo_Angle = 1 << 3,
@@ -126,8 +133,14 @@ enum PropInfoFlags : uint16_t {
     PInfo_RotationProp = 1 << 7,
     PInfo_ScaleProp = 1 << 8,
     PInfo_BlueprintReadWrite = 1 << 9,
+};
+```
+
+新規追加が必要なフラグ:
+```cpp
+enum PropInfoFlags : uint16_t {
+    // ... 既存のフラグ ...
     
-    // 新規追加が必要なフラグ
     PInfo_EditAnywhere = 1 << 10,          // インスペクターで編集可能
     PInfo_EditDefaultsOnly = 1 << 11,      // デフォルト値のみ編集可能
     PInfo_VisibleAnywhere = 1 << 12,       // 表示のみ
@@ -159,12 +172,29 @@ def parse_mprop_info(arg: MArgument, line: str, enums: List[MEnum]) -> MArgument
 ```
 
 #### 2.3 配列・コンテナ型の対応
-**実装場所**: `pygen_types.py`
+**実装場所**: `pygen_types.py`の`MArgument`クラス
 
+現状の定義:
 ```python
 @dataclass
 class MArgument:
-    # ... 既存フィールド ...
+    name: str = ""
+    dispname: str = ""
+    c_type: str = ""
+    ptype: ArgumentType = ArgumentType.ArgType_Undefined
+    detault: str = ""  # NOTE: タイポあり（defaultが正しい）
+    category: str = ""
+    desc: str = ""
+    is_angle: bool = False
+    readonly: bool = False
+    minvalue: str = ""
+    maxvalue: str = ""
+    namespace :str = ""  # NOTE: 不要なスペースあり
+    step: str = ""
+```
+
+追加が必要なフィールド:
+```python
     is_array: bool = False  # 追加
     container_type: str = ""  # 追加: "vector", "array", "map" など
     element_type: str = ""  # 追加: 配列の要素型
@@ -387,10 +417,8 @@ std::string {cls.name}::SerializeDelta() const {{
 #### 5.1 UI表示の詳細制御
 **実装場所**: `pygen_types.py`の`MArgument`
 
+追加が必要なフィールド（既存の定義は2.3を参照）:
 ```python
-@dataclass
-class MArgument:
-    # ... 既存フィールド ...
     tooltip: str = ""              # 追加: ツールチップテキスト
     icon: str = ""                 # 追加: アイコンのパス
     group: str = ""                # 追加: プロパティグループ
@@ -596,10 +624,8 @@ def _write_fast_property_access(self, cls: MClass):
 #### 8.1 プロパティバリデーション
 **実装場所**: `pygen_types.py`の`MArgument`
 
+追加が必要なフィールド（既存の定義は2.3を参照）:
 ```python
-@dataclass
-class MArgument:
-    # ... 既存フィールド ...
     validators: List[str] = field(default_factory=list)  # バリデータ関数名
     error_message: str = ""  # バリデーション失敗時のメッセージ
 ```
