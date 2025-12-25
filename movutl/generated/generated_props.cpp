@@ -10,7 +10,7 @@
 #include <movutl/asset/composition.hpp>
 namespace mu { 
 void Image::setProps(const Props& p) {
-   if(p.has<std::string>("name")) name = p.get<std::string>("name");
+  if(p.has<std::string>("name")) name = p.get<std::string>("name");
   if(p.has<int>("guid_")) guid_ = p.get<int>("guid_");
   if(p.has<Props>("trk")) trk.setProps(p.get<Props>("trk"));
 // fmt has an unsupported type
@@ -36,7 +36,7 @@ PropsInfo Image::getPropsInfo() const {
   return info;
 }
 Props Image::getProps() const {
-   Props p;
+  Props p;
   p["name"] = name;
   p["guid_"] = guid_;
   p["trk"] = trk.getProps();
@@ -49,7 +49,7 @@ Props Image::getProps() const {
   return p;
 }
 void Movie::setProps(const Props& p) {
-   if(p.has<std::string>("name")) name = p.get<std::string>("name");
+  if(p.has<std::string>("name")) name = p.get<std::string>("name");
   if(p.has<int>("guid_")) guid_ = p.get<int>("guid_");
   if(p.has<Props>("trk")) trk.setProps(p.get<Props>("trk"));
   if(p.has<Vec3>("pos")) pos = p.get<Vec3>("pos");
@@ -85,7 +85,7 @@ PropsInfo Movie::getPropsInfo() const {
   return info;
 }
 Props Movie::getProps() const {
-   Props p;
+  Props p;
   p["name"] = name;
   p["guid_"] = guid_;
   p["trk"] = trk.getProps();
@@ -101,7 +101,7 @@ Props Movie::getProps() const {
   return p;
 }
 void TextEntt::setProps(const Props& p) {
-   if(p.has<std::string>("name")) name = p.get<std::string>("name");
+  if(p.has<std::string>("name")) name = p.get<std::string>("name");
   if(p.has<int>("guid_")) guid_ = p.get<int>("guid_");
   if(p.has<Props>("trk")) trk.setProps(p.get<Props>("trk"));
   if(p.has<int>("dirty_")) dirty_ = p.get<int>("dirty_");
@@ -140,7 +140,7 @@ PropsInfo TextEntt::getPropsInfo() const {
   return info;
 }
 Props TextEntt::getProps() const {
-   Props p;
+  Props p;
   p["name"] = name;
   p["guid_"] = guid_;
   p["trk"] = trk.getProps();
@@ -157,7 +157,7 @@ Props TextEntt::getProps() const {
   return p;
 }
 void TrackObject::setProps(const Props& p) {
-   if(p.has<int>("fstart")) fstart = p.get<int>("fstart");
+  if(p.has<int>("fstart")) fstart = p.get<int>("fstart");
   if(p.has<int>("fend")) fend = p.get<int>("fend");
   if(p.has<Vec2>("anchor")) anchor = p.get<Vec2>("anchor");
 // blend_ has an unsupported type
@@ -189,7 +189,7 @@ PropsInfo TrackObject::getPropsInfo() const {
   return info;
 }
 Props TrackObject::getProps() const {
-   Props p;
+  Props p;
   p["fstart"] = fstart;
   p["fend"] = fend;
   p["anchor"] = anchor;

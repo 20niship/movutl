@@ -39,7 +39,6 @@ class PropsWriter:
             "namespace mu { \n"
         )
         self.output_filename = "../movutl/generated/" + filename
-        self.classes_with_props = set()  # Track classes that support getProps/setProps
 
     def save(self):
         output = (  #
@@ -85,7 +84,7 @@ class PropsWriter:
             self._write_getProps(cls)
 
     def _write_setProps(self, cls: MClass):
-        self.autogen_text += f"void {cls.name}::setProps(const Props& p) {{\n "  #
+        self.autogen_text += f"void {cls.name}::setProps(const Props& p) {{\n"  #
         
         # Add Entity base class properties if this class inherits from Entity
         if "Entity" in cls.parent_classes:
@@ -122,7 +121,7 @@ class PropsWriter:
         self.autogen_text += "}\n"
 
     def _write_getProps(self, cls: MClass):
-        self.autogen_text += f"Props {cls.name}::getProps() const {{\n "
+        self.autogen_text += f"Props {cls.name}::getProps() const {{\n"
         self.autogen_text += "  Props p;\n"
         
         # Add Entity base class properties if this class inherits from Entity

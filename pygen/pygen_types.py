@@ -17,7 +17,6 @@ class ArgumentType(Enum):
     ArgType_Entity = 10
     ArgType_Color = 11
     ArgType_Undefined = 12
-    ArgType_NestedObject = 13
 
 
 @dataclass
