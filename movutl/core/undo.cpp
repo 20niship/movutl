@@ -28,6 +28,7 @@ void EntityPropertyChangeCommand::execute() {
   }
   
   // 新しい値を設定
+  // 注: setPropsは指定されたプロパティのみを更新し、他のプロパティは保持されます
   entity_->setProps(new_props_);
   LOG_F(1, "Executed: %s", description().c_str());
 }
@@ -39,6 +40,7 @@ void EntityPropertyChangeCommand::undo() {
   }
   
   // 古い値を復元
+  // 注: setPropsは指定されたプロパティのみを更新し、他のプロパティは保持されます
   entity_->setProps(old_props_);
   LOG_F(1, "Undone: %s", description().c_str());
 }

@@ -26,6 +26,9 @@ void wd_entt_props_editor(Entity* e) {
 
   // 戻るアクションを指定するために使用
   int64_t focus_id = ImGui::GetFocusID();
+  
+  // 注: 以下のstatic変数はシングルスレッドのUI処理を前提としています
+  // マルチスレッド環境で使用する場合は、適切な同期機構が必要です
   static int64_t last_focus_id = 0;
   static std::string last_property_name = "";
   static Props::Value last_property_value;
@@ -170,9 +173,8 @@ void wd_entt_props_editor(Entity* e) {
         // 値が変更されているかチェック
         bool value_changed = false;
         if(last_entity == e && last_property_name == pi.name) {
-          // std::variantの比較 - 型と値の両方が一致しているか確認
-          value_changed = (last_property_value.index() != v_comfirmed.index()) ||
-                         (last_property_value != v_comfirmed);
+          // std::variantの!=演算子は型と値の両方を比較する
+          value_changed = (last_property_value != v_comfirmed);
         }
         
         // 値が変更されていたらUndoコマンドを作成

@@ -89,10 +89,10 @@ public:
   bool can_redo() const { return !redo_stack_.empty(); }
   
   // Undoスタックのサイズを取得
-  size_t undo_stack_size() const { return undo_stack_.empty() ? 0 : undo_stack_.size(); }
+  size_t undo_stack_size() const { return undo_stack_.size(); }
   
   // Redoスタックのサイズを取得
-  size_t redo_stack_size() const { return redo_stack_.empty() ? 0 : redo_stack_.size(); }
+  size_t redo_stack_size() const { return redo_stack_.size(); }
   
   // 最大スタックサイズを設定
   void set_max_stack_size(size_t size) { max_stack_size_ = size; }
