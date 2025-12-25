@@ -4,6 +4,7 @@
 #include <movutl/asset/entity.hpp>
 #include <movutl/core/assert.hpp>
 #include <movutl/core/logger.hpp>
+#include <movutl/core/undo.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/gui/widgets.hpp>
 
@@ -26,6 +27,9 @@ void wd_entt_props_editor(Entity* e) {
   // 戻るアクションを指定するために使用
   int64_t focus_id = ImGui::GetFocusID();
   static int64_t last_focus_id = 0;
+  static std::string last_property_name = "";
+  static Props::Value last_property_value;
+  static Entity* last_entity = nullptr;
   int focus_idx_ = -1;
   Props::Value v_comfirmed, v_before;
 
@@ -148,15 +152,42 @@ void wd_entt_props_editor(Entity* e) {
 
 
     auto item_id_ = ImGui::GetItemID();
-    if(item_id_ == last_focus_id && last_focus_id != 0) { // 編集中
-      if(focus_id != item_id_) {                          // 編集終了
+    
+    // フォーカスが当たった時（編集開始）- 元の値を記録
+    if(focus_id != last_focus_id && focus_id == item_id_ && focus_id != 0) {
+      last_property_value = p.get_(pi.name);
+      last_property_name = pi.name;
+      last_entity = e;
+      LOG_F(1, "start editing %s", pi.name.c_str());
+    }
+    
+    // フォーカスが外れた時（編集終了）- 値が変更されていたらUndoコマンドを作成
+    if(item_id_ == last_focus_id && last_focus_id != 0) {
+      if(focus_id != item_id_) {
         v_comfirmed = p.get_(pi.name);
         focus_idx_ = i;
-        LOG_F(1, "end editing %s %s -> %s", pi.name.c_str());
+        
+        // 値が変更されているかチェック
+        bool value_changed = false;
+        if(last_entity == e && last_property_name == pi.name) {
+          // std::variantの比較 - 型と値の両方が一致しているか確認
+          value_changed = (last_property_value.index() != v_comfirmed.index()) ||
+                         (last_property_value != v_comfirmed);
+        }
+        
+        // 値が変更されていたらUndoコマンドを作成
+        if(value_changed) {
+          auto undo_cmd = std::make_unique<EntityPropertyChangeCommand>(
+            e, pi.name, last_property_value, v_comfirmed
+          );
+          GetUndoManager().execute_command(std::move(undo_cmd));
+          LOG_F(1, "end editing %s - value changed, undo command created", pi.name.c_str());
+        } else {
+          LOG_F(1, "end editing %s - value unchanged", pi.name.c_str());
+        }
       }
-    } else if(focus_id != last_focus_id && focus_id == item_id_ && focus_id != 0) {
-      v_before = p.get_(pi.name);
     }
+    
     if(changed) {
       e->setProps(newp);
       e->propinfo_ = e->getPropsInfo();

@@ -6,6 +6,7 @@
 #include <movutl/app/app.hpp>
 #include <movutl/core/filesystem.hpp>
 #include <movutl/core/logger.hpp>
+#include <movutl/core/undo.hpp>
 #include <movutl/core/vector.hpp>
 #include <movutl/gui/gui.hpp>
 #include <stdio.h>
@@ -108,6 +109,28 @@ void gui_new_frame() {
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
+
+  // キーボードショートカットの処理
+  ImGuiIO& io = ImGui::GetIO();
+  
+  // Ctrl+Z: Undo
+  if(io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_Z, false)) {
+    auto& undo_mgr = GetUndoManager();
+    if(undo_mgr.can_undo()) {
+      undo_mgr.undo();
+      LOG_F(1, "Undo: %s", undo_mgr.get_last_redo_description().c_str());
+    }
+  }
+  
+  // Ctrl+Y or Ctrl+Shift+Z: Redo
+  if(io.KeyCtrl && (ImGui::IsKeyPressed(ImGuiKey_Y, false) || 
+                    (io.KeyShift && ImGui::IsKeyPressed(ImGuiKey_Z, false)))) {
+    auto& undo_mgr = GetUndoManager();
+    if(undo_mgr.can_redo()) {
+      undo_mgr.redo();
+      LOG_F(1, "Redo: %s", undo_mgr.get_last_undo_description().c_str());
+    }
+  }
 
   render_main_menu_bar();
 
