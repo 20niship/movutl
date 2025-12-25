@@ -70,6 +70,9 @@ public:
   // コマンドを実行してUndoスタックに追加
   void execute_command(std::unique_ptr<UndoCommand> command);
   
+  // コマンドを実行せずにUndoスタックに追加（すでに実行済みの場合）
+  void add_command(std::unique_ptr<UndoCommand> command);
+  
   // 最後のコマンドを取り消す
   bool undo();
   

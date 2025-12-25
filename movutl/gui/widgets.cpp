@@ -180,7 +180,8 @@ void wd_entt_props_editor(Entity* e) {
           auto undo_cmd = std::make_unique<EntityPropertyChangeCommand>(
             e, pi.name, last_property_value, v_comfirmed
           );
-          GetUndoManager().execute_command(std::move(undo_cmd));
+          // コマンドはすでにUIによって実行済みなのでadd_commandを使用
+          GetUndoManager().add_command(std::move(undo_cmd));
           LOG_F(1, "end editing %s - value changed, undo command created", pi.name.c_str());
         } else {
           LOG_F(1, "end editing %s - value unchanged", pi.name.c_str());

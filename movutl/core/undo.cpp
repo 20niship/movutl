@@ -72,6 +72,26 @@ void UndoManager::execute_command(std::unique_ptr<UndoCommand> command) {
   LOG_F(1, "Command executed. Undo stack size: %zu", undo_stack_.size());
 }
 
+void UndoManager::add_command(std::unique_ptr<UndoCommand> command) {
+  if(!command) {
+    LOG_F(WARNING, "UndoManager::add_command() - command is null");
+    return;
+  }
+  
+  // コマンドを実行せずにスタックに追加（すでに実行済みと仮定）
+  undo_stack_.push_back(std::move(command));
+  
+  // Redoスタックをクリア（新しい操作が実行されたため）
+  redo_stack_.clear();
+  
+  // スタックサイズが上限を超えた場合、古いものから削除
+  if(undo_stack_.size() > max_stack_size_) {
+    undo_stack_.erase(undo_stack_.begin());
+  }
+  
+  LOG_F(1, "Command added to stack. Undo stack size: %zu", undo_stack_.size());
+}
+
 bool UndoManager::undo() {
   if(undo_stack_.empty()) {
     LOG_F(1, "Undo stack is empty");
