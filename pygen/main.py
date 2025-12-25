@@ -93,6 +93,9 @@ class Parser:
         c = MClass(classname, "", member_funcs, member_fields)
         c.namespace = node["namespace"]
         c.filename = self.filename
+        # Extract parent class names
+        if "inherits" in node:
+            c.parent_classes = [inherit["class"] for inherit in node["inherits"]]
         logger.info(
             f"class: {classname} <-- Fx={len(member_funcs)}, Args={len(member_fields)}"
         )

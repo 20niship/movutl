@@ -10,7 +10,10 @@
 #include <movutl/asset/composition.hpp>
 namespace mu { 
 void Image::setProps(const Props& p) {
- // fmt has an unsupported type
+   if(p.has<std::string>("name")) name = p.get<std::string>("name");
+  if(p.has<int>("guid_")) guid_ = p.get<int>("guid_");
+  if(p.has<Props>("trk")) trk.setProps(p.get<Props>("trk"));
+// fmt has an unsupported type
   if(p.has<Vec3>("pos")) pos = p.get<Vec3>("pos");
   if(p.has<Vec2>("scale")) scale = p.get<Vec2>("scale");
   if(p.has<float>("rotation")) rotation = p.get<float>("rotation");
@@ -34,6 +37,9 @@ PropsInfo Image::getPropsInfo() const {
 }
 Props Image::getProps() const {
    Props p;
+  p["name"] = name;
+  p["guid_"] = guid_;
+  p["trk"] = trk.getProps();
   p["fmt"] = fmt;
   p["pos"] = pos;
   p["scale"] = scale;
@@ -43,7 +49,10 @@ Props Image::getProps() const {
   return p;
 }
 void Movie::setProps(const Props& p) {
-   if(p.has<Vec3>("pos")) pos = p.get<Vec3>("pos");
+   if(p.has<std::string>("name")) name = p.get<std::string>("name");
+  if(p.has<int>("guid_")) guid_ = p.get<int>("guid_");
+  if(p.has<Props>("trk")) trk.setProps(p.get<Props>("trk"));
+  if(p.has<Vec3>("pos")) pos = p.get<Vec3>("pos");
   if(p.has<Vec2>("scale")) scale = p.get<Vec2>("scale");
   if(p.has<float>("rotation")) rotation = p.get<float>("rotation");
   if(p.has<int>("start_frame_")) start_frame_ = p.get<int>("start_frame_");
@@ -77,6 +86,9 @@ PropsInfo Movie::getPropsInfo() const {
 }
 Props Movie::getProps() const {
    Props p;
+  p["name"] = name;
+  p["guid_"] = guid_;
+  p["trk"] = trk.getProps();
   p["pos"] = pos;
   p["scale"] = scale;
   p["rotation"] = rotation;
@@ -89,7 +101,10 @@ Props Movie::getProps() const {
   return p;
 }
 void TextEntt::setProps(const Props& p) {
-   if(p.has<int>("dirty_")) dirty_ = p.get<int>("dirty_");
+   if(p.has<std::string>("name")) name = p.get<std::string>("name");
+  if(p.has<int>("guid_")) guid_ = p.get<int>("guid_");
+  if(p.has<Props>("trk")) trk.setProps(p.get<Props>("trk"));
+  if(p.has<int>("dirty_")) dirty_ = p.get<int>("dirty_");
   if(p.has<Vec3>("pos_")) pos_ = p.get<Vec3>("pos_");
   if(p.has<float>("scale_x_")) scale_x_ = p.get<float>("scale_x_");
   if(p.has<float>("scale_y_")) scale_y_ = p.get<float>("scale_y_");
@@ -126,6 +141,9 @@ PropsInfo TextEntt::getPropsInfo() const {
 }
 Props TextEntt::getProps() const {
    Props p;
+  p["name"] = name;
+  p["guid_"] = guid_;
+  p["trk"] = trk.getProps();
   p["dirty_"] = dirty_;
   p["pos_"] = pos_;
   p["scale_x_"] = scale_x_;

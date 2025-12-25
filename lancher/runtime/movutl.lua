@@ -86,7 +86,7 @@ movutl.ImageFormat = {}
 ---@field guid number
 ---@field name FixString
 ---@field flag Flag
----@field frame_final Ref<Image>
+---@field frame_final Ref<ImageRGBA>
 ---@field frame_edit Ref<Image>
 ---@field frame_temp Ref<Image>
 ---@field framerate_nu number
@@ -267,6 +267,9 @@ function movutl.ImageRGBA:rgba( x, y, ) end
 ---@param name string
 ---@return nil
 function movutl.ImageRGBA:imshow( name, ) end
+
+---@return boolean
+function movutl.ImageRGBA:empty( ) end
 
 ---@class Movie
 ---@field pos Vec3

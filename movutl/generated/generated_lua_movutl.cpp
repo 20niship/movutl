@@ -100,7 +100,7 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addVariable("guid", &Composition::guid) // uint32_t
     .addVariable("name", &Composition::name) // FixString
     .addVariable("flag", &Composition::flag) // Flag
-    .addVariable("frame_final", &Composition::frame_final) // Ref<Image>
+    .addVariable("frame_final", &Composition::frame_final) // Ref<ImageRGBA>
     .addVariable("frame_edit", &Composition::frame_edit) // Ref<Image>
     .addVariable("frame_temp", &Composition::frame_temp) // Ref<Image>
     .addVariable("framerate_nu", &Composition::framerate_nu) // int32_t
@@ -156,6 +156,7 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("fill", &ImageRGBA::fill)
     .addFunction("rgba", &ImageRGBA::rgba)
     .addFunction("imshow", &ImageRGBA::imshow)
+    .addFunction("empty", &ImageRGBA::empty)
     .addVariable("width", &ImageRGBA::width) // unsigned int
     .addVariable("height", &ImageRGBA::height) // unsigned int
     .addVariable("dirty_", &ImageRGBA::dirty_) // int16_t

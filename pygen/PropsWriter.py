@@ -13,6 +13,15 @@ class PropsWriter:
         enums_list: List[MEnum],
         classes_list: List[MClass],
     ):
+        # First pass: collect all classes that have getProps/setProps
+        self.classes_with_props = set()
+        for c in classes_list:
+            has_get = any(f.name == "getProps" and f.should_autogen for f in c.funcs)
+            has_set = any(f.name == "setProps" and f.should_autogen for f in c.funcs)
+            if has_get and has_set:
+                self.classes_with_props.add(c.name)
+        
+        # Second pass: register classes
         for c in classes_list:
             self.register_class(c)
 
@@ -30,6 +39,7 @@ class PropsWriter:
             "namespace mu { \n"
         )
         self.output_filename = "../movutl/generated/" + filename
+        self.classes_with_props = set()  # Track classes that support getProps/setProps
 
     def save(self):
         output = (  #
@@ -45,6 +55,27 @@ class PropsWriter:
                 return f.should_autogen
         return False
 
+    def _is_nested_object(self, c_type: str) -> bool:
+        """Check if a C++ type is a class that has getProps/setProps methods."""
+        # Remove const, &, and whitespace from type
+        clean_type = c_type.replace("const", "").replace("&", "").strip()
+        return clean_type in self.classes_with_props
+
+    def _add_entity_base_props_serialization(self, is_setprops: bool) -> str:
+        """Add serialization code for Entity base class properties (name, guid_, trk)."""
+        if is_setprops:
+            return (
+                '  if(p.has<std::string>("name")) name = p.get<std::string>("name");\n'
+                '  if(p.has<int>("guid_")) guid_ = p.get<int>("guid_");\n'
+                '  if(p.has<Props>("trk")) trk.setProps(p.get<Props>("trk"));\n'
+            )
+        else:  # getProps
+            return (
+                '  p["name"] = name;\n'
+                '  p["guid_"] = guid_;\n'
+                '  p["trk"] = trk.getProps();\n'
+            )
+
     def register_class(self, cls: MClass):
         if self._should_write(cls, "setProps"):
             self._write_setProps(cls)
@@ -55,36 +86,55 @@ class PropsWriter:
 
     def _write_setProps(self, cls: MClass):
         self.autogen_text += f"void {cls.name}::setProps(const Props& p) {{\n "  #
+        
+        # Add Entity base class properties if this class inherits from Entity
+        if "Entity" in cls.parent_classes:
+            self.autogen_text += self._add_entity_base_props_serialization(is_setprops=True)
 
         for p in cls.props:
-            match p.ptype:
-                case ArgumentType.ArgType_Float:
-                    self.autogen_text += f'  if(p.has<float>("{p.name}")) {p.name} = p.get<float>("{p.name}");\n'
-                case ArgumentType.ArgType_Int:
-                    self.autogen_text += f'  if(p.has<int>("{p.name}")) {p.name} = p.get<int>("{p.name}");\n'
-                case ArgumentType.ArgType_Bool:
-                    self.autogen_text += f'  if(p.has<bool>("{p.name}")) {p.name} = p.get<bool>("{p.name}");\n'
-                case ArgumentType.ArgType_String:
-                    self.autogen_text += f'  if(p.has<std::string>("{p.name}")) {p.name} = p.get<std::string>("{p.name}");\n'
-                case ArgumentType.ArgType_Path:
-                    self.autogen_text += f'  if(p.has<std::string>("{p.name}")) {p.name} = p.get<std::string>("{p.name}");\n'
-                case ArgumentType.ArgType_Color:
-                    self.autogen_text += f'  if(p.has<Vec4b>("{p.name}")) {p.name} = p.get<Vec4b>("{p.name}");\n'
-                case ArgumentType.ArgType_Vec3:
-                    self.autogen_text += f'  if(p.has<Vec3>("{p.name}")) {p.name} = p.get<Vec3>("{p.name}");\n'
-                case ArgumentType.ArgType_Vec2:
-                    self.autogen_text += f'  if(p.has<Vec2>("{p.name}")) {p.name} = p.get<Vec2>("{p.name}");\n'
-                case ArgumentType.ArgType_Selection:
-                    self.autogen_text += f'  if(p.has<int>("{p.name}")) {p.name} = p.get<int>("{p.name}");\n'
-                case _:
-                    self.autogen_text += f"// {p.name} has an unsupported type\n"
+            # Check if this is a nested object type
+            if self._is_nested_object(p.c_type):
+                self.autogen_text += (
+                    f'  if(p.has<Props>("{p.name}")) {p.name}.setProps(p.get<Props>("{p.name}"));\n'
+                )
+            else:
+                match p.ptype:
+                    case ArgumentType.ArgType_Float:
+                        self.autogen_text += f'  if(p.has<float>("{p.name}")) {p.name} = p.get<float>("{p.name}");\n'
+                    case ArgumentType.ArgType_Int:
+                        self.autogen_text += f'  if(p.has<int>("{p.name}")) {p.name} = p.get<int>("{p.name}");\n'
+                    case ArgumentType.ArgType_Bool:
+                        self.autogen_text += f'  if(p.has<bool>("{p.name}")) {p.name} = p.get<bool>("{p.name}");\n'
+                    case ArgumentType.ArgType_String:
+                        self.autogen_text += f'  if(p.has<std::string>("{p.name}")) {p.name} = p.get<std::string>("{p.name}");\n'
+                    case ArgumentType.ArgType_Path:
+                        self.autogen_text += f'  if(p.has<std::string>("{p.name}")) {p.name} = p.get<std::string>("{p.name}");\n'
+                    case ArgumentType.ArgType_Color:
+                        self.autogen_text += f'  if(p.has<Vec4b>("{p.name}")) {p.name} = p.get<Vec4b>("{p.name}");\n'
+                    case ArgumentType.ArgType_Vec3:
+                        self.autogen_text += f'  if(p.has<Vec3>("{p.name}")) {p.name} = p.get<Vec3>("{p.name}");\n'
+                    case ArgumentType.ArgType_Vec2:
+                        self.autogen_text += f'  if(p.has<Vec2>("{p.name}")) {p.name} = p.get<Vec2>("{p.name}");\n'
+                    case ArgumentType.ArgType_Selection:
+                        self.autogen_text += f'  if(p.has<int>("{p.name}")) {p.name} = p.get<int>("{p.name}");\n'
+                    case _:
+                        self.autogen_text += f"// {p.name} has an unsupported type\n"
         self.autogen_text += "}\n"
 
     def _write_getProps(self, cls: MClass):
         self.autogen_text += f"Props {cls.name}::getProps() const {{\n "
         self.autogen_text += "  Props p;\n"
+        
+        # Add Entity base class properties if this class inherits from Entity
+        if "Entity" in cls.parent_classes:
+            self.autogen_text += self._add_entity_base_props_serialization(is_setprops=False)
+        
         for p in cls.props:
-            self.autogen_text += f'  p["{p.name}"] = {p.name};\n'
+            # Check if this is a nested object type
+            if self._is_nested_object(p.c_type):
+                self.autogen_text += f'  p["{p.name}"] = {p.name}.getProps();\n'
+            else:
+                self.autogen_text += f'  p["{p.name}"] = {p.name};\n'
         self.autogen_text += "  return p;\n}\n"
 
     def _write_getPropsInfo_fn(self, cls: MClass):

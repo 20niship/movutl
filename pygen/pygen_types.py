@@ -17,6 +17,7 @@ class ArgumentType(Enum):
     ArgType_Entity = 10
     ArgType_Color = 11
     ArgType_Undefined = 12
+    ArgType_NestedObject = 13
 
 
 @dataclass
@@ -86,6 +87,7 @@ class MClass:
     props: List[MArgument]
     namespace :str = ""
     filename :str = ""
+    parent_classes: List[str] = field(default_factory=list)  # List of parent class names
 
     def has_multi_funcs(self, fname: str) -> bool:
         return len([f for f in self.funcs if f.name == fname]) > 1
