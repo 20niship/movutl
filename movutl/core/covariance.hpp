@@ -36,7 +36,7 @@ inline double Covariance(const Vec3& average, const std::vector<Vec3>& vec, cons
     // 指定したパラメータの偏差を求める
     Vec3 deviation;
     for(size_t j = 0; j < param.size(); j++) {
-      int target          = param[j];
+      int target        = param[j];
       deviation[target] = (vec[i][target] - average[target]);
     }
 

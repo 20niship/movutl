@@ -130,7 +130,9 @@ template <typename T> T get_or(const cutil::Prop& p, const char* name, const T& 
   if(!p.contains(name)) return def;
   try {
     return p.get<T>(name);
-  } catch(...) { return def; }
+  } catch(...) {
+    return def;
+  }
 }
 
 } // namespace cutil

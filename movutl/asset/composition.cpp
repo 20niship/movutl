@@ -39,15 +39,15 @@ void Composition::resize(int32_t w, int32_t h) {
 }
 
 Composition::Composition(const char* name, int32_t w, int32_t h, int32_t fps) {
-  auto cmp = std::make_shared<Composition>();
-  this->size[0] = w;
-  this->size[1] = h;
+  auto cmp           = std::make_shared<Composition>();
+  this->size[0]      = w;
+  this->size[1]      = h;
   this->framerate_nu = fps;
-  cmp->name = name;
+  cmp->name          = name;
   for(int i = 0; i < 10; i++) {
     TrackLayer layer;
     std::string name_str = "Layer" + std::to_string(i + 1);
-    layer.name = name_str;
+    layer.name           = name_str;
     this->layers.push_back(layer);
   }
 }
@@ -71,9 +71,7 @@ std::string Composition::summary() const {
   return str;
 }
 
-Composition* Composition::GetActiveComp() {
-  return Project::GetActiveCompo();
-}
+Composition* Composition::GetActiveComp() { return Project::GetActiveCompo(); }
 
 
 int Composition::insertable_layer_index() const {

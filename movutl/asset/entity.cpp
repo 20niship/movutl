@@ -70,8 +70,8 @@ bool Entity::render_filters(Composition* cmp, ImageRGBA* img) {
     }
     void* fp = f.plg_;
     FilterInData in;
-    in.img = img;
-    in.compo = cmp;
+    in.img            = img;
+    in.compo          = cmp;
     cutil::Prop props = f.props.get(cmp->frame);
     if(!f.plg_->fn_proc(fp, &in, f.props.get(cmp->frame))) {
       LOG_F(ERROR, "Plugin %s render failed", f.plg_->name.c_str());

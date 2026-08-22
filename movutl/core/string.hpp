@@ -10,7 +10,7 @@ namespace mu {
 
 class CStr {
 private:
-  char* data = nullptr;
+  char* data   = nullptr;
   size_t size_ = 0;
 
 public:
@@ -21,7 +21,7 @@ public:
       return;
     }
     size_ = strlen(str);
-    data = static_cast<char*>(malloc(size_ + 1));
+    data  = static_cast<char*>(malloc(size_ + 1));
     if(!data) throw std::bad_alloc();
     strncpy(data, str, size_);
   }
@@ -31,7 +31,7 @@ public:
       return;
     }
     size_ = len;
-    data = static_cast<char*>(malloc(size_ + 1));
+    data  = static_cast<char*>(malloc(size_ + 1));
     if(!data) throw std::bad_alloc();
     strncpy(data, str, size_);
   }
@@ -42,7 +42,7 @@ public:
       return;
     }
     size_ = strlen(other.data);
-    data = static_cast<char*>(malloc(size_ + 1));
+    data  = static_cast<char*>(malloc(size_ + 1));
     if(!data) throw std::bad_alloc();
     strncpy(data, other.data, size_);
   }
@@ -58,7 +58,7 @@ public:
         return *this;
       }
       size_ = strlen(other.data);
-      data = static_cast<char*>(malloc(size_ + 1));
+      data  = static_cast<char*>(malloc(size_ + 1));
       if(!data) throw std::bad_alloc();
       strncpy(data, other.data, size_);
     }
@@ -67,14 +67,14 @@ public:
   bool empty() const { return !data || size_ == 0; }
   void clear() {
     if(data) free(data);
-    data = nullptr;
+    data  = nullptr;
     size_ = 0;
   }
 
   CStr& operator=(CStr&& other) noexcept {
     if(this != &other) {
       free(data);
-      data = other.data;
+      data       = other.data;
       other.data = nullptr;
     }
     return *this;
@@ -98,7 +98,7 @@ public:
   CStr substr(size_t pos, size_t len) const {
     MU_ASSERT(data);
     MU_ASSERT(pos < length());
-    len = std::min(len, length() - pos);
+    len          = std::min(len, length() - pos);
     char* buffer = static_cast<char*>(malloc(len + 1));
     if(!buffer) throw std::bad_alloc();
     strncpy(buffer, data + pos, len);
@@ -120,9 +120,9 @@ public:
     std::vector<CStr> result;
     if(!data) return result;
     const char* start = data;
-    const char* end = nullptr;
+    const char* end   = nullptr;
     while((end = strchr(start, delimiter)) != nullptr) {
-      size_t len = static_cast<size_t>(end - start);
+      size_t len   = static_cast<size_t>(end - start);
       char* buffer = static_cast<char*>(malloc(len + 1));
       if(!buffer) throw std::bad_alloc();
       strncpy(buffer, start, len);
@@ -142,8 +142,8 @@ public:
   bool operator!=(const CStr& other) const { return !(*this == other); }
 
   CStr operator+(const CStr& other) const {
-    size_t len1 = length();
-    size_t len2 = other.length();
+    size_t len1  = length();
+    size_t len2  = other.length();
     char* buffer = static_cast<char*>(malloc(len1 + len2 + 1));
     if(!buffer) throw std::bad_alloc();
     if(data) strcpy(buffer, data);
@@ -173,19 +173,19 @@ public:
 
   void replace(const char* target, const char* replacement) {
     if(!data || !target || !replacement) return;
-    size_t target_len = strlen(target);
+    size_t target_len      = strlen(target);
     size_t replacement_len = strlen(replacement);
-    size_t pos = 0;
+    size_t pos             = 0;
     while((pos = find(target)) != std::string::npos) {
       size_t new_size = size_ - target_len + replacement_len;
-      char* buffer = static_cast<char*>(malloc(new_size + 1));
+      char* buffer    = static_cast<char*>(malloc(new_size + 1));
       if(!buffer) throw std::bad_alloc();
       strncpy(buffer, data, pos);
       strncpy(buffer + pos, replacement, replacement_len);
       strncpy(buffer + pos + replacement_len, data + pos + target_len, size_ - pos - target_len);
       buffer[new_size] = '\0';
       free(data);
-      data = buffer;
+      data  = buffer;
       size_ = new_size;
     }
   }

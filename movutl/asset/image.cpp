@@ -22,7 +22,7 @@ void ImageRGBA::set_cv_img(const cv::Mat* cv_img) {
   resize(cv_img->cols, cv_img->rows);
   for(int y = 0; y < cv_img->rows; y++) {
     const uint32_t* cv_ptr = reinterpret_cast<const uint32_t*>(cv_img->ptr<uint8_t>(y));
-    uint32_t* dst_p = reinterpret_cast<uint32_t*>(&data_[y * width]);
+    uint32_t* dst_p        = reinterpret_cast<uint32_t*>(&data_[y * width]);
     /*for(int x = 0; x < cv_img->cols; x++) dst_p[x] = cv_ptr[x];*/
     std::memcpy(dst_p, cv_ptr, cv_img->cols * 4);
   }
@@ -32,7 +32,7 @@ void ImageRGBA::to_cv_img(cv::Mat* cv_img) const {
   MU_ASSERT(cv_img);
   cv_img->create(height, width, CV_8UC4);
   for(int y = 0; y < (int)height; y++) {
-    uint32_t* cv_ptr = cv_img->ptr<uint32_t>(y);
+    uint32_t* cv_ptr      = cv_img->ptr<uint32_t>(y);
     const uint32_t* src_p = reinterpret_cast<const uint32_t*>(&data_[0] + y * width);
     std::memcpy(cv_ptr, src_p, width * 4);
     /*for(int x = 0; x < (int)width; x++) cv_ptr[x] = src_p[x];*/
@@ -48,7 +48,7 @@ bool ImageRGBA::copyto(ImageRGBA* dst, const Vec2d& pmin) const {
 
   for(int y = 0; y < this->height; y++) {
     uint32_t* src_p = (uint32_t*)&data_[0] + y * width;
-    int dy = pmin[1] + y;
+    int dy          = pmin[1] + y;
     if(dy < 0 || dy >= ch) continue;
     uint32_t* dst_p = (uint32_t*)&dst->data_[0] + (dy)*cw;
     for(int x = 0; x < this->width; x++) {
@@ -63,8 +63,8 @@ bool ImageRGBA::copyto(ImageRGBA* dst, const Vec2d& center, float scale, float a
   if(angle == 0 && scale == 1.0) return this->copyto(dst, center);
   // 角度をラジアンに変換
   float rad = angle * M_PI / 180.0f;
-  float cx = center[0];
-  float cy = center[1];
+  float cx  = center[0];
+  float cy  = center[1];
 
   // 回転とスケールの逆行列成分を計算
   float inv_cos = std::cos(rad) / scale;
@@ -90,7 +90,7 @@ bool ImageRGBA::copyto(ImageRGBA* dst, const Vec2d& center, float scale, float a
 
       uint32_t* dst_p = (uint32_t*)&dst->data_[0] + y * dst->width;
       uint32_t* src_p = (uint32_t*)&data_[0] + src_y_int * width;
-      dst_p[x] = src_p[src_x_int];
+      dst_p[x]        = src_p[src_x_int];
     }
   }
   return true;
@@ -111,7 +111,7 @@ bool Image::render(Composition* cmp) {
 
 Ref<Image> Image::Create(const char* name, const char* path) {
   MU_ASSERT(name);
-  auto img = std::make_shared<Image>();
+  auto img  = std::make_shared<Image>();
   img->name = name;
   if(path) img->path = path;
   auto pj = Project::Get();
@@ -125,7 +125,7 @@ Ref<Image> Image::Create(const char* name, int w, int h, ImageFormat format, boo
   auto img = std::make_shared<Image>();
   MU_ASSERT(img);
   img->name = name;
-  img->fmt = format;
+  img->fmt  = format;
   img->resize(w, h);
   if(add_to_pj) {
     auto pj = Project::Get();
@@ -141,8 +141,6 @@ void ImageRGBA::imshow(const char* name) const {
   cv::imshow(name, cv_img);
 }
 
-void cv_waitkey(int time) {
-  cv::waitKey(time);
-}
+void cv_waitkey(int time) { cv::waitKey(time); }
 
 } // namespace mu

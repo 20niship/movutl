@@ -24,17 +24,17 @@ namespace mu {
 
 struct TimelineContext {
   Rect all_area;
-  int hidx = 0;
-  int trackname_width = 100;
-  bool toggle_play = false;
-  int height = 16;
-  int lasy_mouse_x = 0;
+  int hidx              = 0;
+  int trackname_width   = 100;
+  bool toggle_play      = false;
+  int height            = 16;
+  int lasy_mouse_x      = 0;
   Entity* last_entt_hov = nullptr;
-  int header_h = 20;
-  int vis_start = -10;
-  int vis_end = 100;
-  int cur_frame = 0;
-  bool first = true;
+  int header_h          = 20;
+  int vis_start         = -10;
+  int vis_end           = 100;
+  int cur_frame         = 0;
+  bool first            = true;
   std::vector<Entity*> sel; // TODO: 複数選択を可能にする
 
   Rect tl_area() {
@@ -45,7 +45,7 @@ struct TimelineContext {
   }
 
   Rect header_area() {
-    auto r = all_area;
+    auto r  = all_area;
     r.y.max = r.y.min + header_h;
     return r;
   }
@@ -93,12 +93,12 @@ bool BeginTimeline(const char* name, FrameT* frame, FrameT* start, FrameT* end, 
 
   // available max height
   {
-    auto height = ImGui::GetContentRegionAvail().y;
-    auto window = ImGui::GetCurrentWindow();
-    auto width_ = std::max(size.x, window->InnerClipRect.GetWidth());
-    ctx_.height = ImGui::GetTextLineHeightWithSpacing();
+    auto height  = ImGui::GetContentRegionAvail().y;
+    auto window  = ImGui::GetCurrentWindow();
+    auto width_  = std::max(size.x, window->InnerClipRect.GetWidth());
+    ctx_.height  = ImGui::GetTextLineHeightWithSpacing();
     auto height_ = std::max<int>(height, ctx_.hidx * ctx_.height);
-    auto pos = ImGui::GetCursorScreenPos();
+    auto pos     = ImGui::GetCursorScreenPos();
 
     ctx_.all_area = Rect(pos.x, pos.x + width_, pos.y, pos.y + height_);
   }
@@ -119,8 +119,8 @@ bool BeginTimeline(const char* name, FrameT* frame, FrameT* start, FrameT* end, 
     auto width = ImGui::GetTextLineHeightWithSpacing();
     ImRect re(all.x.min, all.y.min, all.x.min + width, all.y.min + width);
     auto hovered = ImGui::IsMouseHoveringRect(re.Min, re.Max);
-    auto bg = ImGui::GetStyle().Colors[hovered ? ImGuiCol_ButtonHovered : ImGuiCol_ButtonActive];
-    auto col = IM_COL32(bg.x * 255, bg.y * 255, bg.z * 255, bg.w * 255);
+    auto bg      = ImGui::GetStyle().Colors[hovered ? ImGuiCol_ButtonHovered : ImGuiCol_ButtonActive];
+    auto col     = IM_COL32(bg.x * 255, bg.y * 255, bg.z * 255, bg.w * 255);
     dl->AddRectFilled(re.Min, re.Max, col);
     dl->AddRect(re.Min, re.Max, col_.border);
     /*dl->AddText(re.Min, IM_COL32(255, 255, 255, 255), (ctx_.locked ? ICON_FA_LOCK : ICON_FA_UNLOCK));*/
@@ -131,9 +131,9 @@ bool BeginTimeline(const char* name, FrameT* frame, FrameT* start, FrameT* end, 
   dl->AddRectFilled(ImVec2(all.left() + ctx_.trackname_width, all.top()), ImVec2(all.right(), all.bottom()), IM_COL32(bg.x * 255, bg.y * 255, bg.z * 255, bg.w * 255));
 
   {
-    auto area = all;
+    auto area  = all;
     area.x.max = area.x.min + ctx_.trackname_width;
-    auto col = IM_COL32(0, 0, 0, 100);
+    auto col   = IM_COL32(0, 0, 0, 100);
     dl->AddRectFilled(ImVec2(area.left(), area.top() + item_height), ImVec2(area.right(), area.bottom()), col);
   }
 
@@ -141,8 +141,8 @@ bool BeginTimeline(const char* name, FrameT* frame, FrameT* start, FrameT* end, 
 
   if(ctx_.first) {
     ctx_.vis_start = *start - 20;
-    ctx_.vis_end = *end + 20;
-    ctx_.first = false;
+    ctx_.vis_end   = *end + 20;
+    ctx_.first     = false;
   }
 
   // draw header
@@ -180,16 +180,16 @@ bool BeginTimeline(const char* name, FrameT* frame, FrameT* start, FrameT* end, 
     // Compositionの範囲を描画
     int st = ctx_.f2view(*start);
     int ed = ctx_.f2view(*end);
-    st = std::clamp<int>(st, he.x.min, he.x.max);
-    ed = std::clamp<int>(ed, he.x.min, he.x.max);
+    st     = std::clamp<int>(st, he.x.min, he.x.max);
+    ed     = std::clamp<int>(ed, he.x.min, he.x.max);
     dl->AddRectFilled(ImVec2(st, he.y.max - 8), ImVec2(ed, he.y.max), IM_COL32(0, 150, 255, 100));
 
     // Compositionのスタートゴールを描画し、<kbd>[</kbd>と<kbd>]</kbd>キーで終端を設定
     ImRect comp_start_ = ImRect(ImVec2(st - 2, he.y.min), ImVec2(st + 2, he.y.max));
-    ImRect comp_end_ = ImRect(ImVec2(ed - 2, he.y.min), ImVec2(ed + 2, he.y.max));
+    ImRect comp_end_   = ImRect(ImVec2(ed - 2, he.y.min), ImVec2(ed + 2, he.y.max));
 
     bool start_hovered = ImGui::IsMouseHoveringRect(comp_start_.Min, comp_start_.Max);
-    bool end_hovered = ImGui::IsMouseHoveringRect(comp_end_.Min, comp_end_.Max);
+    bool end_hovered   = ImGui::IsMouseHoveringRect(comp_end_.Min, comp_end_.Max);
     if(start_hovered) ImGui::SetTooltip("スタートフレーム=%d", *start);
     if(end_hovered) ImGui::SetTooltip("エンドフレーム=%d", *end);
     dl->AddRectFilled(comp_start_.Min, comp_start_.Max, IM_COL32(0, 180, 255, start_hovered ? 255 : 200));
@@ -210,19 +210,19 @@ bool BeginTimeline(const char* name, FrameT* frame, FrameT* start, FrameT* end, 
     dl->AddRectFilled(p1, p2, col);
     dl->AddLine(ImVec2(x, ctx_.all_area.y.min), ImVec2(x, ctx_.all_area.bottom()), col);
 
-    auto h_ = ctx_.header_area();
+    auto h_             = ctx_.header_area();
     bool in_header_area = ImGui::IsMouseHoveringRect(ImVec2(h_.x.min, h_.y.min), ImVec2(h_.x.max, h_.y.max));
-    bool lclick = ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseDragging(ImGuiMouseButton_Left);
+    bool lclick         = ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseDragging(ImGuiMouseButton_Left);
     if(in_header_area && lclick) {
       // ctx_.state = Draginctx_Cursor;
       *frame = ctx_.view2f(ImGui::GetMousePos().x);
     }
   }
 
-  ctx_.hidx = 0;
+  ctx_.hidx      = 0;
   ctx_.cur_frame = *frame;
   ctx_.vis_start = *start;
-  ctx_.vis_end = *end;
+  ctx_.vis_end   = *end;
   return open;
 }
 
@@ -237,11 +237,11 @@ int EndTimeline() {
 
     // 拡大縮小(マウスホイール)
     {
-      auto delta = ImGui::GetIO().MouseWheel;
-      auto center = ctx_.view2f(ImGui::GetMousePos().x);
-      auto scale = 1.0f + delta / 15.0f;
+      auto delta     = ImGui::GetIO().MouseWheel;
+      auto center    = ctx_.view2f(ImGui::GetMousePos().x);
+      auto scale     = 1.0f + delta / 15.0f;
       ctx_.vis_start = center + (ctx_.vis_start - center) * scale;
-      ctx_.vis_end = center + (ctx_.vis_end - center) * scale;
+      ctx_.vis_end   = center + (ctx_.vis_end - center) * scale;
     }
     return_value = ctx_.cur_frame;
   }
@@ -250,8 +250,8 @@ int EndTimeline() {
     ctx_.cur_frame = std::clamp<int>(ctx_.cur_frame, ctx_.vis_start, ctx_.vis_end);
   }
 
-  auto dl = ImGui::GetWindowDrawList();
-  auto all = ctx_.all_area;
+  auto dl       = ImGui::GetWindowDrawList();
+  auto all      = ctx_.all_area;
   auto line_col = ImGui::GetStyle().Colors[ImGuiCol_Border];
   ImVec2 p1(all.left(), all.y.min + ctx_.header_h);
   ImVec2 p2(all.right(), all.y.min + ctx_.header_h);
@@ -271,10 +271,10 @@ int EndTimeline() {
 
 bool BeginLayer(TrackLayer* layer) {
   MU_ASSERT(layer);
-  auto dl = ImGui::GetWindowDrawList();
+  auto dl     = ImGui::GetWindowDrawList();
   auto inside = ctx_.tl_area();
 
-  int x = ctx_.all_area.left() + ImGui::GetStyle().ItemSpacing.x;
+  int x    = ctx_.all_area.left() + ImGui::GetStyle().ItemSpacing.x;
   int htop = ctx_.layer_y1();
   int hbtm = ctx_.layer_y2();
 
@@ -291,40 +291,34 @@ bool BeginLayer(TrackLayer* layer) {
   return true;
 }
 
-void EndLayer() {
-  ctx_.hidx++;
-}
+void EndLayer() { ctx_.hidx++; }
 
 bool IsTimeline_LineHovered() {
-  auto dh = ImGui::GetTextLineHeightWithSpacing();
-  auto h = dh * (ctx_.hidx - 1);
-  auto all = ctx_.all_area;
-  all.y = all.y.shift(h);
+  auto dh   = ImGui::GetTextLineHeightWithSpacing();
+  auto h    = dh * (ctx_.hidx - 1);
+  auto all  = ctx_.all_area;
+  all.y     = all.y.shift(h);
   all.y.max = all.y.min + dh;
 
   ImRect rect(ImVec2(all.left(), all.top()), ImVec2(all.left() + ctx_.trackname_width, all.top() + dh));
   return ImGui::IsMouseHoveringRect(rect.Min, rect.Max);
 }
 
-bool IsTimelineKeyHovered() {
-  return ctx_.last_entt_hov;
-}
+bool IsTimelineKeyHovered() { return ctx_.last_entt_hov; }
 
-bool IsTimelineClickedLeftButton() {
-  return ctx_.last_entt_hov;
-}
+bool IsTimelineClickedLeftButton() { return ctx_.last_entt_hov; }
 
 bool BeginTrack(const Ref<Entity>& entity) {
   MU_ASSERT(entity);
   const char* name = entity->name.c_str();
-  int* start = &entity->trk.fstart;
-  int* end = &entity->trk.fend;
-  int htop = ctx_.layer_y1();
+  int* start       = &entity->trk.fstart;
+  int* end         = &entity->trk.fend;
+  int htop         = ctx_.layer_y1();
 
   auto col = IM_COL32(255, 0, 0, 100);
-  auto dl = ImGui::GetWindowDrawList();
-  int fs = ctx_.f2view(*start);
-  int fe = ctx_.f2view(*end);
+  auto dl  = ImGui::GetWindowDrawList();
+  int fs   = ctx_.f2view(*start);
+  int fe   = ctx_.f2view(*end);
   ImRect rect(ImVec2(fs, htop), ImVec2(fe, htop + ctx_.height));
   bool hovered = ImGui::IsMouseHoveringRect(rect.Min, rect.Max);
   if(hovered)
@@ -342,11 +336,9 @@ void EndTrack() {}
 
 void SetTimelineViewRange(FrameT start, FrameT end) {
   ctx_.vis_start = start;
-  ctx_.vis_end = end;
+  ctx_.vis_end   = end;
 }
 
-void ResetTimelineState() {
-  ctx_ = TimelineContext();
-}
+void ResetTimelineState() { ctx_ = TimelineContext(); }
 
 } // namespace mu

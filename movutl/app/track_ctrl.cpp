@@ -20,9 +20,9 @@ Ref<Entity> add_new_video_track(const char* name, const char* path, int start, i
     return nullptr;
   }
   e->trk.fstart = start;
-  e->trk.fend = start + 1; // 動画が読み込めなかった時用
+  e->trk.fend   = start + 1; // 動画が読み込めなかった時用
   e->load_file(path);
-  auto pj = Project::Get();
+  auto pj                = Project::Get();
   Composition* main_comp = pj->get_main_comp();
   if(!main_comp) {
     Project::New();
@@ -50,29 +50,29 @@ bool add_new_track(const char* name, EntityType type, int start, int end) {
   MU_ASSERT(end >= start);
   switch(type) {
     case EntityType_Image: {
-      auto img = Image::Create(name, "");
+      auto img               = Image::Create(name, "");
       Composition* main_comp = Composition::GetActiveComp();
       MU_ASSERT(main_comp);
       img->trk.fstart = start;
-      img->trk.fend = end;
+      img->trk.fend   = end;
       main_comp->insert_entity(img);
       break;
     }
     case EntityType_Movie: {
-      auto mov = Movie::Create(name, "");
+      auto mov               = Movie::Create(name, "");
       Composition* main_comp = Composition::GetActiveComp();
       MU_ASSERT(main_comp);
       mov->trk.fstart = start;
-      mov->trk.fend = end;
+      mov->trk.fend   = end;
       main_comp->insert_entity(mov);
       break;
     }
     case EntityType_3DText: {
-      auto txt = TextEntt::Create(name);
+      auto txt               = TextEntt::Create(name);
       Composition* main_comp = Composition::GetActiveComp();
       MU_ASSERT(main_comp);
       txt->trk.fstart = start;
-      txt->trk.fend = end;
+      txt->trk.fend   = end;
       main_comp->insert_entity(txt);
       break;
     }

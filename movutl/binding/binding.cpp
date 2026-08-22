@@ -4,9 +4,9 @@ extern "C" {
 #include "lua.h"
 #include "lualib.h"
 }
+#include "movutl/binding/imgui_custom_values.hpp"
 #include <LuaIntf/LuaIntf.h>
 #include <movutl/binding/binding.hpp>
-#include "movutl/binding/imgui_custom_values.hpp"
 #include <movutl/core/defines.hpp>
 #include <movutl/core/logger.hpp>
 
@@ -15,9 +15,9 @@ namespace detail {
 struct LuaBindingContext {
 public:
   MOVUTL_DECLARE_SINGLETON(LuaBindingContext);
-  LuaBindingContext() = default;
+  LuaBindingContext()  = default;
   ~LuaBindingContext() = default;
-  lua_State* lua = nullptr;
+  lua_State* lua       = nullptr;
 };
 
 void init_lua_binding() {

@@ -51,9 +51,7 @@ Mat4x4 translation_mat(const Vec3& pos) {
   return s;
 }
 
-Mat4x4 transform_mat(const Vec3& pos, const Vec3& pry, const Vec3& scale) {
-  return rotation_mat_4x4(pry) * scale_mat(scale) * translation_mat(pos);
-}
+Mat4x4 transform_mat(const Vec3& pos, const Vec3& pry, const Vec3& scale) { return rotation_mat_4x4(pry) * scale_mat(scale) * translation_mat(pos); }
 
 std::array<Vec3, 2> get_vert_vec(const Vec3& x) {
   Vec3 e1, e2;

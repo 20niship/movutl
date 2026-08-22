@@ -49,7 +49,7 @@ void TimelineWindow::Update() {
     }
     for(int ei = 0; ei < layer.entts.size(); ++ei) {
       if(!layer.entts[ei]) continue;
-      auto& entt = layer.entts[ei];
+      auto& entt   = layer.entts[ei];
       bool hovered = BeginTrack(entt);
       if(hovered) {
         ImGui::SetTooltip("Entity %s", entt->name.c_str());

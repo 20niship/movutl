@@ -71,7 +71,7 @@ bool register_plugin(const std::string& path) {
   detail::PluginData data;
   // TODO: get exe data
   entry(&exdata, &data.table);
-  data.mod = mod;
+  data.mod   = mod;
   data.entry = entry;
   detail::AppMain::Get()->plugins.push_back(data);
   return true;

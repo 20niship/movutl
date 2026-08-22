@@ -7,7 +7,7 @@ namespace mu {
 struct ScopeTimer {
   ScopeTimer(const char* name) : name(name), start(std::chrono::high_resolution_clock::now()) {}
   ~ScopeTimer() {
-    end = std::chrono::high_resolution_clock::now();
+    end      = std::chrono::high_resolution_clock::now();
     auto dur = end - start;
     using namespace std::chrono;
     auto d_us = duration_cast<microseconds>(dur).count();

@@ -1,8 +1,8 @@
 #include <chrono>
 #include <movutl/app/app.hpp>
-#include <movutl/gui/gui.hpp>
 #include <movutl/asset/project.hpp>
 #include <movutl/core/logger.hpp>
+#include <movutl/gui/gui.hpp>
 #include <movutl/render2d/render2d.hpp>
 #include <thread>
 

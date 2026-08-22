@@ -86,6 +86,6 @@ inline void getNormalRGB(const db::Image& normals) {
 inline void absdiff(db::Image img1, db::Image img2, db::Image diff) {}
 
 
-#endif 
+#endif
 
 } // namespace mu::tool

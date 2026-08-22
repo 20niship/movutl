@@ -20,9 +20,7 @@
 
 // ImGui - standalone example application for Glfw + OpenGL 3, using programmable pipeline
 // If you are new to ImGui, see examples/README.txt and documentation at the top of imgui.cpp.
-static void error_callback(int error, const char* description) {
-  fprintf(stderr, "Error %d: %s\n", error, description);
-}
+static void error_callback(int error, const char* description) { fprintf(stderr, "Error %d: %s\n", error, description); }
 
 namespace mu {
 
@@ -60,7 +58,7 @@ void GUIManager::init() {
   io.ConfigFlags |= ImGuiWindowFlags_NoBackground;
   // io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
   io.ConfigDockingWithShift = false;
-  io.ConfigDockingNoSplit = false;
+  io.ConfigDockingNoSplit   = false;
 
   glfw_window = glfwCreateWindow(1280, 720, "ImGui OpenGL3 example", NULL, NULL);
   glfwMakeContextCurrent(glfw_window);
@@ -71,21 +69,21 @@ void GUIManager::init() {
   ImGui_ImplOpenGL3_Init();
   ImGui_ImplGlfw_InitForOpenGL(glfw_window, true);
 
-  const float fontSize = 18.0f;
-  auto font_path = fs_get_font_path();
+  const float fontSize      = 18.0f;
+  auto font_path            = fs_get_font_path();
   std::string font_fnames[] = {
     font_path + "/Meiryo.ttf",
     font_path + "/fa-solid-900.ttf",
   };
 
-  auto font = io.Fonts->AddFontDefault();
-  font->Scale = 1.0f;
+  auto font      = io.Fonts->AddFontDefault();
+  font->Scale    = 1.0f;
   io.FontDefault = io.Fonts->AddFontFromFileTTF(font_fnames[0].c_str(), fontSize, nullptr, io.Fonts->GetGlyphRangesJapanese());
 
   ImFontConfig config;
-  config.MergeMode = true;
-  config.MergeMode = true;
-  config.GlyphMinAdvanceX = fontSize;
+  config.MergeMode                    = true;
+  config.MergeMode                    = true;
+  config.GlyphMinAdvanceX             = fontSize;
   static const ImWchar icons_ranges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
   io.Fonts->AddFontFromFileTTF(font_fnames[1].c_str(), fontSize * 0.8, &config, icons_ranges);
   LOG_F(2, "[imgui] Building font %s %f", font_fnames[1].c_str(), fontSize);
@@ -101,7 +99,7 @@ namespace detail {
 void gui_new_frame() {
   auto window = GUIManager::Get()->glfw_window;
 
-  bool should_close = glfwWindowShouldClose(window);
+  bool should_close               = glfwWindowShouldClose(window);
   GUIManager::Get()->should_close = should_close;
 
   glfwPollEvents();
@@ -114,7 +112,7 @@ void gui_new_frame() {
   const auto c = ImGui::GetStyle().Colors;
   ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(c[ImGuiCol_WindowBg].x, c[ImGuiCol_WindowBg].y, c[ImGuiCol_WindowBg].z, 0.0f));
   ImGui::PushStyleColor(ImGuiCol_DockingEmptyBg, ImVec4(c[ImGuiCol_DockingEmptyBg].x, c[ImGuiCol_DockingEmptyBg].y, c[ImGuiCol_DockingEmptyBg].z, 0.0f));
-  auto app = GUIManager::Get();
+  auto app          = GUIManager::Get();
   app->dockspace_id = ImGui::DockSpaceOverViewport();
   ImGui::PopStyleColor(2);
 }
@@ -156,13 +154,9 @@ void GUIManager::terminate() {
   glfwTerminate();
 }
 
-void terminate() {
-  GUIManager::Get()->terminate();
-}
+void terminate() { GUIManager::Get()->terminate(); }
 
-bool should_terminate() {
-  return GUIManager::Get()->should_close;
-}
+bool should_terminate() { return GUIManager::Get()->should_close; }
 
 GUIManager* GUIManager::singleton_ = nullptr;
 

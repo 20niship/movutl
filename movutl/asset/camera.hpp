@@ -20,11 +20,11 @@ enum class CamDistModel : int16_t {
 };
 
 // Default camera values
-const float YAW = -90.0f;
-const float PITCH = 0.0f;
-const float SPEED = 2.5f;
+const float YAW         = -90.0f;
+const float PITCH       = 0.0f;
+const float SPEED       = 2.5f;
 const float SENSITIVITY = 0.1f;
-const float ZOOM = 45.0f;
+const float ZOOM        = 45.0f;
 
 
 // An abstract camera class that processes input and calculates the corresponding Euler Angles, Vecs and Matrices for use in OpenGL
@@ -32,12 +32,12 @@ class Camera3D : public Entity {
 public:
   Vec3 pos;
   Quat rot;
-  Vec3 up = Vec3(0, 0, 1);
-  float fov = 60.0f;
+  Vec3 up      = Vec3(0, 0, 1);
+  float fov    = 60.0f;
   float aspect = 1.0f;
 
   // camera options
-  float move_speed = 2.5f;
+  float move_speed   = 2.5f;
   float rotate_speed = 0.1f;
 };
 

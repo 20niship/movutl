@@ -50,9 +50,7 @@ inline bool TreeNodeEx_(S label, ImGuiTreeNodeFlags flags = 0) { return TreeNode
 // clang-format on
 
 // utility functions
-inline ImGuiStyle new_style() {
-  return ImGuiStyle();
-}
+inline ImGuiStyle new_style() { return ImGuiStyle(); }
 inline ImGuiStyle set_imgui_style_color(ImGuiStyle style, int idx, const ImVec4& color) {
   style.Colors[idx] = color;
   return style;

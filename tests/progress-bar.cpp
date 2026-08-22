@@ -9,8 +9,8 @@ TEST_CASE("progress-bar") {
   using namespace std::this_thread;
   using namespace std::chrono;
 
-  constexpr auto total_ = 30;
-  constexpr auto ncols = 100;
+  constexpr auto total_      = 30;
+  constexpr auto ncols       = 100;
   constexpr auto description = "[TASK0]";
   pbar::pbar bar(total_, ncols, description);
   bar.enable_recalc_console_width(1); // check console width every tick

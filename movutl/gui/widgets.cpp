@@ -11,7 +11,7 @@
 namespace mu {
 
 bool wd_color_edit(const char* name, Vec4b* col) {
-  float cf[4] = {(*col)[0] / 255.0f, (*col)[1] / 255.0f, (*col)[2] / 255.0f, (*col)[3] / 255.0f};
+  float cf[4]  = {(*col)[0] / 255.0f, (*col)[1] / 255.0f, (*col)[2] / 255.0f, (*col)[3] / 255.0f};
   bool changed = ImGui::ColorEdit4(name, cf);
   if(changed) *col = Vec4b(cf[0] * 255, cf[1] * 255, cf[2] * 255, cf[3] * 255);
   return changed;
@@ -103,12 +103,8 @@ void wd_entt_props_editor(Entity* e) {
   ImGui::PopID();
 }
 
-void wd_movie_inspector(Entity* e) {
-  MU_ASSERT(e);
-}
+void wd_movie_inspector(Entity* e) { MU_ASSERT(e); }
 
-void wd_image_inspector(Entity* e) {
-  MU_ASSERT(e);
-}
+void wd_image_inspector(Entity* e) { MU_ASSERT(e); }
 
 } // namespace mu

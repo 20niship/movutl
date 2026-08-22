@@ -21,7 +21,7 @@ struct FontRenderManager {
   FontRenderManager() { init(); }
   ~FontRenderManager() { shutdown(); }
 
-  bool initialized = false;
+  bool initialized   = false;
   FT_Library library = nullptr;
 
   struct FontFace {
@@ -31,7 +31,7 @@ struct FontRenderManager {
     int fontsize_ = 0;
 
   public:
-    FT_Face face = nullptr;
+    FT_Face face      = nullptr;
     FT_GlyphSlot slot = nullptr; // グリフへのショートカット
     std::string path;
     std::u32string u32str;

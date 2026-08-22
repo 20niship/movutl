@@ -11,27 +11,27 @@ MU_API void add_mesh_sphere(Mesh* m, const Vec3& pos, float r, const int stack_c
   std::vector<float> vertices, normals;
   std::vector<uint32_t> indices;
   MU_ASSERT(m != nullptr);
-  m->topo = Mesh::MeshTopology::TRIANGLES; // idx_offsetがおかしくなるため
-  const auto idx_offset = vertices.size() / 3;
+  m->topo                = Mesh::MeshTopology::TRIANGLES; // idx_offsetがおかしくなるため
+  const auto idx_offset  = vertices.size() / 3;
   const float sectorStep = 2 * M_PI / sector_count;
-  const float stackStep = M_PI / stack_count;
-  const float lengthInv = 1.0f / r; // vertex normal
+  const float stackStep  = M_PI / stack_count;
+  const float lengthInv  = 1.0f / r; // vertex normal
 
   for(int i = 0; i <= stack_count; ++i) {
     const float stackAngle = M_PI / 2 - i * stackStep; // starting from pi/2 to -pi/2
-    const float xy = r * std::cos(stackAngle);         // r * cos(u)
-    const float z = r * std::sin(stackAngle);          // r * sin(u)
+    const float xy         = r * std::cos(stackAngle); // r * cos(u)
+    const float z          = r * std::sin(stackAngle); // r * sin(u)
     for(int j = 0; j <= sector_count; ++j) {
-      const float angle = j * sectorStep;   // starting from 0 to 2pi
-      const float x = xy * std::cos(angle); // r * cos(u) * cos(v)
-      const float y = xy * std::sin(angle); // r * cos(u) * sin(v)
-      const float nx = x * lengthInv;
-      const float ny = y * lengthInv;
-      const float nz = z * lengthInv;
+      const float angle = j * sectorStep;       // starting from 0 to 2pi
+      const float x     = xy * std::cos(angle); // r * cos(u) * cos(v)
+      const float y     = xy * std::sin(angle); // r * cos(u) * sin(v)
+      const float nx    = x * lengthInv;
+      const float ny    = y * lengthInv;
+      const float nz    = z * lengthInv;
       Mesh::Vertex vert;
-      vert.pos[0] = x + pos[0];
-      vert.pos[1] = y + pos[1];
-      vert.pos[2] = z + pos[2];
+      vert.pos[0]  = x + pos[0];
+      vert.pos[1]  = y + pos[1];
+      vert.pos[2]  = z + pos[2];
       vert.norm[0] = nx;
       vert.norm[1] = ny;
       vert.norm[2] = nz;

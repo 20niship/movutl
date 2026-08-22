@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  autogen-check:
+    name: autogenが最新か確認
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: pygenの依存関係をインストール
+        run: pip install CppHeaderParser
+
+      - name: pygenを実行してコードを再生成
+        working-directory: pygen
+        run: python3 main.py
+
+      - name: 生成物がコミット済みの内容と一致するか確認
+        run: |
+          git diff --exit-code -- movutl/generated lancher/runtime || {
+            echo "::error::autogenの生成内容が古いです。'cd pygen && python3 main.py' を実行してコミットしてください。"
+            exit 1
+          }
+
+  check:
+    name: just check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: extractions/setup-just@v2
+
+      - name: システム依存パッケージをインストール
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential cmake ninja-build pkg-config clang-format \
+            libglfw3-dev libfreetype-dev libglew-dev libglm-dev \
+            libassimp-dev libluajit-5.1-dev libopencv-dev \
+            libgl1-mesa-dev libglu1-mesa-dev
+
+      - name: just check
+        run: just check

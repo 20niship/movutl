@@ -20,7 +20,7 @@ Composition* Project::GetActiveCompo() {
 }
 
 void Project::SetActiveCompo(int idx) {
-  auto pj = Project::Get();
+  auto pj           = Project::Get();
   pj->main_comp_idx = idx;
 }
 

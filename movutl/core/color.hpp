@@ -4,7 +4,7 @@
 
 namespace mu::core {
 inline double RGB2H(const Vec3b& col) {
-  double Hue     = 0; //色相
+  double Hue     = 0; // 色相
   const double R = col[0];
   const double G = col[1];
   const double B = col[2];
@@ -27,7 +27,7 @@ inline double RGB2H(const Vec3b& col) {
 }
 
 inline double RGB2S(const Vec3b& col) {
-  double Saturation; //彩度
+  double Saturation; // 彩度
   const double R = col[0];
   const double G = col[1];
   const double B = col[2];

@@ -45,8 +45,8 @@ public:
       col[0] = _col[0];
       col[1] = _col[1];
       col[2] = _col[2];
-      uv[0] = _uv[0];
-      uv[1] = _uv[1];
+      uv[0]  = _uv[0];
+      uv[1]  = _uv[1];
     }
 
     template <typename T> Vertex(const _Vec<T, 3>& _pos, const Vec3b& _col) {
@@ -70,7 +70,7 @@ public:
   Vec3 get_center_of_geom() const;
 
   size_t get_indices_size() { return indices.size(); }
-  Mesh() = default;
+  Mesh()  = default;
   ~Mesh() = default;
 };
 

@@ -12,7 +12,7 @@ namespace mu {
 
 class Project {
 public:
-  Project() = default;
+  Project()  = default;
   ~Project() = default;
   MOVUTL_DECLARE_SINGLETON(Project);
 

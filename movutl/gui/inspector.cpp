@@ -33,7 +33,7 @@ void InspectorWindow::Update() {
     MU_ASSERT(f.plg_ != nullptr);
     ImGui::PushID(i);
     std::string FX_ICON = ICON_FA_PLUG " ";
-    std::string str = FX_ICON + f.plg_->name.c_str();
+    std::string str     = FX_ICON + f.plg_->name.c_str();
     { // Fxアイコンをクリックした時はエフェクトのON/OFFを切り替える
       auto c = ImGui::GetCursorScreenPos();
       auto h = ImGui::GetTextLineHeight();
@@ -88,7 +88,7 @@ void InspectorWindow::Update() {
   }
 
   {
-    static bool open_popup = false;
+    static bool open_popup        = false;
     static char search_buffer[64] = "";
 
     // 「Add Filter」ボタン

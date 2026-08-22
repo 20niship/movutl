@@ -12,7 +12,7 @@ class Entity;
 struct TrackLayer {
 public:
   FixString name = "Layer";
-  bool active = true;
+  bool active    = true;
   std::vector<Ref<Entity>> entts;
 
   Ref<Entity> find_entt(uint32_t guid) const;
@@ -26,14 +26,14 @@ public:
   FixString name = "Main";
 
   enum Flag : uint32_t {
-    setting_dialog = 1 << 4,      // そのオブジェクトの設定ダイアログが表示されている
-    frame_alpha = 1 << 8,         // frame_edit,frame_tempにアルファチャンネルあり
-    fast_preview = 1 << 9,        // 画像処理を間引いて表示
-    preprocessing = 1 << 10,      // フィルタの前処理（Filter.Flagのpreprocess参照）
-    hide_output_gui = 1 << 11,    // オブジェクト枠の点線などを表示しない
-    nesting = 1 << 12,            // シーンオブジェクトなどからフレーム画像取得を行っている
+    setting_dialog     = 1 << 4,  // そのオブジェクトの設定ダイアログが表示されている
+    frame_alpha        = 1 << 8,  // frame_edit,frame_tempにアルファチャンネルあり
+    fast_preview       = 1 << 9,  // 画像処理を間引いて表示
+    preprocessing      = 1 << 10, // フィルタの前処理（Filter.Flagのpreprocess参照）
+    hide_output_gui    = 1 << 11, // オブジェクト枠の点線などを表示しない
+    nesting            = 1 << 12, // シーンオブジェクトなどからフレーム画像取得を行っている
     invert_field_order = 1 << 16, // AviUtl::FilterProcInfo側のフラグ
-    invert_interlace = 1 << 17,   // AviUtl::FilterProcInfo側のフラグ
+    invert_interlace   = 1 << 17, // AviUtl::FilterProcInfo側のフラグ
   };
   Flag flag;
 
@@ -42,13 +42,13 @@ public:
   Ref<Image> frame_edit;
   Ref<Image> frame_temp;
 
-  Vec2d size = {1920, 1080};
+  Vec2d size           = {1920, 1080};
   int32_t framerate_nu = 30;
   int32_t framerate_de = 1;
 
-  int32_t fstart = 0; // 表示開始フレーム
-  int32_t fend = 200; // 表示終了フレーム
-  int32_t frame = 0;  // 現在の表示フレーム
+  int32_t fstart = 0;   // 表示開始フレーム
+  int32_t fend   = 200; // 表示終了フレーム
+  int32_t frame  = 0;   // 現在の表示フレーム
 
   // ---------- audio ----------
   int16_t* audio_p;

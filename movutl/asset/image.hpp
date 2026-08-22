@@ -12,16 +12,16 @@ namespace mu {
 
 class Image final : public Entity {
 public:
-  Image() = default;
+  Image()  = default;
   ~Image() = default;
 
   ImageRGBA img;
 
   ImageFormat fmt = ImageFormatRGBA; // MPROPERTY(name="フォーマット", readonly=true)
   Vec3 pos;                          // MPROPERTY(name="位置" viewer_anchor=true, position=true)
-  Vec2 scale = Vec2(1.0, 1.0);       // MPROPERTY(name="拡大率X, scale=true)
+  Vec2 scale     = Vec2(1.0, 1.0);   // MPROPERTY(name="拡大率X, scale=true)
   float rotation = 0.0;              // MPROPERTY(name="回転", angle=true, radians=true)
-  float alpha = 1.0;                 // MPROPERTY(name="透明度")
+  float alpha    = 1.0;              // MPROPERTY(name="透明度")
   std::string path;                  // MPROPERTY(name="ファイル", type="path")
 
   bool copyto(Image* dst, const Vec2d& pmin) const { return img.copyto(&dst->img, pmin); }
@@ -65,9 +65,9 @@ public:
   inline Vec4b& operator[](const size_t i) { return img[i]; }
   inline const Vec4b& operator[](const size_t i) const { return img[i]; }
 
-  virtual const cutil::PropInfo* getPropsInfo() const override;    // MUFUNC_AUTOGEN
-  virtual cutil::Prop getProps() const override;                   // MUFUNC_AUTOGEN
-  virtual void setProps(const cutil::Prop& props) override;        // MUFUNC_AUTOGEN
+  virtual const cutil::PropInfo* getPropsInfo() const override; // MUFUNC_AUTOGEN
+  virtual cutil::Prop getProps() const override;                // MUFUNC_AUTOGEN
+  virtual void setProps(const cutil::Prop& props) override;     // MUFUNC_AUTOGEN
 };
 
 } // namespace mu

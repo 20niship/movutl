@@ -12,15 +12,15 @@ class Entity;
 class UIPanel {
 public:
   virtual void Update() = 0;
-  UIPanel() = default;
-  ~UIPanel() = default;
+  UIPanel()             = default;
+  ~UIPanel()            = default;
 };
 
 struct GUIManager {
 public:
   MOVUTL_DECLARE_SINGLETON(GUIManager);
 
-  GUIManager() = default;
+  GUIManager()  = default;
   ~GUIManager() = default;
 
   std::vector<Ref<UIPanel>> panels;
@@ -28,7 +28,7 @@ public:
   int dockspace_id = 0;
 
   GLFWwindow* glfw_window = nullptr;
-  bool should_close = false;
+  bool should_close       = false;
   void init();
   void terminate();
 };

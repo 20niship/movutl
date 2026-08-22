@@ -20,7 +20,7 @@ struct Primitive {
 
   struct Point {
     core::Vec3 pos;
-    Point(){};
+    Point() {};
   };
 
   struct Box {

@@ -21,7 +21,7 @@
 #include <cstdlib>
 
 inline const std::string cout_yellow = "\033[33m";
-inline const std::string cout_clear = "\033[0m";
+inline const std::string cout_clear  = "\033[0m";
 
 namespace mu::detail {
 
@@ -75,20 +75,20 @@ static BacktraceState demangle(const std::string& symbol) {
   return res;
 #else
   auto start = symbol.find('(');
-  auto end = symbol.find('+');
-  auto end2 = symbol.find(')');
+  auto end   = symbol.find('+');
+  auto end2  = symbol.find(')');
   if(start == std::string::npos || end == std::string::npos || start >= end) {
     return res;
   }
   if(end2 == std::string::npos) end2 = symbol.size() - 1;
 
-  res.file = symbol.substr(0, start);
-  auto name = symbol.substr(start + 1, end - start - 1);
+  res.file   = symbol.substr(0, start);
+  auto name  = symbol.substr(start + 1, end - start - 1);
   res.offset = symbol.substr(end2 + 1);
 
   int status;
   auto demangled = abi::__cxa_demangle(name.c_str(), 0, 0, &status);
-  res.function = (status == 0) ? demangled : name;
+  res.function   = (status == 0) ? demangled : name;
   return res;
 #endif
 }
@@ -98,17 +98,17 @@ std::vector<std::string> get_backtrace() {
   constexpr int trace_size = 100;
 #if defined(WIN32) || defined(_WIN32)
   void* traces[trace_size] = {};
-  HANDLE process = GetCurrentProcess();
+  HANDLE process           = GetCurrentProcess();
   SymInitialize(process, NULL, TRUE);
-  uint16_t trace_size2 = CaptureStackBackTrace(0, trace_size, traces, NULL);
-  constexpr size_t MaxNameSize = 255;
+  uint16_t trace_size2            = CaptureStackBackTrace(0, trace_size, traces, NULL);
+  constexpr size_t MaxNameSize    = 255;
   constexpr size_t SymbolInfoSize = sizeof(SYMBOL_INFO) + ((MaxNameSize + 1) * sizeof(char));
-  SYMBOL_INFO* symbol = (SYMBOL_INFO*)calloc(SymbolInfoSize, 1);
+  SYMBOL_INFO* symbol             = (SYMBOL_INFO*)calloc(SymbolInfoSize, 1);
   if(symbol == nullptr) {
     std::cerr << "melchior malloc error : backtrace() malloc of symbols SymbolInfoSize = " << SymbolInfoSize << std::endl;
     return {};
   }
-  symbol->MaxNameLen = MaxNameSize;
+  symbol->MaxNameLen   = MaxNameSize;
   symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
   for(uint16_t i = 0; i < trace_size2; i++) {
     SymFromAddr(process, (DWORD64)(traces[i]), 0, symbol);
@@ -120,10 +120,10 @@ std::vector<std::string> get_backtrace() {
   free(symbol);
 #else
   void* callstack[trace_size];
-  int frames = ::backtrace(callstack, trace_size);
+  int frames     = ::backtrace(callstack, trace_size);
   char** symbols = ::backtrace_symbols(callstack, frames);
   for(int i = 0; i < frames; i++) {
-    char* symbol = symbols[i];
+    char* symbol   = symbols[i];
     auto demangled = detail::demangle(symbol);
     result.push_back(demangled.toString());
   }
