@@ -1,4 +1,5 @@
 #include <IconsFontAwesome6.h>
+#include <algorithm>
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <movutl/asset/entity.hpp>
@@ -19,152 +20,87 @@ bool wd_color_edit(const char* name, Vec4b* col) {
 void wd_entt_props_editor(Entity* e) {
   MU_ASSERT(e);
   ImGui::PushID(e);
-  if(e->propinfo_.empty()) {
-    e->propinfo_ = e->getPropsInfo();
+
+  const cutil::PropInfo* info = e->getPropsInfo();
+  if(!info) {
+    ImGui::PopID();
+    return;
   }
 
-  // 戻るアクションを指定するために使用
-  int64_t focus_id = ImGui::GetFocusID();
-  static int64_t last_focus_id = 0;
-  int focus_idx_ = -1;
-  Props::Value v_comfirmed, v_before;
-
   const auto p = e->getProps();
-  for(int i = 0; i < e->propinfo_.size(); i++) {
-
-    auto pi = e->propinfo_[i];
-    if(!p.contains(pi.name)) {
-      LOG_F(WARNING, "Property %s -> %s not found", e->name.c_str(), pi.name.c_str());
+  for(const auto& f : info->fields) {
+    if(!p.contains(f.name)) {
+      LOG_F(WARNING, "Property %s -> %s not found", e->name.c_str(), f.name);
       continue;
     }
-    ImGui::PushID(i + 1);
+    ImGui::PushID(f.name);
     bool changed = false;
-    Props newp;
-    { // type check
-      int tt = p.type(pi.name);
-      if(tt != pi.type) {
-        printf("getprops %s \n", p.summary().c_str());
-        printf("info %s \n", e->propinfo_.summary().c_str());
-        LOG_F(WARNING, "Property %s -> %s type mismatch %d != %d", e->name.c_str(), pi.name.c_str(), tt, pi.type);
-        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0, 0, 1));
-        ImGui::TextWrapped("Type mismatch: prop %s->%s %d != %d", e->name.c_str(), pi.name.c_str(), tt, pi.type);
-        ImGui::PopStyleColor();
-        ImGui::PopID();
-        continue;
+    cutil::Prop newp;
+    const char* name_ = f.label[0] ? f.label : f.name;
+
+    if(f.type == cutil::prop_info_of<bool>()) {
+      bool v = p.get<bool>(f.name);
+      if(ImGui::Checkbox(name_, &v)) {
+        newp.set<bool>(f.name, v);
+        changed = true;
       }
-    }
-    const char* name_ = pi.dispname.empty() ? pi.name.c_str() : pi.dispname.c_str();
-    switch(pi.type) {
-      case PropT_Bool: {
-        MU_ASSERT(std::holds_alternative<bool>(p[pi.name]));
-        bool b = p.get<bool>(pi.name);
-        if(ImGui::Checkbox(name_, &b)) {
-          newp.set(pi.name, b);
-          changed = true;
-        }
-        break;
+    } else if(f.type == cutil::prop_info_of<float>()) {
+      float v = p.get<float>(f.name);
+      if(ImGui::DragFloat(name_, &v, f.drag_speed, f.min_value, f.max_value)) {
+        newp.set<float>(f.name, v);
+        changed = true;
       }
-      case PropT_Float: {
-        MU_ASSERT(std::holds_alternative<float>(p[pi.name]));
-        float f = p.get<float>(pi.name);
-        if(ImGui::DragFloat(name_, &f, pi.step, pi.min, pi.max)) {
-          newp.set(pi.name, f);
-          changed = true;
-        }
-        break;
+    } else if(f.type == cutil::prop_info_of<int32_t>()) {
+      int32_t v = p.get<int32_t>(f.name);
+      if(ImGui::InputInt(name_, &v)) {
+        newp.set<int32_t>(f.name, v);
+        changed = true;
       }
-      case PropT_Int: {
-        MU_ASSERT(std::holds_alternative<int>(p[pi.name]));
-        int n = p.get<int>(pi.name);
-        if(ImGui::InputInt(name_, &n)) {
-          newp.set(pi.name, n);
-          changed = true;
-        }
-        break;
+    } else if(f.type == cutil::prop_info_of<uint8_t>()) {
+      int v = p.get<uint8_t>(f.name);
+      if(ImGui::InputInt(name_, &v)) {
+        newp.set<uint8_t>(f.name, static_cast<uint8_t>(std::clamp(v, 0, 255)));
+        changed = true;
       }
-      case PropT_String: {
-        MU_ASSERT(std::holds_alternative<std::string>(p[pi.name]));
-        std::string s = p.get<std::string>(pi.name);
-        char buf[256];
-        strcpy(buf, s.c_str());
-        if(ImGui::InputText(name_, buf, sizeof(buf))) {
-          newp.set(pi.name, std::string(buf));
-          changed = true;
-        }
-        break;
+    } else if(f.type == cutil::prop_info_of<std::string>()) {
+      std::string s = p.get<std::string>(f.name);
+      char buf[256];
+      strncpy(buf, s.c_str(), sizeof(buf) - 1);
+      buf[sizeof(buf) - 1] = '\0';
+      if(ImGui::InputText(name_, buf, sizeof(buf))) {
+        newp.set<std::string>(f.name, std::string(buf));
+        changed = true;
       }
-      case PropT_Vec2: {
-        MU_ASSERT(std::holds_alternative<Vec2>(p[pi.name]));
-        Vec2 v = p.get<Vec2>(pi.name);
-        if(ImGui::DragFloat2(name_, (float*)&v[0], pi.step, pi.min, pi.max)) {
-          newp.set(pi.name, v);
-          changed = true;
-        }
-        break;
+    } else if(f.type == cutil::prop_info_of<Vec2>()) {
+      Vec2 v = p.get<Vec2>(f.name);
+      if(ImGui::DragFloat2(name_, v.value, f.drag_speed, f.min_value, f.max_value)) {
+        newp.set<Vec2>(f.name, v);
+        changed = true;
       }
-      case PropT_Color: {
-        MU_ASSERT(std::holds_alternative<Vec4b>(p[pi.name]));
-        Vec4b v = p.get<Vec4b>(pi.name);
-        if(wd_color_edit(name_, &v)) {
-          newp.set(pi.name, v);
-          changed = true;
-        }
-        break;
+    } else if(f.type == cutil::prop_info_of<Vec3>()) {
+      Vec3 v = p.get<Vec3>(f.name);
+      if(ImGui::DragFloat3(name_, v.value, f.drag_speed, f.min_value, f.max_value)) {
+        newp.set<Vec3>(f.name, v);
+        changed = true;
       }
-      case PropT_Vec3: {
-        Vec3 v = p.get<Vec3>(pi.name);
-        if(ImGui::DragFloat3(name_, (float*)&v[0], pi.step, pi.min, pi.max)) {
-          newp.set(pi.name, v);
-          changed = true;
-        }
-        break;
+    } else if(f.type == cutil::prop_info_of<Vec4>()) {
+      Vec4 v = p.get<Vec4>(f.name);
+      if(ImGui::DragFloat4(name_, v.value, f.drag_speed, f.min_value, f.max_value)) {
+        newp.set<Vec4>(f.name, v);
+        changed = true;
       }
-      case PropT_Vec4: {
-        Vec4 v = p.get<Vec4>(pi.name);
-        if(ImGui::DragFloat4(name_, (float*)&v[0], pi.step, pi.min, pi.max)) {
-          newp.set(pi.name, v);
-          changed = true;
-        }
-        break;
-      }
-      case PropT_Path: {
-        std::string s = p.get<std::string>(pi.name);
-        char buf[256];
-        strcpy(buf, s.c_str());
-        if(ImGui::InputText(name_, buf, sizeof(buf))) {
-          newp.set(pi.name, std::string(buf));
-          changed = true;
-        }
-      } break;
-      case PropT_Entity: {
-        auto e = p.get<Entity*>(pi.name);
-        if(e) {
-          ImGui::Text("%s", e->name.c_str());
-        } else {
-          ImGui::Text("None");
-        }
+    } else if(f.type == cutil::prop_info_of<Vec4b>()) {
+      Vec4b v = p.get<Vec4b>(f.name);
+      if(wd_color_edit(name_, &v)) {
+        newp.set<Vec4b>(f.name, v);
+        changed = true;
       }
     }
 
-
-    auto item_id_ = ImGui::GetItemID();
-    if(item_id_ == last_focus_id && last_focus_id != 0) { // 編集中
-      if(focus_id != item_id_) {                          // 編集終了
-        v_comfirmed = p.get_(pi.name);
-        focus_idx_ = i;
-        LOG_F(1, "end editing %s %s -> %s", pi.name.c_str());
-      }
-    } else if(focus_id != last_focus_id && focus_id == item_id_ && focus_id != 0) {
-      v_before = p.get_(pi.name);
-    }
-    if(changed) {
-      e->setProps(newp);
-      e->propinfo_ = e->getPropsInfo();
-    }
+    if(changed) e->setProps(newp);
     ImGui::PopID();
   }
   ImGui::PopID();
-  last_focus_id = focus_id;
 }
 
 void wd_movie_inspector(Entity* e) {

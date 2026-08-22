@@ -2,6 +2,21 @@ from pygen_types import MFunction, MEnum, MClass, MArgument, ArgumentType
 from typing import List
 from utils import logger, write_if_different
 
+# cutil::prop_info_of<T>()特殊化が存在する型のみ対応(cutil組み込み+movutl/core/prop_types.hppのアダプタ)。
+SUPPORTED_CTYPES = {
+    "bool",
+    "int",
+    "int32_t",
+    "uint8_t",
+    "uint32_t",
+    "float",
+    "std::string",
+    "Vec2",
+    "Vec3",
+    "Vec4",
+    "Vec4b",
+}
+
 
 class PropsWriter:
     PREFIX = "props_"
@@ -18,13 +33,14 @@ class PropsWriter:
 
     def __init__(self, filename: str):
         self.autogen_text = (
-            "#include <movutl/core/props.hpp>\n"
+            "#include <cutil/prop.hpp>\n"
             "#include <movutl/app/app.hpp>\n"
             "#include <movutl/asset/entity.hpp>\n"
             "#include <movutl/asset/text.hpp>\n"
             "#include <movutl/asset/image.hpp>\n"
             "#include <movutl/asset/movie.hpp>\n"
             "#include <movutl/core/anim.hpp>\n"
+            "#include <movutl/core/prop_types.hpp>\n"
             "#include <movutl/asset/track.hpp>\n"
             "#include <movutl/asset/composition.hpp>\n"
             "namespace mu { \n"
@@ -46,115 +62,51 @@ class PropsWriter:
         return False
 
     def register_class(self, cls: MClass):
-        if self._should_write(cls, "setProps"):
-            self._write_setProps(cls)
         if self._should_write(cls, "getPropsInfo"):
             self._write_getPropsInfo_fn(cls)
         if self._should_write(cls, "getProps"):
             self._write_getProps(cls)
-
-    def _write_setProps(self, cls: MClass):
-        self.autogen_text += f"void {cls.name}::setProps(const Props& p) {{\n "  #
-
-        for p in cls.props:
-            match p.ptype:
-                case ArgumentType.ArgType_Float:
-                    self.autogen_text += f'  if(p.has<float>("{p.name}")) {p.name} = p.get<float>("{p.name}");\n'
-                case ArgumentType.ArgType_Int:
-                    self.autogen_text += f'  if(p.has<int>("{p.name}")) {p.name} = p.get<int>("{p.name}");\n'
-                case ArgumentType.ArgType_Bool:
-                    self.autogen_text += f'  if(p.has<bool>("{p.name}")) {p.name} = p.get<bool>("{p.name}");\n'
-                case ArgumentType.ArgType_String:
-                    self.autogen_text += f'  if(p.has<std::string>("{p.name}")) {p.name} = p.get<std::string>("{p.name}");\n'
-                case ArgumentType.ArgType_Path:
-                    self.autogen_text += f'  if(p.has<std::string>("{p.name}")) {p.name} = p.get<std::string>("{p.name}");\n'
-                case ArgumentType.ArgType_Color:
-                    self.autogen_text += f'  if(p.has<Vec4b>("{p.name}")) {p.name} = p.get<Vec4b>("{p.name}");\n'
-                case ArgumentType.ArgType_Vec3:
-                    self.autogen_text += f'  if(p.has<Vec3>("{p.name}")) {p.name} = p.get<Vec3>("{p.name}");\n'
-                case ArgumentType.ArgType_Vec2:
-                    self.autogen_text += f'  if(p.has<Vec2>("{p.name}")) {p.name} = p.get<Vec2>("{p.name}");\n'
-                case ArgumentType.ArgType_Selection:
-                    self.autogen_text += f'  if(p.has<int>("{p.name}")) {p.name} = p.get<int>("{p.name}");\n'
-                case _:
-                    self.autogen_text += f"// {p.name} has an unsupported type\n"
-        self.autogen_text += "}\n"
-
-    def _write_getProps(self, cls: MClass):
-        self.autogen_text += f"Props {cls.name}::getProps() const {{\n "
-        self.autogen_text += "  Props p;\n"
-        for p in cls.props:
-            self.autogen_text += f'  p["{p.name}"] = {p.name};\n'
-        self.autogen_text += "  return p;\n}\n"
+        if self._should_write(cls, "setProps"):
+            self._write_setProps(cls)
 
     def _write_getPropsInfo_fn(self, cls: MClass):
         self.autogen_text += (
-            f"PropsInfo {cls.name}::getPropsInfo() const {{\n "  #
-            + " PropsInfo info;\n"
+            f"const cutil::PropInfo* {cls.name}::getPropsInfo() const {{\n"
+            f"  static const cutil::PropInfo info = [] {{\n"
+            f"    cutil::PropInfo p;\n"
+        )
+        for prop in cls.props:
+            if prop.c_type not in SUPPORTED_CTYPES:
+                self.autogen_text += f"    // {prop.name} has an unsupported type ({prop.c_type})\n"
+                continue
+            self.autogen_text += (
+                f'    p.fields.push_back(cutil::PropInfo::Field("{prop.name}", '
+                f"offsetof({cls.name}, {prop.name}), cutil::prop_info_of<{prop.c_type}>()));\n"
+            )
+            if prop.dispname != "":
+                self.autogen_text += f'    p.fields.back().set_label("{prop.dispname}");\n'
+            if prop.desc != "":
+                self.autogen_text += f'    p.fields.back().set_desc("{prop.desc}");\n'
+            if prop.minvalue != "":
+                self.autogen_text += f"    p.fields.back().min_value = {prop.minvalue};\n"
+            if prop.maxvalue != "":
+                self.autogen_text += f"    p.fields.back().max_value = {prop.maxvalue};\n"
+            if prop.step != "":
+                self.autogen_text += f"    p.fields.back().drag_speed = {prop.step};\n"
+            if prop.readonly:
+                self.autogen_text += "    p.fields.back().flags = p.fields.back().flags | cutil::PropFlags::ReadOnly;\n"
+        self.autogen_text += "    return p;\n  }();\n  return &info;\n}\n"
+
+    def _write_getProps(self, cls: MClass):
+        self.autogen_text += (
+            f"cutil::Prop {cls.name}::getProps() const {{\n"
+            f"  cutil::Prop p;\n"
+            f"  p.dump(this, getPropsInfo());\n"
+            f"  return p;\n}}\n"
         )
 
-        for p in cls.props:
-            wrote_ = True
-            d = p.detault if p.detault != "" else "0.0"
-            d = d.replace(" ", "")
-            is_angle = "true" if p.is_angle else "false"
-            minvalue = p.minvalue if p.minvalue != "" else "0"
-            maxvalue = p.maxvalue if p.maxvalue != "" else "0"
-            step = p.step if p.step != "" else "1"
-            match p.ptype:
-                case ArgumentType.ArgType_Float:
-                    self.autogen_text += (
-                        f'  info.add_float_prop("{p.name}", "{p.category}", "{p.desc}", {d}, '
-                        + f" {minvalue}, {maxvalue}, {step}, {is_angle}, false);\n"
-                    )
-                case ArgumentType.ArgType_Int:
-                    default = p.detault if p.detault != "" else "0"
-                    self.autogen_text += (
-                        f'  info.add_int_prop("{p.name}", "{p.category}", "{p.desc}", {default}, '
-                        + " 0, 0, 0);\n"
-                    )
-                case ArgumentType.ArgType_Bool:
-                    d = p.detault if p.detault != "" else "false"
-                    self.autogen_text += f'  info.add_bool_prop("{p.name}", "{p.category}", "{p.desc}", {d});\n'
-                case ArgumentType.ArgType_String:
-                    d = p.detault if p.detault != "" else '""'
-                    self.autogen_text += f'  info.add_string_prop("{p.name}", "{p.category}", "{p.desc}", "{d}");\n'
-                case ArgumentType.ArgType_Path:
-                    d = p.detault if p.detault != "" else '""'
-                    self.autogen_text += f'  info.add_path_prop("{p.name}", "{p.category}", "{p.desc}", "{d}");\n'
-                case ArgumentType.ArgType_Color:
-                    d = p.detault if p.detault != "" else "Vec4b(0, 0, 0, 255)"
-                    self.autogen_text += f'  info.add_color_prop("{p.name}", "{p.category}", "{p.desc}", {d});\n'
-                case ArgumentType.ArgType_Vec3:
-                    d = p.detault if p.detault != "" else "Vec3(0, 0, 0)"
-                    self.autogen_text += (
-                        f'  info.add_vec3_prop("{p.name}", "{p.category}", "{p.desc}", {d}, '
-                        + f"{minvalue}, {maxvalue}, {step});\n"
-                    )
-                case ArgumentType.ArgType_Vec2:
-                    d = p.detault if p.detault != "" else "Vec2(0, 0)"
-                    self.autogen_text += (
-                        f'  info.add_vec2_prop("{p.name}", "{p.category}", "{p.desc}", {d}, '
-                        + f"{minvalue}, {maxvalue}, {step});\n"
-                    )
-                case ArgumentType.ArgType_Selection:
-                    self.autogen_text += f'  info.add_selection_prop("{p.name}", "{p.category}", "{p.desc}", {p.detault});\n'
-                case _:
-                    logger.error(f"Unsupported type {p.ptype}, {p.name}")
-                    self.autogen_text += f"// {p.name} has an unsupported type\n"
-                    wrote_ = False
-
-            if wrote_:
-                if p.dispname != "":
-                    self.autogen_text += (
-                        f'  info.set_last_prop_dispname("{p.dispname}");\n'
-                    )
-                if p.category != "":
-                    self.autogen_text += (
-                        f'  info.set_last_prop_category("{p.category}");\n'
-                    )
-                if p.desc != "":
-                    self.autogen_text += f'  info.set_last_prop_desc("{p.desc}");\n'
-                if p.readonly:
-                    self.autogen_text += "  info.set_last_prop_readonly(true);\n"
-        self.autogen_text += "  return info;\n}\n"
+    def _write_setProps(self, cls: MClass):
+        self.autogen_text += (
+            f"void {cls.name}::setProps(const cutil::Prop& p) {{\n"
+            f"  (void)p.load_to(this, getPropsInfo());\n}}\n"
+        )

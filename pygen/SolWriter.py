@@ -27,7 +27,7 @@ class SolWriter:
         self.autogen_text = (
             "#include <sol/sol.hpp>\n"
             "#include <lua.hpp>\n"
-            "#include <movutl/core/props.hpp>\n"
+            "#include <cutil/prop.hpp>\n"
             "#include <movutl/app/app.hpp>\n"
             "#include <movutl/plugin/input.hpp>\n"
             "#include <movutl/plugin/filter.hpp>\n"

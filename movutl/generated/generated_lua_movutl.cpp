@@ -3,7 +3,7 @@
 #include <LuaIntf/LuaIntf.h>
 #include <lua.hpp>
 #include <imgui.h>
-#include <movutl/core/props.hpp>
+#include <cutil/prop.hpp>
 #include <movutl/app/app.hpp>
 #include <movutl/plugin/input.hpp>
 #include <movutl/plugin/filter.hpp>
@@ -100,7 +100,7 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addVariable("guid", &Composition::guid) // uint32_t
     .addVariable("name", &Composition::name) // FixString
     .addVariable("flag", &Composition::flag) // Flag
-    .addVariable("frame_final", &Composition::frame_final) // Ref<Image>
+    .addVariable("frame_final", &Composition::frame_final) // Ref<ImageRGBA>
     .addVariable("frame_edit", &Composition::frame_edit) // Ref<Image>
     .addVariable("frame_temp", &Composition::frame_temp) // Ref<Image>
     .addVariable("framerate_nu", &Composition::framerate_nu) // int32_t
@@ -135,9 +135,6 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("channels", &Image::channels)
     .addFunction("imshow", &Image::imshow)
     .addFunction("getType", &Image::getType)
-    .addFunction("getPropsInfo", &Image::getPropsInfo)
-    .addFunction("getProps", &Image::getProps)
-    .addFunction("setProps", &Image::setProps)
     .addVariable("fmt", &Image::fmt) // ImageFormat
     .addVariable("pos", &Image::pos) // Vec3
     .addVariable("scale", &Image::scale) // Vec2
@@ -156,6 +153,7 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("fill", &ImageRGBA::fill)
     .addFunction("rgba", &ImageRGBA::rgba)
     .addFunction("imshow", &ImageRGBA::imshow)
+    .addFunction("empty", &ImageRGBA::empty)
     .addVariable("width", &ImageRGBA::width) // unsigned int
     .addVariable("height", &ImageRGBA::height) // unsigned int
     .addVariable("dirty_", &ImageRGBA::dirty_) // int16_t
@@ -165,9 +163,6 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addStaticFunction("Create", &Movie::Create)
     .addFunction("load_file", &Movie::load_file)
     .addFunction("getType", &Movie::getType)
-    .addFunction("getPropsInfo", &Movie::getPropsInfo)
-    .addFunction("getProps", &Movie::getProps)
-    .addFunction("setProps", &Movie::setProps)
     .addVariable("pos", &Movie::pos) // Vec3
     .addVariable("scale", &Movie::scale) // Vec2
     .addVariable("rotation", &Movie::rotation) // float
@@ -192,9 +187,6 @@ void generated_lua_binding_movutl(lua_State* L) {
   .beginClass<TextEntt>("TextEntt")
     .addStaticFunction("Create", &TextEntt::Create)
     .addFunction("getType", &TextEntt::getType)
-    .addFunction("getPropsInfo", &TextEntt::getPropsInfo)
-    .addFunction("getProps", &TextEntt::getProps)
-    .addFunction("setProps", &TextEntt::setProps)
     .addVariable("dirty_", &TextEntt::dirty_) // int32_t
     .addVariable("pos_", &TextEntt::pos_) // Vec3
     .addVariable("scale_x_", &TextEntt::scale_x_) // float
@@ -216,9 +208,6 @@ void generated_lua_binding_movutl(lua_State* L) {
   .endClass()
   .beginClass<TrackObject>("TrackObject")
     .addFunction("visible", &TrackObject::visible)
-    .addFunction("getPropsInfo", &TrackObject::getPropsInfo)
-    .addFunction("getProps", &TrackObject::getProps)
-    .addFunction("setProps", &TrackObject::setProps)
     .addVariable("fstart", &TrackObject::fstart) // int
     .addVariable("fend", &TrackObject::fend) // int
     .addVariable("anchor", &TrackObject::anchor) // Vec2

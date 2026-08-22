@@ -28,7 +28,7 @@ class LuaIntfWriter:
             "#include <LuaIntf/LuaIntf.h>\n"
             "#include <lua.hpp>\n"
             "#include <imgui.h>\n"
-            "#include <movutl/core/props.hpp>\n"
+            "#include <cutil/prop.hpp>\n"
             "#include <movutl/app/app.hpp>\n"
             "#include <movutl/plugin/input.hpp>\n"
             "#include <movutl/plugin/filter.hpp>\n"
@@ -108,6 +108,8 @@ class LuaIntfWriter:
                 continue
             if f.name.startswith("operator"):
                 continue
+            if f.name in ("getPropsInfo", "getProps", "setProps"):
+                continue  # cutil::Prop/PropInfoはLua未バインドのため除外
             if f.is_static:
                 self.autogen_text += f'    .addStaticFunction("{f.name}", &{cls.name}::{f.name})\n'
             else:
