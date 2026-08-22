@@ -33,9 +33,9 @@ public:
   virtual EntityType getType() const override { return EntityType_3DText; }
   virtual bool render(Composition* cmp) override;
 
-  virtual PropsInfo getPropsInfo() const override;    // MUFUNC_AUTOGEN
-  virtual Props getProps() const override;            // MUFUNC_AUTOGEN
-  virtual void setProps(const Props& props) override; // MUFUNC_AUTOGEN
+  virtual const cutil::PropInfo* getPropsInfo() const override;    // MUFUNC_AUTOGEN
+  virtual cutil::Prop getProps() const override;                   // MUFUNC_AUTOGEN
+  virtual void setProps(const cutil::Prop& props) override;        // MUFUNC_AUTOGEN
 };
 
 } // namespace mu

@@ -86,7 +86,7 @@ movutl.ImageFormat = {}
 ---@field guid number
 ---@field name FixString
 ---@field flag Flag
----@field frame_final Ref<Image>
+---@field frame_final Ref<ImageRGBA>
 ---@field frame_edit Ref<Image>
 ---@field frame_temp Ref<Image>
 ---@field framerate_nu number
@@ -207,16 +207,6 @@ function movutl.Image:imshow( name, ) end
 ---@return EntityType
 function movutl.Image:getType( ) end
 
----@return PropsInfo
-function movutl.Image:getPropsInfo( ) end
-
----@return Props
-function movutl.Image:getProps( ) end
-
----@param props Props 
----@return nil
-function movutl.Image:setProps( props, ) end
-
 ---@class ImageRGBA
 ---@field width number
 ---@field height number
@@ -268,6 +258,9 @@ function movutl.ImageRGBA:rgba( x, y, ) end
 ---@return nil
 function movutl.ImageRGBA:imshow( name, ) end
 
+---@return boolean
+function movutl.ImageRGBA:empty( ) end
+
 ---@class Movie
 ---@field pos Vec3
 ---@field scale Vec2
@@ -300,16 +293,6 @@ function movutl.Movie:load_file( path, ) end
 
 ---@return EntityType
 function movutl.Movie:getType( ) end
-
----@return PropsInfo
-function movutl.Movie:getPropsInfo( ) end
-
----@return Props
-function movutl.Movie:getProps( ) end
-
----@param props Props 
----@return nil
-function movutl.Movie:setProps( props, ) end
 
 ---@class Project
 ---@field path string
@@ -371,16 +354,6 @@ function movutl.TextEntt:Create( text, font, ) end
 ---@return EntityType
 function movutl.TextEntt:getType( ) end
 
----@return PropsInfo
-function movutl.TextEntt:getPropsInfo( ) end
-
----@return Props
-function movutl.TextEntt:getProps( ) end
-
----@param props Props 
----@return nil
-function movutl.TextEntt:setProps( props, ) end
-
 ---@class TrackLayer
 ---@field name FixString
 ---@field active boolean
@@ -422,16 +395,6 @@ movutl.TrackObject.camera_ctrl = false
 ---@param frame number
 ---@return boolean
 function movutl.TrackObject:visible( frame, ) end
-
----@return PropsInfo
-function movutl.TrackObject:getPropsInfo( ) end
-
----@return Props
-function movutl.TrackObject:getProps( ) end
-
----@param props Props 
----@return nil
-function movutl.TrackObject:setProps( props, ) end
 
 ---@param name string
 ---@param path string

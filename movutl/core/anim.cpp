@@ -1,45 +1,37 @@
 #include <movutl/core/anim.hpp>
-#include <movutl/core/props.hpp>
 
 namespace mu {
-void AnimProps::add_props(const Props& props) {
-  for(auto [key, value] : props.values) {
-    if(this->contains(key)) this->erase(key);
+void AnimProps::add_props(const cutil::Prop& defaults) {
+  for(const auto& f : defaults.fields()) {
+    if(this->contains(f.name)) this->erase(f.name);
 
-    if(std::holds_alternative<float>(value))
-      this->props.push_back(PAniClip<float>(key, std::get<float>(value)));
-
-    else if(std::holds_alternative<int>(value))
-      this->props.push_back(PAniClip<int>(key, std::get<int>(value)));
-
-    else if(std::holds_alternative<std::string>(value))
-      this->props.push_back(PAniClip<std::string>(key, std::get<std::string>(value)));
-
-    else if(std::holds_alternative<bool>(value))
-      this->props.push_back(PAniClip<bool>(key, std::get<bool>(value)));
-
-    else if(std::holds_alternative<Vec2>(value))
-      this->props.push_back(PAniClip<Vec2>(key, std::get<Vec2>(value)));
-
-    else if(std::holds_alternative<Vec3>(value))
-      this->props.push_back(PAniClip<Vec3>(key, std::get<Vec3>(value)));
-
-    else if(std::holds_alternative<Vec4>(value))
-      this->props.push_back(PAniClip<Vec4>(key, std::get<Vec4>(value)));
-
-    else if(std::holds_alternative<Vec4b>(value))
-      this->props.push_back(PAniClip<Vec4b>(key, std::get<Vec4b>(value)));
+    if(f.type == cutil::prop_info_of<float>())
+      this->props.push_back(PAniClip<float>(f.name, defaults.get<float>(f.name)));
+    else if(f.type == cutil::prop_info_of<int32_t>())
+      this->props.push_back(PAniClip<int>(f.name, defaults.get<int32_t>(f.name)));
+    else if(f.type == cutil::prop_info_of<std::string>())
+      this->props.push_back(PAniClip<std::string>(f.name, defaults.get<std::string>(f.name)));
+    else if(f.type == cutil::prop_info_of<bool>())
+      this->props.push_back(PAniClip<bool>(f.name, defaults.get<bool>(f.name)));
+    else if(f.type == cutil::prop_info_of<Vec2>())
+      this->props.push_back(PAniClip<Vec2>(f.name, defaults.get<Vec2>(f.name)));
+    else if(f.type == cutil::prop_info_of<Vec3>())
+      this->props.push_back(PAniClip<Vec3>(f.name, defaults.get<Vec3>(f.name)));
+    else if(f.type == cutil::prop_info_of<Vec4>())
+      this->props.push_back(PAniClip<Vec4>(f.name, defaults.get<Vec4>(f.name)));
+    else if(f.type == cutil::prop_info_of<Vec4b>())
+      this->props.push_back(PAniClip<Vec4b>(f.name, defaults.get<Vec4b>(f.name)));
   }
 }
 
 struct PropsSetVisitor {
-  PropsSetVisitor(Props& props) : props(props) {}
-  Props& props;
-  template <typename T> void operator()(const PAniClip<T>& clip) { props[clip.keyname] = clip.get(0); }
+  PropsSetVisitor(cutil::Prop& props) : props(props) {}
+  cutil::Prop& props;
+  template <typename T> void operator()(const PAniClip<T>& clip) { props.set<T>(clip.keyname.c_str(), clip.get(0)); }
 };
 
-Props AnimProps::get(uint32_t frame) {
-  Props p;
+cutil::Prop AnimProps::get(uint32_t frame) {
+  cutil::Prop p;
   PropsSetVisitor visitor(p);
   for(auto& prop : props) std::visit(visitor, prop);
   return p;

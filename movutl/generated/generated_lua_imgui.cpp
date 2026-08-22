@@ -3,7 +3,7 @@
 #include <LuaIntf/LuaIntf.h>
 #include <lua.hpp>
 #include <imgui.h>
-#include <movutl/core/props.hpp>
+#include <cutil/prop.hpp>
 #include <movutl/app/app.hpp>
 #include <movutl/plugin/input.hpp>
 #include <movutl/plugin/filter.hpp>

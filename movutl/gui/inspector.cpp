@@ -47,79 +47,37 @@ void InspectorWindow::Update() {
       }
     }
     if(ImGui::TreeNode(str.c_str())) {
-      int size_ = std::min<int>(f.props.size(), e->trk.filters[i].props.size());
+      int size_ = std::min<int>(f.props.size(), (int)e->trk.filters[i].plg_->props.fields.size());
       for(int k = 0; k < size_; k++) {
-        auto p = f.props[k];
-        auto info = f.plg_->props[k];
+        const auto& info = f.plg_->props.fields[k];
         ImGui::PushID(k);
         { // animation props editor
-          switch(info.type) {
-            case PropT_Float: {
-              if(f.props.get_type(k) != PropT_Float) {
-                LOG_F(ERROR, "Invalid type: %s -> expected %d, got %d", info.name.c_str(), PropT_Float, f.props.get_type(k));
-                break;
-              }
-              float value = f.props.get<float>(k);
-              if(ImGui::DragFloat(info.dispname.c_str(), &value, info.step, info.min, info.max)) f.props.set_value(k, 0, value);
-              break;
-            }
-            case PropT_Int: {
-              if(f.props.get_type(k) != PropT_Int) {
-                LOG_F(ERROR, "Invalid type: %s -> expected %d, got %d", info.name.c_str(), PropT_Int, f.props.get_type(k));
-                break;
-              }
-              int value = f.props.get<int>(k);
-              if(ImGui::DragInt(info.dispname.c_str(), &value, info.step)) f.props.set_value(k, 0, value);
-              break;
-            }
-            case PropT_String: {
-              if(f.props.get_type(k) != PropT_String) {
-                LOG_F(ERROR, "Invalid type: %s -> expected %d, got %d", info.name.c_str(), PropT_String, f.props.get_type(k));
-                break;
-              }
-              std::string value = f.props.get<std::string>(k);
-              static char buf[256];
-              strncpy(buf, value.c_str(), 256);
-              if(ImGui::InputText(info.dispname.c_str(), &buf[0], 256)) f.props.set_value(k, 0, std::string(buf));
-              break;
-            }
-
-            case PropT_Bool: {
-              if(f.props.get_type(k) != PropT_Bool) {
-                LOG_F(ERROR, "Invalid type: %s -> expected %d, got %d", info.name.c_str(), PropT_Bool, f.props.get_type(k));
-                break;
-              }
-              bool value = f.props.get<bool>(k);
-              if(ImGui::Checkbox(info.dispname.c_str(), &value)) f.props.set_value(k, 0, value);
-              break;
-            }
-            case PropT_Vec2: {
-              if(f.props.get_type(k) != PropT_Vec2) {
-                LOG_F(ERROR, "Invalid type: %s -> expected %d, got %d", info.name.c_str(), PropT_Vec2, f.props.get_type(k));
-                break;
-              }
-              Vec2 value = f.props.get<Vec2>(k);
-              if(ImGui::DragFloat2(info.dispname.c_str(), &value[0], info.step)) f.props.set_value(k, 0, value);
-              break;
-            }
-            case PropT_Vec3: {
-              if(f.props.get_type(k) != PropT_Vec3) {
-                LOG_F(ERROR, "Invalid type: %s -> expected %d, got %d", info.name.c_str(), PropT_Vec3, f.props.get_type(k));
-                break;
-              }
-              Vec3 value = f.props.get<Vec3>(k);
-              if(ImGui::DragFloat3(info.dispname.c_str(), &value[0], info.step)) f.props.set_value(k, 0, value);
-              break;
-            }
-            case PropT_Vec4: {
-              if(f.props.get_type(k) != PropT_Vec4) {
-                LOG_F(ERROR, "Invalid type: %s -> expected %d, got %d", info.name.c_str(), PropT_Vec4, f.props.get_type(k));
-                break;
-              }
-              Vec4 value = f.props.get<Vec4>(k);
-              if(ImGui::DragFloat4(info.dispname.c_str(), &value[0], info.step)) f.props.set_value(k, 0, value);
-              break;
-            }
+          const char* label = info.label[0] ? info.label : info.name;
+          if(f.props.get_type(k) != info.type) {
+            LOG_F(ERROR, "Invalid type: %s", info.name);
+          } else if(info.type == cutil::prop_info_of<float>()) {
+            float value = f.props.get<float>(k);
+            if(ImGui::DragFloat(label, &value, info.drag_speed, info.min_value, info.max_value)) f.props.set_value(k, 0, value);
+          } else if(info.type == cutil::prop_info_of<int32_t>()) {
+            int value = f.props.get<int>(k);
+            if(ImGui::DragInt(label, &value, info.drag_speed)) f.props.set_value(k, 0, value);
+          } else if(info.type == cutil::prop_info_of<std::string>()) {
+            std::string value = f.props.get<std::string>(k);
+            static char buf[256];
+            strncpy(buf, value.c_str(), 256);
+            if(ImGui::InputText(label, &buf[0], 256)) f.props.set_value(k, 0, std::string(buf));
+          } else if(info.type == cutil::prop_info_of<bool>()) {
+            bool value = f.props.get<bool>(k);
+            if(ImGui::Checkbox(label, &value)) f.props.set_value(k, 0, value);
+          } else if(info.type == cutil::prop_info_of<Vec2>()) {
+            Vec2 value = f.props.get<Vec2>(k);
+            if(ImGui::DragFloat2(label, value.value, info.drag_speed)) f.props.set_value(k, 0, value);
+          } else if(info.type == cutil::prop_info_of<Vec3>()) {
+            Vec3 value = f.props.get<Vec3>(k);
+            if(ImGui::DragFloat3(label, value.value, info.drag_speed)) f.props.set_value(k, 0, value);
+          } else if(info.type == cutil::prop_info_of<Vec4>()) {
+            Vec4 value = f.props.get<Vec4>(k);
+            if(ImGui::DragFloat4(label, value.value, info.drag_speed)) f.props.set_value(k, 0, value);
           }
         }
         ImGui::PopID();
@@ -150,8 +108,7 @@ void InspectorWindow::Update() {
         if(ImGui::Selectable(name)) {
           TrackObject::FilterParam fp;
           fp.plg_ = &(*filters)[i];
-          auto pinfo = (*filters)[i].props.get_default();
-          fp.props.add_props(pinfo);
+          fp.props.add_props((*filters)[i].defaults);
           fp.enabled = true;
           e->trk.filters.push_back(fp);
         }

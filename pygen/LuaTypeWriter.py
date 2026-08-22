@@ -139,6 +139,8 @@ class LuaTypeWriter:
                 continue
             if f.name.startswith("operator"):
                 continue
+            if f.name in ("getPropsInfo", "getProps", "setProps"):
+                continue  # cutil::Prop/PropInfoはLua未バインドのため除外
             self.autogen_text += "\n"
             for a in f.args:
                 self.autogen_text += f'---@param {a.name} {lua_cvt_type(a.c_type)}\n'

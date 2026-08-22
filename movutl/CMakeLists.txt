@@ -89,6 +89,7 @@ set(MOVUTL_INCLUDES
   ${MOVUTL_ROOT_DIR}/ext/imgui/backends
   ${MOVUTL_ROOT_DIR}/ext/filewatch
   ${MOVUTL_ROOT_DIR}/ext/json/include
+  ${MOVUTL_ROOT_DIR}/ext/cutil
   ${MOVUTL_ROOT_DIR}/ext/lua-intf/
   ${MOVUTL_ROOT_DIR}/ext/lua-intf/LuaIntf
 )

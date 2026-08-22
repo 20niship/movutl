@@ -2,6 +2,7 @@
 
 #include <movutl/asset/track.hpp>
 #include <movutl/core/defines.hpp>
+#include <movutl/core/prop_types.hpp>
 #include <movutl/core/string.hpp>
 #include <string>
 
@@ -81,11 +82,9 @@ public:
   bool visible(int frame) const { return trk.visible(frame); }
   virtual ~Entity();
 
-  virtual PropsInfo getPropsInfo() const { return {}; }
-  virtual Props getProps() const { return {}; }
-  virtual void setProps(const Props& props) { (void)props; }
-
-  PropsInfo propinfo_; // getPropsInfo()の結果をキャッシュして表示する用
+  virtual const cutil::PropInfo* getPropsInfo() const { return nullptr; }
+  virtual cutil::Prop getProps() const { return {}; }
+  virtual void setProps(const cutil::Prop& props) { (void)props; }
 };
 
 } // namespace mu

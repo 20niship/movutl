@@ -1,7 +1,7 @@
 #pragma once
 
+#include <cutil/prop.hpp>
 #include <movutl/core/anim.hpp>
-#include <movutl/core/props.hpp>
 #include <movutl/core/ref.hpp>
 
 #include <cstdint>
@@ -57,9 +57,9 @@ public:
 
   bool visible(int frame) const { return fstart <= frame && frame <= fend && active_; }
 
-  PropsInfo getPropsInfo() const;    // MUFUNC_AUTOGEN
-  Props getProps() const;            // MUFUNC_AUTOGEN
-  void setProps(const Props& props); // MUFUNC_AUTOGEN
+  const cutil::PropInfo* getPropsInfo() const;    // MUFUNC_AUTOGEN
+  cutil::Prop getProps() const;                   // MUFUNC_AUTOGEN
+  void setProps(const cutil::Prop& props);        // MUFUNC_AUTOGEN
 };
 
 } // namespace mu

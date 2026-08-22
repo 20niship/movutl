@@ -1,6 +1,8 @@
 #pragma once
 #include <cstdint>
-#include <movutl/core/props.hpp>
+#include <cutil/prop.hpp>
+#include <movutl/core/prop_types.hpp>
+#include <variant>
 
 namespace mu {
 
@@ -51,19 +53,7 @@ public:
   bool add_keyframe(uint32_t frame, T value, AniInterpType t = AniInterpType::LINEAR);
   bool has_animation() const { return keys.size() > 1; }
   void clear() { keys.clear(); }
-  PropType get_type() const {
-    // clang-format off
-    if constexpr(std::is_same_v<T, float> || std::is_same_v<T, double>) return PropT_Float;
-    else if constexpr(std::is_integral_v<T>) return PropT_Int;
-    else if constexpr(std::is_same_v<T, std::string>) return PropT_String;
-    else if constexpr(std::is_same_v<T, bool>) return PropT_Bool;
-    else if constexpr(std::is_same_v<T, Vec2>) return PropT_Vec2;
-    else if constexpr(std::is_same_v<T, Vec3>) return PropT_Vec3;
-    else if constexpr(std::is_same_v<T, Vec4>) return PropT_Vec4;
-    else if constexpr(std::is_same_v<T, Vec4b>) return PropT_Color;
-    else if constexpr(std::is_same_v<T, Entity*>) return PropT_Entity;
-    // clang-format on
-  }
+  const cutil::PropInfo* get_type() const { return cutil::prop_info_of<T>(); }
   T get_first() const {
     if(keys.empty()) return T();
     return keys[0].value_;
@@ -87,10 +77,10 @@ public:
   // clang-format on
 
   std::vector<Types> props;
-  Props get(uint32_t frame);
+  cutil::Prop get(uint32_t frame);
 
-  PropType get_type(int index) const {
-    if(index < 0 || index >= (int)props.size()) return PropT_Undefined;
+  const cutil::PropInfo* get_type(int index) const {
+    if(index < 0 || index >= (int)props.size()) return nullptr;
     return std::visit([](auto&& arg) { return arg.get_type(); }, props[index]);
   }
 
@@ -163,7 +153,7 @@ public:
   Types& operator[](size_t idx) { return props[idx]; }
   const Types& operator[](size_t idx) const { return props[idx]; }
 
-  void add_props(const Props& props);
+  void add_props(const cutil::Prop& defaults);
 };
 
 } // namespace mu

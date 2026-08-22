@@ -1,6 +1,9 @@
+#include <cutil/prop_io.hpp>
+#include <fstream>
 #include <movutl/asset/config.hpp>
 #include <movutl/core/filesystem.hpp>
-#include <movutl/core/props.hpp>
+#include <movutl/core/prop_types.hpp>
+#include <sstream>
 
 constexpr const char* kConfigFilename = "movutl_cnf.json";
 
@@ -13,27 +16,34 @@ void Config::Load() {
     return;
   }
 
-  auto js = Props::LoadJsonFile(kConfigFilename);
-  c->max_size = Vec2d(js.get_or<Vec2>("max_size", Vec2(c->max_size)));
-  c->max_frame = js.get_or<int>("max_frame", c->max_frame);
-  c->cache_frames = js.get_or<int>("cache_frames", c->cache_frames);
-  /*c->plugin_search_paths = js.get_or<std::vector<std::string>>("plugin_search_paths", c->plugin_search_paths);*/
-  c->log_to_file = js.get_or<bool>("log_to_file", c->log_to_file);
-  c->log_filename = js.get_or<std::string>("log_filename", c->log_filename);
-  c->log_level = (LogLevel)js.get_or<int>("log_level", int(c->log_level));
+  std::ifstream ifs(kConfigFilename);
+  std::stringstream ss;
+  ss << ifs.rdbuf();
+  cutil::Prop js;
+  cutil::prop_load_json(js, ss.str());
+
+  c->max_size = Vec2d(cutil::get_or<Vec2>(js, "max_size", Vec2(c->max_size)));
+  c->max_frame = cutil::get_or<int32_t>(js, "max_frame", c->max_frame);
+  c->cache_frames = cutil::get_or<int32_t>(js, "cache_frames", c->cache_frames);
+  c->log_to_file = cutil::get_or<bool>(js, "log_to_file", c->log_to_file);
+  c->log_filename = cutil::get_or<std::string>(js, "log_filename", c->log_filename);
+  c->log_level = (LogLevel)cutil::get_or<int32_t>(js, "log_level", int(c->log_level));
 }
 
 void Config::Save() {
   auto c = Config::Get();
-  Props js;
-  js.set("max_size", c->max_size);
-  js.set("max_frame", c->max_frame);
-  js.set("cache_frames", c->cache_frames);
-  /*js.set("plugin_search_paths", c->plugin_search_paths);*/
-  js.set("log_to_file", c->log_to_file);
-  js.set("log_filename", c->log_filename);
-  js.set("log_level", int(c->log_level));
-  js.dump_json_file(kConfigFilename);
+  cutil::Prop js;
+  js.set<Vec2>("max_size", Vec2(c->max_size));
+  js.set<int32_t>("max_frame", c->max_frame);
+  js.set<int32_t>("cache_frames", c->cache_frames);
+  js.set<bool>("log_to_file", c->log_to_file);
+  js.set<std::string>("log_filename", c->log_filename);
+  js.set<int32_t>("log_level", int(c->log_level));
+
+  std::string out;
+  cutil::prop_dump_json(js, out);
+  std::ofstream ofs(kConfigFilename);
+  ofs << out;
 }
 
 void Config::Reload() {
