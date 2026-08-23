@@ -801,17 +801,19 @@ template <typename T> struct Vec {
   }
   void insert(const T* start, const T* end) {
     MU_ASSERT(start != nullptr && end != nullptr);
-    for(const T* x = start; x <= end; x++) push_back(*x);
+    for(const T* x = start; x < end; x++) push_back(*x);
   }
   inline T* insert(T* it, const T* start, const T* end) {
     MU_ASSERT(start != nullptr && end != nullptr && it != nullptr);
-    for(const T* x = start; x <= end; x++) push_back(*x);
     MU_ASSERT(it >= Data && it <= Data + Size);
-    for(const T* x = start; x <= end; x++) {
-      insert(it, *x);
-      it++;
-    }
-    return Data;
+    const ptrdiff_t off   = it - Data;
+    const size_t count    = (size_t)(end - start);
+    if(count == 0) return Data + off;
+    if(Size + (int)count > Capacity) reserve(_grow_capacity(Size + (int)count));
+    std::memmove(Data + off + count, Data + off, ((size_t)Size - (size_t)off) * sizeof(T));
+    std::memcpy(Data + off, start, count * sizeof(T));
+    Size += (int)count;
+    return Data + off;
   }
   inline bool contains(const T& v) const {
     const T* data     = Data;
