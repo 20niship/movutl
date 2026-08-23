@@ -116,12 +116,16 @@ void gui_new_frame() {
   app->dockspace_id = ImGui::DockSpaceOverViewport();
   ImGui::PopStyleColor(2);
 
+  // レイアウトが空(DockSpaceOverViewportが自動生成した空の中央ノードしかない)なら未初期化とみなす
+  const auto dock_node       = ImGui::DockBuilderGetNode(app->dockspace_id);
+  const bool is_empty_layout = dock_node == nullptr || (dock_node->IsCentralNode() && dock_node->Windows.empty() && dock_node->ChildNodes[0] == nullptr);
+
   // ワークスペースの遅延適用 / 初回起動時(iniにレイアウト未保存)はデフォルトレイアウトを適用
   if(!app->pending_workspace.empty()) {
     const std::string name = app->pending_workspace;
     app->pending_workspace.clear();
     apply_workspace(name.c_str());
-  } else if(ImGui::DockBuilderGetNode(app->dockspace_id) == nullptr) {
+  } else if(is_empty_layout) {
     apply_workspace("Default");
   }
 }
