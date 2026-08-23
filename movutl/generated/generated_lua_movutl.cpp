@@ -97,19 +97,18 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addStaticFunction("GetActiveComp", &Composition::GetActiveComp)
     .addFunction("insertable_layer_index", &Composition::insertable_layer_index)
     .addFunction("insert_entity", &Composition::insert_entity)
-    .addVariable("guid", &Composition::guid)                 // uint32_t
-    .addVariable("flag", &Composition::flag)                 // Flag
-    .addVariable("frame_final", &Composition::frame_final)   // Ref<Image>
-    .addVariable("frame_edit", &Composition::frame_edit)     // Ref<Image>
-    .addVariable("frame_temp", &Composition::frame_temp)     // Ref<Image>
-    .addVariable("framerate_nu", &Composition::framerate_nu) // int32_t
-    .addVariable("framerate_de", &Composition::framerate_de) // int32_t
-    .addVariable("fstart", &Composition::fstart)             // int32_t
-    .addVariable("fend", &Composition::fend)                 // int32_t
-    .addVariable("frame", &Composition::frame)               // int32_t
-    .addVariable("audio_n", &Composition::audio_n)           // int32_t
-    .addVariable("audio_ch", &Composition::audio_ch)         // int32_t
-    .addVariable("layers", &Composition::layers)             // std::vector<TrackLayer>
+    .addVariable("guid", &Composition::guid)               // uint32_t
+    .addVariable("flag", &Composition::flag)               // Flag
+    .addVariable("frame_final", &Composition::frame_final) // Ref<Image>
+    .addVariable("frame_edit", &Composition::frame_edit)   // Ref<Image>
+    .addVariable("frame_temp", &Composition::frame_temp)   // Ref<Image>
+    .addVariable("framerate", &Composition::framerate)     // float
+    .addVariable("fstart", &Composition::fstart)           // int32_t
+    .addVariable("fend", &Composition::fend)               // int32_t
+    .addVariable("frame", &Composition::frame)             // int32_t
+    .addVariable("audio_n", &Composition::audio_n)         // int32_t
+    .addVariable("audio_ch", &Composition::audio_ch)       // int32_t
+    .addVariable("layers", &Composition::layers)           // std::vector<TrackLayer>
     .endClass()
     .beginClass<EntityInfo>("EntityInfo")
     .addFunction("str", &EntityInfo::str)
@@ -164,6 +163,8 @@ void generated_lua_binding_movutl(lua_State* L) {
     .endClass()
     .beginClass<Project>("Project")
     .addStaticFunction("New", &Project::New)
+    .addStaticFunction("Save", &Project::Save)
+    .addStaticFunction("Load", &Project::Load)
     .addFunction("get_main_comp", &Project::get_main_comp)
     .addStaticFunction("GetActiveCompo", &Project::GetActiveCompo)
     .addStaticFunction("SetActiveCompo", &Project::SetActiveCompo)
@@ -225,15 +226,20 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("cv_waitkey", static_cast<void (*)(int)>(&cv_waitkey))
     .addFunction("get_compatible_plugin", static_cast<InputPluginTable* (*)(const char*, EntityType)>(&get_compatible_plugin))
     .addFunction("get_selected_entts", static_cast<std::vector<Ref<Entity> > (*)()>(&get_selected_entts))
+    .addFunction("goto_frame", static_cast<void (*)(int)>(&goto_frame))
     .addFunction("init", static_cast<void (*)()>(&init))
+    .addFunction("is_playing", static_cast<bool (*)()>(&is_playing))
     .addFunction("new_project", static_cast<void (*)()>(&new_project))
     .addFunction("open_project", static_cast<void (*)(const char*)>(&open_project))
+    .addFunction("pause", static_cast<void (*)()>(&pause))
+    .addFunction("play", static_cast<void (*)()>(&play))
     .addFunction("register_imgui_style", static_cast<void (*)(const char*, const ImGuiStyle&)>(&register_imgui_style))
     .addFunction("register_workspace", static_cast<void (*)(const char*, const Workspace&)>(&register_workspace))
     .addFunction("remove_imgui_style", static_cast<void (*)(const char*)>(&remove_imgui_style))
     .addFunction("remove_workspace", static_cast<void (*)(const char*)>(&remove_workspace))
     .addFunction("render_main_menu_bar", static_cast<void (*)()>(&render_main_menu_bar))
     .addFunction("render_status_bar", static_cast<void (*)()>(&render_status_bar))
+    .addFunction("reset", static_cast<void (*)()>(&reset))
     .addFunction("save_project", static_cast<void (*)()>(&save_project))
     .addFunction("save_project_as", static_cast<void (*)(const char*)>(&save_project_as))
     .addFunction("select_entt", static_cast<void (*)(const Ref<Entity>&)>(&select_entt))

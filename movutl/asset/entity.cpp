@@ -37,6 +37,27 @@ Ref<Entity> Entity::Find(const char* name) {
   return nullptr;
 }
 
+cutil::Prop Entity::getSaveProps() const {
+  cutil::Prop p;
+  p.set<int32_t>("type", (int32_t)getType());
+  p.set<std::string>("name", name.c_str());
+  p.set<int32_t>("guid", (int32_t)guid_);
+  p.set_child("props", getProps());
+  p.set_child("trk", trk.getProps());
+  return p;
+}
+
+Ref<Entity> Entity::fromSaveProps(const cutil::Prop& p) {
+  auto type = (EntityType)cutil::get_or<int32_t>(p, "type", 0);
+  auto name = cutil::get_or<std::string>(p, "name", "");
+  auto e    = Entity::CreateEntity(name.c_str(), type);
+  if(!e) return nullptr;
+  e->guid_ = (uint64_t)cutil::get_or<int32_t>(p, "guid", (int32_t)e->guid_);
+  if(p.contains("props")) e->setProps(p.get_child("props"));
+  if(p.contains("trk")) e->trk.setProps(p.get_child("trk"));
+  return e;
+}
+
 Composition* Entity::get_comp() const {
   auto pj = Project::Get();
   for(int i = 0; i < pj->compos_.size(); i++) {

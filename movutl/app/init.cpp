@@ -14,6 +14,7 @@ void init() {
   LOG_F(1, "Loading plugins...");
   detail::register_default_plugins();
   detail::register_default_filters();
+  detail::register_default_commands();
   detail::init_external_plugins();
   LOG_F(1, "Loading plugins...");
   detail::activate_all_plugins();

@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <movutl/app/app.hpp>
 #include <movutl/app/app_impl.hpp>
 #include <movutl/asset/composition.hpp>
@@ -32,12 +33,52 @@ void update_renderer_thread() {
   if(!cmp) return;
   render_comp(cmp);
 }
+
+void AppMain::play() {
+  playing_         = true;
+  last_frame_time_ = mu_now_seconds();
+}
+
+void AppMain::pause() { playing_ = false; }
+
+void AppMain::reset() {
+  playing_ = false;
+  auto cmp = Composition::GetActiveComp();
+  if(cmp) cmp->frame = cmp->fstart;
+}
+
+void AppMain::goto_frame(int frame) {
+  auto cmp = Composition::GetActiveComp();
+  if(!cmp) return;
+  cmp->frame = std::clamp(frame, cmp->fstart, cmp->fend);
+}
+
+void AppMain::update_frame_impl() {
+  if(!playing_) return;
+  auto cmp = Composition::GetActiveComp();
+  if(!cmp) return;
+
+  double now = mu_now_seconds();
+  double fps = (double)cmp->framerate;
+  if(now - last_frame_time_ >= 1.0 / fps) {
+    cmp->frame++;
+    if(cmp->frame > cmp->fend) cmp->frame = cmp->fstart;
+    last_frame_time_ = now;
+  }
+}
+
 } // namespace detail
 
-void new_project() { Project::New(); }
-void save_project() { MU_FAIL("Not implemented"); }
-void save_project_as(const char* path) { MU_FAIL("Not implemented"); }
+void play() { detail::AppMain::Get()->play(); }
+void pause() { detail::AppMain::Get()->pause(); }
+void reset() { detail::AppMain::Get()->reset(); }
+void goto_frame(int frame) { detail::AppMain::Get()->goto_frame(frame); }
+bool is_playing() { return detail::AppMain::Get()->is_playing(); }
 
-void open_project(const char* path) { MU_FAIL("Not implemented"); }
+void new_project() { Project::New(); }
+void save_project() { Project::Save(); }
+void save_project_as(const char* path) { Project::Save(path); }
+
+void open_project(const char* path) { Project::Load(path); }
 
 } // namespace mu
