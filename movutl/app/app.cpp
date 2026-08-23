@@ -35,7 +35,7 @@ void update_renderer_thread() {
 }
 
 void AppMain::play() {
-  playing_        = true;
+  playing_         = true;
   last_frame_time_ = mu_now_seconds();
 }
 
@@ -58,8 +58,8 @@ void AppMain::update_frame_impl() {
   auto cmp = Composition::GetActiveComp();
   if(!cmp) return;
 
-  double now  = mu_now_seconds();
-  double fps  = cmp->framerate_de != 0 ? (double)cmp->framerate_nu / cmp->framerate_de : 30.0;
+  double now = mu_now_seconds();
+  double fps = (double)cmp->framerate;
   if(now - last_frame_time_ >= 1.0 / fps) {
     cmp->frame++;
     if(cmp->frame > cmp->fend) cmp->frame = cmp->fstart;

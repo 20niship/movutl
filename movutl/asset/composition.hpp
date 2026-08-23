@@ -48,9 +48,8 @@ public:
   Ref<Image> frame_edit;
   Ref<Image> frame_temp;
 
-  Vec2d size           = {1920, 1080};
-  int32_t framerate_nu = 30;
-  int32_t framerate_de = 1;
+  Vec2d size      = {1920, 1080};
+  float framerate = 30.0f;
 
   int32_t fstart = 0;   // 表示開始フレーム
   int32_t fend   = 200; // 表示終了フレーム

@@ -54,11 +54,11 @@ void Composition::resize(int32_t w, int32_t h) {
 }
 
 Composition::Composition(const char* name, int32_t w, int32_t h, int32_t fps) {
-  auto cmp           = cutil::make_ref<Composition>();
-  this->size[0]      = w;
-  this->size[1]      = h;
-  this->framerate_nu = fps;
-  cmp->name          = name;
+  auto cmp        = cutil::make_ref<Composition>();
+  this->size[0]   = w;
+  this->size[1]   = h;
+  this->framerate = (float)fps;
+  cmp->name       = name;
   for(int i = 0; i < 10; i++) {
     TrackLayer layer;
     std::string name_str = "Layer" + std::to_string(i + 1);
@@ -94,8 +94,7 @@ cutil::Prop Composition::getProps() const {
   cutil::Prop p;
   p.set<std::string>("name", name.c_str());
   p.set<Vec2>("size", Vec2(size));
-  p.set<int32_t>("framerate_nu", framerate_nu);
-  p.set<int32_t>("framerate_de", framerate_de);
+  p.set<float>("framerate", framerate);
   p.set<int32_t>("fstart", fstart);
   p.set<int32_t>("fend", fend);
   p.set<int32_t>("frame", frame);
@@ -103,13 +102,12 @@ cutil::Prop Composition::getProps() const {
 }
 
 void Composition::setProps(const cutil::Prop& p) {
-  name         = cutil::get_or<std::string>(p, "name", name.c_str());
-  size         = Vec2d(cutil::get_or<Vec2>(p, "size", Vec2(size)));
-  framerate_nu = cutil::get_or<int32_t>(p, "framerate_nu", framerate_nu);
-  framerate_de = cutil::get_or<int32_t>(p, "framerate_de", framerate_de);
-  fstart       = cutil::get_or<int32_t>(p, "fstart", fstart);
-  fend         = cutil::get_or<int32_t>(p, "fend", fend);
-  frame        = cutil::get_or<int32_t>(p, "frame", frame);
+  name      = cutil::get_or<std::string>(p, "name", name.c_str());
+  size      = Vec2d(cutil::get_or<Vec2>(p, "size", Vec2(size)));
+  framerate = cutil::get_or<float>(p, "framerate", framerate);
+  fstart    = cutil::get_or<int32_t>(p, "fstart", fstart);
+  fend      = cutil::get_or<int32_t>(p, "fend", fend);
+  frame     = cutil::get_or<int32_t>(p, "frame", frame);
 }
 
 

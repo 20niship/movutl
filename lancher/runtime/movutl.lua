@@ -88,8 +88,7 @@ movutl.ImageFormat = {}
 ---@field frame_final Ref<Image>
 ---@field frame_edit Ref<Image>
 ---@field frame_temp Ref<Image>
----@field framerate_nu number
----@field framerate_de number
+---@field framerate number
 ---@field fstart number
 ---@field fend number
 ---@field frame number
@@ -102,8 +101,7 @@ movutl.Composition.flag = nil
 movutl.Composition.frame_final = nil
 movutl.Composition.frame_edit = nil
 movutl.Composition.frame_temp = nil
-movutl.Composition.framerate_nu = 30
-movutl.Composition.framerate_de = 1
+movutl.Composition.framerate = 30.0 f
 movutl.Composition.fstart = 0
 movutl.Composition.fend = 200
 movutl.Composition.frame = 0
@@ -135,6 +133,8 @@ function movutl.Composition:insert_entity( entt, layer, ) end
 
 ---@class EntityInfo
 ---@field flag EntityType
+---@field rate number
+---@field scale number
 ---@field framerate number
 ---@field nframes number
 ---@field format ImageFormat
@@ -144,7 +144,9 @@ function movutl.Composition:insert_entity( entt, layer, ) end
 ---@field audio_format_size number
 movutl.EntityInfo = {}
 movutl.EntityInfo.flag = EntityType_Movie
-movutl.EntityInfo.framerate = 23.98
+movutl.EntityInfo.rate = 30
+movutl.EntityInfo.scale = 1
+movutl.EntityInfo.framerate = 30
 movutl.EntityInfo.nframes = 0
 movutl.EntityInfo.format = ImageFormatRGB
 movutl.EntityInfo.width = 0
@@ -281,6 +283,14 @@ movutl.Project.main_comp_idx = 0
 ---@param fps number
 ---@return nil
 function movutl.Project:New( width, height, fps, ) end
+
+---@param path string
+---@return nil
+function movutl.Project:Save( path, ) end
+
+---@param path string
+---@return nil
+function movutl.Project:Load( path, ) end
 
 ---@return [ [ deprecated ] ] Composition 
 function movutl.Project:get_main_comp( ) end
@@ -432,8 +442,15 @@ function movutl.get_compatible_plugin( path, type, )end
 ---@return table
 function movutl.get_selected_entts( )end
 
+---@param frame number
+---@return nil
+function movutl.goto_frame( frame, )end
+
 ---@return nil
 function movutl.init( )end
+
+---@return boolean
+function movutl.is_playing( )end
 
 ---@return nil
 function movutl.new_project( )end
@@ -441,6 +458,12 @@ function movutl.new_project( )end
 ---@param path string
 ---@return nil
 function movutl.open_project( path, )end
+
+---@return nil
+function movutl.pause( )end
+
+---@return nil
+function movutl.play( )end
 
 ---@param name string
 ---@param style ImGuiStyle 
@@ -465,6 +488,9 @@ function movutl.render_main_menu_bar( )end
 
 ---@return nil
 function movutl.render_status_bar( )end
+
+---@return nil
+function movutl.reset( )end
 
 ---@return nil
 function movutl.save_project( )end
