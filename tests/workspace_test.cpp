@@ -1,4 +1,5 @@
 #include <doctest/doctest.h>
+#include <movutl/app/app_impl.hpp>
 #include <movutl/gui/gui.hpp>
 
 using namespace mu;
