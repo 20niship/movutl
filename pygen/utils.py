@@ -1,6 +1,7 @@
 from typing import List
-from pygen_types import MArgument, ArgumentType
+from pygen_types import MArgument, ArgumentType, MAbiFunc
 import os
+import re
 
 
 class ColoredLogger:
@@ -127,6 +128,22 @@ def get_prop_type(argtype: str) -> ArgumentType:
         return ArgumentType.ArgType_Entity
     # logger.error(f"Unsupported type: {argtype}")
     return ArgumentType.ArgType_Undefined
+
+
+MABI_FUNC_RE = re.compile(r"^\s*(.+?)\s+(\w+)\((.*)\)\s*;\s*//\s*MABI_FUNC\s*$")
+
+
+def parse_mabi_functions(header_file: str) -> List[MAbiFunc]:
+    funcs: List[MAbiFunc] = []
+    with open(header_file, "r") as f:
+        for line in f:
+            m = MABI_FUNC_RE.match(line)
+            if not m:
+                continue
+            ret_type, name, args = m.group(1).strip(), m.group(2).strip(), m.group(3).strip()
+            field_name = name[len("abi_"):] if name.startswith("abi_") else name
+            funcs.append(MAbiFunc(name=name, field_name=field_name, ret_type=ret_type, args=args))
+    return funcs
 
 
 def write_if_different(filename: str, output: str):

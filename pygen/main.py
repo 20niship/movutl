@@ -7,12 +7,14 @@ from pygen_types import MFunction, MEnum, MClass, MArgument, ArgumentType
 from LuaintfWriter import LuaIntfWriter
 from LuaTypeWriter import LuaTypeWriter
 from PropsWriter import PropsWriter
+from AbiWriter import AbiWriter
 from config import ignore_symbols
 from utils import (
     logger,
     parse_mprop_info,
     should_autogen_func,
     get_prop_type,
+    parse_mabi_functions,
 )
 
 import CppHeaderParser
@@ -320,7 +322,12 @@ def run():
     stub_generater.set(fn_movtl, enu_movtl, cls_movtl)
     stub_generater.save()
 
-    
+    abi_funcs = parse_mabi_functions(str(root / "movutl/plugin/plugin.hpp"))
+    stub_generater = AbiWriter()
+    stub_generater.set(abi_funcs)
+    stub_generater.save()
+
+
 if __name__ == "__main__":
     run()
     sleep(0.01)

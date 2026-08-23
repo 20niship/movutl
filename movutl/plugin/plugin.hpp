@@ -34,6 +34,11 @@ struct PluginData {
 void init_external_plugins();
 void activate_all_plugins();
 
+// pygen(AbiWriter)がここを解析しABIContextのフィールドとmake_abi()を自動生成する。増やす場合はここに1行足すだけでよい。
+bool abi_register_input_plugin(const InputPluginTable* table);   // MABI_FUNC
+bool abi_register_filter_plugin(const FilterPluginTable* table); // MABI_FUNC
+ABIContext make_abi(); // 実装は movutl/generated/generated_abi.cpp (pygen生成)
+
 } // namespace detail
 
 bool register_plugin(const std::string& filepath);

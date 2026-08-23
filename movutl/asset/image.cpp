@@ -1,9 +1,12 @@
 #include <opencv2/opencv.hpp>
 //
+#include <movutl/app/app.hpp>
 #include <movutl/asset/image.hpp>
 #include <movutl/asset/movie.hpp>
 #include <movutl/asset/project.hpp>
+#include <movutl/core/logger.hpp>
 #include <movutl/core/time.hpp>
+#include <movutl/plugin/input.hpp>
 
 namespace mu {
 
@@ -110,14 +113,53 @@ bool Image::render(Composition* cmp) {
   return this->copyto(cmp->frame_final.get(), Vec2d(base_x, base_y));
 }
 
+bool Image::load_file(const char* path) {
+  if(in_plg_ != nullptr && in_handle_ != nullptr) in_plg_->fn_close(in_handle_);
+  in_plg_    = nullptr;
+  in_handle_ = nullptr;
+  info       = EntityInfo();
+
+  auto p = get_compatible_plugin(path, EntityType_Image);
+  if(p == nullptr) {
+    LOG_F(ERROR, "No compatible image plugin found for file: %s", path);
+    return false;
+  }
+  this->path = path;
+
+  InputHandle h = p->fn_open(path);
+  if(h == nullptr) {
+    LOG_F(ERROR, "Failed to open image file: %s", path);
+    return false;
+  }
+  if(p->fn_info_get == nullptr || !p->fn_info_get(h, &info) || info.width <= 0 || info.height <= 0) {
+    LOG_F(ERROR, "Failed to get image info: %s", path);
+    p->fn_close(h);
+    return false;
+  }
+
+  this->fmt = info.format;
+  this->resize((int)info.width, (int)info.height);
+
+  MU_ASSERT(p->fn_read_video);
+  if(p->fn_read_video(h, 0, this->data()) <= 0) {
+    LOG_F(ERROR, "Failed to read image data: %s", path);
+    p->fn_close(h);
+    reset();
+    return false;
+  }
+  p->fn_close(h); // 静止画は一括読み込みで完結するのでハンドルを保持し続けない(Movieとの違い)
+  LOG_F(INFO, "Image loaded: %s (%dx%d, plugin=%s)", path, info.width, info.height, p->name);
+  return true;
+}
+
 Ref<Image> Image::Create(const char* name, const char* path) {
   MU_ASSERT(name);
   auto img  = cutil::make_ref<Image>();
   img->name = name;
-  if(path) img->path = path;
   auto pj = Project::Get();
   MU_ASSERT(pj);
   pj->entities.push_back(img);
+  if(path && path[0] != '\0') img->load_file(path);
   return img;
 }
 

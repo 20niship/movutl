@@ -1,1 +1,2 @@
 add_subdirectory(video_reader)
+add_subdirectory(image_reader)
