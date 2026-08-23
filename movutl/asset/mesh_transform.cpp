@@ -13,11 +13,11 @@ Vec3 Mesh::get_center_of_geom() const {
   }
   return p / vertices.size();
 }
-Rect3D Mesh::get_bbox() const {
-  Rect3D r;
+cutil::Rect3D Mesh::get_bbox() const {
+  cutil::Rect3D r;
   const Vertex* end = vertices.end();
   for(auto* ptr = vertices.begin(); ptr <= end; ptr++) {
-    r.expand(ptr->pos[0], ptr->pos[1], ptr->pos[2]);
+    r.expand(cutil::Vec3f(ptr->pos[0], ptr->pos[1], ptr->pos[2]));
   }
   return r;
 }
