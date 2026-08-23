@@ -22,7 +22,7 @@ bool fn_proc(void* fp, FilterInData* fpip, const cutil::Prop& p) {
 
   return true;
 }
-bool fn_init(void* fp, ExeData* editp, cutil::PropInfo* props, cutil::Prop* defaults) {
+bool fn_init(void* fp, ABIContext* editp, cutil::PropInfo* props, cutil::Prop* defaults) {
   MU_ASSERT(props != nullptr);
   MU_ASSERT(defaults != nullptr);
   props->fields.push_back(cutil::PropInfo::Field("brightness", 0, cutil::prop_info_of<float>()));
