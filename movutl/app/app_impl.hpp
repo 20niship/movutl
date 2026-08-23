@@ -2,6 +2,7 @@
 #include <imgui.h>
 #include <map>
 #include <movutl/core/defines.hpp>
+#include <movutl/gui/gui.hpp>
 #include <movutl/plugin/plugin.hpp>
 
 namespace mu::detail {
@@ -18,6 +19,7 @@ public:
   std::vector<Ref<Entity>> entt_selected;
 
   std::map<std::string, ImGuiStyle> imgui_styles;
+  std::map<std::string, Workspace> workspaces;
 };
 
 } // namespace mu::detail

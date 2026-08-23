@@ -26,15 +26,15 @@ public:
   LogLevel log_level       = LogLevel::DEBUG;
 
   // 以下 movutl/core/sys_info.hpp より統合
-  int sys_flag            = 0;            // システムフラグ (kSysFlagEdit 等)
-  cutil::Str version_info{""};            // バージョン情報
-  int filter_count        = 0;            // 登録されてるフィルタの数
-  Vec2d min_size          = {1, 1};       // 編集出来る最小画像サイズ
-  Vec2d vram_size         = {3000, 3000}; // 編集用画像領域のサイズ
-  int vram_yc_size        = 6;            // 編集用画像領域の画素のバイト数 (YC48想定)
-  int vram_line_size      = 0;            // 編集用画像領域の幅のバイト数
-  void* font_handle       = nullptr;      // フィルタ設定ウィンドウで使用しているフォントのハンドル (Windows HFONT)
-  int build_number        = 0;            // ビルド番号 (新しいバージョンになるほど大きな値になります)
+  int sys_flag = 0;                  // システムフラグ (kSysFlagEdit 等)
+  cutil::Str version_info{""};       // バージョン情報
+  int filter_count   = 0;            // 登録されてるフィルタの数
+  Vec2d min_size     = {1, 1};       // 編集出来る最小画像サイズ
+  Vec2d vram_size    = {3000, 3000}; // 編集用画像領域のサイズ
+  int vram_yc_size   = 6;            // 編集用画像領域の画素のバイト数 (YC48想定)
+  int vram_line_size = 0;            // 編集用画像領域の幅のバイト数
+  void* font_handle  = nullptr;      // フィルタ設定ウィンドウで使用しているフォントのハンドル (Windows HFONT)
+  int build_number   = 0;            // ビルド番号 (新しいバージョンになるほど大きな値になります)
 
   static void Load();
   static void Save();

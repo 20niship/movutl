@@ -16,7 +16,7 @@ private:
   void reserve(size_t new_capacity) { data_.resize(new_capacity); }
 
 public:
-  Image()  = default;
+  Image() = default;
   Image(int w, int h) { resize(w, h); }
   ~Image() = default;
 
