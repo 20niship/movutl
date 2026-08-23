@@ -1,5 +1,4 @@
 add_library(image_reader MODULE
-  image_reader.cpp
   plugin_main.cpp
   ${MOVUTL_ROOT_DIR}/ext/loguru/loguru.cpp
 )

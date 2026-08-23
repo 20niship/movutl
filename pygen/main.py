@@ -322,7 +322,10 @@ def run():
     stub_generater.set(fn_movtl, enu_movtl, cls_movtl)
     stub_generater.save()
 
-    abi_funcs = parse_mabi_functions(str(root / "movutl/plugin/plugin.hpp"))
+    abi_scan_files = headers + [root / "movutl/plugin/plugin.hpp"]
+    abi_funcs = []
+    for f in abi_scan_files:
+        abi_funcs.extend(parse_mabi_functions(str(f)))
     stub_generater = AbiWriter()
     stub_generater.set(abi_funcs)
     stub_generater.save()
