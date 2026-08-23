@@ -8,14 +8,15 @@ namespace mu::detail {
 
 ABIContext make_abi() {
   ABIContext abi{};
-  abi.abi_version            = 1;
-  abi.update_renderer_thread = &update_renderer_thread;
-  abi.init_gui_panels        = &init_gui_panels;
-  abi.update_gui_panels      = &update_gui_panels;
-  abi.gui_new_frame          = &gui_new_frame;
-  abi.gui_render_to_screen   = &gui_render_to_screen;
-  abi.register_input_plugin  = &abi_register_input_plugin;
-  abi.register_filter_plugin = &abi_register_filter_plugin;
+  abi.abi_version               = 1;
+  abi.update_renderer_thread    = &update_renderer_thread;
+  abi.init_gui_panels           = &init_gui_panels;
+  abi.update_gui_panels         = &update_gui_panels;
+  abi.gui_new_frame             = &gui_new_frame;
+  abi.gui_render_to_screen      = &gui_render_to_screen;
+  abi.process_command_shortcuts = &process_command_shortcuts;
+  abi.register_input_plugin     = &abi_register_input_plugin;
+  abi.register_filter_plugin    = &abi_register_filter_plugin;
   return abi;
 }
 
