@@ -8,13 +8,13 @@ from LuaintfWriter import LuaIntfWriter
 from LuaTypeWriter import LuaTypeWriter
 from PropsWriter import PropsWriter
 from AbiWriter import AbiWriter
-from config import ignore_symbols
+from config import ignore_symbols, abi_exclude_symbols
 from utils import (
     logger,
     parse_mprop_info,
     should_autogen_func,
     get_prop_type,
-    parse_mabi_functions,
+    parse_abi_candidate_functions,
 )
 
 import CppHeaderParser
@@ -325,7 +325,8 @@ def run():
     abi_scan_files = headers + [root / "movutl/plugin/plugin.hpp"]
     abi_funcs = []
     for f in abi_scan_files:
-        abi_funcs.extend(parse_mabi_functions(str(f)))
+        include_path = str(Path(f).relative_to(root))
+        abi_funcs.extend(parse_abi_candidate_functions(str(f), abi_exclude_symbols, include_path))
     stub_generater = AbiWriter()
     stub_generater.set(abi_funcs)
     stub_generater.save()

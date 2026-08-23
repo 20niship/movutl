@@ -74,6 +74,7 @@ class MAbiFunc:
     field_name: str
     ret_type: str
     args: str
+    include_path: str = ""
 
 
 @dataclass

@@ -130,20 +130,36 @@ def get_prop_type(argtype: str) -> ArgumentType:
     return ArgumentType.ArgType_Undefined
 
 
-MABI_FUNC_RE = re.compile(r"^\s*(.+?)\s+(\w+)\((.*)\)\s*;\s*//\s*MABI_FUNC\s*$")
+ABI_NAMESPACE_OPEN_RE = re.compile(r"^\s*namespace\s+(\w+)\s*\{")
+ABI_FUNC_DECL_RE = re.compile(r"^\s*([\w:&*<>]+(?:\s+[\w:&*<>]+)*)\s+(\w+)\(([^()]*)\)\s*;\s*(//.*)?$")
 
 
-def parse_mabi_functions(header_file: str) -> List[MAbiFunc]:
+def parse_abi_candidate_functions(header_file: str, exclude_names: set, include_path: str = "") -> List[MAbiFunc]:
+    """`namespace detail { ... }` 直下の関数宣言をコメント不要で自動的にABI登録候補として拾う。
+    exclude_names に含まれる関数名、関数ポインタを引数/戻り値に取るものは除外する。"""
     funcs: List[MAbiFunc] = []
+    ns_stack: List[tuple] = []  # (name, depth_at_open)
+    depth = 0
     with open(header_file, "r") as f:
         for line in f:
-            m = MABI_FUNC_RE.match(line)
-            if not m:
+            stripped = line.strip()
+            ns_match = ABI_NAMESPACE_OPEN_RE.match(stripped)
+            in_detail = any(n == "detail" for n, _ in ns_stack)
+            if ns_match:
+                ns_stack.append((ns_match.group(1), depth))
+                depth += 1
                 continue
-            ret_type, name, args = m.group(1).strip(), m.group(2).strip(), m.group(3).strip()
-            # abi_ プレフィックスは任意。あれば剥がしてフィールド名にするが、無くても関数名をそのままフィールド名にする
-            field_name = name[len("abi_"):] if name.startswith("abi_") else name
-            funcs.append(MAbiFunc(name=name, field_name=field_name, ret_type=ret_type, args=args))
+            if in_detail:
+                m = ABI_FUNC_DECL_RE.match(line)
+                if m:
+                    ret_type, name, args = m.group(1).strip(), m.group(2).strip(), m.group(3).strip()
+                    if name not in exclude_names and "(*" not in ret_type and "(*" not in args:
+                        # abi_ プレフィックスは任意。あれば剥がしてフィールド名にするが、無くても関数名をそのまま使う
+                        field_name = name[len("abi_"):] if name.startswith("abi_") else name
+                        funcs.append(MAbiFunc(name=name, field_name=field_name, ret_type=ret_type, args=args, include_path=include_path))
+            depth += stripped.count("{") - stripped.count("}")
+            while ns_stack and depth <= ns_stack[-1][1]:
+                ns_stack.pop()
     return funcs
 
 

@@ -23,11 +23,15 @@ class AbiWriter:
         write_if_different("../movutl/generated/generated_abi_fields.inc", "".join(lines))
 
     def _write_make_abi(self):
+        includes = ["movutl/plugin/abi.h", "movutl/plugin/plugin.hpp"]
+        for f in self.funcs:
+            if f.include_path and f.include_path not in includes:
+                includes.append(f.include_path)
+        include_lines = "".join(f"#include <{p}>\n" for p in includes)
         body = (
             self.STUB_COMMENT
-            + "#include <movutl/plugin/abi.h>\n"
-            + "#include <movutl/plugin/plugin.hpp>\n\n"
-            + "namespace mu::detail {\n\n"
+            + include_lines
+            + "\nnamespace mu::detail {\n\n"
             + "ABIContext make_abi() {\n"
             + "  ABIContext abi{};\n"
             + "  abi.abi_version = 1;\n"

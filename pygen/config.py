@@ -1,3 +1,12 @@
+# ABI(pluginから呼べる関数群)に登録しない mu::detail 内の関数
+abi_exclude_symbols = {
+    "make_abi",
+    "init_external_plugins",
+    "activate_all_plugins",
+    "register_default_plugins",
+    "register_default_filters",
+}
+
 ignore_symbols = [  #
     ("", ""),
     ("Movie", "img_"),
