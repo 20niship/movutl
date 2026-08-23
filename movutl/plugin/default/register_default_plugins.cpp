@@ -1,13 +1,11 @@
 #include <movutl/app/app_impl.hpp>
 #include <movutl/plugin/default/image_color_filter.hpp>
-#include <movutl/plugin/default/video_reader.hpp>
 #include <movutl/plugin/plugin.hpp>
 
 namespace mu::detail {
 
 void register_default_plugins() {
-  auto Main = AppMain::Get();
-  Main->input_plugins.push_back(plg_video_reader);
+  // video_reader は plugins/video_reader/*.mso として外部プラグイン経由で登録される
 }
 
 void register_default_filters() {

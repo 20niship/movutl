@@ -5,6 +5,7 @@
 #include <movutl/app/app.hpp>
 #include <movutl/app/app_impl.hpp>
 #include <movutl/asset/entity.hpp>
+#include <movutl/core/logger.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/gui/inspector.hpp>
 #include <movutl/gui/widgets.hpp>

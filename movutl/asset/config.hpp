@@ -20,7 +20,7 @@ public:
   Vec2d max_size   = {3000, 3000}; // 編集出来る最大画像サイズ
   int max_frame    = 320000;       // 編集出来る最大フレーム数
   int cache_frames = 10;
-  std::vector<std::string> plugin_search_paths;
+  std::vector<std::string> plugin_search_paths = {"plugins"};
   bool log_to_file         = false;
   std::string log_filename = "log.txt";
   LogLevel log_level       = LogLevel::DEBUG;

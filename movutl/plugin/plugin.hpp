@@ -1,6 +1,6 @@
 #pragma once
 #include <movutl/core/platform.hpp>
-#include <movutl/plugin/exdata.hpp>
+#include <movutl/plugin/abi.h>
 #include <movutl/plugin/filter.hpp>
 #include <movutl/plugin/input.hpp>
 
@@ -18,13 +18,13 @@ struct PluginTable {
   char name[64];
   char description[256];
   char filter[256];
-  void (*plugin_init)(ExeData* exdata);
-  void (*plugin_exit)(ExeData* exdata);
+  void (*plugin_init)(Abi* abi);
+  void (*plugin_exit)(Abi* abi);
 };
 
 namespace detail {
 
-using PluginEntryPointType = void (*)(ExeData* exdata, PluginTable* table);
+using PluginEntryPointType = void (*)(Abi* abi, PluginTable* table);
 struct PluginData {
   PluginTable table;
   AddonLibraryModuleT mod;
