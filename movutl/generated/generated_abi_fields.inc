@@ -4,5 +4,6 @@
   void (*update_gui_panels)() = nullptr;
   void (*gui_new_frame)() = nullptr;
   void (*gui_render_to_screen)() = nullptr;
+  void (*process_command_shortcuts)() = nullptr;
   bool (*register_input_plugin)(const InputPluginTable* table) = nullptr;
   bool (*register_filter_plugin)(const FilterPluginTable* table) = nullptr;
