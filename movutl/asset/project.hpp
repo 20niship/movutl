@@ -24,6 +24,8 @@ public:
   int main_comp_idx = 0;
 
   static void New(int width = 1920, int height = 1080, int fps = 30);
+  static void Save(const char* path = nullptr);
+  static void Load(const char* path);
 
   [[deprecated]] Composition* get_main_comp() {
     if(main_comp_idx < 0 || main_comp_idx >= compos_.size()) {

@@ -4,6 +4,8 @@
 #include <imgui_impl_opengl3.h>
 // --
 #include <movutl/app/app.hpp>
+#include <movutl/app/app_impl.hpp>
+#include <movutl/core/command.hpp>
 #include <movutl/core/filesystem.hpp>
 #include <movutl/core/logger.hpp>
 #include <movutl/core/vector.hpp>
@@ -173,6 +175,9 @@ void gui_render_to_screen() {
 void update() {
   { // gui thread
     detail::gui_new_frame();
+    detail::process_command_shortcuts();
+    detail::AppMain::Get()->update_frame_impl();
+    tick_running_commands();
     detail::update_gui_panels();
     detail::gui_render_to_screen();
   }

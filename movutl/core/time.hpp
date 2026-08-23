@@ -30,5 +30,9 @@ struct ScopeTimer {
   std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
 };
 
+inline double mu_now_seconds() {
+  using namespace std::chrono;
+  return duration<double>(steady_clock::now().time_since_epoch()).count();
+}
 
 } // namespace mu
