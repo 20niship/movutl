@@ -135,8 +135,6 @@ function movutl.Composition:insert_entity( entt, layer, ) end
 
 ---@class EntityInfo
 ---@field flag EntityType
----@field rate number
----@field scale number
 ---@field framerate number
 ---@field nframes number
 ---@field format ImageFormat
@@ -146,8 +144,6 @@ function movutl.Composition:insert_entity( entt, layer, ) end
 ---@field audio_format_size number
 movutl.EntityInfo = {}
 movutl.EntityInfo.flag = EntityType_Movie
-movutl.EntityInfo.rate = 30
-movutl.EntityInfo.scale = 1
 movutl.EntityInfo.framerate = 30
 movutl.EntityInfo.nframes = 0
 movutl.EntityInfo.format = ImageFormatRGB

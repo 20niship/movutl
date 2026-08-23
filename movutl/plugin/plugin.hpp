@@ -18,13 +18,13 @@ struct PluginTable {
   char name[64];
   char description[256];
   char filter[256];
-  void (*plugin_init)(Abi* abi);
-  void (*plugin_exit)(Abi* abi);
+  void (*plugin_init)(ABIContext* abi);
+  void (*plugin_exit)(ABIContext* abi);
 };
 
 namespace detail {
 
-using PluginEntryPointType = void (*)(Abi* abi, PluginTable* table);
+using PluginEntryPointType = void (*)(ABIContext* abi, PluginTable* table);
 struct PluginData {
   PluginTable table;
   AddonLibraryModuleT mod;

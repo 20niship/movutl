@@ -50,8 +50,8 @@ bool abi_register_filter_plugin(const FilterPluginTable* t) {
   return true;
 }
 
-Abi make_abi() {
-  Abi abi{};
+ABIContext make_abi() {
+  ABIContext abi{};
   abi.abi_version            = 1;
   abi.register_input_plugin  = &abi_register_input_plugin;
   abi.register_filter_plugin = &abi_register_filter_plugin;
@@ -89,7 +89,7 @@ bool register_plugin(const std::string& path) {
   }
 
   // プラグインのエントリーポイントを実行
-  Abi abi = detail::make_abi();
+  ABIContext abi = detail::make_abi();
   detail::PluginData data;
   entry(&abi, &data.table);
   if(data.table.plugin_init) data.table.plugin_init(&abi);
