@@ -20,18 +20,10 @@ InputPluginTable* get_compatible_plugin(const char* path, EntityType type) {
   return nullptr;
 }
 
-std::vector<Ref<Entity>> get_selected_entts() {
-  return detail::AppMain::Get()->entt_selected;
-}
-void clear_selected_entts() {
-  detail::AppMain::Get()->entt_selected.clear();
-}
-void select_entt(const Ref<Entity>& entt) {
-  detail::AppMain::Get()->entt_selected.push_back(entt);
-}
-void select_entts(const std::vector<Ref<Entity>>& entts) {
-  detail::AppMain::Get()->entt_selected = entts;
-}
+std::vector<Ref<Entity>> get_selected_entts() { return detail::AppMain::Get()->entt_selected; }
+void clear_selected_entts() { detail::AppMain::Get()->entt_selected.clear(); }
+void select_entt(const Ref<Entity>& entt) { detail::AppMain::Get()->entt_selected.push_back(entt); }
+void select_entts(const std::vector<Ref<Entity>>& entts) { detail::AppMain::Get()->entt_selected = entts; }
 
 namespace detail {
 void update_renderer_thread() {
@@ -41,18 +33,10 @@ void update_renderer_thread() {
 }
 } // namespace detail
 
-void new_project() {
-  Project::New();
-}
-void save_project() {
-  MU_FAIL("Not implemented");
-}
-void save_project_as(const char* path) {
-  MU_FAIL("Not implemented");
-}
+void new_project() { Project::New(); }
+void save_project() { MU_FAIL("Not implemented"); }
+void save_project_as(const char* path) { MU_FAIL("Not implemented"); }
 
-void open_project(const char* path) {
-  MU_FAIL("Not implemented");
-}
+void open_project(const char* path) { MU_FAIL("Not implemented"); }
 
 } // namespace mu

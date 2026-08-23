@@ -15,4 +15,4 @@ extern FilterPluginTable f_blur;
 extern FilterPluginTable f_directional_blur;
 extern FilterPluginTable f_radial_blur;
 
-} // namespace mu
+} // namespace mu::detail

@@ -15,7 +15,7 @@ namespace mu {
 namespace detail {
 
 void init_gui_panels() {
-  auto g = GUIManager::Get();
+  auto g    = GUIManager::Get();
   g->panels = {
     std::make_shared<InspectorWindow>(),
     std::make_shared<TimelineWindow>(),
@@ -66,7 +66,7 @@ const char* get_entt_icon(const Ref<Entity>& entt) {
 
 
 void register_imgui_style(const char* name, const ImGuiStyle& style) {
-  auto app = detail::AppMain::Get();
+  auto app                = detail::AppMain::Get();
   app->imgui_styles[name] = style;
 }
 
@@ -77,7 +77,7 @@ void apply_imgui_style(const char* name) {
     return;
   }
   LOG_F(1, "apply_imgui_style: %s", name);
-  auto it = app->imgui_styles[name];
+  auto it           = app->imgui_styles[name];
   ImGui::GetStyle() = it;
 }
 

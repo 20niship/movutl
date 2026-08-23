@@ -67,10 +67,10 @@ Vec2d FontRenderManager::FontFace::get_size(const char* text) {
   MU_ASSERT(slot);
   std::u32string u32str = std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t>().from_bytes(text);
 
-  int curPosX = 0;
-  int curPosY = 60;    // 現在のカーソル位置
-  int last_height = 0; // 最後に文字を書いたときの文字の大きさ
-  slot = face->glyph;  // グリフへのショートカット
+  int curPosX     = 0;
+  int curPosY     = 60;          // 現在のカーソル位置
+  int last_height = 0;           // 最後に文字を書いたときの文字の大きさ
+  slot            = face->glyph; // グリフへのショートカット
 
   for(int n = 0; n < u32str.size(); n++) {
     if(u32str[n] == '\n') {
@@ -98,7 +98,7 @@ void FontRenderManager::FontFace::set_fontsize(int size) {
   }
   MU_ASSERT(face);
   fontsize_ = size;
-  slot = face->glyph; // グリフへのショートカット
+  slot      = face->glyph; // グリフへのショートカット
   printf("set_fontsize: %d\n", size);
 }
 
@@ -112,9 +112,9 @@ void FontRenderManager::FontFace::render_text(const char* text, int space_x, int
 
   std::u32string u32str = std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t>().from_bytes(text);
 
-  int curPosX = 0;
-  int curPosY = 60;    // 現在のカーソル位置
-  int last_height = 0; // 最後に文字を書いたときの文字の大きさ
+  int curPosX     = 0;
+  int curPosY     = 60; // 現在のカーソル位置
+  int last_height = 0;  // 最後に文字を書いたときの文字の大きさ
 
   for(int n = 0; n < u32str.size(); n++) {
     if(u32str[n] == '\n') {
@@ -145,12 +145,12 @@ void FontRenderManager::FontFace::draw_bitmap(ImageRGBA* img, int x, int y) {
     Vec4b* image = img->data();
     for(i = x, p = 0; i < x_max; i++, p++) {
       if(i < 0 || j < 0 || i >= img->width || j >= img->height) continue;
-      char color = (slot->bitmap).buffer[q * (slot->bitmap).width + p];
+      char color   = (slot->bitmap).buffer[q * (slot->bitmap).width + p];
       Vec4b* pixel = &image[j * img->width + i];
-      (*pixel)[0] = color | (*pixel)[0];
-      (*pixel)[1] = color | (*pixel)[1];
-      (*pixel)[2] = color | (*pixel)[2];
-      (*pixel)[3] = color | (*pixel)[3];
+      (*pixel)[0]  = color | (*pixel)[0];
+      (*pixel)[1]  = color | (*pixel)[1];
+      (*pixel)[2]  = color | (*pixel)[2];
+      (*pixel)[3]  = color | (*pixel)[3];
     }
   }
 }

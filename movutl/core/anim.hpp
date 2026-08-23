@@ -24,11 +24,11 @@ enum AniInterpType {
 
 template <typename T> struct AnimKeyframe {
   T value_;
-  uint32_t frame_ = 0;
-  float ease_ = 0;
-  float ease2_ = 0;
+  uint32_t frame_    = 0;
+  float ease_        = 0;
+  float ease2_       = 0;
   AniInterpType type = AniInterpType::LINEAR;
-  AnimKeyframe() = default;
+  AnimKeyframe()     = default;
   AnimKeyframe(T value) { value_ = value; }
 };
 

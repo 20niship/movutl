@@ -1,5 +1,3 @@
 #include <movutl/plugin/filter.hpp>
 
-namespace mu{
-
-}
+namespace mu {}

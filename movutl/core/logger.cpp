@@ -13,7 +13,7 @@
 namespace mu::detail {
 
 static std::string get_logger_filename() {
-  auto now = std::chrono::system_clock::now();
+  auto now       = std::chrono::system_clock::now();
   auto in_time_t = std::chrono::system_clock::to_time_t(now);
 
   std::stringstream ss;
@@ -34,12 +34,12 @@ void init_logger() {
     if(!c->log_filename.empty()) loguru::add_file(c->log_filename.c_str(), loguru::Append, 1);
   }
 
-  loguru::g_preamble_date = false;
+  loguru::g_preamble_date   = false;
   loguru::g_preamble_uptime = true;
-  loguru::g_preamble_time = false;
+  loguru::g_preamble_time   = false;
   loguru::g_preamble_thread = false;
-  loguru::g_preamble_file = false;
-  loguru::g_preamble_pipe = false;
+  loguru::g_preamble_file   = false;
+  loguru::g_preamble_pipe   = false;
   loguru::g_preamble_header = false;
 
   switch(c->log_level) {

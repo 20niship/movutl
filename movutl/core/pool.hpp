@@ -1,7 +1,7 @@
 #pragma once
 
-#include <movutl/core/assert.hpp>
 #include <iterator>
+#include <movutl/core/assert.hpp>
 
 template <typename T, int LEN = 1024> struct Pool {
   struct Chunk {
@@ -9,7 +9,7 @@ template <typename T, int LEN = 1024> struct Pool {
     Chunk* next;
     size_t idx; ///< index of chunklist
   };
-  class iterator  {
+  class iterator {
   public:
     Chunk* chunk;
     unsigned pos;

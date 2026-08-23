@@ -313,7 +313,7 @@ template <typename T, unsigned int W, unsigned int H> struct _Mat {
 
   public:
     CommaInput(_Mat* m_, int i) {
-      m = m_;
+      m     = m_;
       index = i;
     }
     CommaInput& operator,(T v) {
@@ -454,8 +454,8 @@ template <typename T, unsigned int W, unsigned int H> struct _Mat {
     _Mat<T, H, W> tmp(*this);
     int x, y;
     for(size_t i = 0; i < W * H; i++) {
-      x = i % W;
-      y = i / W;
+      x                = i % W;
+      y                = i / W;
       value[y * W + x] = tmp[x * H + y];
     }
   }
@@ -612,11 +612,11 @@ template <typename T> struct Vec {
   // Constructors, destructor
   inline Vec() {
     Size = Capacity = 0;
-    Data = NULL;
+    Data            = NULL;
   }
   inline Vec(const Vec<T>& src) {
     Size = Capacity = 0;
-    Data = NULL;
+    Data            = NULL;
     operator=(src);
   }
   inline Vec(const std::initializer_list<T>& src) {
@@ -679,14 +679,14 @@ template <typename T> struct Vec {
   }
   inline void swap(Vec<T>& rhs) {
     int rhs_size = rhs.Size;
-    rhs.Size = Size;
-    Size = rhs_size;
-    int rhs_cap = rhs.Capacity;
+    rhs.Size     = Size;
+    Size         = rhs_size;
+    int rhs_cap  = rhs.Capacity;
     rhs.Capacity = Capacity;
-    Capacity = rhs_cap;
-    T* rhs_data = rhs.Data;
-    rhs.Data = Data;
-    Data = rhs_data;
+    Capacity     = rhs_cap;
+    T* rhs_data  = rhs.Data;
+    rhs.Data     = Data;
+    Data         = rhs_data;
   }
 
   inline int _grow_capacity(int sz) const {
@@ -718,7 +718,7 @@ template <typename T> struct Vec {
       std::memcpy((void*)new_data, (void*)Data, Size * sizeof(T));
       free(Data);
     }
-    Data = new_data;
+    Data     = new_data;
     Capacity = new_capacity;
   }
 
@@ -777,7 +777,7 @@ template <typename T> struct Vec {
   inline T* erase(const T* it, const T* it_last) {
     MU_ASSERT(it >= Data && it < Data + Size && it_last > it && it_last <= Data + Size);
     const ptrdiff_t count = it_last - it;
-    const ptrdiff_t off = it - Data;
+    const ptrdiff_t off   = it - Data;
     memmove(Data + off, Data + off + count, ((size_t)Size - (size_t)off - count) * sizeof(T));
     Size -= (int)count;
     return Data + off;
@@ -814,14 +814,14 @@ template <typename T> struct Vec {
     return Data;
   }
   inline bool contains(const T& v) const {
-    const T* data = Data;
+    const T* data     = Data;
     const T* data_end = Data + Size;
     while(data < data_end)
       if(*data++ == v) return true;
     return false;
   }
   inline T* find(const T& v) {
-    T* data = Data;
+    T* data           = Data;
     const T* data_end = Data + Size;
     while(data < data_end)
       if(*data == v)
@@ -831,7 +831,7 @@ template <typename T> struct Vec {
     return data;
   }
   inline const T* find(const T& v) const {
-    const T* data = Data;
+    const T* data     = Data;
     const T* data_end = Data + Size;
     while(data < data_end)
       if(*data == v)

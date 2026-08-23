@@ -37,3 +37,6 @@
 [submodule "ext/cutil"]
 	path = ext/cutil
 	url = https://github.com/20niship/cutil.git
+[submodule "ext/aviutl2_sdk_mirror"]
+	path = ext/aviutl2_sdk_mirror
+	url = https://github.com/aviutl2/aviutl2_sdk_mirror.git

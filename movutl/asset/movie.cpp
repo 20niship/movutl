@@ -6,7 +6,7 @@
 
 namespace mu {
 Ref<Movie> Movie::Create(const char* name, const char* path) {
-  auto mov = std::make_shared<Movie>();
+  auto mov  = std::make_shared<Movie>();
   mov->name = name;
   Project::Get()->entities.push_back(mov);
   mov->guid_ = Project::Get()->entities.size();
@@ -36,8 +36,8 @@ bool Movie::render(Composition* cmp) {
   render_filters(cmp, img_.get());
 
   MU_ASSERT(img_);
-  int base_x = trk.anchor[0] + (cw - img_->width) / 2 + pos[0];
-  int base_y = trk.anchor[1] + (ch - img_->height) / 2 + pos[1];
+  int base_x  = trk.anchor[0] + (cw - img_->width) / 2 + pos[0];
+  int base_y  = trk.anchor[1] + (ch - img_->height) / 2 + pos[1];
   Vec2 center = Vec2(base_x, base_y) + trk.anchor;
   img_->copyto(cmp->frame_final.get(), center, this->scale.avg() / 100, this->rotation);
 
@@ -51,7 +51,7 @@ bool Movie::load_file(const char* path) {
     LOG_F(WARNING, "No compatible plugin found for file: %s", path);
     return false;
   }
-  this->in_plg_ = p;
+  this->in_plg_    = p;
   this->in_handle_ = p->fn_open(path);
   if(!p->fn_info_get)
     LOG_F(WARNING, "No info_get function found for plugin: %s", p->name);

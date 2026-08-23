@@ -19,23 +19,23 @@ public:
   ImageRGBA(int w, int h) { resize(w, h); }
   ~ImageRGBA() = default;
 
-  unsigned int width = 0;  // MPROPERTY(name="幅", readonly=true)
+  unsigned int width  = 0; // MPROPERTY(name="幅", readonly=true)
   unsigned int height = 0; // MPROPERTY(name="高さ", readonly=true)
-  int16_t dirty_ = 1;
-  bool alpha = true;
+  int16_t dirty_      = 1;
+  bool alpha          = true;
 
   void dirty() { dirty_++; }
   Vec4b* data() { return data_.data(); }
 
   void set_rgb(const size_t x, const size_t y, const Vec3b& rgb) {
     auto* ptr = &data_[y * width + x];
-    auto p = reinterpret_cast<Vec3b*>(ptr);
-    *p = rgb;
+    auto p    = reinterpret_cast<Vec3b*>(ptr);
+    *p        = rgb;
   }
 
   void set_rgba(const size_t x, const size_t y, const Vec4b& rgba) {
     auto* ptr = &data_[y * width + x];
-    auto p = reinterpret_cast<Vec4b*>(ptr);
+    auto p    = reinterpret_cast<Vec4b*>(ptr);
     static_assert(sizeof(Vec4b) == 4, "Vec4b size must be 4");
     *p = rgba;
   }
@@ -43,7 +43,7 @@ public:
   size_t size() const { return width * height; }
   size_t size_in_bytes() const { return size() * 4; }
   void reset() {
-    width = 0;
+    width  = 0;
     height = 0;
     data_.clear();
   }
@@ -55,7 +55,7 @@ public:
 
   void resize(const Vec2d& size) {
     MU_ASSERT(size[0] > 0 && size[1] > 0);
-    width = size[0];
+    width  = size[0];
     height = size[1];
     data_.resize(size_in_bytes());
   }

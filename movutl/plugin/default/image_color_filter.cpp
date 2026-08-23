@@ -10,12 +10,12 @@ bool fn_proc(void* fp, FilterInData* fpip, const cutil::Prop& p) {
   MU_ASSERT(fpip->img != nullptr);
 
   float brightness = cutil::get_or<float>(p, "brightness", 100.0f) / 100.0f;
-  float contrast = cutil::get_or<float>(p, "contrast", 100.0f) / 100.0f;
+  float contrast   = cutil::get_or<float>(p, "contrast", 100.0f) / 100.0f;
 
   for(int i = 0; i < fpip->img->size(); i++) {
     Vec4b& pixel = (*fpip->img)[i];
     for(int j = 0; j < 3; j++) {
-      float v = ((pixel[j] - 127) * contrast + 127) * brightness;
+      float v  = ((pixel[j] - 127) * contrast + 127) * brightness;
       pixel[j] = std::clamp(v, 0.0f, 255.0f);
     }
   }
@@ -27,15 +27,15 @@ bool fn_init(void* fp, ExeData* editp, cutil::PropInfo* props, cutil::Prop* defa
   MU_ASSERT(defaults != nullptr);
   props->fields.push_back(cutil::PropInfo::Field("brightness", 0, cutil::prop_info_of<float>()));
   props->fields.back().set_label("明るさ");
-  props->fields.back().min_value = 0.0f;
-  props->fields.back().max_value = 1000.0f;
+  props->fields.back().min_value  = 0.0f;
+  props->fields.back().max_value  = 1000.0f;
   props->fields.back().drag_speed = 1.0f;
   defaults->set<float>("brightness", 100.0f);
 
   props->fields.push_back(cutil::PropInfo::Field("contrast", 0, cutil::prop_info_of<float>()));
   props->fields.back().set_label("コントラスト");
-  props->fields.back().min_value = 0.0f;
-  props->fields.back().max_value = 1000.0f;
+  props->fields.back().min_value  = 0.0f;
+  props->fields.back().max_value  = 1000.0f;
   props->fields.back().drag_speed = 1.0f;
   defaults->set<float>("contrast", 100.0f);
   return true;

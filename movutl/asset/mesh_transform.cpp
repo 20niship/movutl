@@ -44,8 +44,8 @@ void Mesh::rot_geom(const Vec3& rot) {
   for(auto* ptr = vertices.begin(); ptr <= end; ptr++) {
     const auto x = ptr->pos[0];
     const auto y = ptr->pos[1];
-    ptr->pos[0] = cos * x - sin * y;
-    ptr->pos[1] = sin * x + cos * y;
+    ptr->pos[0]  = cos * x - sin * y;
+    ptr->pos[1]  = sin * x + cos * y;
   }
 }
 

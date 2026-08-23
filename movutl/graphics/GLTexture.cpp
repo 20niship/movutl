@@ -34,7 +34,7 @@ void GLTexture::set(const std::shared_ptr<ImageRGBA>& image) {
   }
   auto format = GL_RGBA;
   last_dirty_ = i->dirty_;
-  gpu_width_ = i->width;
+  gpu_width_  = i->width;
   gpu_height_ = i->height;
 
   bind();
@@ -52,9 +52,7 @@ GLTexture::GLTexture(const std::shared_ptr<ImageRGBA>& image) {
   update_if_necessary();
 }
 
-GLTexture::~GLTexture() {
-  destroy();
-}
+GLTexture::~GLTexture() { destroy(); }
 
 bool GLTexture::destroy() {
   if(initialized_) {
@@ -65,13 +63,9 @@ bool GLTexture::destroy() {
   return false;
 }
 
-void GLTexture::bind() const {
-  glBindTexture(GL_TEXTURE_2D, tex_id);
-}
+void GLTexture::bind() const { glBindTexture(GL_TEXTURE_2D, tex_id); }
 
-void GLTexture::unbind() const {
-  glBindTexture(GL_TEXTURE_2D, 0);
-}
+void GLTexture::unbind() const { glBindTexture(GL_TEXTURE_2D, 0); }
 
 void GLTexture::update_if_necessary() {
   if(img_.expired()) return;

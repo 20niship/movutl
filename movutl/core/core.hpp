@@ -4,12 +4,8 @@
 
 namespace mu {
 
-constexpr inline float rad_to_deg(const float x) {
-  return x * 180.0 / 3.141592;
-}
-constexpr inline float deg_to_rad(const float x) {
-  return x / 180.0 * 3.141592;
-}
+constexpr inline float rad_to_deg(const float x) { return x * 180.0 / 3.141592; }
+constexpr inline float deg_to_rad(const float x) { return x / 180.0 * 3.141592; }
 
 Mat3x3 rotation_mat(const Vec3& pry);
 
@@ -27,19 +23,19 @@ inline void lookAt(float ex, float ey, float ez, float tx, float ty, float tz, f
   */
 
   /* z 軸 = e - t */
-  tx = ex - tx;
-  ty = ey - ty;
-  tz = ez - tz;
-  l = sqrtf(tx * tx + ty * ty + tz * tz); /* この l と, */
-  matrix[2] = tx / l;
-  matrix[6] = ty / l;
+  tx         = ex - tx;
+  ty         = ey - ty;
+  tz         = ez - tz;
+  l          = sqrtf(tx * tx + ty * ty + tz * tz); /* この l と, */
+  matrix[2]  = tx / l;
+  matrix[6]  = ty / l;
   matrix[10] = tz / l;
 
   /* x 軸 = u x z 軸 */
-  tx = uy * matrix[10] - uz * matrix[6];
-  ty = uz * matrix[2] - ux * matrix[10];
-  tz = ux * matrix[6] - uy * matrix[2];
-  l = sqrtf(tx * tx + ty * ty + tz * tz); /* この l. */
+  tx        = uy * matrix[10] - uz * matrix[6];
+  ty        = uz * matrix[2] - ux * matrix[10];
+  tz        = ux * matrix[6] - uy * matrix[2];
+  l         = sqrtf(tx * tx + ty * ty + tz * tz); /* この l. */
   matrix[0] = tx / l;
   matrix[4] = ty / l;
   matrix[8] = tz / l;
@@ -56,17 +52,17 @@ inline void lookAt(float ex, float ey, float ez, float tx, float ty, float tz, f
 
   /* 残り */
   matrix[3] = matrix[7] = matrix[11] = 0.0f;
-  matrix[15] = 1.0f;
+  matrix[15]                         = 1.0f;
 }
 
 inline Mat4x4 look_at(Vec3 pos, Vec3 to, Vec3 up) {
   Mat4x4 matrix;
 
   const auto tz = pos - to;
-  const auto l = tz.norm();
+  const auto l  = tz.norm();
   MU_ASSERT(l > 0);
-  matrix[2] = tz[0] / l;
-  matrix[6] = tz[1] / l;
+  matrix[2]  = tz[0] / l;
+  matrix[6]  = tz[1] / l;
   matrix[10] = tz[2] / l;
 
   /* x 軸 = u x z 軸 */
@@ -93,7 +89,7 @@ inline Mat4x4 look_at(Vec3 pos, Vec3 to, Vec3 up) {
 
   /* 残り */
   matrix[3] = matrix[7] = matrix[11] = 0.0f;
-  matrix[15] = 1.0f;
+  matrix[15]                         = 1.0f;
   return matrix;
 }
 

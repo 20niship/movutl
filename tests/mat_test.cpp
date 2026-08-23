@@ -14,4 +14,3 @@ TEST_CASE("vector") {
   const auto res = m * x;
   DISP(res == Vec4(300, 700, 1100, 1500));
 }
-

@@ -1,8 +1,8 @@
 #include <movutl/app/app.hpp>
 #include <movutl/app/app_impl.hpp>
-#include <movutl/gui/gui.hpp>
-#include <movutl/binding/binding.hpp>
 #include <movutl/asset/config.hpp>
+#include <movutl/binding/binding.hpp>
+#include <movutl/gui/gui.hpp>
 #include <movutl/plugin/plugin.hpp>
 
 namespace mu {

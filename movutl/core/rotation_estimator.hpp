@@ -1,9 +1,9 @@
-#pragma once 
+#pragma once
 
-#include <movutl/core/core.hpp>
 #include <cassert>
 #include <iostream>
 #include <librealsense2/rs.hpp>
+#include <movutl/core/core.hpp>
 #include <mutex>
 #include <sstream>
 #include <strstream>
@@ -15,7 +15,7 @@
 #endif
 
 
-namespace mu::core{
+namespace mu::core {
 
 class RotationEstimator {
   // theta is the angle of camera rotation in x, y and z components
@@ -86,10 +86,10 @@ public:
   }
 
   // Returns the current rotation angle
-  core::Vec3f get_theta(){
+  core::Vec3f get_theta() {
     std::lock_guard<std::mutex> lock(theta_mtx);
     return theta;
   }
 };
 
-}
+} // namespace mu::core

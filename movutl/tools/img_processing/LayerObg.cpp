@@ -3,22 +3,22 @@
 /////////////////////////////////////////////////////////////////////////
 //        reference : https://en.wikipedia.org/wiki/Blend_modes
 /////////////////////////////////////////////////////////////////////////
-#define IMAGE_BLEND_PROCESSOR_ADD(a, b) (MIN((a)+(b), 255))
+#define IMAGE_BLEND_PROCESSOR_ADD(a, b) (MIN((a) + (b), 255))
 
-// f(a, b) = 255 - (255 - a)*(255-b)  , where a is the base layer value and b is the top layer value. 
-#define IMAGE_BLEND_PROCESSOR_SCREEN(a, b) ((65025 - (255 - (a))* (255 - (b))) / 255)
-//#define IMAGE_BLEND_PROCESSOR_SCREEN(a, b) __int8(255.0f * (1.0f - (1.0f - float(a)/255.0f)* (1.0f - float(b)/255.0f))) <- Wikipediaにある正式なやつ 
+// f(a, b) = 255 - (255 - a)*(255-b)  , where a is the base layer value and b is the top layer value.
+#define IMAGE_BLEND_PROCESSOR_SCREEN(a, b) ((65025 - (255 - (a)) * (255 - (b))) / 255)
+// #define IMAGE_BLEND_PROCESSOR_SCREEN(a, b) __int8(255.0f * (1.0f - (1.0f - float(a)/255.0f)* (1.0f - float(b)/255.0f))) <- Wikipediaにある正式なやつ
 
-#define IMAGE_BLEND_PROCESSOR_MULTIPLY(a, b) ((a)* (b) / 255)
+#define IMAGE_BLEND_PROCESSOR_MULTIPLY(a, b) ((a) * (b) / 255)
 
 #define IMAGE_BLEND_PROCESOR_DARKEN_ONLY(a, b) (MIN((a), (b)))
 #define IMAGE_BLEND_PROCESOR_LIGHTEN_ONLY(a, b) (MAX((a), (b)))
 
-//f(a, b) = {2ab + a^2 (1 - 2b) (when b < 0.5) ,  2a(1-b) + sqrt(a)(2b-1) (otherwise)}
+// f(a, b) = {2ab + a^2 (1 - 2b) (when b < 0.5) ,  2a(1-b) + sqrt(a)(2b-1) (otherwise)}
 #define IMAGE_BLEND_PROCESOR_SOFT_LIGHT(a, b) (((b)<122) ? (0.00888f * float(a)* float(b) + (a)*(a) *(1-2*(b))):(2*(a)*(1-(b)) + sqrt(a) * (2*(b) - 1))
 
-//f(a, b) = {2ab (when a < 0.5) , 1-2(1-a)(1-b) (otherwise)}
-#define IMAGE_BLEND_PROCESSOR_OVERLAY(a, b) (((a)<122) ? __int8(0.00888f * float(a)* float(b)) :  ((65025 - 2 * (255 - (a))* (255 - (b))) / 255))
+// f(a, b) = {2ab (when a < 0.5) , 1-2(1-a)(1-b) (otherwise)}
+#define IMAGE_BLEND_PROCESSOR_OVERLAY(a, b) (((a) < 122) ? __int8(0.00888f * float(a) * float(b)) : ((65025 - 2 * (255 - (a)) * (255 - (b))) / 255))
 
 #if 0
 
@@ -258,4 +258,3 @@ void RenderingObj::clearImage() {
 }
 
 #endif
-

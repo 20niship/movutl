@@ -1,4 +1,2 @@
 #pragma once
-namespace mu {
-
-}
+namespace mu {}

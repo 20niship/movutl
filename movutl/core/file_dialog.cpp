@@ -15,9 +15,9 @@ std::string select_file_dialog(const std::string& title, const std::vector<std::
   char szFile[MAX_PATH] = {0};
   ZeroMemory(&ofn, sizeof(ofn));
   ofn.lStructSize = sizeof(ofn);
-  ofn.hwndOwner = nullptr;
-  ofn.lpstrFile = szFile;
-  ofn.nMaxFile = sizeof(szFile);
+  ofn.hwndOwner   = nullptr;
+  ofn.lpstrFile   = szFile;
+  ofn.nMaxFile    = sizeof(szFile);
 
   std::ostringstream filter;
   for(const auto& ext : extensions) {
@@ -25,9 +25,9 @@ std::string select_file_dialog(const std::string& title, const std::vector<std::
   }
   filter << "\0";
   std::string filterStr = filter.str();
-  ofn.lpstrFilter = filterStr.c_str();
-  ofn.nFilterIndex = 1;
-  ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+  ofn.lpstrFilter       = filterStr.c_str();
+  ofn.nFilterIndex      = 1;
+  ofn.Flags             = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
   if(GetOpenFileName(&ofn) == TRUE) {
     return std::string(szFile);

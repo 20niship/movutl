@@ -7,12 +7,8 @@
 
 namespace mu::detail {
 
-static bool fn_init() {
-  return true;
-}
-static bool fn_exit() {
-  return true;
-}
+static bool fn_init() { return true; }
+static bool fn_exit() { return true; }
 
 struct InHandleCVVideo {
   int frame;
@@ -22,7 +18,7 @@ struct InHandleCVVideo {
 
 static InputHandle fn_open(const char* file) {
   InHandleCVVideo* ih = new InHandleCVVideo(file);
-  ih->frame = 0;
+  ih->frame           = 0;
   if(!ih->cap.isOpened()) {
     delete ih;
     return nullptr;
@@ -42,13 +38,13 @@ static bool fn_info_get(InputHandle ih, EntityInfo* iip) {
   MU_ASSERT(iip);
   auto c = (InHandleCVVideo*)ih;
   if(!c->cap.isOpened()) return false;
-  iip->flag = EntityType_Movie;
+  iip->flag      = EntityType_Movie;
   iip->framerate = c->cap.get(cv::CAP_PROP_FPS);
-  iip->nframes = c->cap.get(cv::CAP_PROP_FRAME_COUNT);
-  iip->width = c->cap.get(cv::CAP_PROP_FRAME_WIDTH);
-  iip->height = c->cap.get(cv::CAP_PROP_FRAME_HEIGHT);
-  iip->format = ImageFormatRGBA;
-  iip->handler = 0;
+  iip->nframes   = c->cap.get(cv::CAP_PROP_FRAME_COUNT);
+  iip->width     = c->cap.get(cv::CAP_PROP_FRAME_WIDTH);
+  iip->height    = c->cap.get(cv::CAP_PROP_FRAME_HEIGHT);
+  iip->format    = ImageFormatRGBA;
+  iip->handler   = 0;
   return true;
 }
 

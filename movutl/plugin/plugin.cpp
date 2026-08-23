@@ -22,7 +22,7 @@ void activate_all_plugins() {
   for(auto& p : app->input_plugins)
     if(p.fn_init) p.fn_init();
   for(auto& p : app->filters)
-    if(p.fn_init) p.fn_init(nullptr, nullptr, &p.props);
+    if(p.fn_init) p.fn_init(nullptr, nullptr, &p.props, &p.defaults);
 }
 
 void init_external_plugins() {
@@ -71,7 +71,7 @@ bool register_plugin(const std::string& path) {
   detail::PluginData data;
   // TODO: get exe data
   entry(&exdata, &data.table);
-  data.mod = mod;
+  data.mod   = mod;
   data.entry = entry;
   detail::AppMain::Get()->plugins.push_back(data);
   return true;

@@ -24,7 +24,7 @@ void show_texture_with_imgui(mu::GLTexture* texture) {
     return;
   }
 
-  int width = ImGui::GetWindowWidth();
+  int width  = ImGui::GetWindowWidth();
   int height = ImGui::GetWindowHeight();
 
   ImTextureID tex_id = (ImTextureID) reinterpret_cast<void*>(static_cast<intptr_t>(texture_id));

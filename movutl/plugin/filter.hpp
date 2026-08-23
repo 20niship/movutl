@@ -13,14 +13,14 @@ public:
   int flag;                     //	フィルタのフラグ
                                 //	FILTER_PROC_INFO_FLAG_INVERT_FIELD_ORDER	: フィールドオーダーを標準と逆に扱う ( 標準はボトム->トップになっています )
                                 //	FILTER_PROC_INFO_FLAG_INVERT_INTERLACE		: 解除方法を反転する ( インターレース解除フィルタのみ )
-  ImageRGBA* img = nullptr;     //	画像データへのポインタ ( ycp_editとycp_tempは入れ替えれます )
+  ImageRGBA* img     = nullptr; //	画像データへのポインタ ( ycp_editとycp_tempは入れ替えれます )
   Composition* compo = nullptr; //	コンポジション
-  Entity* entt = nullptr;       //	フィルタが適用されるエンティティ
+  Entity* entt       = nullptr; //	フィルタが適用されるエンティティ
   Vec2d max_size;               //	画像領域のサイズ
   Vec2d org_size;               //	オリジナル画像のサイズ
   short* audiop = nullptr;      //	オーディオデータへのポインタ ( オーディオフィルタの時のみ )
                                 //	オーディオ形式はPCM16bitです ( 1サンプルは mono = 2byte , stereo = 4byte )
-  int audio_n = 0;              //	オーディオサンプルの総数
+  int audio_n  = 0;             //	オーディオサンプルの総数
   int audio_ch = 0;             //	オーディオチャンネル数
   int reserve[8];               //	拡張用に予約されてます
 };
@@ -79,7 +79,7 @@ struct FilterPluginTable {
   //  戻り値	: 成功ならTRUE
   int reserve[2]; //	拡張用に予約されてます。NULLにしてください。
 
-  cutil::PropInfo props;   // フィールドのウィジェット表示情報(offsetなし、動的スキーマ)
-  cutil::Prop defaults;    // fn_initが設定するフィールドの初期値
+  cutil::PropInfo props; // フィールドのウィジェット表示情報(offsetなし、動的スキーマ)
+  cutil::Prop defaults;  // fn_initが設定するフィールドの初期値
 };
 } // namespace mu

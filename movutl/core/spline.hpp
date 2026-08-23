@@ -109,7 +109,7 @@ private:
     int basisWidth = degree + 1;
     int pointBegin = ceil(t - ((double)basisWidth * 0.5));
 
-    //int pointEnd = pointBegin + basisWidth;
+    // int pointEnd = pointBegin + basisWidth;
     for(int i = 0; i < basisWidth; ++i) {
       int index  = pointBegin + i;
       int basisT = index;
@@ -139,4 +139,3 @@ private:
   };
 };
 } // namespace mu::core
-

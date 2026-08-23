@@ -7,7 +7,7 @@
 namespace mu {
 
 using MULTI_THREAD_FUNC = void(*);
-using HFONT = std::string;
+using HFONT             = std::string;
 
 //	ファイルインフォメーション構造体
 struct FILE_INFO {

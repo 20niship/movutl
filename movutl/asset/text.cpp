@@ -30,7 +30,7 @@ void TextEntt::re_render_image() {
 }
 
 Ref<TextEntt> TextEntt::Create(const char* text, const char* font) {
-  auto ent = Ref<TextEntt>(new TextEntt());
+  auto ent  = Ref<TextEntt>(new TextEntt());
   ent->name = "text";
   ent->text = text;
 
