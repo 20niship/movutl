@@ -102,8 +102,7 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addVariable("frame_final", &Composition::frame_final) // Ref<Image>
     .addVariable("frame_edit", &Composition::frame_edit) // Ref<Image>
     .addVariable("frame_temp", &Composition::frame_temp) // Ref<Image>
-    .addVariable("framerate_nu", &Composition::framerate_nu) // int32_t
-    .addVariable("framerate_de", &Composition::framerate_de) // int32_t
+    .addVariable("framerate", &Composition::framerate) // float
     .addVariable("fstart", &Composition::fstart) // int32_t
     .addVariable("fend", &Composition::fend) // int32_t
     .addVariable("frame", &Composition::frame) // int32_t
@@ -114,8 +113,6 @@ void generated_lua_binding_movutl(lua_State* L) {
   .beginClass<EntityInfo>("EntityInfo")
     .addFunction("str", &EntityInfo::str)
     .addVariable("flag", &EntityInfo::flag) // EntityType
-    .addVariable("rate", &EntityInfo::rate) // int32_t
-    .addVariable("scale", &EntityInfo::scale) // int32_t
     .addVariable("framerate", &EntityInfo::framerate) // float
     .addVariable("nframes", &EntityInfo::nframes) // uint32_t
     .addVariable("format", &EntityInfo::format) // ImageFormat
@@ -139,6 +136,7 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("empty", &Image::empty)
     .addFunction("channels", &Image::channels)
     .addFunction("getType", &Image::getType)
+    .addFunction("load_file", &Image::load_file)
     .addVariable("width", &Image::width) // unsigned int
     .addVariable("height", &Image::height) // unsigned int
     .addVariable("dirty_", &Image::dirty_) // int16_t
@@ -230,16 +228,22 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("clear_selected_entts", static_cast<void(*)( )>(&clear_selected_entts))
     .addFunction("cv_waitkey", static_cast<void(*)( int)>(&cv_waitkey))
     .addFunction("get_compatible_plugin", static_cast<InputPluginTable *(*)( const char *, EntityType)>(&get_compatible_plugin))
+    .addFunction("get_entt_color", static_cast<ImU32(*)( const Ref<Entity> &)>(&get_entt_color))
     .addFunction("get_selected_entts", static_cast<std::vector<Ref<Entity> >(*)( )>(&get_selected_entts))
+    .addFunction("goto_frame", static_cast<void(*)( int)>(&goto_frame))
     .addFunction("init", static_cast<void(*)( )>(&init))
+    .addFunction("is_playing", static_cast<bool(*)( )>(&is_playing))
     .addFunction("new_project", static_cast<void(*)( )>(&new_project))
     .addFunction("open_project", static_cast<void(*)( const char *)>(&open_project))
+    .addFunction("pause", static_cast<void(*)( )>(&pause))
+    .addFunction("play", static_cast<void(*)( )>(&play))
     .addFunction("register_imgui_style", static_cast<void(*)( const char *, const ImGuiStyle &)>(&register_imgui_style))
     .addFunction("register_workspace", static_cast<void(*)( const char *, const Workspace &)>(&register_workspace))
     .addFunction("remove_imgui_style", static_cast<void(*)( const char *)>(&remove_imgui_style))
     .addFunction("remove_workspace", static_cast<void(*)( const char *)>(&remove_workspace))
     .addFunction("render_main_menu_bar", static_cast<void(*)( )>(&render_main_menu_bar))
     .addFunction("render_status_bar", static_cast<void(*)( )>(&render_status_bar))
+    .addFunction("reset", static_cast<void(*)( )>(&reset))
     .addFunction("save_project", static_cast<void(*)( )>(&save_project))
     .addFunction("save_project_as", static_cast<void(*)( const char *)>(&save_project_as))
     .addFunction("select_entt", static_cast<void(*)( const Ref<Entity> &)>(&select_entt))

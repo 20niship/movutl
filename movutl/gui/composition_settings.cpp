@@ -21,8 +21,7 @@ void CompositionSettingsWindow::Update() {
       int size2[2] = {(int)cmp.size[0], (int)cmp.size[1]};
       if(ImGui::DragInt2("解像度", size2, 1.0f, 1, 8192)) cmp.resize(size2[0], size2[1]);
 
-      ImGui::DragInt("フレームレート(分子)", &cmp.framerate_nu, 1.0f, 1, 1000);
-      ImGui::DragInt("フレームレート(分母)", &cmp.framerate_de, 1.0f, 1, 1000);
+      ImGui::DragFloat("フレームレート", &cmp.framerate, 0.1f, 1.0f, 1000.0f);
       ImGui::DragInt("開始フレーム", &cmp.fstart);
       ImGui::DragInt("終了フレーム", &cmp.fend);
     }

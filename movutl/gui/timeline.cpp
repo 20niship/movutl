@@ -42,7 +42,7 @@ struct TimelineContext {
   std::vector<Entity*> sel; // TODO: 複数選択を可能にする
 
   // レイヤー名インライン編集
-  int editing_layer_idx = -1;
+  int editing_layer_idx      = -1;
   char editing_layer_buf[64] = {0};
 
   // レイヤーの削除/移動は破壊的操作のためEndTimeline()側で遅延適用する
@@ -53,10 +53,10 @@ struct TimelineContext {
 
   // クリップのドラッグ移動/端リサイズ
   Entity* dragging_entt = nullptr;
-  int drag_mode          = 0; // 0=none, 1=move, 2=resize_left, 3=resize_right
-  int drag_orig_fstart   = 0;
-  int drag_orig_fend     = 0;
-  int drag_start_frame   = 0;
+  int drag_mode         = 0; // 0=none, 1=move, 2=resize_left, 3=resize_right
+  int drag_orig_fstart  = 0;
+  int drag_orig_fend    = 0;
+  int drag_start_frame  = 0;
 
   cutil::Rect tl_area() {
     auto r = all_area;
@@ -315,7 +315,7 @@ bool BeginLayer(Composition* cp, int layer_idx) {
   MU_ASSERT(cp);
   MU_ASSERT(layer_idx >= 0 && layer_idx < (int)cp->layers.size());
   TrackLayer* layer = &cp->layers[layer_idx];
-  ctx_.active_comp   = cp;
+  ctx_.active_comp  = cp;
 
   auto dl     = ImGui::GetWindowDrawList();
   auto inside = ctx_.tl_area();
@@ -335,8 +335,8 @@ bool BeginLayer(Composition* cp, int layer_idx) {
     bool done = ImGui::InputText("##layer_name_edit", ctx_.editing_layer_buf, sizeof(ctx_.editing_layer_buf), ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
     if(ImGui::IsWindowAppearing()) ImGui::SetKeyboardFocusHere(-1);
     if(done || ImGui::IsItemDeactivated()) {
-      layer->name             = ctx_.editing_layer_buf;
-      ctx_.editing_layer_idx  = -1;
+      layer->name            = ctx_.editing_layer_buf;
+      ctx_.editing_layer_idx = -1;
     }
     ImGui::PopID();
   } else {
@@ -426,7 +426,7 @@ bool BeginTrack(const Ref<Entity>& entity) {
     else if(is_selected)
       ctx_.drag_mode = 1;
     if(ctx_.drag_mode != 0) {
-      ctx_.dragging_entt   = entity.get();
+      ctx_.dragging_entt    = entity.get();
       ctx_.drag_orig_fstart = *start;
       ctx_.drag_orig_fend   = *end;
       ctx_.drag_start_frame = ctx_.view2f((int)mouse_x);
@@ -450,12 +450,12 @@ bool BeginTrack(const Ref<Entity>& entity) {
         if(nframes > 0 && (new_end - *start) > nframes) new_end = *start + nframes;
         *end = new_end;
       }
-      fs = ctx_.f2view(*start);
-      fe = ctx_.f2view(*end);
+      fs   = ctx_.f2view(*start);
+      fe   = ctx_.f2view(*end);
       rect = ImRect(ImVec2(fs, htop), ImVec2(fe, htop + ctx_.height));
     } else {
       ctx_.dragging_entt = nullptr;
-      ctx_.drag_mode      = 0;
+      ctx_.drag_mode     = 0;
     }
   }
 

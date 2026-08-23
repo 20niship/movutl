@@ -19,11 +19,7 @@ namespace detail {
 void init_gui_panels() {
   auto g    = GUIManager::Get();
   g->panels = {
-    cutil::make_ref<InspectorWindow>(),
-    cutil::make_ref<TimelineWindow>(),
-    cutil::make_ref<ViewerWindow>(),
-    cutil::make_ref<UtilityWindow>(),
-    cutil::make_ref<CompositionSettingsWindow>(),
+    cutil::make_ref<InspectorWindow>(), cutil::make_ref<TimelineWindow>(), cutil::make_ref<ViewerWindow>(), cutil::make_ref<UtilityWindow>(), cutil::make_ref<CompositionSettingsWindow>(),
   };
 
   // デフォルトワークスペース(初回起動時に適用される)

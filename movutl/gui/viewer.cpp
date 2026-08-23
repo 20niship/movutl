@@ -13,12 +13,8 @@ namespace mu {
 namespace {
 
 // Composition座標(px) <-> Viewport画面座標 の変換。レターボックス配置+zoom/panを反映したimg_min/disp_sizeを渡す。
-ImVec2 comp_to_screen(const ImVec2& p, const ImVec2& img_min, const ImVec2& disp_size, float cmp_w, float cmp_h) {
-  return ImVec2(img_min.x + p.x / cmp_w * disp_size.x, img_min.y + p.y / cmp_h * disp_size.y);
-}
-ImVec2 screen_to_comp(const ImVec2& p, const ImVec2& img_min, const ImVec2& disp_size, float cmp_w, float cmp_h) {
-  return ImVec2((p.x - img_min.x) / disp_size.x * cmp_w, (p.y - img_min.y) / disp_size.y * cmp_h);
-}
+ImVec2 comp_to_screen(const ImVec2& p, const ImVec2& img_min, const ImVec2& disp_size, float cmp_w, float cmp_h) { return ImVec2(img_min.x + p.x / cmp_w * disp_size.x, img_min.y + p.y / cmp_h * disp_size.y); }
+ImVec2 screen_to_comp(const ImVec2& p, const ImVec2& img_min, const ImVec2& disp_size, float cmp_w, float cmp_h) { return ImVec2((p.x - img_min.x) / disp_size.x * cmp_w, (p.y - img_min.y) / disp_size.y * cmp_h); }
 
 } // namespace
 
@@ -42,9 +38,9 @@ void ViewerWindow::Update() {
   }
   ImVec2 origin = ImGui::GetCursorScreenPos();
 
-  float cmp_w       = std::max(1.0f, (float)comp->size[0]);
-  float cmp_h       = std::max(1.0f, (float)comp->size[1]);
-  float base_scale  = std::min(avail.x / cmp_w, avail.y / cmp_h);
+  float cmp_w      = std::max(1.0f, (float)comp->size[0]);
+  float cmp_h      = std::max(1.0f, (float)comp->size[1]);
+  float base_scale = std::min(avail.x / cmp_w, avail.y / cmp_h);
   ImVec2 base_size(cmp_w * base_scale, cmp_h * base_scale);
   ImVec2 base_pos(origin.x + (avail.x - base_size.x) / 2.0f, origin.y + (avail.y - base_size.y) / 2.0f);
 

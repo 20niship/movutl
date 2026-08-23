@@ -15,7 +15,7 @@ TEST_CASE("Project::AddComposition") {
   CHECK(std::string(cmp->name.c_str()) == "Sub");
   CHECK(cmp->size[0] == 640);
   CHECK(cmp->size[1] == 480);
-  CHECK(cmp->framerate_nu == 24);
+  CHECK(cmp->framerate == 24.0f);
   CHECK((cmp->flag & Composition::setting_dialog) != 0); // 新規追加時は設定ウィンドウが自動で開く
 }
 

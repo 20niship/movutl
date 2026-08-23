@@ -5,6 +5,7 @@
 #include <movutl/asset/image.hpp>
 #include <movutl/asset/movie.hpp>
 #include <movutl/core/command.hpp>
+#include <movutl/core/logger.hpp>
 
 namespace mu::detail {
 
