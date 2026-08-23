@@ -25,7 +25,9 @@ TEST_CASE("TextEntt::Create") {
     REQUIRE(t != nullptr);
     CHECK(t->text == "こんにちは世界");
     /// システムまたはバンドルのフォントが存在する環境では有効なパスが選ばれる
-    if(!get_available_fonts().empty() || fs_exists(fs_get_font_path())) { CHECK(fs_exists(t->font)); }
+    if(!get_available_fonts().empty() || fs_exists(fs_get_font_path())) {
+      CHECK(fs_exists(t->font));
+    }
   }
 
   SUBCASE("存在しないフォント指定でもクラッシュせずフォールバックする") {
@@ -52,7 +54,10 @@ TEST_CASE("FontRenderManager::renderText") {
 
   SUBCASE("フォントとして不正な内容のファイルでもクラッシュせず false を返す") {
     const std::string dummy = "/tmp/opencode/movutl_test_not_a_font.ttf";
-    { std::ofstream ofs(dummy); ofs << "this is not a font"; }
+    {
+      std::ofstream ofs(dummy);
+      ofs << "this is not a font";
+    }
     auto img = cutil::make_ref<Image>();
     CHECK_FALSE(detail::FontRenderManager::renderText(img.get(), "test", 16, 0, 0, dummy.c_str()));
   }

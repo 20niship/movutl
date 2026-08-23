@@ -45,7 +45,9 @@ enum ImageFormat {
 };
 struct EntityInfo {
   EntityType flag            = EntityType_Movie; // 読み込み可能なオブジェクトの種類
-  float framerate            = 23.98;            // フレームレート
+  int32_t rate               = 30;               // フレームレート(分子) ※aviutl2 SDK準拠
+  int32_t scale              = 1;                // フレームレート(分母)
+  float framerate            = 30;               // フレームレート(rate/scale の実数値)
   uint32_t nframes           = 0;                // フレーム数
   ImageFormat format         = ImageFormatRGB;   // 画像フォーマット
   uint16_t width             = 0;                // 画像サイズ
@@ -78,6 +80,10 @@ public:
 
   Composition* get_comp() const;
   virtual bool render(Composition* cmp) = 0;
+
+  InputPluginTable* get_input_plugin() const { return in_plg_; }
+  InputHandle get_input_handle() const { return in_handle_; }
+  const EntityInfo& get_info() const { return info; }
 
   bool visible(int frame) const { return trk.visible(frame); }
   virtual ~Entity();
