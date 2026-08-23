@@ -9,7 +9,7 @@ namespace mu {
 bool render_comp(Composition* comp) {
   MU_ASSERT(comp != nullptr);
   if(!comp->frame_final) {
-    comp->frame_final = std::make_shared<ImageRGBA>(comp->size[0], comp->size[1]);
+    comp->frame_final = cutil::make_ref<ImageRGBA>(comp->size[0], comp->size[1]);
   } else if(comp->frame_final->width != comp->size[0] || comp->frame_final->height != comp->size[1]) {
     comp->frame_final->resize(Vec2d(comp->size[0], comp->size[1]));
   }

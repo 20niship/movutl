@@ -16,8 +16,8 @@ struct InputPluginTable;
 Ref<Entity> Entity::CreateEntity(const char* name, EntityType type) {
   Ref<Entity> e = nullptr;
   switch(type) {
-    case EntityType_Movie: e = std::make_shared<Movie>(); break;
-    case EntityType_Image: e = std::make_shared<Image>(); break;
+    case EntityType_Movie: e = cutil::make_ref<Movie>(); break;
+    case EntityType_Image: e = cutil::make_ref<Image>(); break;
     default: break;
   }
   if(!e) {

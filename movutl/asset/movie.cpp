@@ -6,7 +6,7 @@
 
 namespace mu {
 Ref<Movie> Movie::Create(const char* name, const char* path) {
-  auto mov  = std::make_shared<Movie>();
+  auto mov  = cutil::make_ref<Movie>();
   mov->name = name;
   Project::Get()->entities.push_back(mov);
   mov->guid_ = Project::Get()->entities.size();
@@ -26,7 +26,7 @@ bool Movie::render(Composition* cmp) {
   if(tlocal < 0 || tlocal >= trk.fend - trk.fstart) return false;
   if(in_plg_->fn_set_frame(in_handle_, tlocal)) in_plg_->fn_set_frame(in_handle_, tlocal);
 
-  if(!img_) img_ = std::make_shared<ImageRGBA>();
+  if(!img_) img_ = cutil::make_ref<ImageRGBA>();
   MU_ASSERT(in_plg_->fn_read_video);
   in_plg_->fn_read_video(in_handle_, &info, this);
   int cw = cmp->size[0];

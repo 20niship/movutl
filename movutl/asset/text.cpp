@@ -17,7 +17,7 @@ void TextEntt::re_render_image() {
   if(last_text_ == text && last_font_ == font) return;
   last_text_ = text;
   last_font_ = font;
-  if(!img_) img_ = std::make_shared<ImageRGBA>();
+  if(!img_) img_ = cutil::make_ref<ImageRGBA>();
   using namespace detail;
   bool reslt = FontRenderManager::renderText(img_.get(), text.c_str(), 16, 0, 0, font.c_str());
 

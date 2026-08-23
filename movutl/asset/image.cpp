@@ -111,7 +111,7 @@ bool Image::render(Composition* cmp) {
 
 Ref<Image> Image::Create(const char* name, const char* path) {
   MU_ASSERT(name);
-  auto img  = std::make_shared<Image>();
+  auto img  = cutil::make_ref<Image>();
   img->name = name;
   if(path) img->path = path;
   auto pj = Project::Get();
@@ -122,7 +122,7 @@ Ref<Image> Image::Create(const char* name, const char* path) {
 
 Ref<Image> Image::Create(const char* name, int w, int h, ImageFormat format, bool add_to_pj) {
   MU_ASSERT(name && w > 0 && h > 0);
-  auto img = std::make_shared<Image>();
+  auto img = cutil::make_ref<Image>();
   MU_ASSERT(img);
   img->name = name;
   img->fmt  = format;

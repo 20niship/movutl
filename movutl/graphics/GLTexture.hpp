@@ -1,3 +1,4 @@
+#include <cutil/ref.hpp>
 #include <movutl/asset/image.hpp>
 #include <movutl/graphics/GraphicsManager.hpp>
 
@@ -6,7 +7,7 @@ namespace mu {
 class GLTexture {
 private:
   uint32_t tex_id = 0;
-  std::weak_ptr<ImageRGBA> img_;
+  cutil::WeakPtr<ImageRGBA> img_;
   uint16_t last_dirty_ = 0;
   int gpu_width_;
   int gpu_height_;
@@ -14,8 +15,8 @@ private:
 
 public:
   GLTexture();
-  GLTexture(const std::shared_ptr<ImageRGBA>& img);
-  void set(const std::shared_ptr<ImageRGBA>& img);
+  GLTexture(const cutil::Ref<ImageRGBA>& img);
+  void set(const cutil::Ref<ImageRGBA>& img);
   void bind() const;
   void unbind() const;
   void update_if_necessary();

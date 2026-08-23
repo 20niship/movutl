@@ -1,12 +1,14 @@
 #pragma once
 
 #include <cutil/prop.hpp>
+#include <cutil/ref.hpp>
 #include <movutl/core/anim.hpp>
-#include <movutl/core/ref.hpp>
 
 #include <cstdint>
 
 namespace mu {
+
+using cutil::Ref;
 
 inline constexpr size_t MU_MAX_NAME = 32;
 inline constexpr size_t MAX_FILTER  = 16;

@@ -18,7 +18,7 @@ inline unsigned int get_opengl_format(ImageFormat t) {
   }
   return GL_RGB; // Default
 }
-void GLTexture::set(const std::shared_ptr<ImageRGBA>& image) {
+void GLTexture::set(const cutil::Ref<ImageRGBA>& image) {
   MU_ASSERT(image);
   if(!initialized_) {
     glGenTextures(1, &tex_id);
@@ -46,7 +46,7 @@ void GLTexture::set(const std::shared_ptr<ImageRGBA>& image) {
   glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 }
 
-GLTexture::GLTexture(const std::shared_ptr<ImageRGBA>& image) {
+GLTexture::GLTexture(const cutil::Ref<ImageRGBA>& image) {
   set(image);
   bind();
   update_if_necessary();

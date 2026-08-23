@@ -1,12 +1,14 @@
 #pragma once
 
+#include <cutil/ref.hpp>
 #include <imgui.h>
 #include <movutl/core/defines.hpp>
-#include <movutl/core/ref.hpp>
 #include <vector>
 
 struct GLFWwindow;
 namespace mu {
+
+using cutil::Ref;
 class Entity;
 
 class UIPanel {
