@@ -115,6 +115,15 @@ void gui_new_frame() {
   auto app          = GUIManager::Get();
   app->dockspace_id = ImGui::DockSpaceOverViewport();
   ImGui::PopStyleColor(2);
+
+  // ワークスペースの遅延適用 / 初回起動時(iniにレイアウト未保存)はデフォルトレイアウトを適用
+  if(!app->pending_workspace.empty()) {
+    const std::string name = app->pending_workspace;
+    app->pending_workspace.clear();
+    apply_workspace(name.c_str());
+  } else if(ImGui::DockBuilderGetNode(app->dockspace_id) == nullptr) {
+    apply_workspace("Default");
+  }
 }
 
 void gui_render_to_screen() {
