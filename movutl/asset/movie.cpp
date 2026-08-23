@@ -92,8 +92,7 @@ bool Movie::load_file(const char* path) {
 
   this->trk.fend = info.nframes;
   load_failed_   = false;
-  LOG_F(INFO, "Movie loaded: %s (%dx%d, %d frames, %.3f fps, plugin=%s)", path, info.width, info.height,
-        info.nframes, info.framerate, p->name);
+  LOG_F(INFO, "Movie loaded: %s (%dx%d, %d frames, %.3f fps, plugin=%s)", path, info.width, info.height, info.nframes, info.framerate, p->name);
   return true;
 }
 

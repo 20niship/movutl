@@ -1,8 +1,8 @@
 #include <cstring>
-#include <mutex>
 #include <movutl/asset/movie.hpp>
-#include <movutl/plugin/input.hpp>
 #include <movutl/core/logger.hpp>
+#include <movutl/plugin/input.hpp>
+#include <mutex>
 
 #ifdef MOVUTL_HAS_FFMPEG
 extern "C" {
@@ -51,25 +51,21 @@ struct FFmpegVideoHandle {
     if(pkt) av_packet_free(&pkt);
     if(dec_ctx) avcodec_free_context(&dec_ctx);
     if(fmt_ctx) avformat_close_input(&fmt_ctx);
-    sws     = nullptr;
-    dec_ctx = nullptr;
-    fmt_ctx = nullptr;
+    sws           = nullptr;
+    dec_ctx       = nullptr;
+    fmt_ctx       = nullptr;
     decoded_frame = -1;
-    eof = false;
-    has_pending = false;
+    eof           = false;
+    has_pending   = false;
   }
 };
 
-static bool fn_init() {
-  return true;
-}
-static bool fn_exit() {
-  return true;
-}
+static bool fn_init() { return true; }
+static bool fn_exit() { return true; }
 
 static InputHandle fn_open(const char* file) {
   if(file == nullptr) return nullptr;
-  auto h = new (std::nothrow) FFmpegVideoHandle();
+  auto h = new(std::nothrow) FFmpegVideoHandle();
   if(!h) return nullptr;
 
   if(avformat_open_input(&h->fmt_ctx, file, nullptr, nullptr) != 0) {
@@ -98,34 +94,31 @@ static InputHandle fn_open(const char* file) {
   }
 
   h->dec_ctx = avcodec_alloc_context3(dec);
-  if(h->dec_ctx == nullptr || avcodec_parameters_to_context(h->dec_ctx, st->codecpar) < 0 ||
-     avcodec_open2(h->dec_ctx, dec, nullptr) < 0) {
+  if(h->dec_ctx == nullptr || avcodec_parameters_to_context(h->dec_ctx, st->codecpar) < 0 || avcodec_open2(h->dec_ctx, dec, nullptr) < 0) {
     LOG_F(ERROR, "Failed to setup decoder: %s", file);
     delete h;
     return nullptr;
   }
 
-  h->width       = h->dec_ctx->width;
-  h->height      = h->dec_ctx->height;
-  h->fps         = st->avg_frame_rate.num > 0 && st->avg_frame_rate.den > 0 ? st->avg_frame_rate : st->r_frame_rate;
-  h->nb_frames   = st->nb_frames;
-  h->start_time  = st->start_time > 0 ? st->start_time : 0;
-  if(h->nb_frames <= 0 && h->fmt_ctx->duration > 0 && h->fps.num > 0)
-    h->nb_frames = (int64_t)((double)h->fmt_ctx->duration / AV_TIME_BASE * av_q2d(h->fps));
+  h->width      = h->dec_ctx->width;
+  h->height     = h->dec_ctx->height;
+  h->fps        = st->avg_frame_rate.num > 0 && st->avg_frame_rate.den > 0 ? st->avg_frame_rate : st->r_frame_rate;
+  h->nb_frames  = st->nb_frames;
+  h->start_time = st->start_time > 0 ? st->start_time : 0;
+  if(h->nb_frames <= 0 && h->fmt_ctx->duration > 0 && h->fps.num > 0) h->nb_frames = (int64_t)((double)h->fmt_ctx->duration / AV_TIME_BASE * av_q2d(h->fps));
 
   h->frame   = av_frame_alloc();
   h->bgra    = av_frame_alloc();
   h->pending = av_frame_alloc();
   h->pkt     = av_packet_alloc();
-  if(h->frame == nullptr || h->bgra == nullptr || h->pending == nullptr || h->pkt == nullptr || h->width <= 0 ||
-     h->height <= 0) {
+  if(h->frame == nullptr || h->bgra == nullptr || h->pending == nullptr || h->pkt == nullptr || h->width <= 0 || h->height <= 0) {
     LOG_F(ERROR, "Failed to allocate frame buffers: %s", file);
     delete h;
     return nullptr;
   }
-  h->bgra->format  = kOutputPixFmt;
-  h->bgra->width   = h->width;
-  h->bgra->height  = h->height;
+  h->bgra->format = kOutputPixFmt;
+  h->bgra->width  = h->width;
+  h->bgra->height = h->height;
   if(av_frame_get_buffer(h->bgra, 32) < 0) {
     LOG_F(ERROR, "Failed to allocate BGRA buffer: %s", file);
     delete h;
@@ -137,7 +130,7 @@ static InputHandle fn_open(const char* file) {
 
 static bool fn_close(InputHandle ih) {
   if(ih == nullptr) return false;
-  delete (FFmpegVideoHandle*)ih;
+  delete(FFmpegVideoHandle*)ih;
   return true;
 }
 
@@ -191,16 +184,14 @@ static int decode_next(FFmpegVideoHandle* h) {
 }
 
 static void convert_to_bgra(FFmpegVideoHandle* h, AVFrame* src) {
-  h->sws = sws_getCachedContext(h->sws, h->width, h->height, (AVPixelFormat)src->format, h->width, h->height,
-                                kOutputPixFmt, SWS_BILINEAR, nullptr, nullptr, nullptr);
+  h->sws = sws_getCachedContext(h->sws, h->width, h->height, (AVPixelFormat)src->format, h->width, h->height, kOutputPixFmt, SWS_BILINEAR, nullptr, nullptr, nullptr);
   if(h->sws == nullptr) return;
   sws_scale(h->sws, src->data, src->linesize, 0, h->height, h->bgra->data, h->bgra->linesize);
 }
 
 static void copy_out(FFmpegVideoHandle* h, void* buf) {
   const size_t row_bytes = (size_t)h->width * 4;
-  for(int y = 0; y < h->height; y++)
-    memcpy((uint8_t*)buf + y * row_bytes, h->bgra->data[0] + y * h->bgra->linesize[0], row_bytes);
+  for(int y = 0; y < h->height; y++) memcpy((uint8_t*)buf + y * row_bytes, h->bgra->data[0] + y * h->bgra->linesize[0], row_bytes);
 }
 
 static int fn_read_video(InputHandle ih, int frame_no, void* buf) {
@@ -217,11 +208,9 @@ static int fn_read_video(InputHandle ih, int frame_no, void* buf) {
 
   /// 連続フレームでなければシークしてデコーダを巻き戻す
   if(frame_no != h->decoded_frame + 1) {
-    const auto tb = h->fmt_ctx->streams[h->stream_index]->time_base;
-    const int64_t target =
-      h->start_time + av_rescale(frame_no * (int64_t)h->fps.den, tb.den, (int64_t)h->fps.num * tb.num);
-    if(av_seek_frame(h->fmt_ctx, h->stream_index, target, AVSEEK_FLAG_BACKWARD) < 0)
-      av_seek_frame(h->fmt_ctx, -1, 0, AVSEEK_FLAG_BACKWARD); /// フォールバック: 先頭へ
+    const auto tb        = h->fmt_ctx->streams[h->stream_index]->time_base;
+    const int64_t target = h->start_time + av_rescale(frame_no * (int64_t)h->fps.den, tb.den, (int64_t)h->fps.num * tb.num);
+    if(av_seek_frame(h->fmt_ctx, h->stream_index, target, AVSEEK_FLAG_BACKWARD) < 0) av_seek_frame(h->fmt_ctx, -1, 0, AVSEEK_FLAG_BACKWARD); /// フォールバック: 先頭へ
     avcodec_flush_buffers(h->dec_ctx);
     h->eof = false;
     if(h->pending) av_frame_unref(h->pending);

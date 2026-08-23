@@ -25,14 +25,14 @@ enum InputPluginFlag {
 //	- fn_set_frame / fn_get_frame 等のステートフルな関数は廃止
 struct InputPluginTable {
   uint64_t guid;
-  int flag = InputPluginFlag_Video;                                           //	InputPluginFlag の組み合わせ
-  EntityType supports = EntityType_Movie | EntityType_Audio;                  //	サポートしているオブジェクトの種類
-  char name[MAX_NAME];                                                        //	プラグインの名前
-  char filepath[MAX_FILTER];                                                  //	入力ファイルフィルタ
-  char information[256];                                                      //	プラグインの情報
-  const char* extensions[MAX_SUPPORTED_EXT];                                  //	拡張子リスト
-  bool (*fn_init)();                                                          //	DLL開始時に呼ばれる関数へのポインタ (NULLなら呼ばれません)
-  bool (*fn_exit)();                                                          //	DLL終了時に呼ばれる関数へのポインタ (NULLなら呼ばれません)
+  int flag            = InputPluginFlag_Video;               //	InputPluginFlag の組み合わせ
+  EntityType supports = EntityType_Movie | EntityType_Audio; //	サポートしているオブジェクトの種類
+  char name[MAX_NAME];                                       //	プラグインの名前
+  char filepath[MAX_FILTER];                                 //	入力ファイルフィルタ
+  char information[256];                                     //	プラグインの情報
+  const char* extensions[MAX_SUPPORTED_EXT];                 //	拡張子リスト
+  bool (*fn_init)();                                         //	DLL開始時に呼ばれる関数へのポインタ (NULLなら呼ばれません)
+  bool (*fn_exit)();                                         //	DLL終了時に呼ばれる関数へのポインタ (NULLなら呼ばれません)
 
   //	入力ファイルをオープンする関数へのポインタ
   //	file	: ファイル名

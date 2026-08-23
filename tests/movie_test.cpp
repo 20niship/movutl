@@ -22,9 +22,8 @@ static PluginRegister plugin_register_;
 std::string gen_test_video(const std::string& filename, const std::string& lavfi_src) {
   const std::string path = "/tmp/opencode/" + filename;
   if(fs_exists(path)) return path;
-  const std::string cmd =
-    "ffmpeg -y -loglevel error -f lavfi -i " + lavfi_src + " -pix_fmt yuv420p -c:v libx264 " + path;
-  const int r = std::system(cmd.c_str());
+  const std::string cmd = "ffmpeg -y -loglevel error -f lavfi -i " + lavfi_src + " -pix_fmt yuv420p -c:v libx264 " + path;
+  const int r           = std::system(cmd.c_str());
   REQUIRE_MESSAGE(r == 0, "failed to generate test video: " << cmd);
   return path;
 }
@@ -36,10 +35,7 @@ bool read_frame(Movie* mov, int frame, Image* img) {
   return plg && plg->fn_read_video && plg->fn_read_video(mov->get_input_handle(), frame, img->data()) > 0;
 }
 
-bool same_image(Image* a, Image* b) {
-  return a->width == b->width && a->height == b->height &&
-         std::memcmp(a->data(), b->data(), (size_t)a->width * a->height * 4) == 0;
-}
+bool same_image(Image* a, Image* b) { return a->width == b->width && a->height == b->height && std::memcmp(a->data(), b->data(), (size_t)a->width * a->height * 4) == 0; }
 
 } // namespace
 
