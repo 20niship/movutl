@@ -3,6 +3,7 @@
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/entity.hpp>
 #include <movutl/asset/project.hpp>
+#include <movutl/core/prop_types.hpp>
 
 namespace mu {
 
@@ -72,6 +73,30 @@ std::string Composition::summary() const {
 }
 
 Composition* Composition::GetActiveComp() { return Project::GetActiveCompo(); }
+
+const cutil::PropInfo* Composition::getPropsInfo() const { return nullptr; } // 手動実装のためpygenの生成対象外
+
+cutil::Prop Composition::getProps() const {
+  cutil::Prop p;
+  p.set<std::string>("name", name.c_str());
+  p.set<Vec2>("size", Vec2(size));
+  p.set<int32_t>("framerate_nu", framerate_nu);
+  p.set<int32_t>("framerate_de", framerate_de);
+  p.set<int32_t>("fstart", fstart);
+  p.set<int32_t>("fend", fend);
+  p.set<int32_t>("frame", frame);
+  return p;
+}
+
+void Composition::setProps(const cutil::Prop& p) {
+  name         = cutil::get_or<std::string>(p, "name", name.c_str());
+  size         = Vec2d(cutil::get_or<Vec2>(p, "size", Vec2(size)));
+  framerate_nu = cutil::get_or<int32_t>(p, "framerate_nu", framerate_nu);
+  framerate_de = cutil::get_or<int32_t>(p, "framerate_de", framerate_de);
+  fstart       = cutil::get_or<int32_t>(p, "fstart", fstart);
+  fend         = cutil::get_or<int32_t>(p, "fend", fend);
+  frame        = cutil::get_or<int32_t>(p, "frame", frame);
+}
 
 
 int Composition::insertable_layer_index() const {

@@ -6,25 +6,21 @@
 
 namespace mu::detail {
 
-struct PlayPauseCommand : mCommand {
-  PlayPauseCommand() {
-    id          = "play_pause";
-    name        = "再生/一時停止";
-    description = "コンポジションの再生/一時停止をトグルする";
-    shortcut    = ImGuiKey_Space;
-  }
+namespace {
 
+struct PlayPauseCommand final : mCommand {
   CommandStatus on_start() override {
     auto cmp = Composition::GetActiveComp();
     if(!cmp) return CommandStatus::Failed;
-    playing_   = !playing_;
+    s_playing = !s_playing;
+    if(!s_playing) return CommandStatus::Finished;
     last_time_ = mu_now_seconds();
-    return playing_ ? CommandStatus::Running : CommandStatus::Finished;
+    return CommandStatus::Running;
   }
 
   CommandStatus tick() override {
     auto cmp = Composition::GetActiveComp();
-    if(!cmp || !playing_) return CommandStatus::Finished;
+    if(!cmp || !s_playing) return CommandStatus::Finished;
 
     double now = mu_now_seconds();
     double fps = cmp->framerate_de != 0 ? (double)cmp->framerate_nu / cmp->framerate_de : 30.0;
@@ -36,19 +32,15 @@ struct PlayPauseCommand : mCommand {
     return CommandStatus::Running;
   }
 
-  void on_cancel() override { playing_ = false; }
+  void on_cancel() override { s_playing = false; }
 
-  bool playing_    = false;
   double last_time_ = 0;
+  static bool s_playing; // run_command()の度に新しいインスタンスが作られるため、トグル状態はインスタンスをまたいでstaticで共有する
 };
+bool PlayPauseCommand::s_playing = false;
 
-struct FrameStepCommand : mCommand {
-  explicit FrameStepCommand(int dir) : dir_(dir) {
-    id          = dir_ > 0 ? "frame_step_forward" : "frame_step_backward";
-    name        = dir_ > 0 ? "次のフレーム" : "前のフレーム";
-    description = "現在フレームを1つ進める/戻す";
-    shortcut    = dir_ > 0 ? ImGuiKey_RightArrow : ImGuiKey_LeftArrow;
-  }
+struct FrameStepCommand final : mCommand {
+  explicit FrameStepCommand(int dir) : dir_(dir) {}
 
   CommandStatus on_start() override {
     auto cmp = Composition::GetActiveComp();
@@ -60,11 +52,12 @@ struct FrameStepCommand : mCommand {
   int dir_;
 };
 
+} // namespace
+
 void register_default_commands() {
-  auto cm = CommandManager::Get();
-  cm->register_command(cutil::make_ref<PlayPauseCommand>());
-  cm->register_command(cutil::make_ref<FrameStepCommand>(1));
-  cm->register_command(cutil::make_ref<FrameStepCommand>(-1));
+  register_command<PlayPauseCommand>({"play_pause", "再生/一時停止", "コンポジションの再生/一時停止をトグルする", "space"});
+  register_command<FrameStepCommand>({"frame_step_forward", "次のフレーム", "現在フレームを1つ進める", "right"}, 1);
+  register_command<FrameStepCommand>({"frame_step_backward", "前のフレーム", "現在フレームを1つ戻す", "left"}, -1);
 }
 
 } // namespace mu::detail

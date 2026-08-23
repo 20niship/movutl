@@ -175,7 +175,7 @@ void update() {
   { // gui thread
     detail::gui_new_frame();
     detail::process_command_shortcuts();
-    CommandManager::Get()->tick_running_commands();
+    tick_running_commands();
     detail::update_gui_panels();
     detail::gui_render_to_screen();
   }

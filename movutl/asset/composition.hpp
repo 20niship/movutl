@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cutil/prop.hpp>
 #include <cutil/string.hpp>
 #include <movutl/asset/image.hpp>
 
@@ -66,6 +67,11 @@ public:
   std::string summary() const;
 
   static Composition* GetActiveComp();
+
+  // name/size/framerate/fstart/fend/frameのみを対象とする(layers/entitiesはguid参照を含むためProject::Save/Loadで別途扱う)
+  const cutil::PropInfo* getPropsInfo() const;
+  cutil::Prop getProps() const;
+  void setProps(const cutil::Prop& props);
 
   int insertable_layer_index() const;
   void insert_entity(Ref<Entity> entt, int layer = -1);

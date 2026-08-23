@@ -69,13 +69,7 @@ void Project::Save(const char* path) {
   for(size_t ci = 0; ci < pj->compos_.size(); ci++) {
     const auto& cmp = pj->compos_[ci];
     cutil::Prop cp;
-    cp.set<std::string>("name", cmp.name.c_str());
-    cp.set<Vec2>("size", Vec2(cmp.size));
-    cp.set<int32_t>("framerate_nu", cmp.framerate_nu);
-    cp.set<int32_t>("framerate_de", cmp.framerate_de);
-    cp.set<int32_t>("fstart", cmp.fstart);
-    cp.set<int32_t>("fend", cmp.fend);
-    cp.set<int32_t>("frame", cmp.frame);
+    cp.set_child("props", cmp.getProps());
 
     cp.set<int32_t>("layer_count", (int32_t)cmp.layers.size());
     for(size_t li = 0; li < cmp.layers.size(); li++) {
@@ -120,13 +114,7 @@ void Project::Load(const char* path) {
   for(int32_t ci = 0; ci < compo_count; ci++) {
     const auto& cp = js.get_child(("compo_" + std::to_string(ci)).c_str());
     Composition cmp;
-    cmp.name         = cutil::get_or<std::string>(cp, "name", "Main");
-    cmp.size         = Vec2d(cutil::get_or<Vec2>(cp, "size", Vec2(cmp.size)));
-    cmp.framerate_nu = cutil::get_or<int32_t>(cp, "framerate_nu", cmp.framerate_nu);
-    cmp.framerate_de = cutil::get_or<int32_t>(cp, "framerate_de", cmp.framerate_de);
-    cmp.fstart       = cutil::get_or<int32_t>(cp, "fstart", cmp.fstart);
-    cmp.fend         = cutil::get_or<int32_t>(cp, "fend", cmp.fend);
-    cmp.frame        = cutil::get_or<int32_t>(cp, "frame", cmp.frame);
+    if(cp.contains("props")) cmp.setProps(cp.get_child("props"));
 
     int32_t layer_count = cutil::get_or<int32_t>(cp, "layer_count", 0);
     for(int32_t li = 0; li < layer_count; li++) {
