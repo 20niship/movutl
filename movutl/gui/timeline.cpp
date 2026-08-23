@@ -3,9 +3,9 @@
 #endif
 
 #include <IconsFontAwesome6.h>
+#include <cutil/rect.hpp>
 #include <imgui.h>
 #include <imgui_internal.h>
-#include <movutl/core/rect.hpp>
 #include <movutl/gui/timeline.hpp>
 
 enum ImTimelineState {
@@ -23,7 +23,7 @@ enum ImTimelineState {
 namespace mu {
 
 struct TimelineContext {
-  Rect all_area;
+  cutil::Rect all_area;
   int hidx              = 0;
   int trackname_width   = 100;
   bool toggle_play      = false;
@@ -37,14 +37,14 @@ struct TimelineContext {
   bool first            = true;
   std::vector<Entity*> sel; // TODO: 複数選択を可能にする
 
-  Rect tl_area() {
+  cutil::Rect tl_area() {
     auto r = all_area;
     r.y.min += header_h;
     r.x.min += trackname_width;
     return r;
   }
 
-  Rect header_area() {
+  cutil::Rect header_area() {
     auto r  = all_area;
     r.y.max = r.y.min + header_h;
     return r;
@@ -100,7 +100,7 @@ bool BeginTimeline(const char* name, FrameT* frame, FrameT* start, FrameT* end, 
     auto height_ = std::max<int>(height, ctx_.hidx * ctx_.height);
     auto pos     = ImGui::GetCursorScreenPos();
 
-    ctx_.all_area = Rect(pos.x, pos.x + width_, pos.y, pos.y + height_);
+    ctx_.all_area = cutil::Rect(pos.x, pos.x + width_, pos.y, pos.y + height_);
   }
 
   auto all = ctx_.all_area;
