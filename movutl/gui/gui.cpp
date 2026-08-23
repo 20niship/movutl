@@ -22,20 +22,20 @@ void init_gui_panels() {
     cutil::make_ref<ViewerWindow>(),
     cutil::make_ref<UtilityWindow>(),
   };
+
+  // デフォルトワークスペース(初回起動時に適用される)
+  Workspace default_workspace;
+  default_workspace.name = "Default";
+  default_workspace.add_entry("MOVUTL TIMELINE WINDOW", ImGuiDir_Down, 0.40f);
+  default_workspace.add_entry("ツール", ImGuiDir_Left, 0.2f);
+  default_workspace.add_entry(ICON_FA_PLUG " エフェクト制御", ImGuiDir_Right, 0.25f);
+  default_workspace.add_entry("Viewer", ImGuiDir_None, 1.0f);
+  register_workspace("Default", default_workspace);
 }
 
 void update_gui_panels() {
   auto a = GUIManager::Get();
   for(auto& panel : a->panels) panel->Update();
-  { // show fps in top panel transparent
-    ImGui::SetNextWindowBgAlpha(0.35f);
-    ImGui::SetNextWindowSize(ImVec2(100, 50));
-    ImGui::Begin("FPS", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
-    ImGui::Text("%.1f FPS", ImGui::GetIO().Framerate);
-    float ms = 1000.0f / ImGui::GetIO().Framerate;
-    ImGui::Text("%.2f ms", ms);
-    ImGui::End();
-  }
 }
 
 } // namespace detail

@@ -42,21 +42,21 @@ bool fn_init(void* fp, ExeData* editp, cutil::PropInfo* props, cutil::Prop* defa
 }
 
 FilterPluginTable f_color_correction = {
-  GUID(0x00001), // id
-  FilterDefault, // flag
+  GUID(0x00001),          // id
+  FilterDefault,          // flag
   cutil::Str("色調補正"), // name
   cutil::Str("色調補正"), // desc
-  0,             // version
-  "0",           // version str
-  nullptr,       // fn_cutstom_wnd
-  nullptr,       // fn_update_value
-  fn_init,       // fn_init
-  nullptr,       // fn_exit
-  fn_proc,       // fn_proc
-  nullptr,       // fn_update
-  nullptr,       // func_is_saveframe
-  nullptr,       // fn_project_load
-  nullptr        // func_project_save
+  0,                      // version
+  "0",                    // version str
+  nullptr,                // fn_cutstom_wnd
+  nullptr,                // fn_update_value
+  fn_init,                // fn_init
+  nullptr,                // fn_exit
+  fn_proc,                // fn_proc
+  nullptr,                // fn_update
+  nullptr,                // func_is_saveframe
+  nullptr,                // fn_project_load
+  nullptr                 // func_project_save
 };
 
 FilterPluginTable f_single_color;
