@@ -1,5 +1,6 @@
 #pragma once
 #include <imgui.h>
+#include <map>
 #include <movutl/core/defines.hpp>
 #include <movutl/plugin/plugin.hpp>
 
