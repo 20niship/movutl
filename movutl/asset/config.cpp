@@ -28,6 +28,7 @@ void Config::Load() {
   c->log_to_file  = cutil::get_or<bool>(js, "log_to_file", c->log_to_file);
   c->log_filename = cutil::get_or<std::string>(js, "log_filename", c->log_filename);
   c->log_level    = (LogLevel)cutil::get_or<int32_t>(js, "log_level", int(c->log_level));
+  c->show_viewer_ruler = cutil::get_or<bool>(js, "show_viewer_ruler", c->show_viewer_ruler);
 }
 
 void Config::Save() {
@@ -39,6 +40,7 @@ void Config::Save() {
   js.set<bool>("log_to_file", c->log_to_file);
   js.set<std::string>("log_filename", c->log_filename);
   js.set<int32_t>("log_level", int(c->log_level));
+  js.set<bool>("show_viewer_ruler", c->show_viewer_ruler);
 
   std::string out;
   cutil::prop_dump_json(js, out);

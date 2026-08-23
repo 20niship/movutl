@@ -27,6 +27,9 @@ public:
   static void Save(const char* path = nullptr);
   static void Load(const char* path);
 
+  // Compositionを新規追加し、設定ウィンドウを自動で開いた状態で返す
+  static Composition* AddComposition(const char* name, int width = 1920, int height = 1080, int fps = 30);
+
   [[deprecated]] Composition* get_main_comp() {
     if(main_comp_idx < 0 || main_comp_idx >= compos_.size()) {
       Project::New();

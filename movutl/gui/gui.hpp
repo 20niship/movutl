@@ -56,6 +56,7 @@ public:
 };
 
 const char* get_entt_icon(const Ref<Entity>& entt);
+ImU32 get_entt_color(const Ref<Entity>& entt); // メディアタイプ別の固定色パレット
 
 namespace detail {
 

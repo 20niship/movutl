@@ -1,5 +1,6 @@
 #include <movutl/app/app.hpp>
 #include <movutl/app/app_impl.hpp>
+#include <movutl/asset/config.hpp>
 #include <movutl/asset/project.hpp>
 #include <movutl/gui/gui.hpp>
 
@@ -39,6 +40,7 @@ void render_main_menu_bar() {
     }
     if(ImGui::MenuItem("ステータスバー")) {
     }
+    ImGui::MenuItem("ルーラー表示", nullptr, &Config::Get()->show_viewer_ruler);
     if(ImGui::BeginMenu("スタイル")) {
       const auto& styles = detail::AppMain::Get()->imgui_styles;
       for(const auto& style : styles) {

@@ -39,11 +39,10 @@ void Composition::resize(int32_t w, int32_t h) {
 }
 
 Composition::Composition(const char* name, int32_t w, int32_t h, int32_t fps) {
-  auto cmp           = cutil::make_ref<Composition>();
   this->size[0]      = w;
   this->size[1]      = h;
   this->framerate_nu = fps;
-  cmp->name          = name;
+  this->name         = name;
   for(int i = 0; i < 10; i++) {
     TrackLayer layer;
     std::string name_str = "Layer" + std::to_string(i + 1);

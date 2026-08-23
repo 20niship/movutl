@@ -45,6 +45,7 @@ public:
   bool solo_          = false;       // MPROPERTY(name="ソロモード", desc="(音声のみ)他のレイヤを非表示にする")
   bool clipping_up    = false;       // MPROPERTY(name="上レイヤでクリッピング",  hidden_inspector=true)
   bool camera_ctrl    = false;       // MPROPERTY(name="カメラ制御", desc="カメラ制御の対象", hidden_inspector=true)
+  int32_t custom_color = 0;          // MPROPERTY(name="カスタム色", desc="0の場合メディア種別ごとの既定色を使う")
 
   struct FilterParam {
     FilterPluginTable* plg_ = nullptr;

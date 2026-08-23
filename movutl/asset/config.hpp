@@ -24,6 +24,7 @@ public:
   bool log_to_file         = false;
   std::string log_filename = "log.txt";
   LogLevel log_level       = LogLevel::DEBUG;
+  bool show_viewer_ruler   = false; // Viewportにルーラー(目盛り)を表示するか
 
   // 以下 movutl/core/sys_info.hpp より統合
   int sys_flag = 0;                  // システムフラグ (kSysFlagEdit 等)

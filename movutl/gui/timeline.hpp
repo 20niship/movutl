@@ -22,8 +22,8 @@ enum ImTimelineFlags {
 };
 
 bool BeginTimeline(const char* name, FrameT* frame, FrameT* start, FrameT* end, bool* playing, const ImVec2& size = ImVec2(0, 0));
-int EndTimeline();                  // returns current key
-bool BeginLayer(TrackLayer* layer); // depth = レイヤのインデックス
+int EndTimeline();                                 // returns current key
+bool BeginLayer(Composition* cp, int layer_idx); // depth = レイヤのインデックス
 void EndLayer();
 bool BeginTrack(const Ref<Entity>& entity);
 void EndTrack();

@@ -35,7 +35,7 @@ public:
     invert_field_order = 1 << 16, // AviUtl::FilterProcInfo側のフラグ
     invert_interlace   = 1 << 17, // AviUtl::FilterProcInfo側のフラグ
   };
-  Flag flag;
+  Flag flag = (Flag)0;
 
   // ---------- video ----------
   Ref<Image> frame_final;

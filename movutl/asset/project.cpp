@@ -42,6 +42,14 @@ void Project::New(int width, int height, int fps) {
   pj->main_comp_idx = 0;
 }
 
+Composition* Project::AddComposition(const char* name, int width, int height, int fps) {
+  auto pj = Project::Get();
+  pj->compos_.push_back(Composition(name, width, height, fps));
+  auto* cmp = &pj->compos_.back();
+  cmp->flag = (Composition::Flag)(cmp->flag | Composition::setting_dialog);
+  return cmp;
+}
+
 Composition* Project::GetActiveCompo() {
   auto pj = Project::Get();
   if(pj->main_comp_idx < 0 || pj->main_comp_idx >= pj->compos_.size()) return nullptr;
