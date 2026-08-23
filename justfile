@@ -19,3 +19,9 @@ check:
     python3 scripts/run_clang_format.py --check
     just build
     just test
+
+build-docker:
+  git submodule update --init --recursive
+  docker build -t movutl scripts/
+  docker exec -it --rm -v $(pwd):/movutl movutl just build
+
