@@ -11,9 +11,12 @@ using namespace mu;
 
 namespace {
 
-/// テスト用にデフォルトプラグイン(FFmpeg video reader)を登録する
+/// テスト用にplugins/以下の.msoプラグイン(FFmpeg video reader等)を読み込む
 struct PluginRegister {
-  PluginRegister() { detail::register_default_plugins(); }
+  PluginRegister() {
+    detail::register_default_plugins();
+    detail::init_external_plugins();
+  }
 };
 
 static PluginRegister plugin_register_;

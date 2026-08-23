@@ -14,6 +14,11 @@ set(MOVUTL_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 add_subdirectory(${MOVUTL_ROOT_DIR}/ext/nanobind)
 add_subdirectory(movutl)
 
+option(MOVUTL_BUILD_PLUGINS "外部プラグインをビルド" ON)
+if(MOVUTL_BUILD_PLUGINS)
+  add_subdirectory(plugins)
+endif()
+
 include_directories(${MOVUTL_INCLUDES} ${MOVUTL_ROOT_DIR}/ext/doctest)
 add_subdirectory(tests)
 add_subdirectory(examples)

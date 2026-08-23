@@ -5,7 +5,7 @@
 #include <movutl/asset/image.hpp>
 #include <movutl/asset/track.hpp>
 #include <movutl/core/prop_types.hpp>
-#include <movutl/plugin/exdata.hpp>
+#include <movutl/plugin/abi.h>
 
 namespace mu {
 
@@ -44,8 +44,8 @@ struct FilterPluginTable {
 
   void (*fn_cutstom_wnd)() = nullptr;
   void (*fn_update_value)();
-  bool (*fn_init)(void* fp, ExeData* editp, cutil::PropInfo* props, cutil::Prop* defaults); //	開始時に呼ばれる関数へのポインタ (NULLなら呼ばれせん)
-  bool (*fn_exit)(void* fp);                                                                //	終了時に呼ばれる関数へのポインタ (NULLなら呼ばれません)
+  bool (*fn_init)(void* fp, ABIContext* editp, cutil::PropInfo* props, cutil::Prop* defaults); //	開始時に呼ばれる関数へのポインタ (NULLなら呼ばれせん)
+  bool (*fn_exit)(void* fp);                                                                   //	終了時に呼ばれる関数へのポインタ (NULLなら呼ばれません)
 
   bool (*fn_proc)(void* fp, FilterInData* fpip, const cutil::Prop& p); //	フィルタ処理関数へのポインタ (NULLなら呼ばれません)
   bool (*fn_update)(void* fp, int status);
