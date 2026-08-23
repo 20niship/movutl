@@ -4,14 +4,8 @@
 
 using namespace mu;
 
-namespace {
-struct ImagePluginRegister {
-  ImagePluginRegister() { detail::init_external_plugins(); }
-};
-static ImagePluginRegister image_plugin_register_;
-} // namespace
-
 TEST_CASE("STB Image Reader: PNG読み込み") {
+  detail::init_external_plugins();
   auto img = Image::Create("test_png", "../assets/textures/concrete.png");
   CHECK(img->width > 0);
   CHECK(img->height > 0);
@@ -22,12 +16,14 @@ TEST_CASE("STB Image Reader: PNG読み込み") {
 }
 
 TEST_CASE("STB Image Reader: JPG読み込み") {
+  detail::init_external_plugins();
   auto img = Image::Create("test_jpg", "../assets/textures/tile.jpg");
   CHECK(img->width > 0);
   CHECK(img->height > 0);
 }
 
 TEST_CASE("STB Image Reader: 存在しないファイル") {
+  detail::init_external_plugins();
   Image img;
   CHECK_FALSE(img.load_file("/nonexistent/image.png"));
 }

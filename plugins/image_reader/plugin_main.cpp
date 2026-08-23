@@ -1,7 +1,11 @@
-#include "image_reader.hpp"
 #include <cstring>
 #include <movutl/plugin/abi.h>
+#include <movutl/plugin/input.hpp>
 #include <movutl/plugin/plugin.hpp>
+
+namespace mu::detail {
+extern InputPluginTable plg_image_reader;
+} // namespace mu::detail
 
 namespace {
 

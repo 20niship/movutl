@@ -26,6 +26,10 @@ void activate_all_plugins() {
 }
 
 void init_external_plugins() {
+  static bool loaded = false;
+  if(loaded) return; // 複数箇所から呼ばれても二重ロードしない
+  loaded = true;
+
   // xxx.mso ファイルを読み込む
   auto search_paths = Config::Get()->plugin_search_paths;
   for(const auto& path : search_paths) {
