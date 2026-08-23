@@ -263,7 +263,6 @@ def run():
         root / "movutl/asset/composition.hpp",
         root / "movutl/asset/project.hpp",
         root / "movutl/core/anim.hpp",
-        root / "movutl/core/imagebase.hpp",
         root / "movutl/asset/text.hpp",
         root / "movutl/app/app.hpp",
         root / "movutl/gui/gui.hpp",

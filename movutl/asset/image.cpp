@@ -7,7 +7,7 @@
 
 namespace mu {
 
-void ImageRGBA::set_cv_img(const cv::Mat* cv_img) {
+void Image::set_cv_img(const cv::Mat* cv_img) {
   MU_ASSERT(cv_img);
   cv::Mat out;
   if(cv_img->channels() == 4)
@@ -28,7 +28,7 @@ void ImageRGBA::set_cv_img(const cv::Mat* cv_img) {
   }
 }
 
-void ImageRGBA::to_cv_img(cv::Mat* cv_img) const {
+void Image::to_cv_img(cv::Mat* cv_img) const {
   MU_ASSERT(cv_img);
   cv_img->create(height, width, CV_8UC4);
   for(int y = 0; y < (int)height; y++) {
@@ -39,7 +39,7 @@ void ImageRGBA::to_cv_img(cv::Mat* cv_img) const {
   }
 }
 
-bool ImageRGBA::copyto(ImageRGBA* dst, const Vec2d& pmin) const {
+bool Image::copyto(Image* dst, const Vec2d& pmin) const {
   MU_ASSERT(dst);
   if(this->width <= 0 || this->height <= 0 || dst->width <= 0 || dst->height <= 0) return false;
   int cw = dst->width;
@@ -59,7 +59,7 @@ bool ImageRGBA::copyto(ImageRGBA* dst, const Vec2d& pmin) const {
   }
 }
 
-bool ImageRGBA::copyto(ImageRGBA* dst, const Vec2d& center, float scale, float angle) const {
+bool Image::copyto(Image* dst, const Vec2d& center, float scale, float angle) const {
   if(angle == 0 && scale == 1.0) return this->copyto(dst, center);
   // 角度をラジアンに変換
   float rad = angle * M_PI / 180.0f;
@@ -99,19 +99,19 @@ bool ImageRGBA::copyto(ImageRGBA* dst, const Vec2d& center, float scale, float a
 bool Image::render(Composition* cmp) {
   MU_ASSERT(cmp);
   MU_ASSERT(cmp->frame_final);
-  if(this->width() <= 0 || this->height() <= 0) return false;
+  if(this->width <= 0 || this->height <= 0) return false;
   int cw = cmp->size[0];
   int ch = cmp->size[1];
   if(cw <= 0 || ch <= 0) return false;
 
-  int base_x = this->width() / 2 + trk.anchor[0] - cw / 2;
-  int base_y = this->height() / 2 + trk.anchor[1] - ch / 2;
-  this->img.copyto(cmp->frame_final.get(), Vec2d(base_x, base_y));
+  int base_x = this->width / 2 + trk.anchor[0] - cw / 2;
+  int base_y = this->height / 2 + trk.anchor[1] - ch / 2;
+  this->copyto(cmp->frame_final.get(), Vec2d(base_x, base_y));
 }
 
 Ref<Image> Image::Create(const char* name, const char* path) {
   MU_ASSERT(name);
-  auto img  = std::make_shared<Image>();
+  auto img  = cutil::make_ref<Image>();
   img->name = name;
   if(path) img->path = path;
   auto pj = Project::Get();
@@ -122,7 +122,7 @@ Ref<Image> Image::Create(const char* name, const char* path) {
 
 Ref<Image> Image::Create(const char* name, int w, int h, ImageFormat format, bool add_to_pj) {
   MU_ASSERT(name && w > 0 && h > 0);
-  auto img = std::make_shared<Image>();
+  auto img = cutil::make_ref<Image>();
   MU_ASSERT(img);
   img->name = name;
   img->fmt  = format;
@@ -135,7 +135,7 @@ Ref<Image> Image::Create(const char* name, int w, int h, ImageFormat format, boo
   return img;
 }
 
-void ImageRGBA::imshow(const char* name) const {
+void Image::imshow(const char* name) const {
   cv::Mat cv_img;
   to_cv_img(&cv_img);
   cv::imshow(name, cv_img);

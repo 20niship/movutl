@@ -5,10 +5,10 @@
 #include <stdio.h>
 #include <string>
 
+#include <movutl/asset/image.hpp>
 #include <movutl/core/assert.hpp>
 #include <movutl/core/filesystem.hpp>
 #include <movutl/core/fontrender.hpp>
-#include <movutl/core/imagebase.hpp>
 #include <movutl/core/logger.hpp>
 
 #include <ft2build.h>
@@ -102,7 +102,7 @@ void FontRenderManager::FontFace::set_fontsize(int size) {
   printf("set_fontsize: %d\n", size);
 }
 
-void FontRenderManager::FontFace::render_text(const char* text, int space_x, int space_y, ImageRGBA* img) {
+void FontRenderManager::FontFace::render_text(const char* text, int space_x, int space_y, Image* img) {
   MU_ASSERT(face);
   MU_ASSERT(slot);
   MU_ASSERT(img);
@@ -136,7 +136,7 @@ void FontRenderManager::FontFace::render_text(const char* text, int space_x, int
 };
 
 // 生成された位置も自分の画像データをimageにコピーする
-void FontRenderManager::FontFace::draw_bitmap(ImageRGBA* img, int x, int y) {
+void FontRenderManager::FontFace::draw_bitmap(Image* img, int x, int y) {
   int i, j, p, q;
   const int x_max = x + (slot->bitmap).width;
   const int y_max = y + (slot->bitmap).rows;
@@ -155,7 +155,7 @@ void FontRenderManager::FontFace::draw_bitmap(ImageRGBA* img, int x, int y) {
   }
 }
 
-bool FontRenderManager::renderText(ImageRGBA* img, const char* text, int size, int sace_x, int space_y, const char* font_name) {
+bool FontRenderManager::renderText(Image* img, const char* text, int size, int sace_x, int space_y, const char* font_name) {
   auto manager = FontRenderManager::Get();
   if(!manager->initialized) {
     LOG_F(ERROR, "FontRenderManager is not initialized");

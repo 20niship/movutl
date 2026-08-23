@@ -2,9 +2,9 @@ default:
     @just --list
 
 # cmake configure + ビルド
-build:
-    cmake -S . -B build
-    cmake --build build -j
+build build_dir="build":
+    cmake -S . -B {{build_dir}}
+    cmake --build {{build_dir}} -j
 
 # ビルドしてテストを実行する
 test: build
@@ -19,3 +19,9 @@ check:
     python3 scripts/run_clang_format.py --check
     just build
     just test
+
+build-docker:
+  git submodule update --init --recursive
+  docker build -t movutl scripts/
+  docker run -it --rm -v $(pwd):/app movutl just build build-docker
+

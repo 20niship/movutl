@@ -17,10 +17,10 @@ namespace detail {
 void init_gui_panels() {
   auto g    = GUIManager::Get();
   g->panels = {
-    std::make_shared<InspectorWindow>(),
-    std::make_shared<TimelineWindow>(),
-    std::make_shared<ViewerWindow>(),
-    std::make_shared<UtilityWindow>(),
+    cutil::make_ref<InspectorWindow>(),
+    cutil::make_ref<TimelineWindow>(),
+    cutil::make_ref<ViewerWindow>(),
+    cutil::make_ref<UtilityWindow>(),
   };
 }
 

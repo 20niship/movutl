@@ -3,14 +3,28 @@
 #include <imgui_internal.h>
 #include <movutl/app/app.hpp>
 #include <movutl/app/app_impl.hpp>
+#include <cstring>
 #include <movutl/asset/entity.hpp>
-#include <movutl/core/string.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/gui/inspector.hpp>
 #include <movutl/gui/widgets.hpp>
 #include <movutl/plugin/plugin.hpp>
 
 namespace mu {
+
+namespace {
+// movutl/core/string.hpp 削除に伴い、唯一の利用箇所であるここに移動 ([#14])
+bool fuzzy_match(const char* src, const char* filter) {
+  if(!src || !filter) return true;
+  while(*filter) {
+    char c = *filter++;
+    src    = std::strchr(src, c);
+    if(!src) return false;
+    src++;
+  }
+  return true;
+}
+} // namespace
 
 void InspectorWindow::Update() {
   ImGui::Begin(ICON_FA_PLUG " エフェクト制御");

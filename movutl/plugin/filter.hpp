@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cutil/prop.hpp>
+#include <cutil/string.hpp>
 #include <movutl/asset/image.hpp>
 #include <movutl/asset/track.hpp>
 #include <movutl/core/prop_types.hpp>
@@ -13,7 +14,7 @@ public:
   int flag;                     //	フィルタのフラグ
                                 //	FILTER_PROC_INFO_FLAG_INVERT_FIELD_ORDER	: フィールドオーダーを標準と逆に扱う ( 標準はボトム->トップになっています )
                                 //	FILTER_PROC_INFO_FLAG_INVERT_INTERLACE		: 解除方法を反転する ( インターレース解除フィルタのみ )
-  ImageRGBA* img     = nullptr; //	画像データへのポインタ ( ycp_editとycp_tempは入れ替えれます )
+  Image* img     = nullptr; //	画像データへのポインタ ( ycp_editとycp_tempは入れ替えれます )
   Composition* compo = nullptr; //	コンポジション
   Entity* entt       = nullptr; //	フィルタが適用されるエンティティ
   Vec2d max_size;               //	画像領域のサイズ
@@ -36,8 +37,8 @@ enum FilterInfoType {
 struct FilterPluginTable {
   uint64_t guid;
   FilterInfoType flag;
-  FixString name;
-  FixStringBase<256> info;
+  cutil::Str name;
+  cutil::Str info;
   uint32_t version = 0;
   std::string version_str;
 

@@ -1,6 +1,7 @@
 #pragma once
+#include <cutil/rect.hpp>
+#include <cutil/rect3d.hpp>
 #include <movutl/asset/image.hpp>
-#include <movutl/core/rect.hpp>
 #include <movutl/core/vector.hpp>
 
 namespace mu {
@@ -62,7 +63,7 @@ public:
   Vec<Vertex> vertices;
 
   Vec3 center_of_geom() const;
-  Rect3D get_bbox() const;
+  cutil::Rect3D get_bbox() const;
   virtual void move_geom(const Vec3&);  /// すべてのMeshについて 第1引数だけ移動する
   virtual void scale_geom(const Vec3&); /// すべてのMeshについて 第1引数scale倍する
   virtual size_t get_vertices_size() = 0;

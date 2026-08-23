@@ -18,7 +18,7 @@ public:
   TextEntt(const char* path);
   ~TextEntt() = default;
 
-  Ref<ImageRGBA> img_;
+  Ref<Image> img_;
   int32_t dirty_ = 0;     // MPROPERTY(name="更新フラグ", hidden=true)
   Vec3 pos_;              // MPROPERTY(name="位置" viewer_anchor=true, position=true)
   float scale_x_ = 1.0;   // MPROPERTY(name="拡大率X, scale_x")

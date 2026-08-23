@@ -1,9 +1,9 @@
 #pragma once
 
+#include <cutil/string.hpp>
 #include <movutl/asset/track.hpp>
 #include <movutl/core/defines.hpp>
 #include <movutl/core/prop_types.hpp>
-#include <movutl/core/string.hpp>
 #include <string>
 
 #define BITMAPINFOHEADER void
@@ -13,7 +13,7 @@ namespace mu {
 
 struct InputPluginTable;
 class Composition;
-class ImageRGBA;
+class Image;
 
 enum EntityType {
   EntityType_Movie       = 1,
@@ -64,10 +64,10 @@ protected:
   InputHandle in_handle_    = nullptr;
   EntityInfo info;
 
-  bool render_filters(Composition* cmp, ImageRGBA* img);
+  bool render_filters(Composition* cmp, Image* img);
 
 public:
-  FixString name;     // MPROPERTY(name="名前")
+  cutil::Str name;    // MPROPERTY(name="名前")
   uint64_t guid_ = 0; // MPROPERTY(name="GUID")
   TrackObject trk;    // MPROPERTY(name="トラック")
 

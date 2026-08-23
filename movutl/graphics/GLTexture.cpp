@@ -18,7 +18,7 @@ inline unsigned int get_opengl_format(ImageFormat t) {
   }
   return GL_RGB; // Default
 }
-void GLTexture::set(const std::shared_ptr<ImageRGBA>& image) {
+void GLTexture::set(const cutil::Ref<Image>& image) {
   MU_ASSERT(image);
   if(!initialized_) {
     glGenTextures(1, &tex_id);
@@ -26,7 +26,7 @@ void GLTexture::set(const std::shared_ptr<ImageRGBA>& image) {
   }
   img_ = image;
 
-  ImageRGBA* i = img_.lock().get();
+  Image* i = img_.lock().get();
 
   if(i->width == 0 || i->height == 0) {
     LOG_F(ERROR, "Image size is zero. s (%d, %d)", i->width, i->height);
@@ -46,7 +46,7 @@ void GLTexture::set(const std::shared_ptr<ImageRGBA>& image) {
   glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 }
 
-GLTexture::GLTexture(const std::shared_ptr<ImageRGBA>& image) {
+GLTexture::GLTexture(const cutil::Ref<Image>& image) {
   set(image);
   bind();
   update_if_necessary();
@@ -69,7 +69,7 @@ void GLTexture::unbind() const { glBindTexture(GL_TEXTURE_2D, 0); }
 
 void GLTexture::update_if_necessary() {
   if(img_.expired()) return;
-  ImageRGBA* i = img_.lock().get();
+  Image* i = img_.lock().get();
   MU_ASSERT(i);
   if(i->dirty_ == last_dirty_) return;
   bool resized = i->width != gpu_width_ || i->height != gpu_height_;

@@ -3,7 +3,7 @@
 #include <movutl/asset/entity.hpp>
 #include <movutl/core/core.hpp>
 #include <movutl/core/logger.hpp>
-#include <movutl/core/quotanion.hpp>
+#include <cutil/quaternion.hpp>
 #include <movutl/core/vector.hpp>
 
 namespace mu {
@@ -31,7 +31,7 @@ const float ZOOM        = 45.0f;
 class Camera3D : public Entity {
 public:
   Vec3 pos;
-  Quat rot;
+  cutil::Quatf rot;
   Vec3 up      = Vec3(0, 0, 1);
   float fov    = 60.0f;
   float aspect = 1.0f;

@@ -1,7 +1,7 @@
 #pragma once
 
+#include <cutil/string.hpp>
 #include <movutl/asset/image.hpp>
-#include <movutl/core/string.hpp>
 
 namespace mu {
 
@@ -11,7 +11,7 @@ class Entity;
  */
 struct TrackLayer {
 public:
-  FixString name = "Layer";
+  cutil::Str name{"Layer"};
   bool active    = true;
   std::vector<Ref<Entity>> entts;
 
@@ -23,7 +23,7 @@ public:
 class Composition {
 public:
   uint32_t guid;
-  FixString name = "Main";
+  cutil::Str name{"Main"};
 
   enum Flag : uint32_t {
     setting_dialog     = 1 << 4,  // そのオブジェクトの設定ダイアログが表示されている
@@ -38,7 +38,7 @@ public:
   Flag flag;
 
   // ---------- video ----------
-  Ref<ImageRGBA> frame_final;
+  Ref<Image> frame_final;
   Ref<Image> frame_edit;
   Ref<Image> frame_temp;
 

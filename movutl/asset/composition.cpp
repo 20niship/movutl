@@ -39,7 +39,7 @@ void Composition::resize(int32_t w, int32_t h) {
 }
 
 Composition::Composition(const char* name, int32_t w, int32_t h, int32_t fps) {
-  auto cmp           = std::make_shared<Composition>();
+  auto cmp           = cutil::make_ref<Composition>();
   this->size[0]      = w;
   this->size[1]      = h;
   this->framerate_nu = fps;

@@ -13,6 +13,11 @@ namespace mu {
 const cutil::PropInfo* Image::getPropsInfo() const {
   static const cutil::PropInfo info = [] {
     cutil::PropInfo p;
+    // width has an unsupported type (unsigned int)
+    // height has an unsupported type (unsigned int)
+    // dirty_ has an unsupported type (int16_t)
+    p.fields.push_back(cutil::PropInfo::Field("has_alpha", offsetof(Image, has_alpha), cutil::prop_info_of<bool>()));
+    p.fields.back().set_label("bool");
     // fmt has an unsupported type (ImageFormat)
     p.fields.push_back(cutil::PropInfo::Field("pos", offsetof(Image, pos), cutil::prop_info_of<Vec3>()));
     p.fields.back().set_label("位置 viewer_anchor");
