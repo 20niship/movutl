@@ -136,6 +136,7 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("empty", &Image::empty)
     .addFunction("channels", &Image::channels)
     .addFunction("getType", &Image::getType)
+    .addFunction("load_file", &Image::load_file)
     .addVariable("width", &Image::width)         // unsigned int
     .addVariable("height", &Image::height)       // unsigned int
     .addVariable("dirty_", &Image::dirty_)       // int16_t

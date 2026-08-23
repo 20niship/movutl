@@ -69,6 +69,15 @@ class MFunction:
         return "*" not in self.returns.name
 
 @dataclass
+class MAbiFunc:
+    name: str
+    field_name: str
+    ret_type: str
+    args: str
+    include_path: str = ""
+
+
+@dataclass
 class MEnum:
     name: str
     desc: str

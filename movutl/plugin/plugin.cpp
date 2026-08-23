@@ -26,6 +26,10 @@ void activate_all_plugins() {
 }
 
 void init_external_plugins() {
+  static bool loaded = false;
+  if(loaded) return; // 複数箇所から呼ばれても二重ロードしない
+  loaded = true;
+
   // xxx.mso ファイルを読み込む
   auto search_paths = Config::Get()->plugin_search_paths;
   for(const auto& path : search_paths) {
@@ -48,14 +52,6 @@ bool abi_register_filter_plugin(const FilterPluginTable* t) {
   if(t == nullptr) return false;
   AppMain::Get()->filters.push_back(*t);
   return true;
-}
-
-ABIContext make_abi() {
-  ABIContext abi{};
-  abi.abi_version            = 1;
-  abi.register_input_plugin  = &abi_register_input_plugin;
-  abi.register_filter_plugin = &abi_register_filter_plugin;
-  return abi;
 }
 
 } // namespace detail
