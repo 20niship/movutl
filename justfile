@@ -3,6 +3,7 @@ default:
 
 # cmake configure + ビルド
 build build_dir="build":
+    git submodule update --init --recursive
     cmake -S . -B {{build_dir}}
     cmake --build {{build_dir}} -j
 
