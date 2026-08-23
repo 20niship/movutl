@@ -25,6 +25,12 @@ jobs:
         working-directory: pygen
         run: python3 main.py
 
+      - name: clang-formatをインストール(ローカル開発環境と同じバージョン)
+        run: pip install clang-format==22.1.8
+
+      - name: 再生成物をclang-formatで整形
+        run: python3 scripts/run_clang_format.py
+
       - name: 生成物がコミット済みの内容と一致するか確認
         run: |
           git diff --exit-code -- movutl/generated lancher/runtime || {
@@ -42,11 +48,18 @@ jobs:
 
       - uses: extractions/setup-just@v2
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: clang-formatをインストール(ローカル開発環境と同じバージョン)
+        run: pip install clang-format==22.1.8
+
       - name: システム依存パッケージをインストール
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            build-essential cmake ninja-build pkg-config clang-format \
+            build-essential cmake ninja-build pkg-config \
             libglfw3-dev libfreetype-dev libglew-dev libglm-dev \
             libassimp-dev libluajit-5.1-dev libopencv-dev \
             libgl1-mesa-dev libglu1-mesa-dev
