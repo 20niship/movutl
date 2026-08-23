@@ -76,7 +76,7 @@ InputPluginTable plg_image_reader = {
   InputPluginFlag_Video | InputPluginFlag_Concurrent, // flag
   EntityType_Image,                                   // supports
   "STB Image Reader",                                 // name
-  "",                                                  // filepath
+  "",                                                 // filepath
   "Read image files via stb_image",                   // information
   {"png", "jpg", "jpeg", "bmp", "tga", "gif", "hdr", "psd", "", ""},
   fn_init,

@@ -6,8 +6,8 @@ namespace mu::detail {
 
 Abi make_abi() {
   Abi abi{};
-  abi.abi_version = 1;
-  abi.register_input_plugin = &abi_register_input_plugin;
+  abi.abi_version            = 1;
+  abi.register_input_plugin  = &abi_register_input_plugin;
   abi.register_filter_plugin = &abi_register_filter_plugin;
   return abi;
 }

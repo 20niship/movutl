@@ -156,7 +156,7 @@ Ref<Image> Image::Create(const char* name, const char* path) {
   MU_ASSERT(name);
   auto img  = cutil::make_ref<Image>();
   img->name = name;
-  auto pj = Project::Get();
+  auto pj   = Project::Get();
   MU_ASSERT(pj);
   pj->entities.push_back(img);
   if(path && path[0] != '\0') img->load_file(path);

@@ -1,7 +1,7 @@
+#include "image_reader.hpp"
 #include <cstring>
 #include <movutl/plugin/abi.h>
 #include <movutl/plugin/plugin.hpp>
-#include "image_reader.hpp"
 
 namespace {
 

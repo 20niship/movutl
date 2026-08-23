@@ -230,6 +230,10 @@ function movutl.Image:channels( ) end
 ---@return EntityType
 function movutl.Image:getType( ) end
 
+---@param path string
+---@return boolean
+function movutl.Image:load_file( path, ) end
+
 ---@class Movie
 ---@field pos Vec3
 ---@field scale Vec2
