@@ -78,6 +78,10 @@ public:
   static Ref<Entity> CreateEntity(const char* name, EntityType type);
   static Ref<Entity> Find(const char* name);
 
+  // プロジェクト保存用: type/name/guid/props/trkをまとめてシリアライズ/デシリアライズする
+  cutil::Prop getSaveProps() const;
+  static Ref<Entity> fromSaveProps(const cutil::Prop& p);
+
   Composition* get_comp() const;
   virtual bool render(Composition* cmp) = 0;
 

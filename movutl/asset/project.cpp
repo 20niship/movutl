@@ -7,31 +7,6 @@
 
 namespace mu {
 
-namespace {
-
-cutil::Prop entity_to_prop(const Ref<Entity>& e) {
-  cutil::Prop p;
-  p.set<int32_t>("type", (int32_t)e->getType());
-  p.set<std::string>("name", e->name.c_str());
-  p.set<int32_t>("guid", (int32_t)e->guid_);
-  p.set_child("props", e->getProps());
-  p.set_child("trk", e->trk.getProps());
-  return p;
-}
-
-Ref<Entity> entity_from_prop(const cutil::Prop& p) {
-  auto type = (EntityType)cutil::get_or<int32_t>(p, "type", 0);
-  auto name = cutil::get_or<std::string>(p, "name", "");
-  auto e    = Entity::CreateEntity(name.c_str(), type);
-  if(!e) return nullptr;
-  e->guid_ = (uint64_t)cutil::get_or<int32_t>(p, "guid", (int32_t)e->guid_);
-  if(p.contains("props")) e->setProps(p.get_child("props"));
-  if(p.contains("trk")) e->trk.setProps(p.get_child("trk"));
-  return e;
-}
-
-} // namespace
-
 void Project::New(int width, int height, int fps) {
   auto pj = Project::Get();
   pj->compos_.clear();
@@ -63,7 +38,7 @@ void Project::Save(const char* path) {
   js.set<int32_t>("main_comp_idx", pj->main_comp_idx);
 
   js.set<int32_t>("entity_count", (int32_t)pj->entities.size());
-  for(size_t i = 0; i < pj->entities.size(); i++) js.set_child(("entity_" + std::to_string(i)).c_str(), entity_to_prop(pj->entities[i]));
+  for(size_t i = 0; i < pj->entities.size(); i++) js.set_child(("entity_" + std::to_string(i)).c_str(), pj->entities[i]->getSaveProps());
 
   js.set<int32_t>("compo_count", (int32_t)pj->compos_.size());
   for(size_t ci = 0; ci < pj->compos_.size(); ci++) {
@@ -75,8 +50,7 @@ void Project::Save(const char* path) {
     for(size_t li = 0; li < cmp.layers.size(); li++) {
       const auto& layer = cmp.layers[li];
       cutil::Prop lp;
-      lp.set<std::string>("name", layer.name.c_str());
-      lp.set<bool>("active", layer.active);
+      lp.set_child("props", layer.getProps());
       lp.set<int32_t>("entt_count", (int32_t)layer.entts.size());
       for(size_t ei = 0; ei < layer.entts.size(); ei++) lp.set<int32_t>(("entt_guid_" + std::to_string(ei)).c_str(), (int32_t)layer.entts[ei]->guid_);
       cp.set_child(("layer_" + std::to_string(li)).c_str(), lp);
@@ -108,7 +82,7 @@ void Project::Load(const char* path) {
   pj->main_comp_idx = cutil::get_or<int32_t>(js, "main_comp_idx", 0);
 
   int32_t entity_count = cutil::get_or<int32_t>(js, "entity_count", 0);
-  for(int32_t i = 0; i < entity_count; i++) entity_from_prop(js.get_child(("entity_" + std::to_string(i)).c_str()));
+  for(int32_t i = 0; i < entity_count; i++) Entity::fromSaveProps(js.get_child(("entity_" + std::to_string(i)).c_str()));
 
   int32_t compo_count = cutil::get_or<int32_t>(js, "compo_count", 0);
   for(int32_t ci = 0; ci < compo_count; ci++) {
@@ -120,8 +94,7 @@ void Project::Load(const char* path) {
     for(int32_t li = 0; li < layer_count; li++) {
       const auto& lp = cp.get_child(("layer_" + std::to_string(li)).c_str());
       TrackLayer layer;
-      layer.name   = cutil::get_or<std::string>(lp, "name", "Layer");
-      layer.active = cutil::get_or<bool>(lp, "active", true);
+      if(lp.contains("props")) layer.setProps(lp.get_child("props"));
 
       int32_t entt_count = cutil::get_or<int32_t>(lp, "entt_count", 0);
       for(int32_t ei = 0; ei < entt_count; ei++) {

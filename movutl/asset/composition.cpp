@@ -14,6 +14,20 @@ Ref<Entity> TrackLayer::find_entt(uint32_t frame) const {
 }
 
 
+const cutil::PropInfo* TrackLayer::getPropsInfo() const { return nullptr; } // 手動実装のためpygenの生成対象外
+
+cutil::Prop TrackLayer::getProps() const {
+  cutil::Prop p;
+  p.set<std::string>("name", name.c_str());
+  p.set<bool>("active", active);
+  return p;
+}
+
+void TrackLayer::setProps(const cutil::Prop& p) {
+  name   = cutil::get_or<std::string>(p, "name", name.c_str());
+  active = cutil::get_or<bool>(p, "active", active);
+}
+
 std::string TrackLayer::str() const {
   std::string str = "Layer<" + std::string(name.c_str()) + " / entt:" + std::to_string(entts.size()) + ">";
   return str;

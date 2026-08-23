@@ -19,6 +19,11 @@ public:
   Ref<Entity> find_entt(uint32_t guid) const;
   std::string str() const;
   std::string summary() const;
+
+  // name/activeのみを対象とする(enttsはEntityへのRefのリストでguid参照による再構築が必要なためProject::Save/Loadで別途扱う)
+  const cutil::PropInfo* getPropsInfo() const;
+  cutil::Prop getProps() const;
+  void setProps(const cutil::Prop& props);
 };
 
 class Composition {
