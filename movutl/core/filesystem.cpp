@@ -70,11 +70,18 @@ std::vector<std::string> get_available_fonts() {
   const std::string dir = "/usr/share/fonts";
 #elif defined(_WIN32)
   const std::string dir = "C:/Windows/Fonts";
+#else
+  return fonts;
 #endif
 
-  for(auto& entry : sfs::directory_iterator(dir)) {
-    if(entry.is_regular_file()) {
-      fonts.push_back(sfs::path(entry).string());
+  if(!fs_exists(dir)) return fonts;
+
+  std::error_code ec;
+  for(auto it = sfs::recursive_directory_iterator(dir, sfs::directory_options::skip_permission_denied, ec); !ec && it != sfs::recursive_directory_iterator(); it.increment(ec)) {
+    if(!it->is_regular_file(ec) || ec) continue;
+    const auto ext = fs_extension(it->path().string());
+    if(ext == "ttf" || ext == "otf" || ext == "ttc") {
+      fonts.push_back(it->path().string());
     }
   }
   return fonts;
