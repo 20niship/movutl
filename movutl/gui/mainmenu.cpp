@@ -6,14 +6,14 @@
 namespace mu {
 
 namespace {
-char path_popup_buf[512]      = "";
-bool show_path_popup          = false;
+char path_popup_buf[512]             = "";
+bool show_path_popup                 = false;
 void (*on_path_confirm)(const char*) = nullptr;
 
 void open_path_popup(void (*on_confirm)(const char*)) {
   path_popup_buf[0] = '\0';
-  on_path_confirm    = on_confirm;
-  show_path_popup     = true;
+  on_path_confirm   = on_confirm;
+  show_path_popup   = true;
 }
 } // namespace
 

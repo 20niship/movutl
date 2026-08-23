@@ -77,8 +77,8 @@ void Project::Load(const char* path) {
   cutil::Prop js;
   cutil::prop_load_json(js, ss.str());
 
-  pj->path         = path;
-  pj->output_path  = cutil::get_or<std::string>(js, "output_path", "");
+  pj->path          = path;
+  pj->output_path   = cutil::get_or<std::string>(js, "output_path", "");
   pj->main_comp_idx = cutil::get_or<int32_t>(js, "main_comp_idx", 0);
 
   int32_t entity_count = cutil::get_or<int32_t>(js, "entity_count", 0);

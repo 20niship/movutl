@@ -31,8 +31,8 @@ public:
   void update_frame_impl(); // 毎フレーム呼ばれる。playing_中は経過時間とfpsから現在フレームを進める
 
 private:
-  bool playing_            = false;
-  double last_frame_time_  = 0;
+  bool playing_           = false;
+  double last_frame_time_ = 0;
 };
 
 void register_default_commands();

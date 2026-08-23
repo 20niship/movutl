@@ -24,14 +24,35 @@ std::string to_lower(std::string s) {
 
 ImGuiKey key_from_name(const std::string& name) {
   static const std::unordered_map<std::string, ImGuiKey> table = {
-    {"space", ImGuiKey_Space},         {"esc", ImGuiKey_Escape},      {"escape", ImGuiKey_Escape},   {"enter", ImGuiKey_Enter},
-    {"return", ImGuiKey_Enter},        {"tab", ImGuiKey_Tab},         {"backspace", ImGuiKey_Backspace},
-    {"delete", ImGuiKey_Delete},       {"del", ImGuiKey_Delete},      {"left", ImGuiKey_LeftArrow},   {"right", ImGuiKey_RightArrow},
-    {"up", ImGuiKey_UpArrow},          {"down", ImGuiKey_DownArrow},  {"home", ImGuiKey_Home},        {"end", ImGuiKey_End},
-    {"pageup", ImGuiKey_PageUp},       {"pagedown", ImGuiKey_PageDown},
-    {"f1", ImGuiKey_F1},   {"f2", ImGuiKey_F2},   {"f3", ImGuiKey_F3},   {"f4", ImGuiKey_F4},
-    {"f5", ImGuiKey_F5},   {"f6", ImGuiKey_F6},   {"f7", ImGuiKey_F7},   {"f8", ImGuiKey_F8},
-    {"f9", ImGuiKey_F9},   {"f10", ImGuiKey_F10}, {"f11", ImGuiKey_F11}, {"f12", ImGuiKey_F12},
+    {"space", ImGuiKey_Space},
+    {"esc", ImGuiKey_Escape},
+    {"escape", ImGuiKey_Escape},
+    {"enter", ImGuiKey_Enter},
+    {"return", ImGuiKey_Enter},
+    {"tab", ImGuiKey_Tab},
+    {"backspace", ImGuiKey_Backspace},
+    {"delete", ImGuiKey_Delete},
+    {"del", ImGuiKey_Delete},
+    {"left", ImGuiKey_LeftArrow},
+    {"right", ImGuiKey_RightArrow},
+    {"up", ImGuiKey_UpArrow},
+    {"down", ImGuiKey_DownArrow},
+    {"home", ImGuiKey_Home},
+    {"end", ImGuiKey_End},
+    {"pageup", ImGuiKey_PageUp},
+    {"pagedown", ImGuiKey_PageDown},
+    {"f1", ImGuiKey_F1},
+    {"f2", ImGuiKey_F2},
+    {"f3", ImGuiKey_F3},
+    {"f4", ImGuiKey_F4},
+    {"f5", ImGuiKey_F5},
+    {"f6", ImGuiKey_F6},
+    {"f7", ImGuiKey_F7},
+    {"f8", ImGuiKey_F8},
+    {"f9", ImGuiKey_F9},
+    {"f10", ImGuiKey_F10},
+    {"f11", ImGuiKey_F11},
+    {"f12", ImGuiKey_F12},
   };
   auto it = table.find(name);
   if(it != table.end()) return it->second;
@@ -53,10 +74,14 @@ KeyChord parse_chord(const std::string& token) {
   if(parts.empty()) return chord;
   for(size_t i = 0; i + 1 < parts.size(); i++) {
     const auto& m = parts[i];
-    if(m == "ctrl" || m == "control") chord.ctrl = true;
-    else if(m == "shift") chord.shift = true;
-    else if(m == "alt" || m == "option") chord.alt = true;
-    else if(m == "cmd" || m == "super" || m == "win") chord.super = true;
+    if(m == "ctrl" || m == "control")
+      chord.ctrl = true;
+    else if(m == "shift")
+      chord.shift = true;
+    else if(m == "alt" || m == "option")
+      chord.alt = true;
+    else if(m == "cmd" || m == "super" || m == "win")
+      chord.super = true;
   }
   chord.key = key_from_name(parts.back());
   return chord;
@@ -73,7 +98,7 @@ std::vector<KeyChord> parse_shortcut(const std::string& shortcut) {
 
 // 入力中のマルチキーシーケンスの進捗
 std::vector<KeyChord> pending_sequence;
-double last_key_time                      = 0.0;
+double last_key_time                     = 0.0;
 constexpr double kSequenceTimeoutSeconds = 1.0;
 
 } // namespace
@@ -88,9 +113,7 @@ void process_command_shortcuts() {
   ImGuiKey pressed_key = ImGuiKey_None;
   for(int k = ImGuiKey_NamedKey_BEGIN; k < ImGuiKey_NamedKey_END; k++) {
     auto key = (ImGuiKey)k;
-    if(key == ImGuiKey_LeftCtrl || key == ImGuiKey_RightCtrl || key == ImGuiKey_LeftShift || key == ImGuiKey_RightShift || key == ImGuiKey_LeftAlt ||
-       key == ImGuiKey_RightAlt || key == ImGuiKey_LeftSuper || key == ImGuiKey_RightSuper)
-      continue; // 修飾キー単体は対象外(chordのmodifierとして扱う)
+    if(key == ImGuiKey_LeftCtrl || key == ImGuiKey_RightCtrl || key == ImGuiKey_LeftShift || key == ImGuiKey_RightShift || key == ImGuiKey_LeftAlt || key == ImGuiKey_RightAlt || key == ImGuiKey_LeftSuper || key == ImGuiKey_RightSuper) continue; // 修飾キー単体は対象外(chordのmodifierとして扱う)
     if(ImGui::IsKeyPressed(key, false)) {
       pressed_key = key;
       break;

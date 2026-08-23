@@ -38,7 +38,7 @@ struct CommandInfo {
   std::string id;          // run_command/has_command/cancel_commandで指定する一意なID
   std::string name;        // メニュー等に出す表示名
   std::string description; // コマンドの内容説明
-  std::string shortcut; // vim風のキー表記(例: "ctrl+shift+a", "g g")。空文字ならショートカット無し。空白区切りで複数キーの連続入力になる
+  std::string shortcut;    // vim風のキー表記(例: "ctrl+shift+a", "g g")。空文字ならショートカット無し。空白区切りで複数キーの連続入力になる
 };
 
 // コマンドを登録する。run_command()のたびにfactoryを呼んでmCommandの新しいインスタンスを生成する
