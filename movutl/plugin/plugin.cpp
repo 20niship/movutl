@@ -26,9 +26,14 @@ void activate_all_plugins() {
 }
 
 void init_external_plugins() {
+  static bool loaded = false;
+  if(loaded) return; // 複数箇所から呼ばれても二重ロードしない
+  loaded = true;
+
   // xxx.mso ファイルを読み込む
   auto search_paths = Config::Get()->plugin_search_paths;
   for(const auto& path : search_paths) {
+    if(!fs::exists(path) || !fs::is_directory(path)) continue;
     for(const auto& entry : fs::directory_iterator(path)) {
       if(!entry.is_regular_file() || !entry.path().string().ends_with(".mso")) continue;
       LOG_F(1, "Loading plugin: %s", entry.path().string().c_str());
@@ -36,6 +41,19 @@ void init_external_plugins() {
     }
   }
 }
+
+bool abi_register_input_plugin(const InputPluginTable* t) {
+  if(t == nullptr) return false;
+  AppMain::Get()->input_plugins.push_back(*t);
+  return true;
+}
+
+bool abi_register_filter_plugin(const FilterPluginTable* t) {
+  if(t == nullptr) return false;
+  AppMain::Get()->filters.push_back(*t);
+  return true;
+}
+
 } // namespace detail
 
 bool register_plugin(const std::string& path) {
@@ -67,10 +85,10 @@ bool register_plugin(const std::string& path) {
   }
 
   // プラグインのエントリーポイントを実行
-  ExeData exdata;
+  ABIContext abi = detail::make_abi();
   detail::PluginData data;
-  // TODO: get exe data
-  entry(&exdata, &data.table);
+  entry(&abi, &data.table);
+  if(data.table.plugin_init) data.table.plugin_init(&abi);
   data.mod   = mod;
   data.entry = entry;
   detail::AppMain::Get()->plugins.push_back(data);

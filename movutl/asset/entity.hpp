@@ -45,9 +45,7 @@ enum ImageFormat {
 };
 struct EntityInfo {
   EntityType flag            = EntityType_Movie; // 読み込み可能なオブジェクトの種類
-  int32_t rate               = 30;               // フレームレート(分子) ※aviutl2 SDK準拠
-  int32_t scale              = 1;                // フレームレート(分母)
-  float framerate            = 30;               // フレームレート(rate/scale の実数値)
+  float framerate            = 30;               // フレームレート
   uint32_t nframes           = 0;                // フレーム数
   ImageFormat format         = ImageFormatRGB;   // 画像フォーマット
   uint16_t width             = 0;                // 画像サイズ
@@ -77,6 +75,10 @@ public:
 
   static Ref<Entity> CreateEntity(const char* name, EntityType type);
   static Ref<Entity> Find(const char* name);
+
+  // プロジェクト保存用: type/name/guid/props/trkをまとめてシリアライズ/デシリアライズする
+  cutil::Prop getSaveProps() const;
+  static Ref<Entity> fromSaveProps(const cutil::Prop& p);
 
   Composition* get_comp() const;
   virtual bool render(Composition* cmp) = 0;

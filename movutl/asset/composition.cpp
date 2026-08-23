@@ -3,6 +3,7 @@
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/entity.hpp>
 #include <movutl/asset/project.hpp>
+#include <movutl/core/prop_types.hpp>
 
 namespace mu {
 
@@ -12,6 +13,20 @@ Ref<Entity> TrackLayer::find_entt(uint32_t frame) const {
   return nullptr;
 }
 
+
+const cutil::PropInfo* TrackLayer::getPropsInfo() const { return nullptr; } // 手動実装のためpygenの生成対象外
+
+cutil::Prop TrackLayer::getProps() const {
+  cutil::Prop p;
+  p.set<std::string>("name", name.c_str());
+  p.set<bool>("active", active);
+  return p;
+}
+
+void TrackLayer::setProps(const cutil::Prop& p) {
+  name   = cutil::get_or<std::string>(p, "name", name.c_str());
+  active = cutil::get_or<bool>(p, "active", active);
+}
 
 std::string TrackLayer::str() const {
   std::string str = "Layer<" + std::string(name.c_str()) + " / entt:" + std::to_string(entts.size()) + ">";
@@ -39,10 +54,10 @@ void Composition::resize(int32_t w, int32_t h) {
 }
 
 Composition::Composition(const char* name, int32_t w, int32_t h, int32_t fps) {
-  this->size[0]      = w;
-  this->size[1]      = h;
-  this->framerate_nu = fps;
-  this->name         = name;
+  this->size[0]   = w;
+  this->size[1]   = h;
+  this->framerate = (float)fps;
+  this->name      = name;
   for(int i = 0; i < 10; i++) {
     TrackLayer layer;
     std::string name_str = "Layer" + std::to_string(i + 1);
@@ -71,6 +86,28 @@ std::string Composition::summary() const {
 }
 
 Composition* Composition::GetActiveComp() { return Project::GetActiveCompo(); }
+
+const cutil::PropInfo* Composition::getPropsInfo() const { return nullptr; } // 手動実装のためpygenの生成対象外
+
+cutil::Prop Composition::getProps() const {
+  cutil::Prop p;
+  p.set<std::string>("name", name.c_str());
+  p.set<Vec2>("size", Vec2(size));
+  p.set<float>("framerate", framerate);
+  p.set<int32_t>("fstart", fstart);
+  p.set<int32_t>("fend", fend);
+  p.set<int32_t>("frame", frame);
+  return p;
+}
+
+void Composition::setProps(const cutil::Prop& p) {
+  name      = cutil::get_or<std::string>(p, "name", name.c_str());
+  size      = Vec2d(cutil::get_or<Vec2>(p, "size", Vec2(size)));
+  framerate = cutil::get_or<float>(p, "framerate", framerate);
+  fstart    = cutil::get_or<int32_t>(p, "fstart", fstart);
+  fend      = cutil::get_or<int32_t>(p, "fend", fend);
+  frame     = cutil::get_or<int32_t>(p, "frame", frame);
+}
 
 
 int Composition::insertable_layer_index() const {

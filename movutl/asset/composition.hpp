@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cutil/prop.hpp>
 #include <cutil/string.hpp>
 #include <movutl/asset/image.hpp>
 
@@ -18,6 +19,11 @@ public:
   Ref<Entity> find_entt(uint32_t guid) const;
   std::string str() const;
   std::string summary() const;
+
+  // name/activeのみを対象とする(enttsはEntityへのRefのリストでguid参照による再構築が必要なためProject::Save/Loadで別途扱う)
+  const cutil::PropInfo* getPropsInfo() const;
+  cutil::Prop getProps() const;
+  void setProps(const cutil::Prop& props);
 };
 
 class Composition {
@@ -42,9 +48,8 @@ public:
   Ref<Image> frame_edit;
   Ref<Image> frame_temp;
 
-  Vec2d size           = {1920, 1080};
-  int32_t framerate_nu = 30;
-  int32_t framerate_de = 1;
+  Vec2d size      = {1920, 1080};
+  float framerate = 30.0f;
 
   int32_t fstart = 0;   // 表示開始フレーム
   int32_t fend   = 200; // 表示終了フレーム
@@ -66,6 +71,11 @@ public:
   std::string summary() const;
 
   static Composition* GetActiveComp();
+
+  // name/size/framerate/fstart/fend/frameのみを対象とする(layers/entitiesはguid参照を含むためProject::Save/Loadで別途扱う)
+  const cutil::PropInfo* getPropsInfo() const;
+  cutil::Prop getProps() const;
+  void setProps(const cutil::Prop& props);
 
   int insertable_layer_index() const;
   void insert_entity(Ref<Entity> entt, int layer = -1);

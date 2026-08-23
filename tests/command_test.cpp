@@ -5,49 +5,60 @@ using namespace mu;
 
 namespace {
 
+// run_command()の度に新しいインスタンスが作られるため、実行をまたぐ検証にはstaticメンバを使う
 struct DummyCommand : mCommand {
-  DummyCommand() {
-    id   = "dummy_test_command";
-    name = "dummy";
-  }
   CommandStatus on_start() override {
     started = true;
     return CommandStatus::Finished;
   }
   void on_cancel() override { cancelled = true; }
-  bool started   = false;
-  bool cancelled = false;
+  static bool started;
+  static bool cancelled;
 };
+bool DummyCommand::started   = false;
+bool DummyCommand::cancelled = false;
 
 struct RunningCommand : mCommand {
-  RunningCommand() { id = "running_test_command"; }
   CommandStatus on_start() override { return CommandStatus::Running; }
-  CommandStatus tick() override { return ++ticks >= 2 ? CommandStatus::Finished : CommandStatus::Running; }
-  int ticks = 0;
+  CommandStatus tick() override { return ++s_ticks >= 2 ? CommandStatus::Finished : CommandStatus::Running; }
+  static int s_ticks;
+};
+int RunningCommand::s_ticks = 0;
+
+// インスタンスメンバがrun_commandの度にリセットされる(=新しいインスタンスが使われる)ことを確認する
+struct ReinitCommand : mCommand {
+  CommandStatus on_start() override {
+    CHECK_FALSE(started);
+    started = true;
+    return CommandStatus::Finished;
+  }
+  bool started = false;
 };
 
 } // namespace
 
 TEST_CASE("CommandManager register/run/has/cancel") {
-  auto cm = CommandManager::Get();
+  register_command<DummyCommand>({"dummy_test_command", "dummy", "", ""});
+  CHECK(has_command("dummy_test_command"));
+  CHECK_FALSE(has_command("no_such_command"));
 
-  auto dummy = cutil::make_ref<DummyCommand>();
-  cm->register_command(dummy);
-  CHECK(cm->has_command("dummy_test_command"));
-  CHECK_FALSE(cm->has_command("no_such_command"));
+  CHECK(run_command("dummy_test_command"));
+  CHECK(DummyCommand::started);
 
-  CHECK(cm->run_command("dummy_test_command"));
-  CHECK(dummy->started);
+  register_command<RunningCommand>({"running_test_command", "", "", ""});
+  CHECK(run_command("running_test_command"));
+  CHECK(RunningCommand::s_ticks == 0);
+  tick_running_commands();
+  CHECK(RunningCommand::s_ticks == 1);
+  tick_running_commands();
+  CHECK(RunningCommand::s_ticks == 2);
 
-  auto running = cutil::make_ref<RunningCommand>();
-  cm->register_command(running);
-  CHECK(cm->run_command("running_test_command"));
-  CHECK(running->ticks == 0);
-  cm->tick_running_commands();
-  CHECK(running->ticks == 1);
-  cm->tick_running_commands();
-  CHECK(running->ticks == 2);
+  run_command("running_test_command");
+  cancel_command("running_test_command");
+}
 
-  cm->run_command("running_test_command");
-  cm->cancel_command("running_test_command");
+TEST_CASE("CommandManager creates a fresh instance on every run") {
+  register_command<ReinitCommand>({"reinit_test_command", "", "", ""});
+  CHECK(run_command("reinit_test_command"));
+  CHECK(run_command("reinit_test_command")); // 2回目もReinitCommand::startedがfalseから始まるはず
 }

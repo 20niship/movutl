@@ -23,6 +23,13 @@ void open_project(const char* path);
 
 bool add_new_track(const char* name, EntityType type, int start, int end);
 
+// ------------ 再生制御 ------------
+void play();
+void pause();
+void reset();
+void goto_frame(int frame);
+bool is_playing();
+
 Ref<Entity> add_new_video_track(const char* name, const char* path, int start, int layer);
 bool add_new_audio_track(const char* name, const char* path, int start, int layer);
 

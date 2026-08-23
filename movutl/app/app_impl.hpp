@@ -20,6 +20,19 @@ public:
 
   std::map<std::string, ImGuiStyle> imgui_styles;
   std::map<std::string, Workspace> workspaces;
+
+  // ------------ 再生制御 ------------
+  void play();
+  void pause();
+  void reset();
+  void goto_frame(int frame);
+  bool is_playing() const { return playing_; }
+
+  void update_frame_impl(); // 毎フレーム呼ばれる。playing_中は経過時間とfpsから現在フレームを進める
+
+private:
+  bool playing_           = false;
+  double last_frame_time_ = 0;
 };
 
 void register_default_commands();

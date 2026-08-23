@@ -1,6 +1,7 @@
 set(PYGEN_OUTPUTS
   ${CMAKE_CURRENT_SOURCE_DIR}/../movutl/generated/generated_props.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/../movutl/generated/generated_props.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../movutl/generated/generated_abi_fields.inc
+  ${CMAKE_CURRENT_SOURCE_DIR}/../movutl/generated/generated_abi.cpp
 )
 
 add_custom_target(
