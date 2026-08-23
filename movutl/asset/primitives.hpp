@@ -1,6 +1,6 @@
 #pragma once
 #include <cwchar>
-#include <movutl/core/quotanion.hpp>
+#include <cutil/quaternion.hpp>
 #include <movutl/core/vector.hpp>
 
 namespace mu::db {
@@ -25,7 +25,7 @@ struct Primitive {
 
   struct Box {
     core::Vec3 center;
-    core::Quat quat;
+    cutil::Quatf quat;
     core::Vec3 size;
     double radius;
     Box() {}
@@ -63,7 +63,7 @@ struct Primitive {
 
   struct Plane {
     core::Vec3 center; // 円錐の底面の中央のこと
-    core::Quat quat;
+    cutil::Quatf quat;
     core::Vec2 size;
     Plane() {}
   };
