@@ -5,6 +5,9 @@
 namespace mu {
 
 class Movie final : public Entity {
+private:
+  bool load_failed_ = false; ///< ロード失敗時の警告スパム防止フラグ
+
 public:
   Movie() = default;
   Movie(const char* path);

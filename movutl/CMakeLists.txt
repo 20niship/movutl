@@ -33,6 +33,19 @@ endif()
 
 pkg_check_modules(LuaJIT REQUIRED IMPORTED_TARGET luajit)
 
+# --------------------------------------------------------------
+# ------------     FFmpeg (video input plugin) -----------------
+# --------------------------------------------------------------
+option(MOVUTL_USE_FFMPEG "FFmpegを用いた動画入力プラグインを有効化" ON)
+if(MOVUTL_USE_FFMPEG)
+  pkg_check_modules(FFMPEG IMPORTED_TARGET libavformat libavcodec libavutil libswscale)
+  if(FFMPEG_FOUND)
+    message(STATUS "FFmpeg found: enabling video reader plugin")
+  else()
+    message(WARNING "FFmpeg (libavformat/libavcodec/libavutil/libswscale) not found: video reader plugin will be disabled")
+  endif()
+endif()
+
 
 # --------------------------------------------------------------
 # ------------     Renderer (OpenGL / Vulkan) ------------------
@@ -127,6 +140,10 @@ if(APPLE)
 endif()
 add_library(mucore ${MOVUTL_SRC})
 target_include_directories(mucore PUBLIC ${MOVUTL_INCLUDES})
+if(FFMPEG_FOUND)
+  target_compile_definitions(mucore PRIVATE MOVUTL_HAS_FFMPEG)
+  target_link_libraries(mucore PkgConfig::FFMPEG)
+endif()
 target_link_libraries(mucore ${MOVUTL_LIBRARIES})
 set(MOVUTL_LIBRARIES ${MOVUTL_LIBRARIES} movutl)
 

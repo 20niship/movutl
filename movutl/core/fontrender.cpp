@@ -43,6 +43,7 @@ void FontRenderManager::shutdown() {
 }
 
 FontRenderManager::FontFace::FontFace(const std::string& path, int width) {
+  this->path = path;
   if(!fs_exists(path)) {
     LOG_F(ERROR, "Font file not found: %s", path.c_str());
     return;
@@ -51,9 +52,11 @@ FontRenderManager::FontFace::FontFace(const std::string& path, int width) {
   MU_ASSERT(library);
   auto error = FT_New_Face(library, path.c_str(), 0, &face);
   if(error == FT_Err_Unknown_File_Format) {
-    LOG_F(ERROR, "Font format is unsupported");
+    LOG_F(ERROR, "Font format is unsupported: %s", path.c_str());
+    return;
   } else if(error) {
     LOG_F(ERROR, "Failed to open font file: %d %s", error, path.c_str());
+    return;
   }
   set_fontsize(width);
 }
@@ -63,8 +66,7 @@ FontRenderManager::FontFace::~FontFace() {
 }
 
 Vec2d FontRenderManager::FontFace::get_size(const char* text) {
-  MU_ASSERT(face);
-  MU_ASSERT(slot);
+  if(face == nullptr || slot == nullptr) return Vec2d(0, 0);
   std::u32string u32str = std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t>().from_bytes(text);
 
   int curPosX     = 0;
@@ -89,23 +91,20 @@ Vec2d FontRenderManager::FontFace::get_size(const char* text) {
 
 void FontRenderManager::FontFace::set_fontsize(int size) {
   if(fontsize_ == size) return;
-  MU_ASSERT(face);
-  printf("set_fontsize: %d\n", size);
-  /*auto error = FT_Set_Char_Size(face, 0, size * size * 2, 300, 300);*/
+  if(face == nullptr) {
+    LOG_F(ERROR, "set_fontsize: font face is not loaded: %s", path.c_str());
+    return;
+  }
   auto error = FT_Set_Pixel_Sizes(face, 0, 48);
   if(error) {
     LOG_F(ERROR, "Failed to set font size: %d", error);
   }
-  MU_ASSERT(face);
   fontsize_ = size;
   slot      = face->glyph; // グリフへのショートカット
-  printf("set_fontsize: %d\n", size);
 }
 
 void FontRenderManager::FontFace::render_text(const char* text, int space_x, int space_y, Image* img) {
-  MU_ASSERT(face);
-  MU_ASSERT(slot);
-  MU_ASSERT(img);
+  if(face == nullptr || slot == nullptr || img == nullptr) return;
   auto size = get_size(text);
   img->resize(size[0], size[1]);
   img->fill(0);
@@ -165,6 +164,7 @@ bool FontRenderManager::renderText(Image* img, const char* text, int size, int s
   if(!img) return false;
   for(auto& [name, font_face] : manager->font_faces) {
     if(name == font_name) {
+      if(font_face.face == nullptr) return false;
       font_face.set_fontsize(size);
       font_face.render_text(text, sace_x, space_y, img);
       return true;
@@ -172,7 +172,12 @@ bool FontRenderManager::renderText(Image* img, const char* text, int size, int s
   }
   {
     manager->font_faces[font_name] = FontFace(font_name, size);
-    manager->font_faces[font_name].render_text(text, sace_x, space_y, img);
+    auto& font_face                = manager->font_faces[font_name];
+    if(font_face.face == nullptr) {
+      LOG_F(ERROR, "Failed to load font: %s", font_name);
+      return false;
+    }
+    font_face.render_text(text, sace_x, space_y, img);
     return true;
   }
   return false;

@@ -57,6 +57,7 @@ bool Image::copyto(Image* dst, const Vec2d& pmin) const {
       dst_p[dx] = src_p[x];
     }
   }
+  return true;
 }
 
 bool Image::copyto(Image* dst, const Vec2d& center, float scale, float angle) const {
@@ -106,7 +107,7 @@ bool Image::render(Composition* cmp) {
 
   int base_x = this->width / 2 + trk.anchor[0] - cw / 2;
   int base_y = this->height / 2 + trk.anchor[1] - ch / 2;
-  this->copyto(cmp->frame_final.get(), Vec2d(base_x, base_y));
+  return this->copyto(cmp->frame_final.get(), Vec2d(base_x, base_y));
 }
 
 Ref<Image> Image::Create(const char* name, const char* path) {

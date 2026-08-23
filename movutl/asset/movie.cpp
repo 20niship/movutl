@@ -5,30 +5,40 @@
 #include <movutl/plugin/input.hpp>
 
 namespace mu {
+
+Movie::Movie(const char* path) {
+  if(path != nullptr && path[0] != '\0') load_file(path);
+}
+
 Ref<Movie> Movie::Create(const char* name, const char* path) {
   auto mov  = cutil::make_ref<Movie>();
   mov->name = name;
   Project::Get()->entities.push_back(mov);
   mov->guid_ = Project::Get()->entities.size();
-  // TODO: Load movie from file
+  if(path != nullptr && path[0] != '\0') mov->load_file(path);
   return mov;
 }
 
 bool Movie::render(Composition* cmp) {
-  if(!in_plg_ || info.width <= 0 || info.height <= 0 || info.nframes <= 0) {
-    LOG_F(WARNING, "Invalid movie info: %s -> %s", name.c_str(), info.str().c_str());
-    return false;
-  }
-
   MU_ASSERT(cmp);
   MU_ASSERT(cmp->frame_final);
+  /// ロード失敗した動画は警告スパムを避けるため黙ってスキップ
+  if(load_failed_ || in_plg_ == nullptr || in_handle_ == nullptr) return false;
+  if(info.width <= 0 || info.height <= 0 || info.nframes <= 0) return false;
+
   int tlocal = cmp->frame - trk.fstart;
-  if(tlocal < 0 || tlocal >= trk.fend - trk.fstart) return false;
-  if(in_plg_->fn_set_frame(in_handle_, tlocal)) in_plg_->fn_set_frame(in_handle_, tlocal);
+  if(tlocal < 0 || tlocal >= trk.fend - trk.fstart) {
+    if(!loop_) return false;
+    tlocal %= (trk.fend - trk.fstart); // ループ再生
+  }
 
   if(!img_) img_ = cutil::make_ref<Image>();
+  img_->resize(info.width, info.height);
+
+  /// フレーム指定でプラグインから直接読み込む (aviutl2 方針)
   MU_ASSERT(in_plg_->fn_read_video);
-  in_plg_->fn_read_video(in_handle_, &info, this);
+  if(in_plg_->fn_read_video(in_handle_, tlocal, img_->data()) <= 0) return false;
+
   int cw = cmp->size[0];
   int ch = cmp->size[1];
   if(cw <= 0 || ch <= 0) return false;
@@ -46,22 +56,43 @@ bool Movie::render(Composition* cmp) {
 }
 
 bool Movie::load_file(const char* path) {
+  /// 再オープン時は既存ハンドルを閉じて状態をリセット
+  if(in_plg_ != nullptr && in_handle_ != nullptr) in_plg_->fn_close(in_handle_);
+  in_plg_      = nullptr;
+  in_handle_   = nullptr;
+  info         = EntityInfo();
+  load_failed_ = true;
+
   auto p = get_compatible_plugin(path, EntityType_Movie);
-  if(!p) {
-    LOG_F(WARNING, "No compatible plugin found for file: %s", path);
+  if(p == nullptr) {
+    LOG_F(ERROR, "No compatible plugin found for file: %s", path);
     return false;
   }
-  this->in_plg_    = p;
-  this->in_handle_ = p->fn_open(path);
-  if(!p->fn_info_get)
-    LOG_F(WARNING, "No info_get function found for plugin: %s", p->name);
-  else
-    p->fn_info_get(in_handle_, &info);
+  this->path_ = path;
+
+  in_handle_ = p->fn_open(path);
+  if(in_handle_ == nullptr) {
+    LOG_F(ERROR, "Failed to open movie file: %s", path);
+    return false;
+  }
+  in_plg_ = p;
+
+  if(p->fn_info_get == nullptr) {
+    LOG_F(ERROR, "Plugin has no info_get function: %s", p->name);
+    return false;
+  }
+  if(!p->fn_info_get(in_handle_, &info)) {
+    LOG_F(ERROR, "Failed to get movie info: %s", path);
+    return false;
+  }
   if(info.width <= 0 || info.height <= 0 || info.nframes <= 0) {
-    LOG_F(WARNING, "Invalid movie info: %s -> %s, plugin=%s", path, info.str().c_str(), p->name);
+    LOG_F(ERROR, "Invalid movie info: %s -> %s, plugin=%s", path, info.str().c_str(), p->name);
     return false;
   }
+
   this->trk.fend = info.nframes;
+  load_failed_   = false;
+  LOG_F(INFO, "Movie loaded: %s (%dx%d, %d frames, %.3f fps, plugin=%s)", path, info.width, info.height, info.nframes, info.framerate, p->name);
   return true;
 }
 

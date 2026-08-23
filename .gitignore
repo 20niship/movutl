@@ -69,3 +69,6 @@ build*/
 *.wav
 *.jpg
 .claude/
+
+*.ini
+*.json
