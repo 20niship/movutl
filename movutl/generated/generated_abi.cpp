@@ -4,8 +4,8 @@
 
 namespace mu::detail {
 
-Abi make_abi() {
-  Abi abi{};
+ABIContext make_abi() {
+  ABIContext abi{};
   abi.abi_version            = 1;
   abi.register_input_plugin  = &abi_register_input_plugin;
   abi.register_filter_plugin = &abi_register_filter_plugin;

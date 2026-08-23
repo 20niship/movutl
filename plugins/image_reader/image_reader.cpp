@@ -53,8 +53,6 @@ static bool fn_info_get(InputHandle ih, EntityInfo* iip) {
   if(ih == nullptr || iip == nullptr) return false;
   auto h         = (StbImageHandle*)ih;
   iip->flag      = EntityType_Image;
-  iip->rate      = 1;
-  iip->scale     = 1;
   iip->framerate = 1;
   iip->nframes   = 1;
   iip->width     = (uint16_t)h->width;

@@ -28,8 +28,8 @@ class AbiWriter:
             + "#include <movutl/plugin/abi.h>\n"
             + "#include <movutl/plugin/plugin.hpp>\n\n"
             + "namespace mu::detail {\n\n"
-            + "Abi make_abi() {\n"
-            + "  Abi abi{};\n"
+            + "ABIContext make_abi() {\n"
+            + "  ABIContext abi{};\n"
             + "  abi.abi_version = 1;\n"
         )
         for f in self.funcs:
