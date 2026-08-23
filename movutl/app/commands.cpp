@@ -2,8 +2,6 @@
 #include <movutl/app/app.hpp>
 #include <movutl/app/app_impl.hpp>
 #include <movutl/asset/composition.hpp>
-#include <movutl/asset/image.hpp>
-#include <movutl/asset/movie.hpp>
 #include <movutl/core/command.hpp>
 #include <movutl/core/logger.hpp>
 
@@ -37,8 +35,23 @@ struct FrameStepCommand final : mCommand {
   int dir_;
 };
 
-// 汎用clone機構が無いためMovie/Imageのみ対応、対応外の型は黙ってスキップする(ログのみ、Failedにはしない)。
+// entt->trk範囲からエンティティをComposition::layersから取り除く(Compositionにremove_entity APIが無いため直接操作)
+void remove_entity_from_comp(Composition* comp, const Ref<Entity>& entt) {
+  if(!comp || !entt) return;
+  for(auto& layer : comp->layers) {
+    auto& v = layer.entts;
+    v.erase(std::remove(v.begin(), v.end(), entt), v.end());
+  }
+}
+
 struct SplitCommand final : mCommand {
+  // 1クリップの分割前後の状態。on_undo/on_redoで使う
+  struct SplitState {
+    Ref<Entity> original; // 分割された元のクリップ(前半)
+    Ref<Entity> clone;    // 分割で新規生成されたクリップ(後半)
+    int orig_fend;        // 分割前のoriginal->trk.fend
+  };
+
   CommandStatus on_start() override {
     auto cmp = Composition::GetActiveComp();
     if(!cmp) return CommandStatus::Failed;
@@ -48,18 +61,15 @@ struct SplitCommand final : mCommand {
       if(!entt) continue;
       if(entt->trk.fstart >= frame || frame >= entt->trk.fend) continue; // 現在フレームがクリップ範囲外
 
-      Ref<Entity> clone;
-      if(entt->getType() == EntityType_Movie) {
-        auto* mov = static_cast<Movie*>(entt.get());
-        clone     = Movie::Create(mov->name.c_str(), mov->path_.c_str());
-      } else if(entt->getType() == EntityType_Image) {
-        auto* img = static_cast<Image*>(entt.get());
-        clone     = Image::Create(img->name.c_str(), img->path.c_str());
-      } else {
+      auto clone = duplicate_asset(entt);
+      if(!clone) {
         LOG_F(WARNING, "SplitCommand: unsupported entity type for '%s', skipping", entt->name.c_str());
         continue;
       }
-      if(!clone) continue;
+
+      SplitState st;
+      st.original  = entt;
+      st.orig_fend = entt->trk.fend;
 
       clone->trk        = entt->trk; // fstart/fend/anchor等をコピー
       clone->trk.fstart = frame;     // 後半
@@ -67,9 +77,33 @@ struct SplitCommand final : mCommand {
 
       auto* comp = entt->get_comp();
       if(comp) comp->insert_entity(clone, -1);
+
+      st.clone = clone;
+      splits_.push_back(std::move(st));
     }
     return CommandStatus::Finished;
   }
+
+  // 分割前の状態に戻す: 複製クリップを削除し、元クリップのfendを復元する
+  void on_undo() override {
+    for(auto& st : splits_) {
+      if(!st.original) continue;
+      st.original->trk.fend = st.orig_fend;
+      if(st.clone) remove_entity_from_comp(st.clone->get_comp(), st.clone);
+    }
+  }
+
+  // 分割を再適用する: 元クリップのfendを縮め、複製クリップを再度挿入する
+  void on_redo() override {
+    for(auto& st : splits_) {
+      if(!st.original || !st.clone) continue;
+      st.original->trk.fend = st.clone->trk.fstart;
+      auto* comp            = st.original->get_comp();
+      if(comp) comp->insert_entity(st.clone, -1);
+    }
+  }
+
+  std::vector<SplitState> splits_;
 };
 
 } // namespace

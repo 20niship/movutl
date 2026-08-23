@@ -21,6 +21,9 @@ void save_project();
 void save_project_as(const char* path);
 void open_project(const char* path);
 
+// srcを複製した新規Entityを返す(全EntityType対応、未対応の型/nullptrはnullptrを返す)
+Ref<Entity> duplicate_asset(const Ref<Entity>& src);
+
 bool add_new_track(const char* name, EntityType type, int start, int end);
 
 // ------------ 再生制御 ------------

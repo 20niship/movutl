@@ -443,6 +443,10 @@ function movutl.clear_selected_entts( )end
 ---@return nil
 function movutl.cv_waitkey( time, )end
 
+---@param src Ref<Entity> 
+---@return Ref<Entity>
+function movutl.duplicate_asset( src, )end
+
 ---@param path string
 ---@param type EntityType
 ---@return InputPluginTable 

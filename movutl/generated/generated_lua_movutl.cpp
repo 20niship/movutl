@@ -173,7 +173,7 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addVariable("path", &Project::path)                   // std::string
     .addVariable("output_path", &Project::output_path)     // std::string
     .addVariable("entities", &Project::entities)           // std::vector<Ref<Entity> >
-    .addVariable("compos_", &Project::compos_)             // std::vector<Composition>
+    .addVariable("compos_", &Project::compos_)             // std::vector<Ref<Composition> >
     .addVariable("main_comp_idx", &Project::main_comp_idx) // int
     .endClass()
     .beginClass<TextEntt>("TextEntt")
@@ -227,6 +227,7 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("apply_workspace", static_cast<void (*)(const char*)>(&apply_workspace))
     .addFunction("clear_selected_entts", static_cast<void (*)()>(&clear_selected_entts))
     .addFunction("cv_waitkey", static_cast<void (*)(int)>(&cv_waitkey))
+    .addFunction("duplicate_asset", static_cast<Ref<Entity> (*)(const Ref<Entity>&)>(&duplicate_asset))
     .addFunction("get_compatible_plugin", static_cast<InputPluginTable* (*)(const char*, EntityType)>(&get_compatible_plugin))
     .addFunction("get_entt_color", static_cast<ImU32 (*)(const Ref<Entity>&)>(&get_entt_color))
     .addFunction("get_selected_entts", static_cast<std::vector<Ref<Entity> > (*)()>(&get_selected_entts))

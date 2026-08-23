@@ -7,7 +7,8 @@ namespace mu {
 
 void CompositionSettingsWindow::Update() {
   auto pj = Project::Get();
-  for(auto& cmp : pj->compos_) {
+  for(auto& cmp_ref : pj->compos_) {
+    auto& cmp = *cmp_ref;
     if(!(cmp.flag & Composition::setting_dialog)) continue;
 
     bool open = true;

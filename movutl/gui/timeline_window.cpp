@@ -24,14 +24,14 @@ void TimelineWindow::Update() {
   auto cp = Project::GetActiveCompo();
   if(ImGui::BeginTabBar("## MOVUTL TIMELINE TABS")) {
     for(int i = 0; i < pj->compos_.size(); ++i) {
-      const std::string str = ICON_FA_FILE + std::string(" ") + pj->compos_[i].name.c_str() + "##compo_tab_" + std::to_string(i);
+      const std::string str = ICON_FA_FILE + std::string(" ") + pj->compos_[i]->name.c_str() + "##compo_tab_" + std::to_string(i);
       if(ImGui::BeginTabItem(str.c_str())) {
         Project::SetActiveCompo(i);
         cp = Project::GetActiveCompo();
         ImGui::EndTabItem();
       }
       if(ImGui::BeginPopupContextItem()) {
-        if(ImGui::MenuItem("設定を開く")) pj->compos_[i].flag = (Composition::Flag)(pj->compos_[i].flag | Composition::setting_dialog);
+        if(ImGui::MenuItem("設定を開く")) pj->compos_[i]->flag = (Composition::Flag)(pj->compos_[i]->flag | Composition::setting_dialog);
         ImGui::EndPopup();
       }
     }

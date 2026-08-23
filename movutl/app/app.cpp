@@ -4,6 +4,7 @@
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/project.hpp>
 #include <movutl/core/filesystem.hpp>
+#include <movutl/core/logger.hpp>
 #include <movutl/core/time.hpp>
 #include <movutl/render2d/render2d.hpp>
 
@@ -80,5 +81,16 @@ void save_project() { Project::Save(); }
 void save_project_as(const char* path) { Project::Save(path); }
 
 void open_project(const char* path) { Project::Load(path); }
+
+Ref<Entity> duplicate_asset(const Ref<Entity>& src) {
+  if(!src) return nullptr;
+  auto clone = Entity::fromSaveProps(src->getSaveProps());
+  if(!clone) {
+    LOG_F(WARNING, "duplicate_asset: unsupported entity type for '%s'", src->name.c_str());
+    return nullptr;
+  }
+  clone->guid_ = Project::Get()->entities.size(); // 複製なのでguidは振り直す
+  return clone;
+}
 
 } // namespace mu

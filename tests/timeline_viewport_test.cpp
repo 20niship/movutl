@@ -48,6 +48,23 @@ TEST_CASE("SplitCommand: 選択中クリップを現在フレームで分割す�
   CHECK(found_second_half);
 }
 
+TEST_CASE("duplicate_asset: Entityを複製できる") {
+  Project::New();
+  auto img = Image::Create("clip", 64, 64);
+  REQUIRE(img != nullptr);
+  img->trk.fstart = 10;
+  img->trk.fend   = 90;
+
+  auto clone = duplicate_asset(img);
+  REQUIRE(clone != nullptr);
+  CHECK(clone.get() != img.get());
+  CHECK(clone->getType() == img->getType());
+  CHECK(std::string(clone->name.c_str()) == std::string(img->name.c_str()));
+  CHECK(clone->guid_ != img->guid_);
+
+  CHECK(duplicate_asset(nullptr) == nullptr);
+}
+
 TEST_CASE("SplitCommand: 範囲外フレームでは分割しない") {
   Project::New();
   detail::register_default_commands();
