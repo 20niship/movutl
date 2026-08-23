@@ -12,7 +12,7 @@ class Entity;
 struct TrackLayer {
 public:
   cutil::Str name{"Layer"};
-  bool active    = true;
+  bool active = true;
   std::vector<Ref<Entity>> entts;
 
   Ref<Entity> find_entt(uint32_t guid) const;

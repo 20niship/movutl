@@ -806,8 +806,8 @@ template <typename T> struct Vec {
   inline T* insert(T* it, const T* start, const T* end) {
     MU_ASSERT(start != nullptr && end != nullptr && it != nullptr);
     MU_ASSERT(it >= Data && it <= Data + Size);
-    const ptrdiff_t off   = it - Data;
-    const size_t count    = (size_t)(end - start);
+    const ptrdiff_t off = it - Data;
+    const size_t count  = (size_t)(end - start);
     if(count == 0) return Data + off;
     if(Size + (int)count > Capacity) reserve(_grow_capacity(Size + (int)count));
     std::memmove(Data + off + count, Data + off, ((size_t)Size - (size_t)off) * sizeof(T));
