@@ -44,8 +44,8 @@ bool fn_init(void* fp, ExeData* editp, cutil::PropInfo* props, cutil::Prop* defa
 FilterPluginTable f_color_correction = {
   GUID(0x00001), // id
   FilterDefault, // flag
-  "色調補正",    // name
-  "色調補正",    // desc
+  cutil::Str("色調補正"), // name
+  cutil::Str("色調補正"), // desc
   0,             // version
   "0",           // version str
   nullptr,       // fn_cutstom_wnd

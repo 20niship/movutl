@@ -1,9 +1,9 @@
 #pragma once
 
+#include <cutil/string.hpp>
 #include <movutl/asset/track.hpp>
 #include <movutl/core/defines.hpp>
 #include <movutl/core/prop_types.hpp>
-#include <movutl/core/string.hpp>
 #include <string>
 
 #define BITMAPINFOHEADER void
@@ -67,7 +67,7 @@ protected:
   bool render_filters(Composition* cmp, Image* img);
 
 public:
-  FixString name;     // MPROPERTY(name="名前")
+  cutil::Str name;    // MPROPERTY(name="名前")
   uint64_t guid_ = 0; // MPROPERTY(name="GUID")
   TrackObject trk;    // MPROPERTY(name="トラック")
 

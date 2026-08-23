@@ -98,7 +98,7 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("insertable_layer_index", &Composition::insertable_layer_index)
     .addFunction("insert_entity", &Composition::insert_entity)
     .addVariable("guid", &Composition::guid)                 // uint32_t
-    .addVariable("name", &Composition::name)                 // FixString
+    .addVariable("name", &Composition::name)                 // cutil::Str
     .addVariable("flag", &Composition::flag)                 // Flag
     .addVariable("frame_final", &Composition::frame_final)   // Ref<Image>
     .addVariable("frame_edit", &Composition::frame_edit)     // Ref<Image>
@@ -192,7 +192,7 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("find_entt", &TrackLayer::find_entt)
     .addFunction("str", &TrackLayer::str)
     .addFunction("summary", &TrackLayer::summary)
-    .addVariable("name", &TrackLayer::name)     // FixString
+    .addVariable("name", &TrackLayer::name)     // cutil::Str
     .addVariable("active", &TrackLayer::active) // bool
     .addVariable("entts", &TrackLayer::entts)   // std::vector<Ref<Entity> >
     .endClass()

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cutil/prop.hpp>
+#include <cutil/string.hpp>
 #include <movutl/asset/image.hpp>
 #include <movutl/asset/track.hpp>
 #include <movutl/core/prop_types.hpp>
@@ -36,8 +37,8 @@ enum FilterInfoType {
 struct FilterPluginTable {
   uint64_t guid;
   FilterInfoType flag;
-  FixString name;
-  FixStringBase<256> info;
+  cutil::Str name;
+  cutil::Str info;
   uint32_t version = 0;
   std::string version_str;
 
