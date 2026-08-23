@@ -114,6 +114,8 @@ void generated_lua_binding_movutl(lua_State* L) {
     .beginClass<EntityInfo>("EntityInfo")
     .addFunction("str", &EntityInfo::str)
     .addVariable("flag", &EntityInfo::flag)                           // EntityType
+    .addVariable("rate", &EntityInfo::rate)                           // int32_t
+    .addVariable("scale", &EntityInfo::scale)                         // int32_t
     .addVariable("framerate", &EntityInfo::framerate)                 // float
     .addVariable("nframes", &EntityInfo::nframes)                     // uint32_t
     .addVariable("format", &EntityInfo::format)                       // ImageFormat
