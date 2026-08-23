@@ -1,6 +1,7 @@
 #include <movutl/app/app.hpp>
 #include <movutl/app/app_impl.hpp>
 #include <movutl/asset/composition.hpp>
+#include <movutl/asset/project.hpp>
 #include <movutl/core/filesystem.hpp>
 #include <movutl/core/time.hpp>
 #include <movutl/render2d/render2d.hpp>

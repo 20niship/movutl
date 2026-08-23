@@ -49,12 +49,12 @@ Composition* Entity::get_comp() const {
 }
 
 Entity::~Entity() {
-  if(in_plg_ && in_handle_) in_plg_->fn_close(in_handle_);
+  if(in_plg_ && in_handle_ && in_plg_->fn_close) in_plg_->fn_close(in_handle_);
 }
 
 std::string EntityInfo::str() const {
   char buf[256];
-  sprintf(buf, "EntityInfo: Flag%d %dx%d %d frames %f fps", (int)flag, width, height, nframes, framerate);
+  sprintf(buf, "EntityInfo: Flag%d %dx%d %d frames %d/%d fps", (int)flag, width, height, nframes, rate, scale);
   return std::string(buf);
 }
 
