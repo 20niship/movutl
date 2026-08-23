@@ -141,8 +141,6 @@ static bool fn_info_get(InputHandle ih, EntityInfo* iip) {
   if(h->dec_ctx == nullptr) return false;
 
   iip->flag      = EntityType_Movie;
-  iip->rate      = h->fps.num;
-  iip->scale     = h->fps.den;
   iip->framerate = av_q2d(h->fps);
   iip->nframes   = (uint32_t)(h->nb_frames > 0 ? h->nb_frames : 0);
   iip->width     = h->width;

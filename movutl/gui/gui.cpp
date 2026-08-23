@@ -4,6 +4,7 @@
 #include <imgui_impl_opengl3.h>
 // --
 #include <movutl/app/app_impl.hpp>
+#include <movutl/core/logger.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/gui/inspector.hpp>
 #include <movutl/gui/timeline.hpp>

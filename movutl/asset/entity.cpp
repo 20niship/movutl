@@ -54,7 +54,7 @@ Entity::~Entity() {
 
 std::string EntityInfo::str() const {
   char buf[256];
-  sprintf(buf, "EntityInfo: Flag%d %dx%d %d frames %d/%d fps", (int)flag, width, height, nframes, rate, scale);
+  sprintf(buf, "EntityInfo: Flag%d %dx%d %d frames %.3f fps", (int)flag, width, height, nframes, framerate);
   return std::string(buf);
 }
 
