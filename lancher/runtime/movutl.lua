@@ -84,7 +84,6 @@ movutl.ImageFormat = {}
 
 ---@class Composition
 ---@field guid number
----@field name FixString
 ---@field flag Flag
 ---@field frame_final Ref<Image>
 ---@field frame_edit Ref<Image>
@@ -99,7 +98,6 @@ movutl.ImageFormat = {}
 ---@field layers table
 movutl.Composition = {}
 movutl.Composition.guid = 0
-movutl.Composition.name = "Main"
 movutl.Composition.flag = nil
 movutl.Composition.frame_final = nil
 movutl.Composition.frame_edit = nil
@@ -326,11 +324,9 @@ function movutl.TextEntt:Create( text, font, ) end
 function movutl.TextEntt:getType( ) end
 
 ---@class TrackLayer
----@field name FixString
 ---@field active boolean
 ---@field entts table
 movutl.TrackLayer = {}
-movutl.TrackLayer.name = "Layer"
 movutl.TrackLayer.active = true
 movutl.TrackLayer.entts = {}
 
@@ -367,6 +363,31 @@ movutl.TrackObject.camera_ctrl = false
 ---@return boolean
 function movutl.TrackObject:visible( frame, ) end
 
+---@class Workspace
+---@field name string
+---@field entries table
+movutl.Workspace = {}
+movutl.Workspace.name = ""
+movutl.Workspace.entries = {}
+
+---@param window_name string
+---@param dir number
+---@param ratio number
+---@return Workspace 
+function movutl.Workspace:add_entry( window_name, dir, ratio, ) end
+
+---@return Workspace 
+function movutl.Workspace:clear_entries( ) end
+
+---@class WorkspaceEntry
+---@field window_name string
+---@field dir number
+---@field ratio number
+movutl.WorkspaceEntry = {}
+movutl.WorkspaceEntry.window_name = ""
+movutl.WorkspaceEntry.dir = ImGuiDir_None
+movutl.WorkspaceEntry.ratio = 0.5 f
+
 ---@param name string
 ---@param path string
 ---@param start number
@@ -391,6 +412,10 @@ function movutl.add_new_video_track( name, path, start, layer, )end
 ---@param name string
 ---@return nil
 function movutl.apply_imgui_style( name, )end
+
+---@param name string
+---@return nil
+function movutl.apply_workspace( name, )end
 
 ---@return nil
 function movutl.clear_selected_entts( )end
@@ -423,11 +448,23 @@ function movutl.open_project( path, )end
 function movutl.register_imgui_style( name, style, )end
 
 ---@param name string
+---@param workspace Workspace 
+---@return nil
+function movutl.register_workspace( name, workspace, )end
+
+---@param name string
 ---@return nil
 function movutl.remove_imgui_style( name, )end
 
+---@param name string
+---@return nil
+function movutl.remove_workspace( name, )end
+
 ---@return nil
 function movutl.render_main_menu_bar( )end
+
+---@return nil
+function movutl.render_status_bar( )end
 
 ---@return nil
 function movutl.save_project( )end

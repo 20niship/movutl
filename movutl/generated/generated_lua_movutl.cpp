@@ -98,7 +98,6 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("insertable_layer_index", &Composition::insertable_layer_index)
     .addFunction("insert_entity", &Composition::insert_entity)
     .addVariable("guid", &Composition::guid)                 // uint32_t
-    .addVariable("name", &Composition::name)                 // cutil::Str
     .addVariable("flag", &Composition::flag)                 // Flag
     .addVariable("frame_final", &Composition::frame_final)   // Ref<Image>
     .addVariable("frame_edit", &Composition::frame_edit)     // Ref<Image>
@@ -192,7 +191,6 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("find_entt", &TrackLayer::find_entt)
     .addFunction("str", &TrackLayer::str)
     .addFunction("summary", &TrackLayer::summary)
-    .addVariable("name", &TrackLayer::name)     // cutil::Str
     .addVariable("active", &TrackLayer::active) // bool
     .addVariable("entts", &TrackLayer::entts)   // std::vector<Ref<Entity> >
     .endClass()
@@ -207,10 +205,22 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addVariable("clipping_up", &TrackObject::clipping_up) // bool
     .addVariable("camera_ctrl", &TrackObject::camera_ctrl) // bool
     .endClass()
+    .beginClass<Workspace>("Workspace")
+    .addFunction("add_entry", &Workspace::add_entry)
+    .addFunction("clear_entries", &Workspace::clear_entries)
+    .addVariable("name", &Workspace::name)       // std::string
+    .addVariable("entries", &Workspace::entries) // std::vector<WorkspaceEntry>
+    .endClass()
+    .beginClass<WorkspaceEntry>("WorkspaceEntry")
+    .addVariable("window_name", &WorkspaceEntry::window_name) // std::string
+    .addVariable("dir", &WorkspaceEntry::dir)                 // int
+    .addVariable("ratio", &WorkspaceEntry::ratio)             // float
+    .endClass()
     .addFunction("add_new_audio_track", static_cast<bool (*)(const char*, const char*, int, int)>(&add_new_audio_track))
     .addFunction("add_new_track", static_cast<bool (*)(const char*, EntityType, int, int)>(&add_new_track))
     .addFunction("add_new_video_track", static_cast<Ref<Entity> (*)(const char*, const char*, int, int)>(&add_new_video_track))
     .addFunction("apply_imgui_style", static_cast<void (*)(const char*)>(&apply_imgui_style))
+    .addFunction("apply_workspace", static_cast<void (*)(const char*)>(&apply_workspace))
     .addFunction("clear_selected_entts", static_cast<void (*)()>(&clear_selected_entts))
     .addFunction("cv_waitkey", static_cast<void (*)(int)>(&cv_waitkey))
     .addFunction("get_compatible_plugin", static_cast<InputPluginTable* (*)(const char*, EntityType)>(&get_compatible_plugin))
@@ -219,8 +229,11 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("new_project", static_cast<void (*)()>(&new_project))
     .addFunction("open_project", static_cast<void (*)(const char*)>(&open_project))
     .addFunction("register_imgui_style", static_cast<void (*)(const char*, const ImGuiStyle&)>(&register_imgui_style))
+    .addFunction("register_workspace", static_cast<void (*)(const char*, const Workspace&)>(&register_workspace))
     .addFunction("remove_imgui_style", static_cast<void (*)(const char*)>(&remove_imgui_style))
+    .addFunction("remove_workspace", static_cast<void (*)(const char*)>(&remove_workspace))
     .addFunction("render_main_menu_bar", static_cast<void (*)()>(&render_main_menu_bar))
+    .addFunction("render_status_bar", static_cast<void (*)()>(&render_status_bar))
     .addFunction("save_project", static_cast<void (*)()>(&save_project))
     .addFunction("save_project_as", static_cast<void (*)(const char*)>(&save_project_as))
     .addFunction("select_entt", static_cast<void (*)(const Ref<Entity>&)>(&select_entt))

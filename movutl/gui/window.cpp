@@ -109,12 +109,46 @@ void gui_new_frame() {
 
   render_main_menu_bar();
 
+  // メインメニューバーとステータスバー(固定フッター)を除く領域をドッキングスペースとする
+  const ImGuiViewport* viewport = ImGui::GetMainViewport();
+  const float footer_height     = ImGui::GetFrameHeight();
+  const ImVec2 dock_pos         = viewport->WorkPos;
+  const ImVec2 dock_size(viewport->WorkSize.x, viewport->WorkSize.y - footer_height);
+
+  static ImGuiID main_dockspace_id = 0;
+  if(main_dockspace_id == 0) main_dockspace_id = ImGui::GetID("MainDockSpace");
+
+  ImGui::SetNextWindowPos(dock_pos);
+  ImGui::SetNextWindowSize(dock_size);
+  ImGui::SetNextWindowViewport(viewport->ID);
+
   const auto c = ImGui::GetStyle().Colors;
   ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(c[ImGuiCol_WindowBg].x, c[ImGuiCol_WindowBg].y, c[ImGuiCol_WindowBg].z, 0.0f));
   ImGui::PushStyleColor(ImGuiCol_DockingEmptyBg, ImVec4(c[ImGuiCol_DockingEmptyBg].x, c[ImGuiCol_DockingEmptyBg].y, c[ImGuiCol_DockingEmptyBg].z, 0.0f));
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+  ImGui::Begin("##MainDockHost", nullptr, ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_NoBackground);
+  ImGui::PopStyleVar(3);
   auto app          = GUIManager::Get();
-  app->dockspace_id = ImGui::DockSpaceOverViewport();
+  app->dockspace_id = ImGui::DockSpace(main_dockspace_id, ImVec2(0.0f, 0.0f));
+  ImGui::End();
   ImGui::PopStyleColor(2);
+
+  render_status_bar();
+
+  // レイアウトが空(DockSpaceOverViewportが自動生成した空の中央ノードしかない)なら未初期化とみなす
+  const auto dock_node       = ImGui::DockBuilderGetNode(app->dockspace_id);
+  const bool is_empty_layout = dock_node == nullptr || (dock_node->IsCentralNode() && dock_node->Windows.empty() && dock_node->ChildNodes[0] == nullptr);
+
+  // ワークスペースの遅延適用 / 初回起動時(iniにレイアウト未保存)はデフォルトレイアウトを適用
+  if(!app->pending_workspace.empty()) {
+    const std::string name = app->pending_workspace;
+    app->pending_workspace.clear();
+    apply_workspace(name.c_str());
+  } else if(is_empty_layout) {
+    apply_workspace("Default");
+  }
 }
 
 void gui_render_to_screen() {

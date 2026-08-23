@@ -1,9 +1,9 @@
 #include <IconsFontAwesome6.h>
+#include <cstring>
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <movutl/app/app.hpp>
 #include <movutl/app/app_impl.hpp>
-#include <cstring>
 #include <movutl/asset/entity.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/gui/inspector.hpp>

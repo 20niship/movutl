@@ -1,6 +1,6 @@
 #pragma once
-#include <cwchar>
 #include <cutil/quaternion.hpp>
+#include <cwchar>
 #include <movutl/core/vector.hpp>
 
 namespace mu::db {
