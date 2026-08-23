@@ -63,6 +63,7 @@ void init_gui_panels();
 void update_gui_panels();
 void gui_new_frame();
 void gui_render_to_screen();
+void process_command_shortcuts();
 } // namespace detail
 
 void register_imgui_style(const char* name, const ImGuiStyle& style);

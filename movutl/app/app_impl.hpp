@@ -22,4 +22,6 @@ public:
   std::map<std::string, Workspace> workspaces;
 };
 
+void register_default_commands();
+
 } // namespace mu::detail

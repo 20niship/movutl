@@ -1,22 +1,37 @@
+#include <movutl/app/app.hpp>
 #include <movutl/app/app_impl.hpp>
+#include <movutl/asset/project.hpp>
 #include <movutl/gui/gui.hpp>
 
 namespace mu {
+
+namespace {
+char path_popup_buf[512]      = "";
+bool show_path_popup          = false;
+void (*on_path_confirm)(const char*) = nullptr;
+
+void open_path_popup(void (*on_confirm)(const char*)) {
+  path_popup_buf[0] = '\0';
+  on_path_confirm    = on_confirm;
+  show_path_popup     = true;
+}
+} // namespace
+
 void render_main_menu_bar() {
   if(!ImGui::BeginMainMenuBar()) {
     return;
   }
   if(ImGui::BeginMenu("ファイル")) {
-    if(ImGui::MenuItem("新規", "Ctrl+N")) {
-    }
-    if(ImGui::MenuItem("開く", "Ctrl+O")) {
-    }
+    if(ImGui::MenuItem("新規", "Ctrl+N")) new_project();
+    if(ImGui::MenuItem("開く", "Ctrl+O")) open_path_popup([](const char* p) { open_project(p); });
     if(ImGui::MenuItem("保存", "Ctrl+S")) {
+      if(Project::Get()->path.empty())
+        open_path_popup([](const char* p) { save_project_as(p); });
+      else
+        save_project();
     }
-    if(ImGui::MenuItem("名前を付けて保存", "Ctrl+Shift+S")) {
-    }
-    if(ImGui::MenuItem("終了", "Ctrl+Q")) {
-    }
+    if(ImGui::MenuItem("名前を付けて保存", "Ctrl+Shift+S")) open_path_popup([](const char* p) { save_project_as(p); });
+    if(ImGui::MenuItem("終了", "Ctrl+Q")) GUIManager::Get()->should_close = true;
     ImGui::EndMenu();
   }
   if(ImGui::BeginMenu("表示")) {
@@ -36,5 +51,20 @@ void render_main_menu_bar() {
     ImGui::EndMenu();
   }
   ImGui::EndMainMenuBar();
+
+  if(show_path_popup) {
+    ImGui::OpenPopup("パス入力");
+    show_path_popup = false;
+  }
+  if(ImGui::BeginPopupModal("パス入力", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+    ImGui::InputText("path", path_popup_buf, sizeof(path_popup_buf));
+    if(ImGui::Button("OK") && on_path_confirm) {
+      on_path_confirm(path_popup_buf);
+      ImGui::CloseCurrentPopup();
+    }
+    ImGui::SameLine();
+    if(ImGui::Button("Cancel")) ImGui::CloseCurrentPopup();
+    ImGui::EndPopup();
+  }
 }
 } // namespace mu

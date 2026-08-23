@@ -35,9 +35,9 @@ void update_renderer_thread() {
 } // namespace detail
 
 void new_project() { Project::New(); }
-void save_project() { MU_FAIL("Not implemented"); }
-void save_project_as(const char* path) { MU_FAIL("Not implemented"); }
+void save_project() { Project::Save(); }
+void save_project_as(const char* path) { Project::Save(path); }
 
-void open_project(const char* path) { MU_FAIL("Not implemented"); }
+void open_project(const char* path) { Project::Load(path); }
 
 } // namespace mu
