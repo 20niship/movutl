@@ -233,6 +233,7 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("remove_imgui_style", static_cast<void (*)(const char*)>(&remove_imgui_style))
     .addFunction("remove_workspace", static_cast<void (*)(const char*)>(&remove_workspace))
     .addFunction("render_main_menu_bar", static_cast<void (*)()>(&render_main_menu_bar))
+    .addFunction("render_status_bar", static_cast<void (*)()>(&render_status_bar))
     .addFunction("save_project", static_cast<void (*)()>(&save_project))
     .addFunction("save_project_as", static_cast<void (*)(const char*)>(&save_project_as))
     .addFunction("select_entt", static_cast<void (*)(const Ref<Entity>&)>(&select_entt))

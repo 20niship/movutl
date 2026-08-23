@@ -464,6 +464,9 @@ function movutl.remove_workspace( name, )end
 function movutl.render_main_menu_bar( )end
 
 ---@return nil
+function movutl.render_status_bar( )end
+
+---@return nil
 function movutl.save_project( )end
 
 ---@param path string

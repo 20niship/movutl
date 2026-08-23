@@ -83,5 +83,6 @@ inline Workspace workspace_add_entry(Workspace workspace, const char* window_nam
 } // namespace detail
 
 void render_main_menu_bar();
+void render_status_bar();
 
 } // namespace mu
