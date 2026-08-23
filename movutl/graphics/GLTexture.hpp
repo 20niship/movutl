@@ -7,7 +7,7 @@ namespace mu {
 class GLTexture {
 private:
   uint32_t tex_id = 0;
-  cutil::WeakPtr<ImageRGBA> img_;
+  cutil::WeakPtr<Image> img_;
   uint16_t last_dirty_ = 0;
   int gpu_width_;
   int gpu_height_;
@@ -15,8 +15,8 @@ private:
 
 public:
   GLTexture();
-  GLTexture(const cutil::Ref<ImageRGBA>& img);
-  void set(const cutil::Ref<ImageRGBA>& img);
+  GLTexture(const cutil::Ref<Image>& img);
+  void set(const cutil::Ref<Image>& img);
   void bind() const;
   void unbind() const;
   void update_if_necessary();

@@ -100,7 +100,7 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addVariable("guid", &Composition::guid)                 // uint32_t
     .addVariable("name", &Composition::name)                 // FixString
     .addVariable("flag", &Composition::flag)                 // Flag
-    .addVariable("frame_final", &Composition::frame_final)   // Ref<ImageRGBA>
+    .addVariable("frame_final", &Composition::frame_final)   // Ref<Image>
     .addVariable("frame_edit", &Composition::frame_edit)     // Ref<Image>
     .addVariable("frame_temp", &Composition::frame_temp)     // Ref<Image>
     .addVariable("framerate_nu", &Composition::framerate_nu) // int32_t
@@ -124,40 +124,30 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addVariable("audio_format_size", &EntityInfo::audio_format_size) // int32_t
     .endClass()
     .beginClass<Image>("Image")
-    .addFunction("size", &Image::size)
-    .addFunction("width", &Image::width)
-    .addFunction("height", &Image::height)
-    .addFunction("reset", &Image::reset)
-    .addFunction("fill", &Image::fill)
-    .addFunction("data", &Image::data)
     .addFunction("dirty", &Image::dirty)
     .addFunction("get_dirty", &Image::get_dirty)
-    .addFunction("channels", &Image::channels)
+    .addFunction("data", &Image::data)
+    .addFunction("set_rgb", &Image::set_rgb)
+    .addFunction("set_rgba", &Image::set_rgba)
+    .addFunction("size", &Image::size)
+    .addFunction("size_in_bytes", &Image::size_in_bytes)
+    .addFunction("reset", &Image::reset)
+    .addFunction("fill", &Image::fill)
+    .addFunction("rgba", &Image::rgba)
     .addFunction("imshow", &Image::imshow)
+    .addFunction("empty", &Image::empty)
+    .addFunction("channels", &Image::channels)
     .addFunction("getType", &Image::getType)
-    .addVariable("fmt", &Image::fmt)           // ImageFormat
-    .addVariable("pos", &Image::pos)           // Vec3
-    .addVariable("scale", &Image::scale)       // Vec2
-    .addVariable("rotation", &Image::rotation) // float
-    .addVariable("alpha", &Image::alpha)       // float
-    .addVariable("path", &Image::path)         // std::string
-    .endClass()
-    .beginClass<ImageRGBA>("ImageRGBA")
-    .addFunction("dirty", &ImageRGBA::dirty)
-    .addFunction("data", &ImageRGBA::data)
-    .addFunction("set_rgb", &ImageRGBA::set_rgb)
-    .addFunction("set_rgba", &ImageRGBA::set_rgba)
-    .addFunction("size", &ImageRGBA::size)
-    .addFunction("size_in_bytes", &ImageRGBA::size_in_bytes)
-    .addFunction("reset", &ImageRGBA::reset)
-    .addFunction("fill", &ImageRGBA::fill)
-    .addFunction("rgba", &ImageRGBA::rgba)
-    .addFunction("imshow", &ImageRGBA::imshow)
-    .addFunction("empty", &ImageRGBA::empty)
-    .addVariable("width", &ImageRGBA::width)   // unsigned int
-    .addVariable("height", &ImageRGBA::height) // unsigned int
-    .addVariable("dirty_", &ImageRGBA::dirty_) // int16_t
-    .addVariable("alpha", &ImageRGBA::alpha)   // bool
+    .addVariable("width", &Image::width)         // unsigned int
+    .addVariable("height", &Image::height)       // unsigned int
+    .addVariable("dirty_", &Image::dirty_)       // int16_t
+    .addVariable("has_alpha", &Image::has_alpha) // bool
+    .addVariable("fmt", &Image::fmt)             // ImageFormat
+    .addVariable("pos", &Image::pos)             // Vec3
+    .addVariable("scale", &Image::scale)         // Vec2
+    .addVariable("rotation", &Image::rotation)   // float
+    .addVariable("alpha", &Image::alpha)         // float
+    .addVariable("path", &Image::path)           // std::string
     .endClass()
     .beginClass<Movie>("Movie")
     .addStaticFunction("Create", &Movie::Create)

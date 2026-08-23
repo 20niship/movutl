@@ -58,7 +58,7 @@ std::string EntityInfo::str() const {
   return std::string(buf);
 }
 
-bool Entity::render_filters(Composition* cmp, ImageRGBA* img) {
+bool Entity::render_filters(Composition* cmp, Image* img) {
   MU_ASSERT(cmp != nullptr);
   for(int i = 0; i < trk.filters.size(); i++) {
     auto& f = trk.filters[i];

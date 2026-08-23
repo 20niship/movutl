@@ -38,7 +38,7 @@ public:
   Flag flag;
 
   // ---------- video ----------
-  Ref<ImageRGBA> frame_final;
+  Ref<Image> frame_final;
   Ref<Image> frame_edit;
   Ref<Image> frame_temp;
 

@@ -26,7 +26,7 @@ bool Movie::render(Composition* cmp) {
   if(tlocal < 0 || tlocal >= trk.fend - trk.fstart) return false;
   if(in_plg_->fn_set_frame(in_handle_, tlocal)) in_plg_->fn_set_frame(in_handle_, tlocal);
 
-  if(!img_) img_ = cutil::make_ref<ImageRGBA>();
+  if(!img_) img_ = cutil::make_ref<Image>();
   MU_ASSERT(in_plg_->fn_read_video);
   in_plg_->fn_read_video(in_handle_, &info, this);
   int cw = cmp->size[0];

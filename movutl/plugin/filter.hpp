@@ -13,7 +13,7 @@ public:
   int flag;                     //	フィルタのフラグ
                                 //	FILTER_PROC_INFO_FLAG_INVERT_FIELD_ORDER	: フィールドオーダーを標準と逆に扱う ( 標準はボトム->トップになっています )
                                 //	FILTER_PROC_INFO_FLAG_INVERT_INTERLACE		: 解除方法を反転する ( インターレース解除フィルタのみ )
-  ImageRGBA* img     = nullptr; //	画像データへのポインタ ( ycp_editとycp_tempは入れ替えれます )
+  Image* img     = nullptr; //	画像データへのポインタ ( ycp_editとycp_tempは入れ替えれます )
   Composition* compo = nullptr; //	コンポジション
   Entity* entt       = nullptr; //	フィルタが適用されるエンティティ
   Vec2d max_size;               //	画像領域のサイズ
