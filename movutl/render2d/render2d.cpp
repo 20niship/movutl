@@ -12,7 +12,8 @@ bool render_comp(Composition* comp) {
   } else if(comp->frame_final->width != comp->size[0] || comp->frame_final->height != comp->size[1]) {
     comp->frame_final->resize(Vec2d(comp->size[0], comp->size[1]));
   }
-  comp->frame_final->fill(0);
+  uint32_t bg = (uint32_t)comp->bg_color;
+  comp->frame_final->fill_rgba(Vec4b{(unsigned char)(bg & 0xFF), (unsigned char)((bg >> 8) & 0xFF), (unsigned char)((bg >> 16) & 0xFF), (unsigned char)((bg >> 24) & 0xFF)});
 
   int frame = comp->frame;
   for(auto& layer : comp->layers) {

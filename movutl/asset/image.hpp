@@ -57,6 +57,9 @@ public:
     data_.clear();
   }
   void fill(const uint32_t& v) { std::memset(data_.data(), v, size_in_bytes()); }
+  void fill_rgba(const Vec4b& c) {
+    for(size_t i = 0; i < size(); i++) (*this)[i] = c;
+  }
 
   bool copyto(Image* dst, const Vec2d& pmin) const;
   bool copyto(Image* dst, const Vec2d& pmin, const Vec2d& pmax) const;

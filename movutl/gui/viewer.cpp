@@ -53,7 +53,6 @@ void ViewerWindow::Update() {
   bool hovered = ImGui::IsItemHovered();
 
   auto dl = ImGui::GetWindowDrawList();
-  dl->AddRectFilled(img_min, img_max, (ImU32)comp->bg_color); // フレーム画像のアルファ部分を透かさないようComposition背景色で塗る
   if(texture_id != 0) {
     ImTextureID tex_id = (ImTextureID) reinterpret_cast<void*>(static_cast<intptr_t>(texture_id));
     tex.bind();

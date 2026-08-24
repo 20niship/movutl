@@ -103,6 +103,7 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addVariable("frame_edit", &Composition::frame_edit)   // Ref<Image>
     .addVariable("frame_temp", &Composition::frame_temp)   // Ref<Image>
     .addVariable("framerate", &Composition::framerate)     // float
+    .addVariable("bg_color", &Composition::bg_color)       // int32_t
     .addVariable("fstart", &Composition::fstart)           // int32_t
     .addVariable("fend", &Composition::fend)               // int32_t
     .addVariable("frame", &Composition::frame)             // int32_t
@@ -131,6 +132,7 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("size_in_bytes", &Image::size_in_bytes)
     .addFunction("reset", &Image::reset)
     .addFunction("fill", &Image::fill)
+    .addFunction("fill_rgba", &Image::fill_rgba)
     .addFunction("rgba", &Image::rgba)
     .addFunction("imshow", &Image::imshow)
     .addFunction("empty", &Image::empty)

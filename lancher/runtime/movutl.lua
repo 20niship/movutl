@@ -89,6 +89,7 @@ movutl.ImageFormat = {}
 ---@field frame_edit Ref<Image>
 ---@field frame_temp Ref<Image>
 ---@field framerate number
+---@field bg_color number
 ---@field fstart number
 ---@field fend number
 ---@field frame number
@@ -102,6 +103,7 @@ movutl.Composition.frame_final = nil
 movutl.Composition.frame_edit = nil
 movutl.Composition.frame_temp = nil
 movutl.Composition.framerate = 30.0 f
+movutl.Composition.bg_color = ( int32_t ) 0xFF000000
 movutl.Composition.fstart = 0
 movutl.Composition.fend = 200
 movutl.Composition.frame = 0
@@ -209,6 +211,10 @@ function movutl.Image:reset( ) end
 ---@param v number
 ---@return nil
 function movutl.Image:fill( v, ) end
+
+---@param c Vec4b 
+---@return nil
+function movutl.Image:fill_rgba( c, ) end
 
 ---@param x size_t
 ---@param y size_t
