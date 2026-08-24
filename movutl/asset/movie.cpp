@@ -2,6 +2,7 @@
 #include <movutl/asset/movie.hpp>
 #include <movutl/asset/project.hpp>
 #include <movutl/core/logger.hpp>
+#include <movutl/core/profiler.hpp>
 #include <movutl/plugin/input.hpp>
 
 namespace mu {
@@ -20,6 +21,7 @@ Ref<Movie> Movie::Create(const char* name, const char* path) {
 }
 
 bool Movie::render(Composition* cmp) {
+  MOVUTL_ZONE_SCOPED_N("Movie::render");
   MU_ASSERT(cmp);
   MU_ASSERT(cmp->frame_final);
   /// ロード失敗した動画は警告スパムを避けるため黙ってスキップ

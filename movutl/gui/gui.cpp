@@ -5,6 +5,7 @@
 // --
 #include <movutl/app/app_impl.hpp>
 #include <movutl/core/logger.hpp>
+#include <movutl/core/profiler.hpp>
 #include <movutl/gui/composition_settings.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/gui/inspector.hpp>
@@ -33,6 +34,7 @@ void init_gui_panels() {
 }
 
 void update_gui_panels() {
+  MOVUTL_ZONE_SCOPED_N("update_gui_panels");
   auto a = GUIManager::Get();
   for(auto& panel : a->panels) panel->Update();
 }

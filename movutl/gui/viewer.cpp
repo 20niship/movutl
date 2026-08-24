@@ -5,6 +5,7 @@
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/config.hpp>
 #include <movutl/asset/image.hpp>
+#include <movutl/core/profiler.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/gui/viewer.hpp>
 
@@ -19,6 +20,7 @@ ImVec2 screen_to_comp(const ImVec2& p, const ImVec2& img_min, const ImVec2& disp
 } // namespace
 
 void ViewerWindow::Update() {
+  MOVUTL_ZONE_SCOPED_N("ViewerWindow::Update");
   ImGui::Begin("Viewer");
   auto comp = Composition::GetActiveComp();
   if(!comp) {

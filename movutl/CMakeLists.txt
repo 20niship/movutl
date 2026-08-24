@@ -67,6 +67,24 @@ set(MOVUTL_INCLUDES
 
 set(MOVUTL_LIBRARIES ${MOVUTL_LIBRARIES} GLEW::GLEW)
 
+# --------------------------------------------------------------
+# ------------     Tracy Profiler -------------------------------
+# --------------------------------------------------------------
+option(MOVUTL_TRACY "Tracyプロファイラを有効にしてビルドする" ON)
+if(MOVUTL_TRACY)
+  include(FetchContent)
+  FetchContent_Declare(
+    tracy
+    GIT_REPOSITORY https://github.com/wolfpld/tracy.git
+    GIT_TAG v0.13.1
+    GIT_SHALLOW TRUE
+  )
+  set(TRACY_ENABLE ON CACHE BOOL "" FORCE)
+  FetchContent_MakeAvailable(tracy)
+  set(MOVUTL_LIBRARIES ${MOVUTL_LIBRARIES} TracyClient)
+  add_compile_definitions(MOVUTL_TRACY_ENABLED)
+endif()
+
 file(GLOB DATA_FILES ${CMAKE_CURRENT_SOURCE_DIR}/data/*)
 file(COPY ${DATA_FILES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 

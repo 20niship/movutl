@@ -5,6 +5,7 @@
 #include <movutl/asset/movie.hpp>
 #include <movutl/asset/project.hpp>
 #include <movutl/core/logger.hpp>
+#include <movutl/core/profiler.hpp>
 #include <movutl/core/time.hpp>
 #include <movutl/plugin/input.hpp>
 
@@ -43,6 +44,7 @@ void Image::to_cv_img(cv::Mat* cv_img) const {
 }
 
 bool Image::copyto(Image* dst, const Vec2d& pmin) const {
+  MOVUTL_ZONE_SCOPED_N("Image::copyto(pmin)");
   MU_ASSERT(dst);
   if(this->width <= 0 || this->height <= 0 || dst->width <= 0 || dst->height <= 0) return false;
   int cw = dst->width;
@@ -64,6 +66,7 @@ bool Image::copyto(Image* dst, const Vec2d& pmin) const {
 }
 
 bool Image::copyto(Image* dst, const Vec2d& center, float scale, float angle) const {
+  MOVUTL_ZONE_SCOPED_N("Image::copyto(center,scale,angle)");
   if(angle == 0 && scale == 1.0) return this->copyto(dst, center);
   // 角度をラジアンに変換
   float rad = angle * M_PI / 180.0f;

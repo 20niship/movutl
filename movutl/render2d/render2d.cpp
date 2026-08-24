@@ -1,11 +1,13 @@
 #include <movutl/asset/image.hpp>
 #include <movutl/core/logger.hpp>
+#include <movutl/core/profiler.hpp>
 #include <movutl/core/time.hpp>
 #include <movutl/render2d/render2d.hpp>
 
 namespace mu {
 
 bool render_comp(Composition* comp) {
+  MOVUTL_ZONE_SCOPED_N("render_comp");
   MU_ASSERT(comp != nullptr);
   if(!comp->frame_final) {
     comp->frame_final = cutil::make_ref<Image>(comp->size[0], comp->size[1]);
