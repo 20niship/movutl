@@ -238,6 +238,9 @@ function movutl.Image:getType( ) end
 ---@return boolean
 function movutl.Image:load_file( path, ) end
 
+---@return nil
+function movutl.Image:reload_asset( ) end
+
 ---@class Movie
 ---@field pos Vec3
 ---@field scale Vec2
@@ -270,6 +273,9 @@ function movutl.Movie:load_file( path, ) end
 
 ---@return EntityType
 function movutl.Movie:getType( ) end
+
+---@return nil
+function movutl.Movie:reload_asset( ) end
 
 ---@class Project
 ---@field path string

@@ -139,6 +139,7 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("channels", &Image::channels)
     .addFunction("getType", &Image::getType)
     .addFunction("load_file", &Image::load_file)
+    .addFunction("reload_asset", &Image::reload_asset)
     .addVariable("width", &Image::width)         // unsigned int
     .addVariable("height", &Image::height)       // unsigned int
     .addVariable("dirty_", &Image::dirty_)       // int16_t
@@ -154,6 +155,7 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addStaticFunction("Create", &Movie::Create)
     .addFunction("load_file", &Movie::load_file)
     .addFunction("getType", &Movie::getType)
+    .addFunction("reload_asset", &Movie::reload_asset)
     .addVariable("pos", &Movie::pos)                   // Vec3
     .addVariable("scale", &Movie::scale)               // Vec2
     .addVariable("rotation", &Movie::rotation)         // float
