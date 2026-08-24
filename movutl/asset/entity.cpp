@@ -9,6 +9,7 @@
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/image.hpp>
 #include <movutl/asset/movie.hpp>
+#include <movutl/asset/text.hpp>
 
 namespace mu {
 struct InputPluginTable;
@@ -18,6 +19,7 @@ Ref<Entity> Entity::CreateEntity(const char* name, EntityType type) {
   switch(type) {
     case EntityType_Movie: e = cutil::make_ref<Movie>(); break;
     case EntityType_Image: e = cutil::make_ref<Image>(); break;
+    case EntityType_3DText: e = cutil::make_ref<TextEntt>(); break;
     default: break;
   }
   if(!e) {
@@ -61,12 +63,13 @@ Ref<Entity> Entity::fromSaveProps(const cutil::Prop& p) {
 Composition* Entity::get_comp() const {
   auto pj = Project::Get();
   for(int i = 0; i < pj->compos_.size(); i++) {
-    for(auto& layer : pj->compos_[i].layers) {
+    for(auto& layer : pj->compos_[i]->layers) {
       for(auto& e : layer.entts) {
-        if(e.get() == this) return &pj->compos_[i];
+        if(e.get() == this) return pj->compos_[i].get();
       }
     }
   }
+  return nullptr;
 }
 
 Entity::~Entity() {

@@ -5,6 +5,7 @@
 // --
 #include <movutl/app/app_impl.hpp>
 #include <movutl/core/logger.hpp>
+#include <movutl/gui/composition_settings.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/gui/inspector.hpp>
 #include <movutl/gui/timeline.hpp>
@@ -18,10 +19,7 @@ namespace detail {
 void init_gui_panels() {
   auto g    = GUIManager::Get();
   g->panels = {
-    cutil::make_ref<InspectorWindow>(),
-    cutil::make_ref<TimelineWindow>(),
-    cutil::make_ref<ViewerWindow>(),
-    cutil::make_ref<UtilityWindow>(),
+    cutil::make_ref<InspectorWindow>(), cutil::make_ref<TimelineWindow>(), cutil::make_ref<ViewerWindow>(), cutil::make_ref<UtilityWindow>(), cutil::make_ref<CompositionSettingsWindow>(),
   };
 
   // デフォルトワークスペース(初回起動時に適用される)
@@ -65,6 +63,28 @@ const char* get_entt_icon(const Ref<Entity>& entt) {
   return ICON_FA_QUESTION;
 }
 
+ImU32 get_entt_color(const Ref<Entity>& entt) {
+  if(!entt) return IM_COL32(150, 150, 150, 150);
+  switch(entt->getType()) {
+    case EntityType::EntityType_Movie: return IM_COL32(80, 120, 220, 150);
+    case EntityType::EntityType_Audio: return IM_COL32(90, 200, 120, 150);
+    case EntityType::EntityType_Image: return IM_COL32(220, 160, 60, 150);
+    case EntityType::EntityType_3DText: return IM_COL32(220, 90, 200, 150);
+    case EntityType::EntityType_Primitive: return IM_COL32(200, 200, 90, 150);
+    case EntityType::EntityType_Framebuffer: return IM_COL32(90, 200, 200, 150);
+    case EntityType::EntityType_Polygon: return IM_COL32(160, 120, 220, 150);
+    case EntityType::EntityType_Group: return IM_COL32(150, 150, 150, 150);
+    case EntityType::EntityType_Scene: return IM_COL32(60, 160, 220, 150);
+    case EntityType::EntityType_SceneAudio: return IM_COL32(60, 200, 160, 150);
+    case EntityType::EntityType_LayerCopy: return IM_COL32(180, 180, 180, 150);
+    case EntityType::EntityType_Particle: return IM_COL32(230, 120, 60, 150);
+    case EntityType::EntityType_Custom: return IM_COL32(140, 140, 220, 150);
+    case EntityType::EntityType_3DModel: return IM_COL32(120, 220, 160, 150);
+    case EntityType::EntityType_Camera: return IM_COL32(220, 220, 90, 150);
+    case EntityType::EntityType_Effect: return IM_COL32(220, 90, 90, 150);
+    default: return IM_COL32(150, 150, 150, 150);
+  }
+}
 
 void register_imgui_style(const char* name, const ImGuiStyle& style) {
   auto app                = detail::AppMain::Get();

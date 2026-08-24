@@ -127,6 +127,9 @@ const cutil::PropInfo* TrackObject::getPropsInfo() const {
     p.fields.push_back(cutil::PropInfo::Field("camera_ctrl", offsetof(TrackObject, camera_ctrl), cutil::prop_info_of<bool>()));
     p.fields.back().set_label("カメラ制御");
     p.fields.back().set_desc("カメラ制御の対象");
+    p.fields.push_back(cutil::PropInfo::Field("custom_color", offsetof(TrackObject, custom_color), cutil::prop_info_of<int32_t>()));
+    p.fields.back().set_label("カスタム色");
+    p.fields.back().set_desc("0の場合メディア種別ごとの既定色を使う");
     return p;
   }();
   return &info;

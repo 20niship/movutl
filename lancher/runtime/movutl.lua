@@ -97,7 +97,7 @@ movutl.ImageFormat = {}
 ---@field layers table
 movutl.Composition = {}
 movutl.Composition.guid = 0
-movutl.Composition.flag = nil
+movutl.Composition.flag = ( Flag ) 0
 movutl.Composition.frame_final = nil
 movutl.Composition.frame_edit = nil
 movutl.Composition.frame_temp = nil
@@ -292,6 +292,13 @@ function movutl.Project:Save( path, ) end
 ---@return nil
 function movutl.Project:Load( path, ) end
 
+---@param name string
+---@param width number
+---@param height number
+---@param fps number
+---@return Composition 
+function movutl.Project:AddComposition( name, width, height, fps, ) end
+
 ---@return [ [ deprecated ] ] Composition 
 function movutl.Project:get_main_comp( ) end
 
@@ -359,6 +366,7 @@ function movutl.TrackLayer:summary( ) end
 ---@field solo_ boolean
 ---@field clipping_up boolean
 ---@field camera_ctrl boolean
+---@field custom_color number
 movutl.TrackObject = {}
 movutl.TrackObject.fstart = - 1
 movutl.TrackObject.fend = - 1
@@ -368,6 +376,7 @@ movutl.TrackObject.active_ = true
 movutl.TrackObject.solo_ = false
 movutl.TrackObject.clipping_up = false
 movutl.TrackObject.camera_ctrl = false
+movutl.TrackObject.custom_color = 0
 
 ---@param frame number
 ---@return boolean
@@ -434,10 +443,18 @@ function movutl.clear_selected_entts( )end
 ---@return nil
 function movutl.cv_waitkey( time, )end
 
+---@param src Ref<Entity> 
+---@return Ref<Entity>
+function movutl.duplicate_asset( src, )end
+
 ---@param path string
 ---@param type EntityType
 ---@return InputPluginTable 
 function movutl.get_compatible_plugin( path, type, )end
+
+---@param entt Ref<Entity> 
+---@return ImU32
+function movutl.get_entt_color( entt, )end
 
 ---@return table
 function movutl.get_selected_entts( )end

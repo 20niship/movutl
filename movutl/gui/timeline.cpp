@@ -3,9 +3,13 @@
 #endif
 
 #include <IconsFontAwesome6.h>
+#include <algorithm>
+#include <cstdio>
 #include <cutil/rect.hpp>
 #include <imgui.h>
 #include <imgui_internal.h>
+#include <movutl/app/app.hpp>
+#include <movutl/gui/gui.hpp>
 #include <movutl/gui/timeline.hpp>
 
 enum ImTimelineState {
@@ -36,6 +40,23 @@ struct TimelineContext {
   int cur_frame         = 0;
   bool first            = true;
   std::vector<Entity*> sel; // TODO: 複数選択を可能にする
+
+  // レイヤー名インライン編集
+  int editing_layer_idx      = -1;
+  char editing_layer_buf[64] = {0};
+
+  // レイヤーの削除/移動は破壊的操作のためEndTimeline()側で遅延適用する
+  Composition* active_comp = nullptr;
+  int pending_delete_layer = -1;
+  int pending_move_layer   = -1;
+  int pending_move_dir     = 0; // -1: 上へ, +1: 下へ
+
+  // クリップのドラッグ移動/端リサイズ
+  Entity* dragging_entt = nullptr;
+  int drag_mode         = 0; // 0=none, 1=move, 2=resize_left, 3=resize_right
+  int drag_orig_fstart  = 0;
+  int drag_orig_fend    = 0;
+  int drag_start_frame  = 0;
 
   cutil::Rect tl_area() {
     auto r = all_area;
@@ -235,15 +256,36 @@ int EndTimeline() {
       ctx_.vis_end -= delta;
     }
 
-    // 拡大縮小(マウスホイール)
+    // マウスホイール: Shift押下時はパン、それ以外はズーム
     {
-      auto delta     = ImGui::GetIO().MouseWheel;
-      auto center    = ctx_.view2f(ImGui::GetMousePos().x);
-      auto scale     = 1.0f + delta / 15.0f;
-      ctx_.vis_start = center + (ctx_.vis_start - center) * scale;
-      ctx_.vis_end   = center + (ctx_.vis_end - center) * scale;
+      auto delta = ImGui::GetIO().MouseWheel;
+      if(ImGui::GetIO().KeyShift) {
+        auto pan_amount = (ctx_.vis_end - ctx_.vis_start) * (-delta) / 20.0f;
+        ctx_.vis_start += pan_amount;
+        ctx_.vis_end += pan_amount;
+      } else {
+        auto center    = ctx_.view2f(ImGui::GetMousePos().x);
+        auto scale     = 1.0f + delta / 15.0f;
+        ctx_.vis_start = center + (ctx_.vis_start - center) * scale;
+        ctx_.vis_end   = center + (ctx_.vis_end - center) * scale;
+      }
     }
     return_value = ctx_.cur_frame;
+  }
+
+  // レイヤーの削除/移動を遅延適用(ループ中のvector破壊を避けるため)
+  if(ctx_.active_comp) {
+    auto* cp = ctx_.active_comp;
+    if(ctx_.pending_delete_layer >= 0 && ctx_.pending_delete_layer < (int)cp->layers.size()) {
+      cp->layers.erase(cp->layers.begin() + ctx_.pending_delete_layer);
+      ctx_.pending_delete_layer = -1;
+    }
+    if(ctx_.pending_move_layer >= 0 && ctx_.pending_move_layer < (int)cp->layers.size()) {
+      int i = ctx_.pending_move_layer;
+      int j = i + ctx_.pending_move_dir;
+      if(j >= 0 && j < (int)cp->layers.size()) std::swap(cp->layers[i], cp->layers[j]);
+      ctx_.pending_move_layer = -1;
+    }
   }
 
   if(ctx_.cur_frame && ctx_.vis_start && ctx_.vis_end) {
@@ -269,8 +311,12 @@ int EndTimeline() {
   return return_value;
 }
 
-bool BeginLayer(TrackLayer* layer) {
-  MU_ASSERT(layer);
+bool BeginLayer(Composition* cp, int layer_idx) {
+  MU_ASSERT(cp);
+  MU_ASSERT(layer_idx >= 0 && layer_idx < (int)cp->layers.size());
+  TrackLayer* layer = &cp->layers[layer_idx];
+  ctx_.active_comp  = cp;
+
   auto dl     = ImGui::GetWindowDrawList();
   auto inside = ctx_.tl_area();
 
@@ -279,7 +325,27 @@ bool BeginLayer(TrackLayer* layer) {
   int hbtm = ctx_.layer_y2();
 
   ImRect sidebar(ImVec2(x, htop), ImVec2(inside.left(), hbtm));
-  if(ImGui::IsMouseHoveringRect(sidebar.Min, sidebar.Max)) ImGui::SetTooltip("name=%s", layer->name.c_str());
+  bool sidebar_hovered = ImGui::IsMouseHoveringRect(sidebar.Min, sidebar.Max);
+
+  bool editing = ctx_.editing_layer_idx == layer_idx;
+  if(editing) {
+    ImGui::SetCursorScreenPos(ImVec2(x, htop));
+    ImGui::PushID(layer_idx);
+    ImGui::SetNextItemWidth(inside.left() - x);
+    bool done = ImGui::InputText("##layer_name_edit", ctx_.editing_layer_buf, sizeof(ctx_.editing_layer_buf), ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
+    if(ImGui::IsWindowAppearing()) ImGui::SetKeyboardFocusHere(-1);
+    if(done || ImGui::IsItemDeactivated()) {
+      layer->name            = ctx_.editing_layer_buf;
+      ctx_.editing_layer_idx = -1;
+    }
+    ImGui::PopID();
+  } else {
+    if(sidebar_hovered) ImGui::SetTooltip("name=%s", layer->name.c_str());
+    if(sidebar_hovered && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
+      ctx_.editing_layer_idx = layer_idx;
+      std::snprintf(ctx_.editing_layer_buf, sizeof(ctx_.editing_layer_buf), "%s", layer->name.c_str());
+    }
+  }
 
   // レイヤーにマウスが載っていたらlayer全体をハイライトする
   ImRect R(ImVec2(inside.left(), htop), ImVec2(inside.right(), hbtm));
@@ -287,7 +353,21 @@ bool BeginLayer(TrackLayer* layer) {
   if(line_hovered) dl->AddRectFilled(R.Min, R.Max, IM_COL32(255, 255, 255, 20));
 
   dl->AddRectFilled(sidebar.Min, sidebar.Max, IM_COL32(40, 40, 40, 255));
-  dl->AddText(ImVec2(x, htop), IM_COL32(255, 255, 255, 100), layer->name.c_str());
+  if(!editing) dl->AddText(ImVec2(x, htop), IM_COL32(255, 255, 255, 100), layer->name.c_str());
+
+  if(sidebar_hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) ImGui::OpenPopup(("layer_ctx_" + std::to_string(layer_idx)).c_str());
+  if(ImGui::BeginPopup(("layer_ctx_" + std::to_string(layer_idx)).c_str())) {
+    if(ImGui::MenuItem("削除")) ctx_.pending_delete_layer = layer_idx;
+    if(ImGui::MenuItem("上へ移動")) {
+      ctx_.pending_move_layer = layer_idx;
+      ctx_.pending_move_dir   = -1;
+    }
+    if(ImGui::MenuItem("下へ移動")) {
+      ctx_.pending_move_layer = layer_idx;
+      ctx_.pending_move_dir   = 1;
+    }
+    ImGui::EndPopup();
+  }
   return true;
 }
 
@@ -315,10 +395,10 @@ bool BeginTrack(const Ref<Entity>& entity) {
   int* end         = &entity->trk.fend;
   int htop         = ctx_.layer_y1();
 
-  auto col = IM_COL32(255, 0, 0, 100);
-  auto dl  = ImGui::GetWindowDrawList();
-  int fs   = ctx_.f2view(*start);
-  int fe   = ctx_.f2view(*end);
+  constexpr int kEdgeW = 5; // 左右端のドラッグ判定幅(px)
+
+  int fs = ctx_.f2view(*start);
+  int fe = ctx_.f2view(*end);
   ImRect rect(ImVec2(fs, htop), ImVec2(fe, htop + ctx_.height));
   bool hovered = ImGui::IsMouseHoveringRect(rect.Min, rect.Max);
   if(hovered)
@@ -326,6 +406,65 @@ bool BeginTrack(const Ref<Entity>& entity) {
   else
     ctx_.last_entt_hov = nullptr;
 
+  auto mouse_x    = ImGui::GetMousePos().x;
+  bool near_left  = hovered && (mouse_x - rect.Min.x) <= kEdgeW;
+  bool near_right = hovered && (rect.Max.x - mouse_x) <= kEdgeW;
+
+  bool is_selected = false;
+  for(const auto& e : get_selected_entts()) {
+    if(e.get() == entity.get()) {
+      is_selected = true;
+      break;
+    }
+  }
+
+  if(ctx_.dragging_entt == nullptr && hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+    if(near_left)
+      ctx_.drag_mode = 2;
+    else if(near_right)
+      ctx_.drag_mode = 3;
+    else if(is_selected)
+      ctx_.drag_mode = 1;
+    if(ctx_.drag_mode != 0) {
+      ctx_.dragging_entt    = entity.get();
+      ctx_.drag_orig_fstart = *start;
+      ctx_.drag_orig_fend   = *end;
+      ctx_.drag_start_frame = ctx_.view2f((int)mouse_x);
+    }
+  }
+
+  if(ctx_.dragging_entt == entity.get()) {
+    if(ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+      int delta_f  = ctx_.view2f((int)mouse_x) - ctx_.drag_start_frame;
+      auto nframes = (int)entity->get_info().nframes; // 素材の総フレーム数(動画/音声のみ>0)
+      if(ctx_.drag_mode == 1) {
+        *start = ctx_.drag_orig_fstart + delta_f;
+        *end   = ctx_.drag_orig_fend + delta_f;
+      } else if(ctx_.drag_mode == 2) {
+        int new_start = std::min(ctx_.drag_orig_fstart + delta_f, *end - 1);
+        // 素材内オフセット管理は未実装のため、尺が素材の総フレーム数を超えないようclampするに留める
+        if(nframes > 0 && (*end - new_start) > nframes) new_start = *end - nframes;
+        *start = new_start;
+      } else if(ctx_.drag_mode == 3) {
+        int new_end = std::max(ctx_.drag_orig_fend + delta_f, *start + 1);
+        if(nframes > 0 && (new_end - *start) > nframes) new_end = *start + nframes;
+        *end = new_end;
+      }
+      fs   = ctx_.f2view(*start);
+      fe   = ctx_.f2view(*end);
+      rect = ImRect(ImVec2(fs, htop), ImVec2(fe, htop + ctx_.height));
+    } else {
+      ctx_.dragging_entt = nullptr;
+      ctx_.drag_mode     = 0;
+    }
+  }
+
+  if(near_left || near_right || (ctx_.dragging_entt == entity.get() && ctx_.drag_mode >= 2)) {
+    ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
+  }
+
+  auto col = entity->trk.custom_color ? (ImU32)entity->trk.custom_color : get_entt_color(entity);
+  auto dl  = ImGui::GetWindowDrawList();
   dl->AddRect(rect.Min, rect.Max, col_.border);
   dl->AddRectFilled(rect.Min, rect.Max, col);
   dl->AddText(ImVec2(fs, htop), IM_COL32(255, 255, 255, 100), name);

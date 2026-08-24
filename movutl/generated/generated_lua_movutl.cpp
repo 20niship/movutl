@@ -166,13 +166,14 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addStaticFunction("New", &Project::New)
     .addStaticFunction("Save", &Project::Save)
     .addStaticFunction("Load", &Project::Load)
+    .addStaticFunction("AddComposition", &Project::AddComposition)
     .addFunction("get_main_comp", &Project::get_main_comp)
     .addStaticFunction("GetActiveCompo", &Project::GetActiveCompo)
     .addStaticFunction("SetActiveCompo", &Project::SetActiveCompo)
     .addVariable("path", &Project::path)                   // std::string
     .addVariable("output_path", &Project::output_path)     // std::string
     .addVariable("entities", &Project::entities)           // std::vector<Ref<Entity> >
-    .addVariable("compos_", &Project::compos_)             // std::vector<Composition>
+    .addVariable("compos_", &Project::compos_)             // std::vector<Ref<Composition> >
     .addVariable("main_comp_idx", &Project::main_comp_idx) // int
     .endClass()
     .beginClass<TextEntt>("TextEntt")
@@ -198,14 +199,15 @@ void generated_lua_binding_movutl(lua_State* L) {
     .endClass()
     .beginClass<TrackObject>("TrackObject")
     .addFunction("visible", &TrackObject::visible)
-    .addVariable("fstart", &TrackObject::fstart)           // int
-    .addVariable("fend", &TrackObject::fend)               // int
-    .addVariable("anchor", &TrackObject::anchor)           // Vec2
-    .addVariable("blend_", &TrackObject::blend_)           // BlendType
-    .addVariable("active_", &TrackObject::active_)         // bool
-    .addVariable("solo_", &TrackObject::solo_)             // bool
-    .addVariable("clipping_up", &TrackObject::clipping_up) // bool
-    .addVariable("camera_ctrl", &TrackObject::camera_ctrl) // bool
+    .addVariable("fstart", &TrackObject::fstart)             // int
+    .addVariable("fend", &TrackObject::fend)                 // int
+    .addVariable("anchor", &TrackObject::anchor)             // Vec2
+    .addVariable("blend_", &TrackObject::blend_)             // BlendType
+    .addVariable("active_", &TrackObject::active_)           // bool
+    .addVariable("solo_", &TrackObject::solo_)               // bool
+    .addVariable("clipping_up", &TrackObject::clipping_up)   // bool
+    .addVariable("camera_ctrl", &TrackObject::camera_ctrl)   // bool
+    .addVariable("custom_color", &TrackObject::custom_color) // int32_t
     .endClass()
     .beginClass<Workspace>("Workspace")
     .addFunction("add_entry", &Workspace::add_entry)
@@ -225,7 +227,9 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("apply_workspace", static_cast<void (*)(const char*)>(&apply_workspace))
     .addFunction("clear_selected_entts", static_cast<void (*)()>(&clear_selected_entts))
     .addFunction("cv_waitkey", static_cast<void (*)(int)>(&cv_waitkey))
+    .addFunction("duplicate_asset", static_cast<Ref<Entity> (*)(const Ref<Entity>&)>(&duplicate_asset))
     .addFunction("get_compatible_plugin", static_cast<InputPluginTable* (*)(const char*, EntityType)>(&get_compatible_plugin))
+    .addFunction("get_entt_color", static_cast<ImU32 (*)(const Ref<Entity>&)>(&get_entt_color))
     .addFunction("get_selected_entts", static_cast<std::vector<Ref<Entity> > (*)()>(&get_selected_entts))
     .addFunction("goto_frame", static_cast<void (*)(int)>(&goto_frame))
     .addFunction("init", static_cast<void (*)()>(&init))

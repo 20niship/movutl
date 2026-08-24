@@ -36,15 +36,16 @@ struct TrackObject {
 public:
   uint32_t guid;
 
-  int fstart = -1;                   // MPROPERTY(name="開始位置(frame)" hidden_inspector=true)
-  int fend   = -1;                   // MPROPERTY(name="終了位置(frame)" hidden_inspector=true)
-  Vec2 anchor;                       // MPROPERTY(name="アンカー", viewer_anchor=true, position=true)
-  BlendType blend_    = Blend_Alpha; // MPROPERTY(name="合成モード")
-  uint32_t group_guid = 0;           // MPROPERTY(name="グループID", desc="グループ化されている時のグループID", hidden_inspector=true)
-  bool active_        = true;        // MPROPERTY(name="アクティブ", desc="オブジェクトが有効かどうか")
-  bool solo_          = false;       // MPROPERTY(name="ソロモード", desc="(音声のみ)他のレイヤを非表示にする")
-  bool clipping_up    = false;       // MPROPERTY(name="上レイヤでクリッピング",  hidden_inspector=true)
-  bool camera_ctrl    = false;       // MPROPERTY(name="カメラ制御", desc="カメラ制御の対象", hidden_inspector=true)
+  int fstart = -1;                    // MPROPERTY(name="開始位置(frame)" hidden_inspector=true)
+  int fend   = -1;                    // MPROPERTY(name="終了位置(frame)" hidden_inspector=true)
+  Vec2 anchor;                        // MPROPERTY(name="アンカー", viewer_anchor=true, position=true)
+  BlendType blend_     = Blend_Alpha; // MPROPERTY(name="合成モード")
+  uint32_t group_guid  = 0;           // MPROPERTY(name="グループID", desc="グループ化されている時のグループID", hidden_inspector=true)
+  bool active_         = true;        // MPROPERTY(name="アクティブ", desc="オブジェクトが有効かどうか")
+  bool solo_           = false;       // MPROPERTY(name="ソロモード", desc="(音声のみ)他のレイヤを非表示にする")
+  bool clipping_up     = false;       // MPROPERTY(name="上レイヤでクリッピング",  hidden_inspector=true)
+  bool camera_ctrl     = false;       // MPROPERTY(name="カメラ制御", desc="カメラ制御の対象", hidden_inspector=true)
+  int32_t custom_color = 0;           // MPROPERTY(name="カスタム色", desc="0の場合メディア種別ごとの既定色を使う")
 
   struct FilterParam {
     FilterPluginTable* plg_ = nullptr;

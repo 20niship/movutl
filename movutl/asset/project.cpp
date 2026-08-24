@@ -12,15 +12,22 @@ void Project::New(int width, int height, int fps) {
   pj->compos_.clear();
   pj->entities.clear();
 
-  auto cmp = Composition("Main", width, height, fps);
-  pj->compos_.push_back(cmp);
+  pj->compos_.push_back(cutil::make_ref<Composition>("Main", width, height, fps));
   pj->main_comp_idx = 0;
+}
+
+Composition* Project::AddComposition(const char* name, int width, int height, int fps) {
+  auto pj   = Project::Get();
+  auto cmp  = cutil::make_ref<Composition>(name, width, height, fps);
+  cmp->flag = (Composition::Flag)(cmp->flag | Composition::setting_dialog);
+  pj->compos_.push_back(cmp);
+  return cmp.get();
 }
 
 Composition* Project::GetActiveCompo() {
   auto pj = Project::Get();
   if(pj->main_comp_idx < 0 || pj->main_comp_idx >= pj->compos_.size()) return nullptr;
-  return &pj->compos_[pj->main_comp_idx];
+  return pj->compos_[pj->main_comp_idx].get();
 }
 
 void Project::SetActiveCompo(int idx) {
@@ -42,7 +49,7 @@ void Project::Save(const char* path) {
 
   js.set<int32_t>("compo_count", (int32_t)pj->compos_.size());
   for(size_t ci = 0; ci < pj->compos_.size(); ci++) {
-    const auto& cmp = pj->compos_[ci];
+    const auto& cmp = *pj->compos_[ci];
     cutil::Prop cp;
     cp.set_child("props", cmp.getProps());
 
@@ -87,8 +94,8 @@ void Project::Load(const char* path) {
   int32_t compo_count = cutil::get_or<int32_t>(js, "compo_count", 0);
   for(int32_t ci = 0; ci < compo_count; ci++) {
     const auto& cp = js.get_child(("compo_" + std::to_string(ci)).c_str());
-    Composition cmp;
-    if(cp.contains("props")) cmp.setProps(cp.get_child("props"));
+    auto cmp       = cutil::make_ref<Composition>();
+    if(cp.contains("props")) cmp->setProps(cp.get_child("props"));
 
     int32_t layer_count = cutil::get_or<int32_t>(cp, "layer_count", 0);
     for(int32_t li = 0; li < layer_count; li++) {
@@ -106,7 +113,7 @@ void Project::Load(const char* path) {
           }
         }
       }
-      cmp.layers.push_back(layer);
+      cmp->layers.push_back(layer);
     }
     pj->compos_.push_back(cmp);
   }

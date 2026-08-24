@@ -105,7 +105,8 @@ constexpr double kSequenceTimeoutSeconds = 1.0;
 
 // ImGui::IsKeyChordPressedには頼らず、押されたキーを自前でトラッキングしてvim風の複数キーシーケンスに対応する
 void process_command_shortcuts() {
-  if(ImGui::IsAnyItemActive()) return; // テキスト入力中などはショートカットを無視する
+  if(ImGui::IsAnyItemActive()) return;     // テキスト入力中などはショートカットを無視する
+  if(ImGui::GetIO().WantTextInput) return; // InputText編集中の文字キー衝突(例: "s")を防ぐ
 
   double now = mu_now_seconds();
   if(!pending_sequence.empty() && now - last_key_time > kSequenceTimeoutSeconds) pending_sequence.clear();

@@ -1,4 +1,5 @@
 #include <IconsFontAwesome6.h>
+#include <algorithm>
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <movutl/app/app.hpp>
@@ -23,16 +24,42 @@ void TimelineWindow::Update() {
   auto cp = Project::GetActiveCompo();
   if(ImGui::BeginTabBar("## MOVUTL TIMELINE TABS")) {
     for(int i = 0; i < pj->compos_.size(); ++i) {
-      const std::string str = ICON_FA_FILE + std::string(" ") + pj->compos_[i].name.c_str();
+      const std::string str = ICON_FA_FILE + std::string(" ") + pj->compos_[i]->name.c_str() + "##compo_tab_" + std::to_string(i);
       if(ImGui::BeginTabItem(str.c_str())) {
         Project::SetActiveCompo(i);
         cp = Project::GetActiveCompo();
         ImGui::EndTabItem();
       }
+      if(ImGui::BeginPopupContextItem()) {
+        if(ImGui::MenuItem("設定を開く")) pj->compos_[i]->flag = (Composition::Flag)(pj->compos_[i]->flag | Composition::setting_dialog);
+        ImGui::EndPopup();
+      }
+    }
+    if(ImGui::TabItemButton(ICON_FA_PLUS, ImGuiTabItemFlags_Trailing)) {
+      Project::AddComposition("Composition");
     }
     ImGui::EndTabBar();
   }
   MU_ASSERT(cp);
+
+  if(ImGui::Button("全体表示")) {
+    int mn = cp->fstart, mx = cp->fend;
+    bool any = false;
+    for(auto& layer : cp->layers) {
+      for(auto& e : layer.entts) {
+        if(!e) continue;
+        if(!any) {
+          mn  = e->trk.fstart;
+          mx  = e->trk.fend;
+          any = true;
+        } else {
+          mn = std::min(mn, e->trk.fstart);
+          mx = std::max(mx, e->trk.fend);
+        }
+      }
+    }
+    SetTimelineViewRange(mn, mx);
+  }
 
   bool playing = false;
   if(!BeginTimeline(cp->name.c_str(), &cp->frame, &cp->fstart, &cp->fend, &playing)) {
@@ -43,7 +70,7 @@ void TimelineWindow::Update() {
 
   for(int li = 0; li < cp->layers.size(); ++li) {
     auto& layer = cp->layers[li];
-    if(!BeginLayer(&layer)) {
+    if(!BeginLayer(cp, li)) {
       EndLayer();
       continue;
     }
