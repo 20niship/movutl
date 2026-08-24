@@ -35,4 +35,17 @@ std::string select_file_dialog(const std::string& title, const std::vector<std::
   return "";
 }
 } // namespace mu
+
+#elif !defined(MOVUTL_PLATFORM_MACOS)
+#include <movutl/core/logger.hpp>
+
+namespace mu {
+// ponytail: Linux向けネイティブファイルダイアログは未実装、GTK/zenity等を使う実装に置き換え可能
+std::string select_file_dialog(const std::string& title, const std::vector<std::string>& extensions) {
+  (void)title;
+  (void)extensions;
+  LOG_F(WARNING, "select_file_dialog: not implemented on this platform");
+  return "";
+}
+} // namespace mu
 #endif
