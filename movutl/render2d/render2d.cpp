@@ -22,6 +22,7 @@ bool render_comp(Composition* comp) {
     if(!e) continue;
     e->render(comp);
   }
+  comp->frame_final->dirty();
   return true;
 }
 

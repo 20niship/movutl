@@ -51,7 +51,6 @@ bool Movie::render(Composition* cmp) {
   Vec2 center = Vec2(base_x, base_y) + trk.anchor;
   img_->copyto(cmp->frame_final.get(), center, this->scale.avg() / 100, this->rotation);
 
-  cmp->frame_final->dirty();
   return true;
 }
 
