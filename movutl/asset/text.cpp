@@ -1,3 +1,4 @@
+#include <cmath>
 #include <movutl/asset/project.hpp>
 #include <movutl/asset/text.hpp>
 #include <movutl/core/filesystem.hpp>
@@ -24,7 +25,9 @@ bool TextEntt::render(Composition* cmp) {
   if(text.empty()) return true;
   re_render_image();
   if(!img_ || img_->empty() || !cmp || !cmp->frame_final) return false;
-  img_->copyto(cmp->frame_final.get(), Vec2d(pos_.xy()));
+  Vec2d center(pos_[0] + img_->width * scale_x_ / 2.0, pos_[1] + img_->height * scale_y_ / 2.0);
+  float rot_deg = rot_ * 180.0f / (float)M_PI; // rot_はradians=trueプロパティ、copyto()はdegreesを期待する
+  img_->copyto(cmp->frame_final.get(), center, (scale_x_ + scale_y_) / 2.0f, rot_deg, alpha_ / 255.0f);
   return true;
 }
 

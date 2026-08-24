@@ -4,6 +4,7 @@
 #include <imgui_internal.h>
 #include <movutl/asset/entity.hpp>
 #include <movutl/core/assert.hpp>
+#include <movutl/core/filesystem.hpp>
 #include <movutl/core/logger.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/gui/widgets.hpp>
@@ -36,7 +37,8 @@ void wd_entt_props_editor(Entity* e) {
     ImGui::PushID(f.name);
     bool changed = false;
     cutil::Prop newp;
-    const char* name_ = f.label[0] ? f.label : f.name;
+    const char* name_        = f.label[0] ? f.label : f.name;
+    const bool is_path_field = std::string(f.name) == "path" || std::string(f.name) == "path_";
 
     if(f.type == cutil::prop_info_of<bool>()) {
       bool v = p.get<bool>(f.name);
@@ -67,7 +69,22 @@ void wd_entt_props_editor(Entity* e) {
       char buf[256];
       strncpy(buf, s.c_str(), sizeof(buf) - 1);
       buf[sizeof(buf) - 1] = '\0';
-      if(ImGui::InputText(name_, buf, sizeof(buf))) {
+      if(is_path_field) {
+        ImGui::SetNextItemWidth(-40);
+        if(ImGui::InputText(name_, buf, sizeof(buf))) {
+          newp.set<std::string>(f.name, std::string(buf));
+          changed = true;
+        }
+        ImGui::SameLine();
+        if(ImGui::Button(ICON_FA_FOLDER_OPEN "##"
+                                             "path_dialog")) {
+          std::string picked = select_file_dialog("ファイルを選択", {});
+          if(!picked.empty()) {
+            newp.set<std::string>(f.name, picked);
+            changed = true;
+          }
+        }
+      } else if(ImGui::InputText(name_, buf, sizeof(buf))) {
         newp.set<std::string>(f.name, std::string(buf));
         changed = true;
       }
@@ -97,7 +114,10 @@ void wd_entt_props_editor(Entity* e) {
       }
     }
 
-    if(changed) e->setProps(newp);
+    if(changed) {
+      e->setProps(newp);
+      if(is_path_field) e->reload_asset(); // パス変更時は新しいファイルを読み込み直す
+    }
     ImGui::PopID();
   }
   ImGui::PopID();

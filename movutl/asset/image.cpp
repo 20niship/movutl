@@ -43,7 +43,21 @@ void Image::to_cv_img(cv::Mat* cv_img) const {
   }
 }
 
-bool Image::copyto(Image* dst, const Vec2d& pmin) const {
+namespace {
+/// srcをdstへアルファブレンドで合成する。alpha=255(かつalpha_mul=1)なら単純上書きと同じ結果になる
+inline void blend_pixel(Vec4b& d, const Vec4b& src, float alpha_mul) {
+  float a = (src[3] / 255.0f) * alpha_mul;
+  if(a <= 0.0f) return;
+  if(a >= 1.0f) {
+    d = src;
+    return;
+  }
+  for(int c = 0; c < 3; c++) d[c] = (unsigned char)(src[c] * a + d[c] * (1.0f - a));
+  d[3] = (unsigned char)(a * 255.0f + d[3] * (1.0f - a));
+}
+} // namespace
+
+bool Image::copyto(Image* dst, const Vec2d& pmin, float alpha_mul) const {
   MOVUTL_ZONE_SCOPED_N("Image::copyto(pmin)");
   MU_ASSERT(dst);
   if(this->width <= 0 || this->height <= 0 || dst->width <= 0 || dst->height <= 0) return false;
@@ -52,22 +66,20 @@ bool Image::copyto(Image* dst, const Vec2d& pmin) const {
   if(cw <= 0 || ch <= 0) return false;
 
   for(int y = 0; y < this->height; y++) {
-    uint32_t* src_p = (uint32_t*)&data_[0] + y * width;
-    int dy          = pmin[1] + y;
+    int dy = pmin[1] + y;
     if(dy < 0 || dy >= ch) continue;
-    uint32_t* dst_p = (uint32_t*)&dst->data_[0] + (dy)*cw;
     for(int x = 0; x < this->width; x++) {
       int dx = pmin[0] + x;
       if(dx < 0 || dx >= cw) continue;
-      dst_p[dx] = src_p[x];
+      blend_pixel(dst->data_[dy * cw + dx], data_[y * width + x], alpha_mul);
     }
   }
   return true;
 }
 
-bool Image::copyto(Image* dst, const Vec2d& center, float scale, float angle) const {
+bool Image::copyto(Image* dst, const Vec2d& center, float scale, float angle, float alpha_mul) const {
   MOVUTL_ZONE_SCOPED_N("Image::copyto(center,scale,angle)");
-  if(angle == 0 && scale == 1.0) return this->copyto(dst, center);
+  if(angle == 0 && scale == 1.0) return this->copyto(dst, center, alpha_mul);
   // 角度をラジアンに変換
   float rad = angle * M_PI / 180.0f;
   float cx  = center[0];
@@ -95,9 +107,7 @@ bool Image::copyto(Image* dst, const Vec2d& center, float scale, float angle) co
       int src_y_int = static_cast<int>(std::floor(src_y));
       if(src_y_int < 0 || src_y_int >= this->height) continue;
 
-      uint32_t* dst_p = (uint32_t*)&dst->data_[0] + y * dst->width;
-      uint32_t* src_p = (uint32_t*)&data_[0] + src_y_int * width;
-      dst_p[x]        = src_p[src_x_int];
+      blend_pixel(dst->data_[y * dst->width + x], data_[src_y_int * width + src_x_int], alpha_mul);
     }
   }
   return true;

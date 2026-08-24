@@ -63,9 +63,9 @@ public:
     for(size_t i = 0; i < size(); i++) (*this)[i] = c;
   }
 
-  bool copyto(Image* dst, const Vec2d& pmin) const;
+  bool copyto(Image* dst, const Vec2d& pmin, float alpha_mul = 1.0f) const;
   bool copyto(Image* dst, const Vec2d& pmin, const Vec2d& pmax) const;
-  bool copyto(Image* dst, const Vec2d& center, float scale, float angle) const;
+  bool copyto(Image* dst, const Vec2d& center, float scale, float angle, float alpha_mul = 1.0f) const;
 
   void resize(const Vec2d& size) {
     MU_ASSERT(size[0] > 0 && size[1] > 0);

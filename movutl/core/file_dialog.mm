@@ -16,19 +16,22 @@ _Pragma("clang diagnostic ignored \"-Wmissing-method-return-type\"")
 
     namespace mu {
 
-  std::string select_file_dialog(const std::vector<std::string> &extensions) {
+  std::string select_file_dialog(const std::string &title, const std::vector<std::string> &extensions) {
     @autoreleasepool {
       NSOpenPanel *panel = [NSOpenPanel openPanel];
       [panel setAllowsMultipleSelection:NO];
       [panel setCanChooseDirectories:NO];
       [panel setCanChooseFiles:YES];
 
-      panel.title = @"Select a file";
-      NSMutableArray<NSString *> *types = [NSMutableArray array];
-      for (const auto &ext : extensions) {
-        [types addObject:[NSString stringWithUTF8String:ext.c_str()]];
+      panel.title = [NSString stringWithUTF8String:title.c_str()];
+      if (!extensions.empty()) {
+        NSMutableArray<NSString *> *types = [NSMutableArray array];
+        for (const auto &ext : extensions) {
+          if (ext.empty()) continue;
+          [types addObject:[NSString stringWithUTF8String:ext.c_str()]];
+        }
+        if (types.count > 0) [panel setAllowedFileTypes:types];
       }
-      [panel setAllowedFileTypes:types];
 
       if ([panel runModal] == NSModalResponseOK) {
         NSURL *url = [[panel URLs] firstObject];
