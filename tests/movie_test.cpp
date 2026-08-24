@@ -1,11 +1,14 @@
+#include <chrono>
 #include <cstdlib>
 #include <cstring>
 #include <doctest/doctest.h>
+#include <movutl/asset/composition.hpp>
 #include <movutl/asset/image.hpp>
 #include <movutl/asset/movie.hpp>
 #include <movutl/core/filesystem.hpp>
 #include <movutl/plugin/input.hpp>
 #include <movutl/plugin/plugin.hpp>
+#include <movutl/render2d/render2d.hpp>
 
 using namespace mu;
 
@@ -116,4 +119,24 @@ TEST_CASE("FFmpeg Video Reader: 複数動画の同時読み込み") {
   CHECK(same_image(&ia, &ra3));
   REQUIRE(read_frame(&mb, 5, &ib));
   CHECK(same_image(&ib, &rb5));
+}
+
+/// AVCodecContext::pkt_timebase未設定でframe->ptsがAV_NOPTS_VALUEになり毎フレームEOFまでデコードし続けていた不具合の再発防止
+TEST_CASE("PERF: 動画の逐次再生でrender_compが極端に遅くならないこと") {
+  using namespace std::chrono;
+  auto mov = Movie::Create("bench_movie", "../assets/movies/big_buck_bunny_360_10s.mp4");
+  REQUIRE(mov->get_input_plugin());
+  auto comp       = Composition("BenchComp", mov->get_info().width, mov->get_info().height, 30);
+  mov->trk.fstart = 0;
+  mov->trk.fend   = (int)mov->get_info().nframes;
+  comp.insert_entity(mov, -1);
+
+  const int N = 30;
+  auto t0     = high_resolution_clock::now();
+  for(int i = 0; i < N; i++) {
+    comp.frame = i;
+    render_comp(&comp);
+  }
+  double avg_ms = duration<double, std::milli>(high_resolution_clock::now() - t0).count() / N;
+  CHECK_MESSAGE(avg_ms < 50.0, "render_comp avg=" << avg_ms << "ms (逐次再生が壊れて毎フレームEOFまでデコードしている可能性)");
 }
