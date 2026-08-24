@@ -45,3 +45,18 @@ TEST_CASE("Image::copyto: 透明ピクセルは合成先を上書きしない") 
   CHECK(dst[4][0] < 10);                   // 半透明ピクセルは元の色(10,20,30)より青(0,0,255)側へ寄る
   CHECK(dst[4][2] > 30);
 }
+
+TEST_CASE("Image::copyto: scale/angle指定時は画像自身の中心を軸にする(dst全体の中心ではない)") {
+  Image dst(20, 20);
+  for(size_t i = 0; i < dst.size(); i++) dst[i] = Vec4b(0, 0, 0, 255);
+
+  // 2x2の不透明画像をdstの左寄り(pmin=(2,2))に、2倍拡大で配置する
+  Image src(2, 2);
+  for(size_t i = 0; i < src.size(); i++) src[i] = Vec4b(255, 255, 255, 255);
+  src.copyto(&dst, Vec2d(2, 2), 2.0f, 0.0f);
+
+  // 元画像の中心(pmin+1,1)=(3,3)付近が拡大後も白いはず(dst中心(10,10)基準だと(3,3)は白くならない)
+  CHECK(dst(3, 3)[0] == 255);
+  // dst全体の中心(10,10)は今回の配置(pmin=2,2)からは大きく外れるので白くならないはず
+  CHECK(dst(10, 10)[0] == 0);
+}

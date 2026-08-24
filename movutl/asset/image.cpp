@@ -80,26 +80,22 @@ bool Image::copyto(Image* dst, const Vec2d& pmin, float alpha_mul) const {
 bool Image::copyto(Image* dst, const Vec2d& center, float scale, float angle, float alpha_mul) const {
   MOVUTL_ZONE_SCOPED_N("Image::copyto(center,scale,angle)");
   if(angle == 0 && scale == 1.0) return this->copyto(dst, center, alpha_mul);
-  // 角度をラジアンに変換
-  float rad = angle * M_PI / 180.0f;
-  float cx  = center[0];
-  float cy  = center[1];
-
-  // 回転とスケールの逆行列成分を計算
-  float inv_cos = std::cos(rad) / scale;
-  float inv_sin = std::sin(rad) / scale;
-
-  float offset_x = cx - inv_cos * cx + inv_sin * cy;
-  float offset_y = cy - inv_sin * cx - inv_cos * cy;
-
-  int dst_x = dst->width / 2;
-  int dst_y = dst->height / 2;
+  // centerはpmin相当。回転/拡大の軸はdst全体の中心ではなく画像自身の中心にする(旧実装は中心からズレた位置で意図せず移動して見えるバグがあった)
+  float rad     = angle * M_PI / 180.0f;
+  float cos_a   = std::cos(rad);
+  float sin_a   = std::sin(rad);
+  float true_cx = center[0] + this->width / 2.0f;
+  float true_cy = center[1] + this->height / 2.0f;
+  float src_cx  = this->width / 2.0f;
+  float src_cy  = this->height / 2.0f;
 
   for(int y = 0; y < dst->height; ++y) {
     for(int x = 0; x < dst->width; ++x) {
-      // 出力画像の座標を元画像の座標に変換
-      float src_x = inv_cos * (x - dst_x) - inv_sin * (y - dst_y) + offset_x;
-      float src_y = inv_sin * (x - dst_x) + inv_cos * (y - dst_y) + offset_y;
+      // dst上のこのピクセルが、画像自身の中心を軸とした逆回転・逆拡大でsrcのどこに対応するか
+      float dx    = x - true_cx;
+      float dy    = y - true_cy;
+      float src_x = src_cx + (dx * cos_a + dy * sin_a) / scale;
+      float src_y = src_cy + (-dx * sin_a + dy * cos_a) / scale;
 
       // 元画像の座標が範囲内か確認
       int src_x_int = static_cast<int>(std::floor(src_x));
@@ -123,7 +119,7 @@ bool Image::render(Composition* cmp) {
 
   int base_x = this->width / 2 + trk.anchor[0] - cw / 2;
   int base_y = this->height / 2 + trk.anchor[1] - ch / 2;
-  return this->copyto(cmp->frame_final.get(), Vec2d(base_x, base_y));
+  return this->copyto(cmp->frame_final.get(), Vec2d(base_x, base_y), this->scale.avg(), this->rotation, this->alpha);
 }
 
 bool Image::load_file(const char* path) {
