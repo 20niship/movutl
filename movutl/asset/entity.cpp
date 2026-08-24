@@ -57,6 +57,7 @@ Ref<Entity> Entity::fromSaveProps(const cutil::Prop& p) {
   e->guid_ = (uint64_t)cutil::get_or<int32_t>(p, "guid", (int32_t)e->guid_);
   if(p.contains("props")) e->setProps(p.get_child("props"));
   if(p.contains("trk")) e->trk.setProps(p.get_child("trk"));
+  e->reload_asset(); // pathはsetProps()でコピーされるだけなので、ここで独立した読み込みプラグインのインスタンスを持たせる
   return e;
 }
 

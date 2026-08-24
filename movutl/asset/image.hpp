@@ -126,6 +126,9 @@ public:
   static Ref<Image> Create(const char* name, const char* path = "");
   static Ref<Image> Create(const char* name, int w, int h, ImageFormat format = ImageFormatRGBA, bool add_to_pj = true);
   bool load_file(const char* path);
+  virtual void reload_asset() override {
+    if(!path.empty()) load_file(path.c_str());
+  }
 
   virtual const cutil::PropInfo* getPropsInfo() const override; // MUFUNC_AUTOGEN
   virtual cutil::Prop getProps() const override;                // MUFUNC_AUTOGEN

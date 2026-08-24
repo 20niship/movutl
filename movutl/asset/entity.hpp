@@ -87,6 +87,9 @@ public:
   InputHandle get_input_handle() const { return in_handle_; }
   const EntityInfo& get_info() const { return info; }
 
+  // 複製後に呼ばれる。素材を持つEntityはoverrideしload_file()等を呼び直し、複製元と独立したプラグインインスタンスを持たせる
+  virtual void reload_asset() {}
+
   bool visible(int frame) const { return trk.visible(frame); }
   virtual ~Entity();
 

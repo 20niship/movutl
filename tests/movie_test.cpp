@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <doctest/doctest.h>
+#include <movutl/app/app.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/image.hpp>
 #include <movutl/asset/movie.hpp>
@@ -153,6 +154,35 @@ TEST_CASE("Movie::render: start_frame_とspeedが素材内フレーム位置に�
   comp.frame = 2;
   REQUIRE(render_comp(&comp));
   CHECK(same_image(comp.frame_final.get(), &r11));
+}
+
+TEST_CASE("duplicate_asset: Movieの複製が独立した読み込みプラグインのインスタンスを持つ") {
+  const std::string path = gen_test_video("mvtest_dup.mp4", "testsrc=duration=2:size=160x120:rate=10");
+  auto mov               = Movie::Create("dup_test_movie", path.c_str());
+  REQUIRE(mov->get_input_plugin());
+  REQUIRE(mov->get_input_handle());
+
+  auto clone_e = duplicate_asset(mov);
+  REQUIRE(clone_e);
+  auto clone = dynamic_cast<Movie*>(clone_e.get());
+  REQUIRE(clone);
+  CHECK(clone->get_input_plugin());
+  CHECK(clone->get_input_handle());
+  CHECK(clone->get_input_handle() != mov->get_input_handle()); // 元と複製でハンドルが別インスタンスであること
+
+  /// 複製後、両方から独立してフレームをrenderできること(render()の戻り値で検証、render_compは常にtrueを返すため使わない)
+  mov->trk.fstart = clone->trk.fstart = 0;
+  mov->trk.fend = clone->trk.fend = (int)mov->get_info().nframes;
+
+  Composition comp("DupTestComp", mov->get_info().width, mov->get_info().height, 10);
+  comp.frame_final = cutil::make_ref<Image>(comp.size[0], comp.size[1]);
+  comp.frame       = 3;
+  CHECK(mov->render(&comp));
+
+  Composition comp2("DupTestComp2", clone->get_info().width, clone->get_info().height, 10);
+  comp2.frame_final = cutil::make_ref<Image>(comp2.size[0], comp2.size[1]);
+  comp2.frame       = 3;
+  CHECK(clone->render(&comp2));
 }
 
 /// AVCodecContext::pkt_timebase未設定でframe->ptsがAV_NOPTS_VALUEになり毎フレームEOFまでデコードし続けていた不具合の再発防止
