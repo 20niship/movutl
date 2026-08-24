@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <movutl/app/app.hpp>
 #include <movutl/asset/movie.hpp>
 #include <movutl/asset/project.hpp>
@@ -28,11 +29,14 @@ bool Movie::render(Composition* cmp) {
   if(load_failed_ || in_plg_ == nullptr || in_handle_ == nullptr) return false;
   if(info.width <= 0 || info.height <= 0 || info.nframes <= 0) return false;
 
-  int tlocal = cmp->frame - trk.fstart;
-  if(tlocal < 0 || tlocal >= trk.fend - trk.fstart) {
+  int elapsed = cmp->frame - trk.fstart; // トラック上での経過フレーム数
+  if(elapsed < 0 || elapsed >= trk.fend - trk.fstart) {
     if(!loop_) return false;
-    tlocal %= (trk.fend - trk.fstart); // ループ再生
+    elapsed %= (trk.fend - trk.fstart); // ループ再生
   }
+  /// 開始フレーム(start_frame_)を起点に再生速度(speed, 100=等速)を適用した素材内フレーム位置
+  int tlocal = start_frame_ + (int)(elapsed * (speed / 100.0f));
+  tlocal     = std::clamp(tlocal, 0, (int)info.nframes - 1);
 
   if(!img_) img_ = cutil::make_ref<Image>();
   img_->resize(info.width, info.height);

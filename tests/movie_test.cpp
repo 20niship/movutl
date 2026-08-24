@@ -121,6 +121,40 @@ TEST_CASE("FFmpeg Video Reader: 複数動画の同時読み込み") {
   CHECK(same_image(&ib, &rb5));
 }
 
+TEST_CASE("Movie::render: start_frame_とspeedが素材内フレーム位置に反映される") {
+  const std::string path = gen_test_video("mvtest_speed.mp4", "testsrc=duration=3:size=160x120:rate=10");
+
+  /// 参照用: 素材のフレーム7,9,11を直接読む
+  Movie ref;
+  REQUIRE(ref.load_file(path.c_str()));
+  Image r7, r9, r11;
+  REQUIRE(read_frame(&ref, 7, &r7));
+  REQUIRE(read_frame(&ref, 9, &r9));
+  REQUIRE(read_frame(&ref, 11, &r11));
+
+  auto mov = Movie::Create("speed_test_movie", path.c_str());
+  REQUIRE(mov->get_input_plugin());
+  mov->start_frame_ = 7;      // 素材の7フレーム目から再生開始
+  mov->speed        = 200.0f; // 倍速再生 (トラック上2フレーム進む毎に素材は4フレーム進む)
+  mov->trk.fstart   = 0;
+  mov->trk.fend     = (int)mov->get_info().nframes;
+
+  auto comp = Composition("SpeedTestComp", mov->get_info().width, mov->get_info().height, 10);
+  comp.insert_entity(mov, -1);
+
+  comp.frame = 0;
+  REQUIRE(render_comp(&comp));
+  CHECK(same_image(comp.frame_final.get(), &r7)); // start_frame_起点
+
+  comp.frame = 1;
+  REQUIRE(render_comp(&comp));
+  CHECK(same_image(comp.frame_final.get(), &r9)); // 1フレーム経過 * speed200% = 素材2フレーム進む
+
+  comp.frame = 2;
+  REQUIRE(render_comp(&comp));
+  CHECK(same_image(comp.frame_final.get(), &r11));
+}
+
 /// AVCodecContext::pkt_timebase未設定でframe->ptsがAV_NOPTS_VALUEになり毎フレームEOFまでデコードし続けていた不具合の再発防止
 TEST_CASE("PERF: 動画の逐次再生でrender_compが極端に遅くならないこと") {
   using namespace std::chrono;
