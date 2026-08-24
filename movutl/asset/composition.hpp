@@ -48,8 +48,9 @@ public:
   Ref<Image> frame_edit;
   Ref<Image> frame_temp;
 
-  Vec2d size      = {1920, 1080};
-  float framerate = 30.0f;
+  Vec2d size       = {1920, 1080};
+  float framerate  = 30.0f;
+  int32_t bg_color = (int32_t)0xFF000000; // フレーム画像の背景色(ImU32/RGBA)、デフォルトは黒不透明
 
   int32_t fstart = 0;   // 表示開始フレーム
   int32_t fend   = 200; // 表示終了フレーム

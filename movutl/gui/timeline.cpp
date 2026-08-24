@@ -242,8 +242,7 @@ bool BeginTimeline(const char* name, FrameT* frame, FrameT* start, FrameT* end, 
 
   ctx_.hidx      = 0;
   ctx_.cur_frame = *frame;
-  ctx_.vis_start = *start;
-  ctx_.vis_end   = *end;
+  // vis_start/vis_endはズーム/パン状態のため*start/*end(Composition境界)で上書きしない(上書きするとズームが毎フレーム巻き戻る)
   return open;
 }
 
@@ -463,11 +462,14 @@ bool BeginTrack(const Ref<Entity>& entity) {
     ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
   }
 
-  auto col = entity->trk.custom_color ? (ImU32)entity->trk.custom_color : get_entt_color(entity);
-  auto dl  = ImGui::GetWindowDrawList();
+  auto col    = entity->trk.custom_color ? (ImU32)entity->trk.custom_color : get_entt_color(entity);
+  auto dl     = ImGui::GetWindowDrawList();
+  auto inside = ctx_.tl_area(); // レイヤー名カラムへのはみ出し描画を防ぐためこの範囲でクリップする
+  dl->PushClipRect(ImVec2(inside.left(), ctx_.all_area.top()), ImVec2(inside.right(), ctx_.all_area.bottom()), true);
   dl->AddRect(rect.Min, rect.Max, col_.border);
   dl->AddRectFilled(rect.Min, rect.Max, col);
   dl->AddText(ImVec2(fs, htop), IM_COL32(255, 255, 255, 100), name);
+  dl->PopClipRect();
   return hovered;
 }
 
