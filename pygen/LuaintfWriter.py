@@ -37,6 +37,7 @@ class LuaIntfWriter:
             "#include <movutl/asset/image.hpp>\n"
             "#include <movutl/asset/project.hpp>\n"
             "#include <movutl/asset/movie.hpp>\n"
+            "#include <movutl/asset/shape.hpp>\n"
             "#include <movutl/core/anim.hpp>\n"
             "#include <movutl/gui/gui.hpp>\n"
             "#include <movutl/binding/imgui_binding.hpp>\n"
@@ -44,11 +45,16 @@ class LuaIntfWriter:
             "#include <movutl/asset/entity.hpp>\n"
             "#include <movutl/binding/imgui_binding.hpp>\n"
             "#include <movutl/asset/composition.hpp>\n"
-            "extern \"C\" {\n" 
-            "#include <lua.h>\n" 
-            "#include <lauxlib.h>\n" 
-            "#include <lualib.h>\n" 
-            "}\n" 
+            "extern \"C\" {\n"
+            "#include <lua.h>\n"
+            "#include <lauxlib.h>\n"
+            "#include <lualib.h>\n"
+            "}\n"
+            "\n"
+            "namespace LuaIntf {\n"
+            "// これが無いとRef<T>を返す関数の戻り値が常に\"table expected, got nil\"で壊れる(Ref<T>を値型Tと誤認識するため)\n"
+            "LUA_USING_SHARED_PTR_TYPE(cutil::Ref)\n"
+            "} // namespace LuaIntf\n"
             "\n"
             "namespace mu::detail { \n"
             "\n"
@@ -98,9 +104,6 @@ class LuaIntfWriter:
         self.autogen_text += "  .endModule()\n"
 
     def register_class(self, cls: MClass):
-        if cls.name == "Entity":
-            return
-
         self.autogen_text += "  .beginClass<" + cls.name + '>("' + cls.name + '")\n'
 
         for f in cls.funcs:

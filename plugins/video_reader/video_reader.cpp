@@ -94,7 +94,15 @@ static InputHandle fn_open(const char* file) {
   }
 
   h->dec_ctx = avcodec_alloc_context3(dec);
-  if(h->dec_ctx == nullptr || avcodec_parameters_to_context(h->dec_ctx, st->codecpar) < 0 || avcodec_open2(h->dec_ctx, dec, nullptr) < 0) {
+  if(h->dec_ctx == nullptr || avcodec_parameters_to_context(h->dec_ctx, st->codecpar) < 0) {
+    LOG_F(ERROR, "Failed to setup decoder: %s", file);
+    delete h;
+    return nullptr;
+  }
+  /// AVCodecParametersにtime_baseが含まれないため明示的に設定(無いとAVFrame::ptsが常にAV_NOPTS_VALUEになる)
+  h->dec_ctx->pkt_timebase = st->time_base;
+  h->dec_ctx->time_base    = st->time_base;
+  if(avcodec_open2(h->dec_ctx, dec, nullptr) < 0) {
     LOG_F(ERROR, "Failed to setup decoder: %s", file);
     delete h;
     return nullptr;

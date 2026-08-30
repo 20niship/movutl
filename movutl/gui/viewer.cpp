@@ -5,6 +5,7 @@
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/config.hpp>
 #include <movutl/asset/image.hpp>
+#include <movutl/core/profiler.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/gui/viewer.hpp>
 
@@ -19,6 +20,7 @@ ImVec2 screen_to_comp(const ImVec2& p, const ImVec2& img_min, const ImVec2& disp
 } // namespace
 
 void ViewerWindow::Update() {
+  MOVUTL_ZONE_SCOPED_N("ViewerWindow::Update");
   ImGui::Begin("Viewer");
   auto comp = Composition::GetActiveComp();
   if(!comp) {
@@ -88,7 +90,6 @@ void ViewerWindow::Update() {
 
   if(Config::Get()->show_viewer_ruler) {
     float px_per_x = disp_size.x / cmp_w;
-    float px_per_y = disp_size.y / cmp_h;
     int di         = 100;
     if(px_per_x > 0) {
       float raw = 50.0f / px_per_x;
@@ -103,15 +104,17 @@ void ViewerWindow::Update() {
       else
         di = 500;
     }
+    constexpr float kTick = 8.0f;  // 目盛り線の長さ
+    constexpr float kGap  = 14.0f; // ラベル表示用にティックからさらに離す量
     for(int i = 0; i < (int)cmp_w; i += di) {
       auto p = comp_to_screen(ImVec2((float)i, 0), img_min, disp_size, cmp_w, cmp_h);
-      dl->AddLine(ImVec2(p.x, img_min.y), ImVec2(p.x, img_min.y + 8), IM_COL32(255, 255, 0, 200));
-      dl->AddText(ImVec2(p.x + 2, img_min.y), IM_COL32(255, 255, 0, 200), std::to_string(i).c_str());
+      dl->AddLine(ImVec2(p.x, img_min.y - kTick), ImVec2(p.x, img_min.y), IM_COL32(255, 255, 0, 200));
+      dl->AddText(ImVec2(p.x + 2, img_min.y - kGap), IM_COL32(255, 255, 0, 200), std::to_string(i).c_str());
     }
     for(int i = 0; i < (int)cmp_h; i += di) {
       auto p = comp_to_screen(ImVec2(0, (float)i), img_min, disp_size, cmp_w, cmp_h);
-      dl->AddLine(ImVec2(img_min.x, p.y), ImVec2(img_min.x + 8, p.y), IM_COL32(255, 255, 0, 200));
-      dl->AddText(ImVec2(img_min.x + 2, p.y), IM_COL32(255, 255, 0, 200), std::to_string(i).c_str());
+      dl->AddLine(ImVec2(img_min.x - kTick, p.y), ImVec2(img_min.x, p.y), IM_COL32(255, 255, 0, 200));
+      dl->AddText(ImVec2(img_min.x - kTick - 30.0f, p.y), IM_COL32(255, 255, 0, 200), std::to_string(i).c_str());
     }
   }
 

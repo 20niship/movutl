@@ -8,6 +8,7 @@
 #include <movutl/core/command.hpp>
 #include <movutl/core/filesystem.hpp>
 #include <movutl/core/logger.hpp>
+#include <movutl/core/profiler.hpp>
 #include <movutl/core/vector.hpp>
 #include <movutl/gui/gui.hpp>
 #include <stdio.h>
@@ -99,6 +100,7 @@ ImVec4 clear_color = ImColor(20, 20, 20);
 namespace detail {
 
 void gui_new_frame() {
+  MOVUTL_ZONE_SCOPED_N("gui_new_frame");
   auto window = GUIManager::Get()->glfw_window;
 
   bool should_close               = glfwWindowShouldClose(window);
@@ -154,6 +156,7 @@ void gui_new_frame() {
 }
 
 void gui_render_to_screen() {
+  MOVUTL_ZONE_SCOPED_N("gui_render_to_screen");
   auto window = GUIManager::Get()->glfw_window;
   int display_w, display_h;
   glfwGetFramebufferSize(window, &display_w, &display_h);
@@ -173,6 +176,11 @@ void gui_render_to_screen() {
 } // namespace detail
 
 void update() {
+  MOVUTL_ZONE_SCOPED_N("mu::update");
+  {
+    MOVUTL_ZONE_SCOPED_N("sleep");
+    std::this_thread::sleep_for(std::chrono::milliseconds(3));
+  }
   { // gui thread
     detail::gui_new_frame();
     detail::process_command_shortcuts();
@@ -185,6 +193,7 @@ void update() {
   { // renderer thread
     detail::update_renderer_thread();
   }
+  MOVUTL_FRAME_MARK;
 }
 
 void GUIManager::terminate() {

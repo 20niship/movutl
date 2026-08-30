@@ -5,6 +5,7 @@
 #include <movutl/asset/movie.hpp>
 #include <movutl/asset/project.hpp>
 #include <movutl/core/logger.hpp>
+#include <movutl/core/profiler.hpp>
 #include <movutl/core/time.hpp>
 #include <movutl/plugin/input.hpp>
 
@@ -42,49 +43,91 @@ void Image::to_cv_img(cv::Mat* cv_img) const {
   }
 }
 
-bool Image::copyto(Image* dst, const Vec2d& pmin) const {
+namespace {
+/// srcをdstへアルファブレンドで合成する。alpha=255(かつalpha_mul=1)なら単純上書きと同じ結果になる
+inline void blend_pixel(Vec4b& d, const Vec4b& src, float alpha_mul) {
+  float a = (src[3] / 255.0f) * alpha_mul;
+  if(a <= 0.0f) return;
+  if(a >= 1.0f) {
+    d = src;
+    return;
+  }
+  for(int c = 0; c < 3; c++) d[c] = (unsigned char)(src[c] * a + d[c] * (1.0f - a));
+  d[3] = (unsigned char)(a * 255.0f + d[3] * (1.0f - a));
+}
+} // namespace
+
+bool Image::copyto(Image* dst, const Vec2d& pmin, float alpha_mul) const {
+  MOVUTL_ZONE_SCOPED_N("Image::copyto(pmin)");
   MU_ASSERT(dst);
   if(this->width <= 0 || this->height <= 0 || dst->width <= 0 || dst->height <= 0) return false;
   int cw = dst->width;
   int ch = dst->height;
-  if(cw <= 0 || ch <= 0) return false;
 
-  for(int y = 0; y < this->height; y++) {
-    uint32_t* src_p = (uint32_t*)&data_[0] + y * width;
-    int dy          = pmin[1] + y;
-    if(dy < 0 || dy >= ch) continue;
-    uint32_t* dst_p = (uint32_t*)&dst->data_[0] + (dy)*cw;
-    for(int x = 0; x < this->width; x++) {
-      int dx = pmin[0] + x;
-      if(dx < 0 || dx >= cw) continue;
-      dst_p[dx] = src_p[x];
+  int px = (int)pmin[0];
+  int py = (int)pmin[1];
+  // 事前にクリップ範囲を求め、内側ループの毎ピクセル境界チェックを無くす
+  int x0 = std::max(0, -px);
+  int x1 = std::min((int)this->width, cw - px);
+  int y0 = std::max(0, -py);
+  int y1 = std::min((int)this->height, ch - py);
+  if(x0 >= x1 || y0 >= y1) return true;
+
+  // alphaを考慮しない(不透明かつalpha_mul=1)なら行単位memcpyで済む
+  bool opaque_copy = !this->has_alpha && alpha_mul >= 1.0f;
+  int row_w        = x1 - x0;
+  for(int y = y0; y < y1; y++) {
+    Vec4b* dst_row       = &dst->data_[(py + y) * cw + (px + x0)];
+    const Vec4b* src_row = &data_[y * width + x0];
+    if(opaque_copy) {
+      std::memcpy(dst_row, src_row, row_w * sizeof(Vec4b));
+    } else {
+      for(int x = 0; x < row_w; x++) blend_pixel(dst_row[x], src_row[x], alpha_mul);
     }
   }
   return true;
 }
 
-bool Image::copyto(Image* dst, const Vec2d& center, float scale, float angle) const {
-  if(angle == 0 && scale == 1.0) return this->copyto(dst, center);
-  // 角度をラジアンに変換
-  float rad = angle * M_PI / 180.0f;
-  float cx  = center[0];
-  float cy  = center[1];
+bool Image::copyto(Image* dst, const Vec2d& center, float scale, float angle, float alpha_mul) const {
+  MOVUTL_ZONE_SCOPED_N("Image::copyto(center,scale,angle)");
+  if(angle == 0 && scale == 1.0) return this->copyto(dst, center, alpha_mul);
+  if(this->width <= 0 || this->height <= 0 || dst->width <= 0 || dst->height <= 0) return false;
+  // centerはpmin相当。回転/拡大の軸はdst全体の中心ではなく画像自身の中心にする(旧実装は中心からズレた位置で意図せず移動して見えるバグがあった)
+  float rad     = angle * M_PI / 180.0f;
+  float cos_a   = std::cos(rad);
+  float sin_a   = std::sin(rad);
+  float true_cx = center[0] + this->width / 2.0f;
+  float true_cy = center[1] + this->height / 2.0f;
+  float src_cx  = this->width / 2.0f;
+  float src_cy  = this->height / 2.0f;
 
-  // 回転とスケールの逆行列成分を計算
-  float inv_cos = std::cos(rad) / scale;
-  float inv_sin = std::sin(rad) / scale;
+  // srcの4隅をdst空間へ順変換し、影響範囲のバウンディングボックスだけ走査する(旧実装は毎回dst全域を走査していた)
+  float half_w      = this->width / 2.0f * scale;
+  float half_h      = this->height / 2.0f * scale;
+  float corner_x[4] = {-half_w, half_w, -half_w, half_w};
+  float corner_y[4] = {-half_h, -half_h, half_h, half_h};
+  float min_x = std::numeric_limits<float>::max(), max_x = std::numeric_limits<float>::lowest();
+  float min_y = std::numeric_limits<float>::max(), max_y = std::numeric_limits<float>::lowest();
+  for(int i = 0; i < 4; i++) {
+    float bx = true_cx + corner_x[i] * cos_a - corner_y[i] * sin_a;
+    float by = true_cy + corner_x[i] * sin_a + corner_y[i] * cos_a;
+    min_x    = std::min(min_x, bx);
+    max_x    = std::max(max_x, bx);
+    min_y    = std::min(min_y, by);
+    max_y    = std::max(max_y, by);
+  }
+  int bbox_x0 = std::max(0, (int)std::floor(min_x));
+  int bbox_x1 = std::min((int)dst->width, (int)std::ceil(max_x));
+  int bbox_y0 = std::max(0, (int)std::floor(min_y));
+  int bbox_y1 = std::min((int)dst->height, (int)std::ceil(max_y));
 
-  float offset_x = cx - inv_cos * cx + inv_sin * cy;
-  float offset_y = cy - inv_sin * cx - inv_cos * cy;
-
-  int dst_x = dst->width / 2;
-  int dst_y = dst->height / 2;
-
-  for(int y = 0; y < dst->height; ++y) {
-    for(int x = 0; x < dst->width; ++x) {
-      // 出力画像の座標を元画像の座標に変換
-      float src_x = inv_cos * (x - dst_x) - inv_sin * (y - dst_y) + offset_x;
-      float src_y = inv_sin * (x - dst_x) + inv_cos * (y - dst_y) + offset_y;
+  for(int y = bbox_y0; y < bbox_y1; ++y) {
+    for(int x = bbox_x0; x < bbox_x1; ++x) {
+      // dst上のこのピクセルが、画像自身の中心を軸とした逆回転・逆拡大でsrcのどこに対応するか
+      float dx    = x - true_cx;
+      float dy    = y - true_cy;
+      float src_x = src_cx + (dx * cos_a + dy * sin_a) / scale;
+      float src_y = src_cy + (-dx * sin_a + dy * cos_a) / scale;
 
       // 元画像の座標が範囲内か確認
       int src_x_int = static_cast<int>(std::floor(src_x));
@@ -92,12 +135,33 @@ bool Image::copyto(Image* dst, const Vec2d& center, float scale, float angle) co
       int src_y_int = static_cast<int>(std::floor(src_y));
       if(src_y_int < 0 || src_y_int >= this->height) continue;
 
-      uint32_t* dst_p = (uint32_t*)&dst->data_[0] + y * dst->width;
-      uint32_t* src_p = (uint32_t*)&data_[0] + src_y_int * width;
-      dst_p[x]        = src_p[src_x_int];
+      blend_pixel(dst->data_[y * dst->width + x], data_[src_y_int * width + src_x_int], alpha_mul);
     }
   }
   return true;
+}
+
+void Image::outline(const Vec4b& border_color, int border_width) {
+  MOVUTL_ZONE_SCOPED_N("Image::outline");
+  if(border_width <= 0 || this->width == 0 || this->height == 0) return;
+
+  cv::Mat alpha_mat((int)this->height, (int)this->width, CV_8UC1);
+  for(size_t y = 0; y < this->height; y++)
+    for(size_t x = 0; x < this->width; x++) alpha_mat.at<uint8_t>((int)y, (int)x) = (*this)(x, y)[3];
+
+  cv::Mat dilated;
+  int k = border_width * 2 + 1;
+  cv::dilate(alpha_mat, dilated, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(k, k)));
+
+  for(size_t y = 0; y < this->height; y++) {
+    for(size_t x = 0; x < this->width; x++) {
+      Vec4b& px = (*this)(x, y);
+      if(px[3] > 0) continue; // 塗りがある部分はそのまま残す
+      uint8_t d = dilated.at<uint8_t>((int)y, (int)x);
+      if(d == 0) continue;
+      px = Vec4b(border_color[0], border_color[1], border_color[2], d);
+    }
+  }
 }
 
 bool Image::render(Composition* cmp) {
@@ -110,7 +174,7 @@ bool Image::render(Composition* cmp) {
 
   int base_x = this->width / 2 + trk.anchor[0] - cw / 2;
   int base_y = this->height / 2 + trk.anchor[1] - ch / 2;
-  return this->copyto(cmp->frame_final.get(), Vec2d(base_x, base_y));
+  return this->copyto(cmp->frame_final.get(), Vec2d(base_x, base_y), this->scale.avg(), this->rotation, this->alpha);
 }
 
 bool Image::load_file(const char* path) {

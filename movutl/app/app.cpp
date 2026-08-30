@@ -5,6 +5,7 @@
 #include <movutl/asset/project.hpp>
 #include <movutl/core/filesystem.hpp>
 #include <movutl/core/logger.hpp>
+#include <movutl/core/profiler.hpp>
 #include <movutl/core/time.hpp>
 #include <movutl/render2d/render2d.hpp>
 
@@ -30,6 +31,7 @@ void select_entts(const std::vector<Ref<Entity>>& entts) { detail::AppMain::Get(
 
 namespace detail {
 void update_renderer_thread() {
+  MOVUTL_ZONE_SCOPED_N("update_renderer_thread");
   auto cmp = Composition::GetActiveComp();
   if(!cmp) return;
   render_comp(cmp);
@@ -55,6 +57,7 @@ void AppMain::goto_frame(int frame) {
 }
 
 void AppMain::update_frame_impl() {
+  MOVUTL_ZONE_SCOPED_N("AppMain::update_frame_impl");
   if(!playing_) return;
   auto cmp = Composition::GetActiveComp();
   if(!cmp) return;

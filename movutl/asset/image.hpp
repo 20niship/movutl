@@ -1,6 +1,7 @@
 #pragma once
 
 #include <movutl/asset/entity.hpp>
+#include <movutl/core/profiler.hpp>
 #include <movutl/core/vector.hpp>
 
 namespace cv {
@@ -57,10 +58,17 @@ public:
     data_.clear();
   }
   void fill(const uint32_t& v) { std::memset(data_.data(), v, size_in_bytes()); }
+  void fill_rgba(const Vec4b& c) {
+    MOVUTL_ZONE_SCOPED_N("Image::fill_rgba");
+    for(size_t i = 0; i < size(); i++) (*this)[i] = c;
+  }
 
-  bool copyto(Image* dst, const Vec2d& pmin) const;
+  bool copyto(Image* dst, const Vec2d& pmin, float alpha_mul = 1.0f) const;
   bool copyto(Image* dst, const Vec2d& pmin, const Vec2d& pmax) const;
-  bool copyto(Image* dst, const Vec2d& center, float scale, float angle) const;
+  bool copyto(Image* dst, const Vec2d& center, float scale, float angle, float alpha_mul = 1.0f) const;
+
+  // 現在の不透明部分の外側にborder_widthピクセル分border_colorで縁取りを描く(塗り部分は上書きしない)
+  void outline(const Vec4b& border_color, int border_width);
 
   void resize(const Vec2d& size) {
     MU_ASSERT(size[0] > 0 && size[1] > 0);
@@ -88,8 +96,7 @@ public:
   Vec4b rgba(const size_t x, const size_t y) const {
     MU_ASSERT(x < width);
     MU_ASSERT(y < height);
-    constexpr int c = 4; // channels;
-    return data_[(y * width + x) * c];
+    return data_[y * width + x];
   }
 
   const Vec4b& operator()(const size_t x, const size_t y) const {
@@ -121,6 +128,9 @@ public:
   static Ref<Image> Create(const char* name, const char* path = "");
   static Ref<Image> Create(const char* name, int w, int h, ImageFormat format = ImageFormatRGBA, bool add_to_pj = true);
   bool load_file(const char* path);
+  virtual void reload_asset() override {
+    if(!path.empty()) load_file(path.c_str());
+  }
 
   virtual const cutil::PropInfo* getPropsInfo() const override; // MUFUNC_AUTOGEN
   virtual cutil::Prop getProps() const override;                // MUFUNC_AUTOGEN

@@ -68,6 +68,7 @@ inline void binding_custom_vectors(lua_State* L) {
   bind_custom_vectors<float, 2>(movutl, "Vec2");
   bind_custom_vectors<float, 3>(movutl, "Vec3");
   bind_custom_vectors<float, 4>(movutl, "Vec4");
+  bind_custom_vectors<unsigned char, 4>(movutl, "Vec4b");
 
   movutl.endModule();
 }

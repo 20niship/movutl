@@ -10,6 +10,7 @@
 #include <movutl/asset/image.hpp>
 #include <movutl/asset/movie.hpp>
 #include <movutl/asset/project.hpp>
+#include <movutl/asset/shape.hpp>
 #include <movutl/asset/text.hpp>
 #include <movutl/asset/track.hpp>
 #include <movutl/binding/imgui_binding.hpp>
@@ -23,6 +24,11 @@ extern "C" {
 #include <lua.h>
 #include <lualib.h>
 }
+
+namespace LuaIntf {
+// これが無いとRef<T>を返す関数の戻り値が常に"table expected, got nil"で壊れる(Ref<T>を値型Tと誤認識するため)
+LUA_USING_SHARED_PTR_TYPE(cutil::Ref)
+} // namespace LuaIntf
 
 namespace mu::detail {
 
@@ -90,6 +96,13 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addConstant("ImageFormatRGBA", ImageFormat::ImageFormatRGBA)
     .addConstant("ImageFormatGRAYSCALE", ImageFormat::ImageFormatGRAYSCALE)
     .endModule()
+    .beginModule("ShapeType")
+    .addConstant("ShapeType_Triangle", ShapeType::ShapeType_Triangle)
+    .addConstant("ShapeType_Rect", ShapeType::ShapeType_Rect)
+    .addConstant("ShapeType_Hexagon", ShapeType::ShapeType_Hexagon)
+    .addConstant("ShapeType_Circle", ShapeType::ShapeType_Circle)
+    .addConstant("ShapeType_Custom", ShapeType::ShapeType_Custom)
+    .endModule()
     .beginClass<Composition>("Composition")
     .addFunction("resize", &Composition::resize)
     .addFunction("str", &Composition::str)
@@ -103,12 +116,29 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addVariable("frame_edit", &Composition::frame_edit)   // Ref<Image>
     .addVariable("frame_temp", &Composition::frame_temp)   // Ref<Image>
     .addVariable("framerate", &Composition::framerate)     // float
+    .addVariable("bg_color", &Composition::bg_color)       // int32_t
     .addVariable("fstart", &Composition::fstart)           // int32_t
     .addVariable("fend", &Composition::fend)               // int32_t
     .addVariable("frame", &Composition::frame)             // int32_t
     .addVariable("audio_n", &Composition::audio_n)         // int32_t
     .addVariable("audio_ch", &Composition::audio_ch)       // int32_t
     .addVariable("layers", &Composition::layers)           // std::vector<TrackLayer>
+    .endClass()
+    .beginClass<Entity>("Entity")
+    .addFunction("getType", &Entity::getType)
+    .addStaticFunction("CreateEntity", &Entity::CreateEntity)
+    .addStaticFunction("Find", &Entity::Find)
+    .addFunction("getSaveProps", &Entity::getSaveProps)
+    .addStaticFunction("fromSaveProps", &Entity::fromSaveProps)
+    .addFunction("get_comp", &Entity::get_comp)
+    .addFunction("get_input_plugin", &Entity::get_input_plugin)
+    .addFunction("get_input_handle", &Entity::get_input_handle)
+    .addFunction("get_info", &Entity::get_info)
+    .addFunction("reload_asset", &Entity::reload_asset)
+    .addFunction("visible", &Entity::visible)
+    .addVariable("name", &Entity::name)   // cutil::Str
+    .addVariable("guid_", &Entity::guid_) // uint64_t
+    .addVariable("trk", &Entity::trk)     // TrackObject
     .endClass()
     .beginClass<EntityInfo>("EntityInfo")
     .addFunction("str", &EntityInfo::str)
@@ -131,12 +161,15 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("size_in_bytes", &Image::size_in_bytes)
     .addFunction("reset", &Image::reset)
     .addFunction("fill", &Image::fill)
+    .addFunction("fill_rgba", &Image::fill_rgba)
+    .addFunction("outline", &Image::outline)
     .addFunction("rgba", &Image::rgba)
     .addFunction("imshow", &Image::imshow)
     .addFunction("empty", &Image::empty)
     .addFunction("channels", &Image::channels)
     .addFunction("getType", &Image::getType)
     .addFunction("load_file", &Image::load_file)
+    .addFunction("reload_asset", &Image::reload_asset)
     .addVariable("width", &Image::width)         // unsigned int
     .addVariable("height", &Image::height)       // unsigned int
     .addVariable("dirty_", &Image::dirty_)       // int16_t
@@ -152,6 +185,7 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addStaticFunction("Create", &Movie::Create)
     .addFunction("load_file", &Movie::load_file)
     .addFunction("getType", &Movie::getType)
+    .addFunction("reload_asset", &Movie::reload_asset)
     .addVariable("pos", &Movie::pos)                   // Vec3
     .addVariable("scale", &Movie::scale)               // Vec2
     .addVariable("rotation", &Movie::rotation)         // float
@@ -176,19 +210,35 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addVariable("compos_", &Project::compos_)             // std::vector<Ref<Composition> >
     .addVariable("main_comp_idx", &Project::main_comp_idx) // int
     .endClass()
+    .beginClass<ShapeEntt>("ShapeEntt")
+    .addStaticFunction("Create", &ShapeEntt::Create)
+    .addFunction("getType", &ShapeEntt::getType)
+    .addVariable("pos_", &ShapeEntt::pos_)                   // Vec3
+    .addVariable("size_", &ShapeEntt::size_)                 // Vec2
+    .addVariable("rot_", &ShapeEntt::rot_)                   // float
+    .addVariable("alpha_", &ShapeEntt::alpha_)               // uint8_t
+    .addVariable("color_", &ShapeEntt::color_)               // Vec4b
+    .addVariable("shape_type_", &ShapeEntt::shape_type_)     // int32_t
+    .addVariable("custom_path", &ShapeEntt::custom_path)     // std::string
+    .addVariable("border_color_", &ShapeEntt::border_color_) // Vec4b
+    .addVariable("border_width_", &ShapeEntt::border_width_) // int32_t
+    .endClass()
     .beginClass<TextEntt>("TextEntt")
     .addStaticFunction("Create", &TextEntt::Create)
     .addFunction("getType", &TextEntt::getType)
-    .addVariable("dirty_", &TextEntt::dirty_)     // int32_t
-    .addVariable("pos_", &TextEntt::pos_)         // Vec3
-    .addVariable("scale_x_", &TextEntt::scale_x_) // float
-    .addVariable("scale_y_", &TextEntt::scale_y_) // float
-    .addVariable("rot_", &TextEntt::rot_)         // float
-    .addVariable("speed", &TextEntt::speed)       // float
-    .addVariable("alpha_", &TextEntt::alpha_)     // uint8_t
-    .addVariable("font", &TextEntt::font)         // std::string
-    .addVariable("text", &TextEntt::text)         // std::string
-    .addVariable("separate", &TextEntt::separate) // bool
+    .addVariable("dirty_", &TextEntt::dirty_)               // int32_t
+    .addVariable("pos_", &TextEntt::pos_)                   // Vec3
+    .addVariable("scale_x_", &TextEntt::scale_x_)           // float
+    .addVariable("scale_y_", &TextEntt::scale_y_)           // float
+    .addVariable("rot_", &TextEntt::rot_)                   // float
+    .addVariable("speed", &TextEntt::speed)                 // float
+    .addVariable("alpha_", &TextEntt::alpha_)               // uint8_t
+    .addVariable("font", &TextEntt::font)                   // std::string
+    .addVariable("text", &TextEntt::text)                   // std::string
+    .addVariable("separate", &TextEntt::separate)           // bool
+    .addVariable("color_", &TextEntt::color_)               // Vec4b
+    .addVariable("border_color_", &TextEntt::border_color_) // Vec4b
+    .addVariable("border_width_", &TextEntt::border_width_) // int32_t
     .endClass()
     .beginClass<TrackLayer>("TrackLayer")
     .addFunction("find_entt", &TrackLayer::find_entt)
@@ -221,6 +271,7 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addVariable("ratio", &WorkspaceEntry::ratio)             // float
     .endClass()
     .addFunction("add_new_audio_track", static_cast<bool (*)(const char*, const char*, int, int)>(&add_new_audio_track))
+    .addFunction("add_new_shape_track", static_cast<Ref<ShapeEntt> (*)(const char*, int, int, ShapeType)>(&add_new_shape_track))
     .addFunction("add_new_track", static_cast<bool (*)(const char*, EntityType, int, int)>(&add_new_track))
     .addFunction("add_new_video_track", static_cast<Ref<Entity> (*)(const char*, const char*, int, int)>(&add_new_video_track))
     .addFunction("apply_imgui_style", static_cast<void (*)(const char*)>(&apply_imgui_style))
@@ -245,6 +296,7 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("render_main_menu_bar", static_cast<void (*)()>(&render_main_menu_bar))
     .addFunction("render_status_bar", static_cast<void (*)()>(&render_status_bar))
     .addFunction("reset", static_cast<void (*)()>(&reset))
+    .addFunction("run_lua_file", static_cast<bool (*)(const char*)>(&run_lua_file))
     .addFunction("save_project", static_cast<void (*)()>(&save_project))
     .addFunction("save_project_as", static_cast<void (*)(const char*)>(&save_project_as))
     .addFunction("select_entt", static_cast<void (*)(const Ref<Entity>&)>(&select_entt))

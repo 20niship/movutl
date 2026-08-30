@@ -35,6 +35,15 @@ enum EntityType {
 };
 MOVUTL_DEFINE_ENUM_ATTR_BITFLAGS(EntityType);
 
+// EntityType_Polygon(ShapeEntt)が描画する図形の種類
+enum ShapeType {
+  ShapeType_Triangle = 0,
+  ShapeType_Rect     = 1,
+  ShapeType_Hexagon  = 2,
+  ShapeType_Circle   = 3,
+  ShapeType_Custom   = 4, // custom_pathで指定した任意の多角形
+};
+
 // プラグインがそのファイルを開いた時のインスタンスを返すときのポインタ
 typedef void* InputHandle;
 
@@ -86,6 +95,9 @@ public:
   InputPluginTable* get_input_plugin() const { return in_plg_; }
   InputHandle get_input_handle() const { return in_handle_; }
   const EntityInfo& get_info() const { return info; }
+
+  // 複製後に呼ばれる。素材を持つEntityはoverrideしload_file()等を呼び直し、複製元と独立したプラグインインスタンスを持たせる
+  virtual void reload_asset() {}
 
   bool visible(int frame) const { return trk.visible(frame); }
   virtual ~Entity();

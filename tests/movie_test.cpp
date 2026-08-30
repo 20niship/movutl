@@ -1,11 +1,15 @@
+#include <chrono>
 #include <cstdlib>
 #include <cstring>
 #include <doctest/doctest.h>
+#include <movutl/app/app.hpp>
+#include <movutl/asset/composition.hpp>
 #include <movutl/asset/image.hpp>
 #include <movutl/asset/movie.hpp>
 #include <movutl/core/filesystem.hpp>
 #include <movutl/plugin/input.hpp>
 #include <movutl/plugin/plugin.hpp>
+#include <movutl/render2d/render2d.hpp>
 
 using namespace mu;
 
@@ -116,4 +120,87 @@ TEST_CASE("FFmpeg Video Reader: 複数動画の同時読み込み") {
   CHECK(same_image(&ia, &ra3));
   REQUIRE(read_frame(&mb, 5, &ib));
   CHECK(same_image(&ib, &rb5));
+}
+
+TEST_CASE("Movie::render: start_frame_とspeedが素材内フレーム位置に反映される") {
+  const std::string path = gen_test_video("mvtest_speed.mp4", "testsrc=duration=3:size=160x120:rate=10");
+
+  /// 参照用: 素材のフレーム7,9,11を直接読む
+  Movie ref;
+  REQUIRE(ref.load_file(path.c_str()));
+  Image r7, r9, r11;
+  REQUIRE(read_frame(&ref, 7, &r7));
+  REQUIRE(read_frame(&ref, 9, &r9));
+  REQUIRE(read_frame(&ref, 11, &r11));
+
+  auto mov = Movie::Create("speed_test_movie", path.c_str());
+  REQUIRE(mov->get_input_plugin());
+  mov->start_frame_ = 7;      // 素材の7フレーム目から再生開始
+  mov->speed        = 200.0f; // 倍速再生 (トラック上2フレーム進む毎に素材は4フレーム進む)
+  mov->trk.fstart   = 0;
+  mov->trk.fend     = (int)mov->get_info().nframes;
+
+  auto comp = Composition("SpeedTestComp", mov->get_info().width, mov->get_info().height, 10);
+  comp.insert_entity(mov, -1);
+
+  comp.frame = 0;
+  REQUIRE(render_comp(&comp));
+  CHECK(same_image(comp.frame_final.get(), &r7)); // start_frame_起点
+
+  comp.frame = 1;
+  REQUIRE(render_comp(&comp));
+  CHECK(same_image(comp.frame_final.get(), &r9)); // 1フレーム経過 * speed200% = 素材2フレーム進む
+
+  comp.frame = 2;
+  REQUIRE(render_comp(&comp));
+  CHECK(same_image(comp.frame_final.get(), &r11));
+}
+
+TEST_CASE("duplicate_asset: Movieの複製が独立した読み込みプラグインのインスタンスを持つ") {
+  const std::string path = gen_test_video("mvtest_dup.mp4", "testsrc=duration=2:size=160x120:rate=10");
+  auto mov               = Movie::Create("dup_test_movie", path.c_str());
+  REQUIRE(mov->get_input_plugin());
+  REQUIRE(mov->get_input_handle());
+
+  auto clone_e = duplicate_asset(mov);
+  REQUIRE(clone_e);
+  auto clone = dynamic_cast<Movie*>(clone_e.get());
+  REQUIRE(clone);
+  CHECK(clone->get_input_plugin());
+  CHECK(clone->get_input_handle());
+  CHECK(clone->get_input_handle() != mov->get_input_handle()); // 元と複製でハンドルが別インスタンスであること
+
+  /// 複製後、両方から独立してフレームをrenderできること(render()の戻り値で検証、render_compは常にtrueを返すため使わない)
+  mov->trk.fstart = clone->trk.fstart = 0;
+  mov->trk.fend = clone->trk.fend = (int)mov->get_info().nframes;
+
+  Composition comp("DupTestComp", mov->get_info().width, mov->get_info().height, 10);
+  comp.frame_final = cutil::make_ref<Image>(comp.size[0], comp.size[1]);
+  comp.frame       = 3;
+  CHECK(mov->render(&comp));
+
+  Composition comp2("DupTestComp2", clone->get_info().width, clone->get_info().height, 10);
+  comp2.frame_final = cutil::make_ref<Image>(comp2.size[0], comp2.size[1]);
+  comp2.frame       = 3;
+  CHECK(clone->render(&comp2));
+}
+
+/// AVCodecContext::pkt_timebase未設定でframe->ptsがAV_NOPTS_VALUEになり毎フレームEOFまでデコードし続けていた不具合の再発防止
+TEST_CASE("PERF: 動画の逐次再生でrender_compが極端に遅くならないこと") {
+  using namespace std::chrono;
+  auto mov = Movie::Create("bench_movie", "../assets/movies/big_buck_bunny_360_10s.mp4");
+  REQUIRE(mov->get_input_plugin());
+  auto comp       = Composition("BenchComp", mov->get_info().width, mov->get_info().height, 30);
+  mov->trk.fstart = 0;
+  mov->trk.fend   = (int)mov->get_info().nframes;
+  comp.insert_entity(mov, -1);
+
+  const int N = 30;
+  auto t0     = high_resolution_clock::now();
+  for(int i = 0; i < N; i++) {
+    comp.frame = i;
+    render_comp(&comp);
+  }
+  double avg_ms = duration<double, std::milli>(high_resolution_clock::now() - t0).count() / N;
+  CHECK_MESSAGE(avg_ms < 50.0, "render_comp avg=" << avg_ms << "ms (逐次再生が壊れて毎フレームEOFまでデコードしている可能性)");
 }

@@ -19,6 +19,16 @@ void add_entities_ui() {
   ImGui::NextColumn();
   if(ImGui::Button(ICON_FA_MUSIC " 音声")) add_new_track("sound", EntityType_Audio, 0, 100);
   ImGui::NextColumn();
+  if(ImGui::Button(ICON_FA_DRAW_POLYGON " 図形")) ImGui::OpenPopup("##ADD_SHAPE_POPUP");
+  if(ImGui::BeginPopup("##ADD_SHAPE_POPUP")) {
+    if(ImGui::Selectable("三角形")) add_new_shape_track("shape", 0, 100, ShapeType_Triangle);
+    if(ImGui::Selectable("四角形")) add_new_shape_track("shape", 0, 100, ShapeType_Rect);
+    if(ImGui::Selectable("六角形")) add_new_shape_track("shape", 0, 100, ShapeType_Hexagon);
+    if(ImGui::Selectable("円")) add_new_shape_track("shape", 0, 100, ShapeType_Circle);
+    if(ImGui::Selectable("カスタムパス")) add_new_shape_track("shape", 0, 100, ShapeType_Custom);
+    ImGui::EndPopup();
+  }
+  ImGui::NextColumn();
   ImGui::Columns(1);
   ImGui::EndGroup();
 }

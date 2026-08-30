@@ -82,6 +82,14 @@ movutl.EntityType = {}
 ---@field ImageFormatGRAYSCALE number
 movutl.ImageFormat = {}
 
+---@class ShapeType
+---@field ShapeType_Triangle number
+---@field ShapeType_Rect number
+---@field ShapeType_Hexagon number
+---@field ShapeType_Circle number
+---@field ShapeType_Custom number
+movutl.ShapeType = {}
+
 ---@class Composition
 ---@field guid number
 ---@field flag Flag
@@ -89,6 +97,7 @@ movutl.ImageFormat = {}
 ---@field frame_edit Ref<Image>
 ---@field frame_temp Ref<Image>
 ---@field framerate number
+---@field bg_color number
 ---@field fstart number
 ---@field fend number
 ---@field frame number
@@ -102,6 +111,7 @@ movutl.Composition.frame_final = nil
 movutl.Composition.frame_edit = nil
 movutl.Composition.frame_temp = nil
 movutl.Composition.framerate = 30.0 f
+movutl.Composition.bg_color = ( int32_t ) 0xFF000000
 movutl.Composition.fstart = 0
 movutl.Composition.fend = 200
 movutl.Composition.frame = 0
@@ -210,6 +220,15 @@ function movutl.Image:reset( ) end
 ---@return nil
 function movutl.Image:fill( v, ) end
 
+---@param c Vec4b 
+---@return nil
+function movutl.Image:fill_rgba( c, ) end
+
+---@param border_color Vec4b 
+---@param border_width number
+---@return nil
+function movutl.Image:outline( border_color, border_width, ) end
+
 ---@param x size_t
 ---@param y size_t
 ---@return Vec4b
@@ -231,6 +250,9 @@ function movutl.Image:getType( ) end
 ---@param path string
 ---@return boolean
 function movutl.Image:load_file( path, ) end
+
+---@return nil
+function movutl.Image:reload_asset( ) end
 
 ---@class Movie
 ---@field pos Vec3
@@ -264,6 +286,9 @@ function movutl.Movie:load_file( path, ) end
 
 ---@return EntityType
 function movutl.Movie:getType( ) end
+
+---@return nil
+function movutl.Movie:reload_asset( ) end
 
 ---@class Project
 ---@field path string
@@ -309,6 +334,35 @@ function movutl.Project:GetActiveCompo( ) end
 ---@return nil
 function movutl.Project:SetActiveCompo( idx, ) end
 
+---@class ShapeEntt
+---@field pos_ Vec3
+---@field size_ Vec2
+---@field rot_ number
+---@field alpha_ number
+---@field color_ Vec4b
+---@field shape_type_ number
+---@field custom_path string
+---@field border_color_ Vec4b
+---@field border_width_ number
+movutl.ShapeEntt = {}
+movutl.ShapeEntt.pos_ = Vec3()
+movutl.ShapeEntt.size_ = Vec2 ( 200 , 200 )
+movutl.ShapeEntt.rot_ = 0.0 f
+movutl.ShapeEntt.alpha_ = 255
+movutl.ShapeEntt.color_ = Vec4b ( 255 , 255 , 255 , 255 )
+movutl.ShapeEntt.shape_type_ = ShapeType_Rect
+movutl.ShapeEntt.custom_path = ""
+movutl.ShapeEntt.border_color_ = Vec4b ( 0 , 0 , 0 , 255 )
+movutl.ShapeEntt.border_width_ = 0
+
+---@param name string
+---@param type ShapeType
+---@return Ref<ShapeEntt>
+function movutl.ShapeEntt:Create( name, type, ) end
+
+---@return EntityType
+function movutl.ShapeEntt:getType( ) end
+
 ---@class TextEntt
 ---@field dirty_ number
 ---@field pos_ Vec3
@@ -320,6 +374,9 @@ function movutl.Project:SetActiveCompo( idx, ) end
 ---@field font string
 ---@field text string
 ---@field separate boolean
+---@field color_ Vec4b
+---@field border_color_ Vec4b
+---@field border_width_ number
 movutl.TextEntt = {}
 movutl.TextEntt.dirty_ = 0
 movutl.TextEntt.pos_ = Vec3()
@@ -331,6 +388,9 @@ movutl.TextEntt.alpha_ = 255
 movutl.TextEntt.font = ""
 movutl.TextEntt.text = ""
 movutl.TextEntt.separate = false
+movutl.TextEntt.color_ = Vec4b ( 255 , 255 , 255 , 255 )
+movutl.TextEntt.border_color_ = Vec4b ( 0 , 0 , 0 , 255 )
+movutl.TextEntt.border_width_ = 0
 
 ---@param text string
 ---@param font string
@@ -413,6 +473,13 @@ movutl.WorkspaceEntry.ratio = 0.5 f
 ---@param layer number
 ---@return boolean
 function movutl.add_new_audio_track( name, path, start, layer, )end
+
+---@param name string
+---@param start number
+---@param end number
+---@param type ShapeType
+---@return Ref<ShapeEntt>
+function movutl.add_new_shape_track( name, start, end, type, )end
 
 ---@param name string
 ---@param type EntityType
@@ -508,6 +575,10 @@ function movutl.render_status_bar( )end
 
 ---@return nil
 function movutl.reset( )end
+
+---@param path string
+---@return boolean
+function movutl.run_lua_file( path, )end
 
 ---@return nil
 function movutl.save_project( )end

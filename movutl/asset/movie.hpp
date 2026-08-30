@@ -28,6 +28,7 @@ public:
   bool load_file(const char* path);
   virtual EntityType getType() const override { return EntityType_Movie; }
   virtual bool render(Composition* cmp) override;
+  virtual void reload_asset() override { load_file(path_.c_str()); }
 
   virtual const cutil::PropInfo* getPropsInfo() const override; // MUFUNC_AUTOGEN
   virtual cutil::Prop getProps() const override;                // MUFUNC_AUTOGEN

@@ -94,6 +94,7 @@ cutil::Prop Composition::getProps() const {
   p.set<std::string>("name", name.c_str());
   p.set<Vec2>("size", Vec2(size));
   p.set<float>("framerate", framerate);
+  p.set<int32_t>("bg_color", bg_color);
   p.set<int32_t>("fstart", fstart);
   p.set<int32_t>("fend", fend);
   p.set<int32_t>("frame", frame);
@@ -104,6 +105,7 @@ void Composition::setProps(const cutil::Prop& p) {
   name      = cutil::get_or<std::string>(p, "name", name.c_str());
   size      = Vec2d(cutil::get_or<Vec2>(p, "size", Vec2(size)));
   framerate = cutil::get_or<float>(p, "framerate", framerate);
+  bg_color  = cutil::get_or<int32_t>(p, "bg_color", bg_color);
   fstart    = cutil::get_or<int32_t>(p, "fstart", fstart);
   fend      = cutil::get_or<int32_t>(p, "fend", fend);
   frame     = cutil::get_or<int32_t>(p, "frame", frame);

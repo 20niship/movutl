@@ -1,7 +1,9 @@
+#include <algorithm>
 #include <movutl/app/app.hpp>
 #include <movutl/asset/movie.hpp>
 #include <movutl/asset/project.hpp>
 #include <movutl/core/logger.hpp>
+#include <movutl/core/profiler.hpp>
 #include <movutl/plugin/input.hpp>
 
 namespace mu {
@@ -20,17 +22,21 @@ Ref<Movie> Movie::Create(const char* name, const char* path) {
 }
 
 bool Movie::render(Composition* cmp) {
+  MOVUTL_ZONE_SCOPED_N("Movie::render");
   MU_ASSERT(cmp);
   MU_ASSERT(cmp->frame_final);
   /// ロード失敗した動画は警告スパムを避けるため黙ってスキップ
   if(load_failed_ || in_plg_ == nullptr || in_handle_ == nullptr) return false;
   if(info.width <= 0 || info.height <= 0 || info.nframes <= 0) return false;
 
-  int tlocal = cmp->frame - trk.fstart;
-  if(tlocal < 0 || tlocal >= trk.fend - trk.fstart) {
+  int elapsed = cmp->frame - trk.fstart; // トラック上での経過フレーム数
+  if(elapsed < 0 || elapsed >= trk.fend - trk.fstart) {
     if(!loop_) return false;
-    tlocal %= (trk.fend - trk.fstart); // ループ再生
+    elapsed %= (trk.fend - trk.fstart); // ループ再生
   }
+  /// 開始フレーム(start_frame_)を起点に再生速度(speed, 100=等速)を適用した素材内フレーム位置
+  int tlocal = start_frame_ + (int)(elapsed * (speed / 100.0f));
+  tlocal     = std::clamp(tlocal, 0, (int)info.nframes - 1);
 
   if(!img_) img_ = cutil::make_ref<Image>();
   img_->resize(info.width, info.height);
@@ -51,7 +57,6 @@ bool Movie::render(Composition* cmp) {
   Vec2 center = Vec2(base_x, base_y) + trk.anchor;
   img_->copyto(cmp->frame_final.get(), center, this->scale.avg() / 100, this->rotation);
 
-  cmp->frame_final->dirty();
   return true;
 }
 

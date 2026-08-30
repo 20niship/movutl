@@ -26,7 +26,7 @@ struct FontRenderManager {
 
   struct FontFace {
   private:
-    void draw_bitmap(Image* img, int x, int y);
+    void draw_bitmap(Image* img, int x, int y, const Vec4b& color);
     void drawString(const char text[]);
     int fontsize_ = 0;
 
@@ -37,7 +37,7 @@ struct FontRenderManager {
     std::u32string u32str;
     FontFace() = default;
     FontFace(const std::string& path, int width = 16);
-    void render_text(const char* text, int space_x, int space_y, Image* img);
+    void render_text(const char* text, int space_x, int space_y, Image* img, const Vec4b& color = Vec4b(255, 255, 255, 255));
     Vec2d get_size(const char* text);
     void set_fontsize(int size);
     ~FontFace();
@@ -46,7 +46,7 @@ struct FontRenderManager {
 
   void init();
   void shutdown();
-  static bool renderText(Image* img, const char* text, int size, int sace_x, int space_y, const char* font_name);
+  static bool renderText(Image* img, const char* text, int size, int sace_x, int space_y, const char* font_name, const Vec4b& color = Vec4b(255, 255, 255, 255));
 };
 } // namespace detail
 } // namespace mu

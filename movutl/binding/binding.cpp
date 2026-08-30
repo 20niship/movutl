@@ -6,6 +6,7 @@ extern "C" {
 }
 #include "movutl/binding/imgui_custom_values.hpp"
 #include <LuaIntf/LuaIntf.h>
+#include <movutl/app/app.hpp>
 #include <movutl/binding/binding.hpp>
 #include <movutl/core/defines.hpp>
 #include <movutl/core/logger.hpp>
@@ -48,4 +49,16 @@ void terminate_lua_binding() {
 LuaBindingContext* LuaBindingContext::singleton_ = nullptr;
 
 } // namespace detail
+
+bool run_lua_file(const char* path) {
+  auto ctx = detail::LuaBindingContext::Get();
+  if(luaL_dofile(ctx->lua, path)) {
+    LOG_F(ERROR, "Failed to load lua file: %s", path);
+    const char* err = lua_tostring(ctx->lua, -1);
+    LOG_F(ERROR, "Error: %s", err);
+    return false;
+  }
+  return true;
+}
+
 } // namespace mu

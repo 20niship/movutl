@@ -21,13 +21,16 @@ void create_sample_video_data() {
   add_new_video_track("testname", "../assets/movies/big_buck_bunny_360_10s.mp4", 30, 0);
 }
 
-int main() {
+int main(int argc, char** argv) {
   mu::init();
-  create_sample_video_data();
-  util_show_main_cmp_result();
+  if(argc > 1) {
+    mu::run_lua_file(argv[1]);
+  } else {
+    create_sample_video_data();
+    util_show_main_cmp_result();
+  }
   while(!mu::should_terminate()) {
     mu::update();
-    std::this_thread::sleep_for(std::chrono::milliseconds(30));
   }
   mu::terminate();
 }

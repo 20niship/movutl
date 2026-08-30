@@ -3,6 +3,7 @@
 //
 #include <movutl/asset/image.hpp>
 #include <movutl/core/logger.hpp>
+#include <movutl/core/profiler.hpp>
 #include <movutl/graphics/GLTexture.hpp>
 
 
@@ -19,6 +20,7 @@ inline unsigned int get_opengl_format(ImageFormat t) {
   return GL_RGB; // Default
 }
 void GLTexture::set(const cutil::Ref<Image>& image) {
+  MOVUTL_ZONE_SCOPED_N("GLTexture::set");
   MU_ASSERT(image);
   if(!initialized_) {
     glGenTextures(1, &tex_id);
@@ -68,6 +70,7 @@ void GLTexture::bind() const { glBindTexture(GL_TEXTURE_2D, tex_id); }
 void GLTexture::unbind() const { glBindTexture(GL_TEXTURE_2D, 0); }
 
 void GLTexture::update_if_necessary() {
+  MOVUTL_ZONE_SCOPED_N("GLTexture::update_if_necessary");
   if(img_.expired()) return;
   Image* i = img_.lock().get();
   MU_ASSERT(i);
