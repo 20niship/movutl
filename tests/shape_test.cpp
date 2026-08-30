@@ -17,11 +17,11 @@ Composition make_test_comp(int w, int h) {
 } // namespace
 
 TEST_CASE("ShapeEntt::render 四角形を指定位置・指定色で描画する") {
-  auto comp    = make_test_comp(100, 80);
-  auto shp     = ShapeEntt::Create("rect", ShapeType_Rect);
-  shp->pos_    = Vec3(10, 10, 0);
-  shp->size_   = Vec2(30, 20);
-  shp->color_  = Vec4b(255, 0, 0, 255);
+  auto comp   = make_test_comp(100, 80);
+  auto shp    = ShapeEntt::Create("rect", ShapeType_Rect);
+  shp->pos_   = Vec3(10, 10, 0);
+  shp->size_  = Vec2(30, 20);
+  shp->color_ = Vec4b(255, 0, 0, 255);
   CHECK(shp->render(&comp));
 
   CHECK(comp.frame_final->rgba(20, 20) == Vec4b(255, 0, 0, 255)); // 矩形の内側
@@ -29,13 +29,13 @@ TEST_CASE("ShapeEntt::render 四角形を指定位置・指定色で描画する
 }
 
 TEST_CASE("ShapeEntt::render 枠線を指定色・太さで描画する") {
-  auto comp           = make_test_comp(100, 80);
-  auto shp            = ShapeEntt::Create("rect", ShapeType_Rect);
-  shp->pos_           = Vec3(10, 10, 0);
-  shp->size_          = Vec2(30, 20);
-  shp->color_         = Vec4b(255, 0, 0, 255);
-  shp->border_color_  = Vec4b(0, 255, 0, 255);
-  shp->border_width_  = 3;
+  auto comp          = make_test_comp(100, 80);
+  auto shp           = ShapeEntt::Create("rect", ShapeType_Rect);
+  shp->pos_          = Vec3(10, 10, 0);
+  shp->size_         = Vec2(30, 20);
+  shp->color_        = Vec4b(255, 0, 0, 255);
+  shp->border_color_ = Vec4b(0, 255, 0, 255);
+  shp->border_width_ = 3;
   CHECK(shp->render(&comp));
 
   CHECK(comp.frame_final->rgba(25, 20) == Vec4b(255, 0, 0, 255)); // 内側は塗り色のまま
@@ -56,11 +56,11 @@ TEST_CASE("ShapeEntt::render 円は矩形の隅を塗らない") {
 }
 
 TEST_CASE("ShapeEntt::render カスタムパスは点群のbboxに合わせて配置される") {
-  auto comp          = make_test_comp(100, 100);
-  auto shp           = ShapeEntt::Create("custom", ShapeType_Custom);
-  shp->pos_          = Vec3(0, 0, 0);
-  shp->custom_path   = "10,10;40,10;40,40;10,40"; // 30x30の正方形
-  shp->color_        = Vec4b(0, 0, 255, 255);
+  auto comp        = make_test_comp(100, 100);
+  auto shp         = ShapeEntt::Create("custom", ShapeType_Custom);
+  shp->pos_        = Vec3(0, 0, 0);
+  shp->custom_path = "10,10;40,10;40,40;10,40"; // 30x30の正方形
+  shp->color_      = Vec4b(0, 0, 255, 255);
   CHECK(shp->render(&comp));
 
   CHECK(comp.frame_final->rgba(25, 25) == Vec4b(0, 0, 255, 255)); // パス内部

@@ -41,7 +41,9 @@ std::vector<cv::Point2f> parse_custom_path(const std::string& s) {
       float x = std::stof(seg.substr(0, comma));
       float y = std::stof(seg.substr(comma + 1));
       pts.push_back({x, y});
-    } catch(...) { continue; }
+    } catch(...) {
+      continue;
+    }
   }
   return pts;
 }
@@ -51,13 +53,13 @@ std::vector<cv::Point2f> parse_custom_path(const std::string& s) {
 void ShapeEntt::re_render_image() {
   bool need = !img_ || last_type_ != shape_type_ || last_size_ != size_ || last_color_ != color_ || last_path_ != custom_path || last_border_color_ != border_color_ || last_border_width_ != border_width_;
   if(!need) return;
-  last_type_          = shape_type_;
-  last_size_          = size_;
-  last_color_         = color_;
-  last_path_          = custom_path;
-  last_border_color_  = border_color_;
-  last_border_width_  = border_width_;
-  shape_offset_        = Vec2(0, 0);
+  last_type_         = shape_type_;
+  last_size_         = size_;
+  last_color_        = color_;
+  last_path_         = custom_path;
+  last_border_color_ = border_color_;
+  last_border_width_ = border_width_;
+  shape_offset_      = Vec2(0, 0);
 
   std::vector<cv::Point2f> pts;
   float canvas_w, canvas_h;
@@ -131,8 +133,8 @@ bool ShapeEntt::render(Composition* cmp) {
 }
 
 Ref<ShapeEntt> ShapeEntt::Create(const char* name, ShapeType type) {
-  auto ent        = Ref<ShapeEntt>(new ShapeEntt());
-  ent->name       = name;
+  auto ent         = Ref<ShapeEntt>(new ShapeEntt());
+  ent->name        = name;
   ent->shape_type_ = type;
   return ent;
 }

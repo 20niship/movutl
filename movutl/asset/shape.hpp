@@ -24,14 +24,14 @@ public:
   ShapeEntt()  = default;
   ~ShapeEntt() = default;
 
-  Vec3 pos_;                          // 図形の左上を置く位置(comp座標系)
+  Vec3 pos_; // 図形の左上を置く位置(comp座標系)
   Vec2 size_          = Vec2(200, 200);
-  float rot_          = 0.0f;         // radians
+  float rot_          = 0.0f; // radians
   uint8_t alpha_      = 255;
   Vec4b color_        = Vec4b(255, 255, 255, 255);
   int32_t shape_type_ = ShapeType_Rect;
   std::string custom_path; // "x,y;x,y;..." (shape_type_がShapeType_Customの時のみ使用)
-  Vec4b border_color_ = Vec4b(0, 0, 0, 255);
+  Vec4b border_color_   = Vec4b(0, 0, 0, 255);
   int32_t border_width_ = 0; // 0の場合枠線なし
 
   static Ref<ShapeEntt> Create(const char* name, ShapeType type = ShapeType_Rect);

@@ -10,7 +10,6 @@
 #include <movutl/asset/image.hpp>
 #include <movutl/asset/movie.hpp>
 #include <movutl/asset/project.hpp>
-#include <movutl/asset/shape.hpp>
 #include <movutl/asset/text.hpp>
 #include <movutl/asset/track.hpp>
 #include <movutl/binding/imgui_binding.hpp>
@@ -24,11 +23,6 @@ extern "C" {
 #include <lua.h>
 #include <lualib.h>
 }
-
-namespace LuaIntf {
-// これが無いとRef<T>を返す関数の戻り値が常に"table expected, got nil"で壊れる(Ref<T>を値型Tと誤認識するため)
-LUA_USING_SHARED_PTR_TYPE(cutil::Ref)
-} // namespace LuaIntf
 
 namespace mu::detail {
 
@@ -103,10 +97,6 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addConstant("ShapeType_Circle", ShapeType::ShapeType_Circle)
     .addConstant("ShapeType_Custom", ShapeType::ShapeType_Custom)
     .endModule()
-    .beginClass<Entity>("Entity")
-    .addFunction("getType", &Entity::getType)
-    .addFunction("visible", &Entity::visible)
-    .endClass()
     .beginClass<Composition>("Composition")
     .addFunction("resize", &Composition::resize)
     .addFunction("str", &Composition::str)
@@ -150,6 +140,7 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("reset", &Image::reset)
     .addFunction("fill", &Image::fill)
     .addFunction("fill_rgba", &Image::fill_rgba)
+    .addFunction("outline", &Image::outline)
     .addFunction("rgba", &Image::rgba)
     .addFunction("imshow", &Image::imshow)
     .addFunction("empty", &Image::empty)
@@ -200,31 +191,19 @@ void generated_lua_binding_movutl(lua_State* L) {
     .beginClass<TextEntt>("TextEntt")
     .addStaticFunction("Create", &TextEntt::Create)
     .addFunction("getType", &TextEntt::getType)
-    .addVariable("dirty_", &TextEntt::dirty_)     // int32_t
-    .addVariable("pos_", &TextEntt::pos_)         // Vec3
-    .addVariable("scale_x_", &TextEntt::scale_x_) // float
-    .addVariable("scale_y_", &TextEntt::scale_y_) // float
-    .addVariable("rot_", &TextEntt::rot_)         // float
-    .addVariable("speed", &TextEntt::speed)       // float
-    .addVariable("alpha_", &TextEntt::alpha_)     // uint8_t
-    .addVariable("font", &TextEntt::font)         // std::string
-    .addVariable("text", &TextEntt::text)         // std::string
-    .addVariable("separate", &TextEntt::separate)             // bool
-    .addVariable("color_", &TextEntt::color_)                 // Vec4b
-    .addVariable("border_color_", &TextEntt::border_color_)   // Vec4b
-    .addVariable("border_width_", &TextEntt::border_width_)   // int32_t
-    .endClass()
-    .beginClass<ShapeEntt>("ShapeEntt")
-    .addFunction("getType", &ShapeEntt::getType)
-    .addVariable("pos_", &ShapeEntt::pos_)                     // Vec3
-    .addVariable("size_", &ShapeEntt::size_)                   // Vec2
-    .addVariable("rot_", &ShapeEntt::rot_)                     // float
-    .addVariable("alpha_", &ShapeEntt::alpha_)                 // uint8_t
-    .addVariable("color_", &ShapeEntt::color_)                 // Vec4b
-    .addVariable("shape_type_", &ShapeEntt::shape_type_)       // int32_t (ShapeType)
-    .addVariable("custom_path", &ShapeEntt::custom_path)       // std::string
-    .addVariable("border_color_", &ShapeEntt::border_color_)   // Vec4b
-    .addVariable("border_width_", &ShapeEntt::border_width_)   // int32_t
+    .addVariable("dirty_", &TextEntt::dirty_)               // int32_t
+    .addVariable("pos_", &TextEntt::pos_)                   // Vec3
+    .addVariable("scale_x_", &TextEntt::scale_x_)           // float
+    .addVariable("scale_y_", &TextEntt::scale_y_)           // float
+    .addVariable("rot_", &TextEntt::rot_)                   // float
+    .addVariable("speed", &TextEntt::speed)                 // float
+    .addVariable("alpha_", &TextEntt::alpha_)               // uint8_t
+    .addVariable("font", &TextEntt::font)                   // std::string
+    .addVariable("text", &TextEntt::text)                   // std::string
+    .addVariable("separate", &TextEntt::separate)           // bool
+    .addVariable("color_", &TextEntt::color_)               // Vec4b
+    .addVariable("border_color_", &TextEntt::border_color_) // Vec4b
+    .addVariable("border_width_", &TextEntt::border_width_) // int32_t
     .endClass()
     .beginClass<TrackLayer>("TrackLayer")
     .addFunction("find_entt", &TrackLayer::find_entt)
@@ -282,6 +261,7 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("render_main_menu_bar", static_cast<void (*)()>(&render_main_menu_bar))
     .addFunction("render_status_bar", static_cast<void (*)()>(&render_status_bar))
     .addFunction("reset", static_cast<void (*)()>(&reset))
+    .addFunction("run_lua_file", static_cast<bool (*)(const char*)>(&run_lua_file))
     .addFunction("save_project", static_cast<void (*)()>(&save_project))
     .addFunction("save_project_as", static_cast<void (*)(const char*)>(&save_project_as))
     .addFunction("select_entt", static_cast<void (*)(const Ref<Entity>&)>(&select_entt))

@@ -97,11 +97,11 @@ const cutil::PropInfo* TextEntt::getPropsInfo() const {
     p.fields.push_back(cutil::PropInfo::Field("separate", offsetof(TextEntt, separate), cutil::prop_info_of<bool>()));
     p.fields.back().set_label("個別オブジェクト");
     p.fields.push_back(cutil::PropInfo::Field("color_", offsetof(TextEntt, color_), cutil::prop_info_of<Vec4b>()));
-    p.fields.back().set_label("文字色");
+    p.fields.back().set_label("Vec4b");
     p.fields.push_back(cutil::PropInfo::Field("border_color_", offsetof(TextEntt, border_color_), cutil::prop_info_of<Vec4b>()));
-    p.fields.back().set_label("枠線の色");
+    p.fields.back().set_label("Vec4b");
     p.fields.push_back(cutil::PropInfo::Field("border_width_", offsetof(TextEntt, border_width_), cutil::prop_info_of<int32_t>()));
-    p.fields.back().set_label("枠線の太さ(0で非表示)");
+    p.fields.back().set_label("int32_t");
     return p;
   }();
   return &info;

@@ -82,6 +82,14 @@ movutl.EntityType = {}
 ---@field ImageFormatGRAYSCALE number
 movutl.ImageFormat = {}
 
+---@class ShapeType
+---@field ShapeType_Triangle number
+---@field ShapeType_Rect number
+---@field ShapeType_Hexagon number
+---@field ShapeType_Circle number
+---@field ShapeType_Custom number
+movutl.ShapeType = {}
+
 ---@class Composition
 ---@field guid number
 ---@field flag Flag
@@ -216,6 +224,11 @@ function movutl.Image:fill( v, ) end
 ---@return nil
 function movutl.Image:fill_rgba( c, ) end
 
+---@param border_color Vec4b 
+---@param border_width number
+---@return nil
+function movutl.Image:outline( border_color, border_width, ) end
+
 ---@param x size_t
 ---@param y size_t
 ---@return Vec4b
@@ -332,6 +345,9 @@ function movutl.Project:SetActiveCompo( idx, ) end
 ---@field font string
 ---@field text string
 ---@field separate boolean
+---@field color_ Vec4b
+---@field border_color_ Vec4b
+---@field border_width_ number
 movutl.TextEntt = {}
 movutl.TextEntt.dirty_ = 0
 movutl.TextEntt.pos_ = Vec3()
@@ -343,6 +359,9 @@ movutl.TextEntt.alpha_ = 255
 movutl.TextEntt.font = ""
 movutl.TextEntt.text = ""
 movutl.TextEntt.separate = false
+movutl.TextEntt.color_ = Vec4b ( 255 , 255 , 255 , 255 )
+movutl.TextEntt.border_color_ = Vec4b ( 0 , 0 , 0 , 255 )
+movutl.TextEntt.border_width_ = 0
 
 ---@param text string
 ---@param font string
@@ -425,6 +444,13 @@ movutl.WorkspaceEntry.ratio = 0.5 f
 ---@param layer number
 ---@return boolean
 function movutl.add_new_audio_track( name, path, start, layer, )end
+
+---@param name string
+---@param start number
+---@param end number
+---@param type ShapeType
+---@return Ref<ShapeEntt>
+function movutl.add_new_shape_track( name, start, end, type, )end
 
 ---@param name string
 ---@param type EntityType
@@ -520,6 +546,10 @@ function movutl.render_status_bar( )end
 
 ---@return nil
 function movutl.reset( )end
+
+---@param path string
+---@return boolean
+function movutl.run_lua_file( path, )end
 
 ---@return nil
 function movutl.save_project( )end

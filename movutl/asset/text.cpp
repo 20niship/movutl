@@ -49,14 +49,14 @@ void TextEntt::re_render_image() {
   text_offset_ = Vec2(0, 0);
   if(border_width_ > 0) {
     // outline()は既存の不透明部分の外側にしか描けないので、先にキャンバスへ枠線分の余白を足す
-    int pad      = border_width_;
-    auto padded  = cutil::make_ref<Image>();
+    int pad     = border_width_;
+    auto padded = cutil::make_ref<Image>();
     padded->resize((int)img_->width + pad * 2, (int)img_->height + pad * 2);
     padded->has_alpha = true;
     padded->fill(0);
     img_->copyto(padded.get(), Vec2d(pad, pad));
-    img_          = padded;
-    text_offset_  = Vec2(-(float)pad, -(float)pad);
+    img_         = padded;
+    text_offset_ = Vec2(-(float)pad, -(float)pad);
     img_->outline(border_color_, pad);
   }
 }

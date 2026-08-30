@@ -91,7 +91,7 @@ bool add_new_track(const char* name, EntityType type, int start, int end) {
       break;
     }
     case EntityType_Polygon: {
-      auto shp                = ShapeEntt::Create(name, ShapeType_Rect);
+      auto shp               = ShapeEntt::Create(name, ShapeType_Rect);
       Composition* main_comp = Composition::GetActiveComp();
       MU_ASSERT(main_comp);
       shp->trk.fstart = start;
