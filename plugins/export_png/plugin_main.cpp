@@ -1,6 +1,7 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
 
+#include <algorithm>
 #include <cstdio>
 #include <cstring>
 #include <filesystem>
@@ -39,7 +40,7 @@ static void* fn_open(const char* path, int, int, float, const cutil::Prop& props
   fs::path p = path;
   h->dir     = p.has_parent_path() ? p.parent_path() : fs::path(".");
   h->stem    = p.stem().string();
-  h->digits  = cutil::get_or<int32_t>(props, "digits", 6);
+  h->digits  = std::clamp(cutil::get_or<int32_t>(props, "digits", 6), 1, 10); // snprintf("%0*d")の幅指定に使うため妥当範囲にクランプする
   return h;
 }
 

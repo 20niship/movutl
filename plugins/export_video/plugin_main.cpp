@@ -121,12 +121,17 @@ static void* fn_open(const char* path, int width, int height, float framerate, c
     return nullptr;
   }
 
-  h->frame         = av_frame_alloc();
-  h->pkt           = av_packet_alloc();
+  h->frame = av_frame_alloc();
+  h->pkt   = av_packet_alloc();
+  if(h->frame == nullptr || h->pkt == nullptr) {
+    close_and_free(h);
+    delete h;
+    return nullptr;
+  }
   h->frame->format = h->enc_ctx->pix_fmt;
   h->frame->width  = width;
   h->frame->height = height;
-  if(h->frame == nullptr || h->pkt == nullptr || av_frame_get_buffer(h->frame, 32) < 0) {
+  if(av_frame_get_buffer(h->frame, 32) < 0) {
     close_and_free(h);
     delete h;
     return nullptr;
