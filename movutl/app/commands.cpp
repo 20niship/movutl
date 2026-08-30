@@ -28,8 +28,7 @@ struct FrameStepCommand final : mCommand {
   CommandStatus on_start() override {
     auto cmp = Composition::GetActiveComp();
     if(!cmp) return CommandStatus::Failed;
-    std::lock_guard<std::mutex> lock(cmp->mtx);
-    cmp->frame = std::clamp(cmp->frame + dir_, cmp->fstart, cmp->fend);
+    cmp->frame = std::clamp(cmp->frame.load() + dir_, cmp->fstart, cmp->fend);
     return CommandStatus::Finished;
   }
 

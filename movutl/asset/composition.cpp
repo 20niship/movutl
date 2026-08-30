@@ -95,7 +95,7 @@ cutil::Prop Composition::getProps() const {
   p.set<int32_t>("bg_color", bg_color);
   p.set<int32_t>("fstart", fstart);
   p.set<int32_t>("fend", fend);
-  p.set<int32_t>("frame", frame);
+  p.set<int32_t>("frame", frame.load());
   return p;
 }
 
@@ -106,7 +106,7 @@ void Composition::setProps(const cutil::Prop& p) {
   bg_color  = cutil::get_or<int32_t>(p, "bg_color", bg_color);
   fstart    = cutil::get_or<int32_t>(p, "fstart", fstart);
   fend      = cutil::get_or<int32_t>(p, "fend", fend);
-  frame     = cutil::get_or<int32_t>(p, "frame", frame);
+  frame.store(cutil::get_or<int32_t>(p, "frame", frame.load()));
 }
 
 

@@ -97,7 +97,6 @@ movutl.ShapeType = {}
 ---@field bg_color number
 ---@field fstart number
 ---@field fend number
----@field frame number
 ---@field audio_n number
 ---@field audio_ch number
 ---@field layers table
@@ -108,7 +107,6 @@ movutl.Composition.framerate = 30.0 f
 movutl.Composition.bg_color = ( int32_t ) 0xFF000000
 movutl.Composition.fstart = 0
 movutl.Composition.fend = 200
-movutl.Composition.frame = 0
 movutl.Composition.audio_n = 0
 movutl.Composition.audio_ch = 0
 movutl.Composition.layers = {}
@@ -137,6 +135,13 @@ function movutl.Composition:insert_entity( entt, layer, ) end
 
 ---@return Ref<Image>
 function movutl.Composition:render_current_frame_main_thread( ) end
+
+---@return number
+function movutl.Composition:get_frame( ) end
+
+---@param f number
+---@return nil
+function movutl.Composition:set_frame( f, ) end
 
 ---@class EntityInfo
 ---@field flag EntityType

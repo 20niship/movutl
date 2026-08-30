@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <cutil/prop.hpp>
 #include <cutil/string.hpp>
 #include <movutl/asset/image.hpp>
@@ -51,7 +52,8 @@ public:
 
   int32_t fstart = 0;   // 表示開始フレーム
   int32_t fend   = 200; // 表示終了フレーム
-  int32_t frame  = 0;   // 現在の表示フレーム
+  // 現在の表示フレーム。ワーカースレッドとGUIスレッドの双方から高頻度に読み書きされるためmtx無しで安全にアクセスできるようatomicにしている
+  std::atomic<int32_t> frame{0};
 
   // ---------- audio ----------
   int16_t* audio_p;
@@ -84,6 +86,10 @@ public:
 
   // 現在フレームをバックグラウンドキューを使わずその場で同期レンダリングして取得する(キャッシュ済みならそれを返す)
   Ref<Image> render_current_frame_main_thread();
+
+  // frameはstd::atomicのためLuaバインディング等から扱うにはこの2関数を使う
+  int32_t get_frame() const { return frame.load(); }
+  void set_frame(int32_t f) { frame.store(f); }
 };
 
 } // namespace mu

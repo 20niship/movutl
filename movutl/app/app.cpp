@@ -48,14 +48,12 @@ void AppMain::reset() {
   playing_ = false;
   auto cmp = Composition::GetActiveComp();
   if(!cmp) return;
-  std::lock_guard<std::mutex> lock(cmp->mtx);
   cmp->frame = cmp->fstart;
 }
 
 void AppMain::goto_frame(int frame) {
   auto cmp = Composition::GetActiveComp();
   if(!cmp) return;
-  std::lock_guard<std::mutex> lock(cmp->mtx);
   cmp->frame = std::clamp(frame, cmp->fstart, cmp->fend);
 }
 
@@ -68,7 +66,6 @@ void AppMain::update_frame_impl() {
   double now = mu_now_seconds();
   double fps = (double)cmp->framerate;
   if(now - last_frame_time_ >= 1.0 / fps) {
-    std::lock_guard<std::mutex> lock(cmp->mtx);
     cmp->frame++;
     if(cmp->frame > cmp->fend) cmp->frame = cmp->fstart;
     last_frame_time_ = now;

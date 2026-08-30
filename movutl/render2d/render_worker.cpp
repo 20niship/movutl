@@ -35,11 +35,7 @@ void RenderWorkerPool::request(Composition* comp, int frame, bool urgent) {
 
 void RenderWorkerPool::tick(Composition* comp, bool playing) {
   if(!comp) return;
-  int cur;
-  {
-    std::lock_guard<std::mutex> lock(comp->mtx);
-    cur = comp->frame;
-  }
+  int cur = comp->frame.load();
   if(!comp->cache.is_cached(cur)) request(comp, cur, true);
 
   // 空きキャッシュ枠分だけ先読みする(停止中は再生中より控えめに)
@@ -89,11 +85,7 @@ void RenderWorkerPool::worker_loop(size_t worker_idx) {
     }
     worker_frame_[worker_idx].store(job.frame);
     Ref<Image> out;
-    int cur_frame_for_evict;
-    {
-      std::lock_guard<std::mutex> lock(job.comp->mtx);
-      cur_frame_for_evict = job.comp->frame;
-    }
+    int cur_frame_for_evict = job.comp->frame.load();
     if(renderer.render_frame(job.comp, job.frame, out)) {
       job.comp->cache.insert(job.frame, out, cur_frame_for_evict);
       total_rendered_.fetch_add(1);

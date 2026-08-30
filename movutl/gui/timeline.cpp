@@ -226,15 +226,9 @@ bool BeginTimeline(const char* name, FrameT* frame, FrameT* start, FrameT* end, 
   }
 
 
-  // *frameはComposition::frameそのもの(ワーカーがレンダー中に一時的に書き換える)なのでmtx必須
-  int cur_frame_snapshot;
+  // *frameは呼び出し元(timeline_window.cpp)がComposition::frame(atomic)をスナップショットしたローカル変数
   {
-    auto* active = Composition::GetActiveComp();
-    std::unique_lock<std::mutex> lock;
-    if(active) lock = std::unique_lock<std::mutex>(active->mtx);
-    cur_frame_snapshot = *frame;
-
-    auto x = ctx_.f2view(cur_frame_snapshot);
+    auto x = ctx_.f2view(*frame);
 
     constexpr int scl_w = 5; // 現在フレームを移動させるバーの幅
     ImVec2 p1(x - scl_w, ctx_.all_area.y.min);
@@ -249,13 +243,12 @@ bool BeginTimeline(const char* name, FrameT* frame, FrameT* start, FrameT* end, 
     bool in_header_area = ImGui::IsMouseHoveringRect(ImVec2(h_.x.min, h_.y.min), ImVec2(h_.x.max, h_.y.max));
     bool lclick         = ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseDragging(ImGuiMouseButton_Left);
     if(in_header_area && lclick) {
-      *frame             = ctx_.view2f(ImGui::GetMousePos().x);
-      cur_frame_snapshot = *frame;
+      *frame = ctx_.view2f(ImGui::GetMousePos().x);
     }
   }
 
   ctx_.hidx      = 0;
-  ctx_.cur_frame = cur_frame_snapshot;
+  ctx_.cur_frame = *frame;
   // vis_start/vis_endはズーム/パン状態のため*start/*end(Composition境界)で上書きしない(上書きするとズームが毎フレーム巻き戻る)
   return open;
 }

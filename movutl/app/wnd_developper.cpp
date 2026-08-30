@@ -28,12 +28,7 @@ void DeveloperWindow::Update() {
 
   auto comp = Composition::GetActiveComp();
   if(comp) {
-    int cur_frame;
-    {
-      std::lock_guard<std::mutex> lock(comp->mtx);
-      cur_frame = comp->frame;
-    }
-    ImGui::Text("main threadフレーム: %d", cur_frame);
+    ImGui::Text("main threadフレーム: %d", comp->frame.load());
     ImGui::Text("キャッシュ済フレーム数: %zu", comp->cache.size());
   } else {
     ImGui::Text("main threadフレーム: (Compositionなし)");
