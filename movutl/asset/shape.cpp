@@ -139,38 +139,4 @@ Ref<ShapeEntt> ShapeEntt::Create(const char* name, ShapeType type) {
   return ent;
 }
 
-const cutil::PropInfo* ShapeEntt::getPropsInfo() const {
-  static const cutil::PropInfo info = [] {
-    cutil::PropInfo p;
-    p.fields.push_back(cutil::PropInfo::Field("pos_", offsetof(ShapeEntt, pos_), cutil::prop_info_of<Vec3>()));
-    p.fields.back().set_label("位置");
-    p.fields.push_back(cutil::PropInfo::Field("size_", offsetof(ShapeEntt, size_), cutil::prop_info_of<Vec2>()));
-    p.fields.back().set_label("サイズ");
-    p.fields.push_back(cutil::PropInfo::Field("rot_", offsetof(ShapeEntt, rot_), cutil::prop_info_of<float>()));
-    p.fields.back().set_label("回転");
-    p.fields.push_back(cutil::PropInfo::Field("alpha_", offsetof(ShapeEntt, alpha_), cutil::prop_info_of<uint8_t>()));
-    p.fields.back().set_label("透明度");
-    p.fields.push_back(cutil::PropInfo::Field("color_", offsetof(ShapeEntt, color_), cutil::prop_info_of<Vec4b>()));
-    p.fields.back().set_label("色");
-    p.fields.push_back(cutil::PropInfo::Field("shape_type_", offsetof(ShapeEntt, shape_type_), cutil::prop_info_of<int32_t>()));
-    p.fields.back().set_label("種類(0:三角 1:四角 2:六角 3:円 4:カスタム)");
-    p.fields.push_back(cutil::PropInfo::Field("custom_path", offsetof(ShapeEntt, custom_path), cutil::prop_info_of<std::string>()));
-    p.fields.back().set_label("カスタムパス(x,y;x,y;...)");
-    p.fields.push_back(cutil::PropInfo::Field("border_color_", offsetof(ShapeEntt, border_color_), cutil::prop_info_of<Vec4b>()));
-    p.fields.back().set_label("枠線の色");
-    p.fields.push_back(cutil::PropInfo::Field("border_width_", offsetof(ShapeEntt, border_width_), cutil::prop_info_of<int32_t>()));
-    p.fields.back().set_label("枠線の太さ(0で非表示)");
-    return p;
-  }();
-  return &info;
-}
-
-cutil::Prop ShapeEntt::getProps() const {
-  cutil::Prop p;
-  p.dump(this, getPropsInfo());
-  return p;
-}
-
-void ShapeEntt::setProps(const cutil::Prop& p) { (void)p.load_to(this, getPropsInfo()); }
-
 } // namespace mu

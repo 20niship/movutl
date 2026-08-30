@@ -334,6 +334,35 @@ function movutl.Project:GetActiveCompo( ) end
 ---@return nil
 function movutl.Project:SetActiveCompo( idx, ) end
 
+---@class ShapeEntt
+---@field pos_ Vec3
+---@field size_ Vec2
+---@field rot_ number
+---@field alpha_ number
+---@field color_ Vec4b
+---@field shape_type_ number
+---@field custom_path string
+---@field border_color_ Vec4b
+---@field border_width_ number
+movutl.ShapeEntt = {}
+movutl.ShapeEntt.pos_ = Vec3()
+movutl.ShapeEntt.size_ = Vec2 ( 200 , 200 )
+movutl.ShapeEntt.rot_ = 0.0 f
+movutl.ShapeEntt.alpha_ = 255
+movutl.ShapeEntt.color_ = Vec4b ( 255 , 255 , 255 , 255 )
+movutl.ShapeEntt.shape_type_ = ShapeType_Rect
+movutl.ShapeEntt.custom_path = ""
+movutl.ShapeEntt.border_color_ = Vec4b ( 0 , 0 , 0 , 255 )
+movutl.ShapeEntt.border_width_ = 0
+
+---@param name string
+---@param type ShapeType
+---@return Ref<ShapeEntt>
+function movutl.ShapeEntt:Create( name, type, ) end
+
+---@return EntityType
+function movutl.ShapeEntt:getType( ) end
+
 ---@class TextEntt
 ---@field dirty_ number
 ---@field pos_ Vec3
