@@ -9,6 +9,7 @@ void open_export_window(int plugin_index);
 class ExportWindow final : public UIPanel {
 public:
   virtual void Update() override;
+  virtual bool always_enabled_during_export() const override;
 };
 
 } // namespace mu

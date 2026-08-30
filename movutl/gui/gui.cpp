@@ -4,6 +4,7 @@
 #include <imgui_impl_opengl3.h>
 // --
 #include <movutl/app/app_impl.hpp>
+#include <movutl/app/export_state.hpp>
 #include <movutl/app/wnd_developper.hpp>
 #include <movutl/core/logger.hpp>
 #include <movutl/core/profiler.hpp>
@@ -38,7 +39,12 @@ void init_gui_panels() {
 void update_gui_panels() {
   MOVUTL_ZONE_SCOPED_N("update_gui_panels");
   auto a = GUIManager::Get();
-  for(auto& panel : a->panels) panel->Update();
+  for(auto& panel : a->panels) {
+    const bool disable = is_exporting() && !panel->always_enabled_during_export();
+    if(disable) ImGui::BeginDisabled();
+    panel->Update();
+    if(disable) ImGui::EndDisabled();
+  }
 }
 
 } // namespace detail
