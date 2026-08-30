@@ -64,7 +64,10 @@ void open_export_window(int plugin_index) {
 bool ExportWindow::always_enabled_during_export() const { return true; }
 
 void ExportWindow::Update() {
-  const bool running = is_exporting();
+  static bool was_running = false;
+  const bool running      = is_exporting();
+  if(was_running && !running) g_plugin_index = -1; // 完了/キャンセルで自動的にウィンドウを閉じる
+  was_running = running;
   if(!running && g_plugin_index < 0) return;
 
   if(ImGui::Begin("エクスポート")) {
