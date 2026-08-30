@@ -23,6 +23,8 @@ void activate_all_plugins() {
     if(p.fn_init) p.fn_init();
   for(auto& p : app->filters)
     if(p.fn_init) p.fn_init(nullptr, nullptr, &p.props, &p.defaults);
+  for(auto& p : app->output_plugins)
+    if(p.fn_init) p.fn_init(&p.props, &p.defaults);
 }
 
 void init_external_plugins() {
@@ -51,6 +53,12 @@ bool abi_register_input_plugin(const InputPluginTable* t) {
 bool abi_register_filter_plugin(const FilterPluginTable* t) {
   if(t == nullptr) return false;
   AppMain::Get()->filters.push_back(*t);
+  return true;
+}
+
+bool abi_register_output_plugin(const OutputPluginTable* t) {
+  if(t == nullptr) return false;
+  AppMain::Get()->output_plugins.push_back(*t);
   return true;
 }
 

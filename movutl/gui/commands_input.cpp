@@ -1,5 +1,6 @@
 #include <cctype>
 #include <imgui.h>
+#include <movutl/app/export_state.hpp>
 #include <movutl/core/command.hpp>
 #include <movutl/core/time.hpp>
 #include <movutl/gui/gui.hpp>
@@ -105,6 +106,11 @@ constexpr double kSequenceTimeoutSeconds = 1.0;
 
 // ImGui::IsKeyChordPressedには頼らず、押されたキーを自前でトラッキングしてvim風の複数キーシーケンスに対応する
 void process_command_shortcuts() {
+  if(is_exporting()) {
+    // エクスポート中は編集系ショートカットを一切受け付けず、Escキーのみキャンセルとして扱う
+    if(ImGui::IsKeyPressed(ImGuiKey_Escape, false)) request_cancel_export();
+    return;
+  }
   if(ImGui::IsAnyItemActive()) return;     // テキスト入力中などはショートカットを無視する
   if(ImGui::GetIO().WantTextInput) return; // InputText編集中の文字キー衝突(例: "s")を防ぐ
 

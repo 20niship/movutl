@@ -3,6 +3,7 @@
 #include <movutl/plugin/abi.h>
 #include <movutl/plugin/filter.hpp>
 #include <movutl/plugin/input.hpp>
+#include <movutl/plugin/output.hpp>
 
 #ifdef MOVUTL_PLATFORM_WINDOWS
 #include <windows.h>
@@ -37,6 +38,7 @@ void activate_all_plugins();
 // detail内の関数はpygen(AbiWriter)がABIContextへ自動登録(除外はpygen/config.pyのabi_exclude_symbols)
 bool abi_register_input_plugin(const InputPluginTable* table);
 bool abi_register_filter_plugin(const FilterPluginTable* table);
+bool abi_register_output_plugin(const OutputPluginTable* table);
 ABIContext make_abi(); // 実装は movutl/generated/generated_abi.cpp (pygen生成)
 
 } // namespace detail

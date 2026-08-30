@@ -1,5 +1,6 @@
 #include <IconsFontAwesome6.h>
 #include <filesystem>
+#include <movutl/app/export_state.hpp>
 #include <movutl/asset/project.hpp>
 #include <movutl/gui/gui.hpp>
 
@@ -26,6 +27,17 @@ void render_status_bar() {
   const float right_area_width = 200.0f;
 
   ImGui::Text(ICON_FA_FILE " %s", proj_name.c_str());
+
+  if(is_exporting()) {
+    auto& prog      = get_export_progress();
+    const int total = prog.total_frames.load();
+    const int done  = prog.current_frame.load();
+    ImGui::SameLine();
+    ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), ICON_FA_FILE_EXPORT " 出力中 %d / %d", done, total);
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(120.0f);
+    ImGui::ProgressBar(total > 0 ? (float)done / (float)total : 1.0f, ImVec2(120.0f, 0.0f));
+  }
 
   if(has_fps) {
     const float ms = 1000.0f / fps;

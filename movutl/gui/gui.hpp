@@ -15,8 +15,10 @@ class Entity;
 class UIPanel {
 public:
   virtual void Update() = 0;
-  UIPanel()             = default;
-  ~UIPanel()            = default;
+  // trueを返すパネルはエクスポート中もBeginDisabledでラップされない(ExportWindow自身のキャンセルUI等)
+  virtual bool always_enabled_during_export() const { return false; }
+  UIPanel()  = default;
+  ~UIPanel() = default;
 };
 
 // ワークスペース内の1ウィンドウ分のドッキング設定

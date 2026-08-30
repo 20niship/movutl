@@ -17,6 +17,7 @@ ABIContext make_abi() {
   abi.process_command_shortcuts = &process_command_shortcuts;
   abi.register_input_plugin     = &abi_register_input_plugin;
   abi.register_filter_plugin    = &abi_register_filter_plugin;
+  abi.register_output_plugin    = &abi_register_output_plugin;
   return abi;
 }
 

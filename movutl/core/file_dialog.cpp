@@ -3,12 +3,26 @@
 
 #ifdef MOVUTL_PLATFORM_WINDOWS
 #include <commdlg.h>
-#include <sstream>
+#include <cstring>
 #include <string>
 #include <vector>
 #include <windows.h>
 
 namespace mu {
+
+namespace {
+// OPENFILENAME::lpstrFilterはNUL区切り+末尾二重NUL終端形式。ostringstreamへ"\0"を<<すると空文字列扱いで挿入されないためpush_backで埋め込む
+std::string build_win32_filter(const std::vector<std::string>& extensions) {
+  std::string filter;
+  for(const auto& ext : extensions) {
+    filter += "*.";
+    filter += ext;
+    filter.push_back('\0');
+  }
+  filter.push_back('\0');
+  return filter;
+}
+} // namespace
 
 std::string select_file_dialog(const std::string& title, const std::vector<std::string>& extensions) {
   OPENFILENAME ofn;
@@ -19,17 +33,34 @@ std::string select_file_dialog(const std::string& title, const std::vector<std::
   ofn.lpstrFile   = szFile;
   ofn.nMaxFile    = sizeof(szFile);
 
-  std::ostringstream filter;
-  for(const auto& ext : extensions) {
-    filter << "*." << ext << "\0";
-  }
-  filter << "\0";
-  std::string filterStr = filter.str();
+  std::string filterStr = build_win32_filter(extensions);
   ofn.lpstrFilter       = filterStr.c_str();
   ofn.nFilterIndex      = 1;
   ofn.Flags             = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
   if(GetOpenFileName(&ofn) == TRUE) {
+    return std::string(szFile);
+  }
+  return "";
+}
+
+std::string select_save_file_dialog(const std::string& title, const std::string& default_name, const std::vector<std::string>& extensions) {
+  OPENFILENAME ofn;
+  char szFile[MAX_PATH] = {0};
+  std::strncpy(szFile, default_name.c_str(), sizeof(szFile) - 1);
+  ZeroMemory(&ofn, sizeof(ofn));
+  ofn.lStructSize = sizeof(ofn);
+  ofn.hwndOwner   = nullptr;
+  ofn.lpstrFile   = szFile;
+  ofn.nMaxFile    = sizeof(szFile);
+
+  std::string filterStr = build_win32_filter(extensions);
+  ofn.lpstrFilter       = filterStr.c_str();
+  ofn.nFilterIndex      = 1;
+  ofn.Flags             = OFN_OVERWRITEPROMPT;
+  ofn.lpstrTitle        = title.c_str();
+
+  if(GetSaveFileName(&ofn) == TRUE) {
     return std::string(szFile);
   }
   return "";
@@ -45,6 +76,14 @@ std::string select_file_dialog(const std::string& title, const std::vector<std::
   (void)title;
   (void)extensions;
   LOG_F(WARNING, "select_file_dialog: not implemented on this platform");
+  return "";
+}
+
+std::string select_save_file_dialog(const std::string& title, const std::string& default_name, const std::vector<std::string>& extensions) {
+  (void)title;
+  (void)default_name;
+  (void)extensions;
+  LOG_F(WARNING, "select_save_file_dialog: not implemented on this platform");
   return "";
 }
 } // namespace mu
