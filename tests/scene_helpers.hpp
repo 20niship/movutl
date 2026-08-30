@@ -1,4 +1,5 @@
 #pragma once
+#include <algorithm>
 #include <cutil/ref.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/movie.hpp>
@@ -8,24 +9,38 @@
 
 namespace mu::test {
 
+constexpr int kSceneWidth  = 1280;
+constexpr int kSceneHeight = 720;
+
 struct VisualTestScene {
   Ref<Composition> comp;
   Ref<ShapeEntt> rect;
   Ref<ShapeEntt> circle;
   Ref<TextEntt> text;
-  Ref<Movie> movie;
+  Ref<Movie> movie_a;
+  Ref<Movie> movie_b;
 };
 
-// video_pathを背景に、赤い矩形(左上)/緑の円(中央やや下)/白いテキスト(左下)を重ねた検証用シーンを構築する
-inline VisualTestScene make_visual_test_scene(const char* video_path, int nframes) {
-  VisualTestScene s;
-  s.movie = Movie::Create("bg_movie", video_path);
-  MU_ASSERT(s.movie->get_input_plugin());
-  s.movie->trk.fstart = 0;
-  s.movie->trk.fend   = nframes - 1;
+// assets/movies配下の2本の動画を全画面に拡大して重ね、再生開始フレームをずらした上へ赤い矩形(左上)/緑の円(中央やや下)/白いテキスト(左下)を重ねた検証用シーンを構築する
+inline Ref<Movie> make_fullscreen_movie(const char* name, const char* path, int fstart, int nframes) {
+  auto mov = Movie::Create(name, path);
+  MU_ASSERT(mov->get_input_plugin());
+  mov->trk.fstart      = fstart;
+  mov->trk.fend        = fstart + nframes - 1;
+  const float native_w = (float)mov->get_info().width;
+  const float native_h = (float)mov->get_info().height;
+  const float cover    = std::max((float)kSceneWidth / native_w, (float)kSceneHeight / native_h) * 100.0f;
+  mov->scale           = Vec2(cover, cover);
+  return mov;
+}
 
-  const auto w = (float)s.movie->get_info().width;
-  const auto h = (float)s.movie->get_info().height;
+inline VisualTestScene make_visual_test_scene(int nframes) {
+  VisualTestScene s;
+  s.movie_a = make_fullscreen_movie("bg_movie_a", "../assets/movies/big_buck_bunny_360_10s.mp4", 0, nframes);
+  s.movie_b = make_fullscreen_movie("bg_movie_b", "../assets/movies/sample-5s.mp4", 5, nframes); // 開始フレームをずらす
+
+  constexpr float w = (float)kSceneWidth;
+  constexpr float h = (float)kSceneHeight;
 
   s.rect             = ShapeEntt::Create("rect", ShapeType_Rect);
   s.rect->pos_       = Vec3(w * 0.05f, h * 0.05f, 0);
@@ -47,11 +62,12 @@ inline VisualTestScene make_visual_test_scene(const char* video_path, int nframe
   s.text->trk.fstart = 0;
   s.text->trk.fend   = nframes - 1;
 
-  s.comp = cutil::make_ref<Composition>("VisualTestComp", (int)w, (int)h, (int)s.movie->get_info().framerate);
-  s.comp->insert_entity(s.movie, -1);  // layer0(背景)
-  s.comp->insert_entity(s.rect, -1);   // layer1
-  s.comp->insert_entity(s.circle, -1); // layer2
-  s.comp->insert_entity(s.text, -1);   // layer3(最前面)
+  s.comp = cutil::make_ref<Composition>("VisualTestComp", kSceneWidth, kSceneHeight, (int)s.movie_a->get_info().framerate);
+  s.comp->insert_entity(s.movie_a, -1); // layer0(背景)
+  s.comp->insert_entity(s.movie_b, -1); // layer1(背景の上に重畳)
+  s.comp->insert_entity(s.rect, -1);    // layer2
+  s.comp->insert_entity(s.circle, -1);  // layer3
+  s.comp->insert_entity(s.text, -1);    // layer4(最前面)
   return s;
 }
 
