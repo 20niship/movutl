@@ -9,6 +9,7 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <movutl/app/app.hpp>
+#include <movutl/app/export_state.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/gui/timeline.hpp>
@@ -354,7 +355,7 @@ bool BeginLayer(Composition* cp, int layer_idx) {
     ImGui::PopID();
   } else {
     if(sidebar_hovered) ImGui::SetTooltip("name=%s", layer->name.c_str());
-    if(sidebar_hovered && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
+    if(!is_exporting() && sidebar_hovered && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
       ctx_.editing_layer_idx = layer_idx;
       std::snprintf(ctx_.editing_layer_buf, sizeof(ctx_.editing_layer_buf), "%s", layer->name.c_str());
     }
@@ -368,7 +369,7 @@ bool BeginLayer(Composition* cp, int layer_idx) {
   dl->AddRectFilled(sidebar.Min, sidebar.Max, IM_COL32(40, 40, 40, 255));
   if(!editing) dl->AddText(ImVec2(x, htop), IM_COL32(255, 255, 255, 100), layer->name.c_str());
 
-  if(sidebar_hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) ImGui::OpenPopup(("layer_ctx_" + std::to_string(layer_idx)).c_str());
+  if(!is_exporting() && sidebar_hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) ImGui::OpenPopup(("layer_ctx_" + std::to_string(layer_idx)).c_str());
   if(ImGui::BeginPopup(("layer_ctx_" + std::to_string(layer_idx)).c_str())) {
     if(ImGui::MenuItem("削除")) ctx_.pending_delete_layer = layer_idx;
     if(ImGui::MenuItem("上へ移動")) {
@@ -431,7 +432,7 @@ bool BeginTrack(const Ref<Entity>& entity) {
     }
   }
 
-  if(ctx_.dragging_entt == nullptr && hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+  if(!is_exporting() && ctx_.dragging_entt == nullptr && hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
     if(near_left)
       ctx_.drag_mode = 2;
     else if(near_right)
@@ -447,7 +448,7 @@ bool BeginTrack(const Ref<Entity>& entity) {
   }
 
   if(ctx_.dragging_entt == entity.get()) {
-    if(ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+    if(!is_exporting() && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
       std::lock_guard<std::mutex> lock(entity->mtx);
       int delta_f  = ctx_.view2f((int)mouse_x) - ctx_.drag_start_frame;
       auto nframes = (int)entity->get_info().nframes; // 素材の総フレーム数(動画/音声のみ>0)

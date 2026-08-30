@@ -1,5 +1,6 @@
 #include <movutl/app/app.hpp>
 #include <movutl/app/app_impl.hpp>
+#include <movutl/app/export_state.hpp>
 #include <movutl/asset/config.hpp>
 #include <movutl/asset/project.hpp>
 #include <movutl/gui/export_window.hpp>
@@ -23,6 +24,7 @@ void render_main_menu_bar() {
   if(!ImGui::BeginMainMenuBar()) {
     return;
   }
+  ImGui::BeginDisabled(is_exporting()); // エクスポート中はプロジェクト操作を一切禁止する(キャンセルはExportWindow/Escキーで行う)
   if(ImGui::BeginMenu("ファイル")) {
     if(ImGui::MenuItem("新規", "Ctrl+N")) new_project();
     if(ImGui::MenuItem("開く", "Ctrl+O")) open_path_popup([](const char* p) { open_project(p); });
@@ -60,6 +62,7 @@ void render_main_menu_bar() {
     }
     ImGui::EndMenu();
   }
+  ImGui::EndDisabled();
   ImGui::EndMainMenuBar();
 
   if(show_path_popup) {
