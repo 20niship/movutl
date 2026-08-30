@@ -21,7 +21,7 @@ OutputPluginTable* find_output_plugin(const char* name) {
 TEST_CASE("Output Plugin: PNG/MP4がregister_output_plugin経由でAppMainへ登録される") {
   detail::init_external_plugins();
   CHECK(find_output_plugin("PNG Image/Sequence") != nullptr);
-  CHECK(find_output_plugin("MP4 Video (FFmpeg)") != nullptr);
+  CHECK(find_output_plugin("Video (FFmpeg)") != nullptr);
 }
 
 TEST_CASE("Output Plugin: PNG Exporterでフレーム範囲を連番書き出しできる") {
@@ -57,9 +57,36 @@ TEST_CASE("Output Plugin: PNG Exporterでフレーム範囲を連番書き出し
   fs::remove_all(out_dir);
 }
 
+TEST_CASE("Output Plugin: Video Exporterはmov/aviなどmp4以外の拡張子でも自動でmuxerを選んで書き出せる") {
+  detail::init_external_plugins();
+  auto* plg = find_output_plugin("Video (FFmpeg)");
+  REQUIRE(plg != nullptr);
+  REQUIRE(plg->fn_init(&plg->props, &plg->defaults));
+
+  const fs::path out_dir = fs::temp_directory_path() / "movutl_export_video_ext_test";
+  fs::remove_all(out_dir);
+  fs::create_directories(out_dir);
+
+  for(const char* ext : {"mov", "avi", "mkv"}) {
+    const fs::path out_file = out_dir / (std::string("out.") + ext);
+    void* handle            = plg->fn_open(out_file.string().c_str(), 16, 16, 30.0f, plg->defaults);
+    REQUIRE(handle != nullptr);
+
+    Image img(16, 16);
+    img.fill_rgba(Vec4b(0, 0, 0, 255));
+    CHECK(plg->fn_write_frame(handle, &img, 0));
+    CHECK(plg->fn_close(handle));
+
+    CHECK(fs::exists(out_file));
+    CHECK(fs::file_size(out_file) > 0);
+  }
+
+  fs::remove_all(out_dir);
+}
+
 TEST_CASE("Output Plugin: MP4 Exporterで複数フレームをエンコードしてファイルが生成される") {
   detail::init_external_plugins();
-  auto* plg = find_output_plugin("MP4 Video (FFmpeg)");
+  auto* plg = find_output_plugin("Video (FFmpeg)");
   REQUIRE(plg != nullptr);
   REQUIRE(plg->fn_init != nullptr);
   REQUIRE(plg->fn_init(&plg->props, &plg->defaults));

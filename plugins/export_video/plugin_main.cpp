@@ -64,8 +64,9 @@ static void* fn_open(const char* path, int width, int height, float framerate, c
   h->width  = width;
   h->height = height;
 
-  if(avformat_alloc_output_context2(&h->fmt_ctx, nullptr, "mp4", path) < 0 || h->fmt_ctx == nullptr) {
-    LOG_F(ERROR, "Failed to allocate output context: %s", path);
+  // format_nameをnullptrにしてpathの拡張子(mp4/mov/mkv/avi等)からffmpegに自動でmuxerを選ばせる
+  if(avformat_alloc_output_context2(&h->fmt_ctx, nullptr, nullptr, path) < 0 || h->fmt_ctx == nullptr) {
+    LOG_F(ERROR, "Failed to allocate output context (unsupported extension?): %s", path);
     delete h;
     return nullptr;
   }
@@ -164,10 +165,10 @@ static bool fn_close(void* handle) {
 
 OutputPluginTable out_export_video = {
   0x00000102, // guid
-  "MP4 Video (FFmpeg)",
-  "FFmpeg(libx264)を用いたmp4動画書き出しプラグイン",
+  "Video (FFmpeg)",
+  "FFmpeg(libx264)を用いた動画書き出しプラグイン(mp4/mov/mkv/avi)",
   false, // is_sequence
-  {"mp4", "", "", "", "", "", "", "", "", ""},
+  {"mp4", "mov", "mkv", "avi", "", "", "", "", "", ""},
   fn_init,
   fn_exit,
   fn_open,
@@ -186,8 +187,8 @@ void plugin_exit(mu::ABIContext*) {}
 
 extern "C" void plugin_entry(mu::ABIContext*, mu::PluginTable* table) {
   std::memset(table, 0, sizeof(*table));
-  std::strncpy(table->name, "MP4 Exporter", sizeof(table->name) - 1);
-  std::strncpy(table->description, "FFmpegを用いたmp4動画書き出しプラグイン", sizeof(table->description) - 1);
+  std::strncpy(table->name, "Video Exporter", sizeof(table->name) - 1);
+  std::strncpy(table->description, "FFmpegを用いた動画書き出しプラグイン(mp4/mov/mkv/avi)", sizeof(table->description) - 1);
   table->plugin_init = &plugin_init;
   table->plugin_exit = &plugin_exit;
 }
