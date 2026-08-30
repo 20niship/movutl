@@ -42,6 +42,28 @@ _Pragma("clang diagnostic ignored \"-Wmissing-method-return-type\"")
     return "";
   }
 
+  std::string select_save_file_dialog(const std::string &title, const std::string &default_name, const std::vector<std::string> &extensions) {
+    @autoreleasepool {
+      NSSavePanel *panel = [NSSavePanel savePanel];
+      panel.title = [NSString stringWithUTF8String:title.c_str()];
+      if (!default_name.empty()) panel.nameFieldStringValue = [NSString stringWithUTF8String:default_name.c_str()];
+      if (!extensions.empty()) {
+        NSMutableArray<NSString *> *types = [NSMutableArray array];
+        for (const auto &ext : extensions) {
+          if (ext.empty()) continue;
+          [types addObject:[NSString stringWithUTF8String:ext.c_str()]];
+        }
+        if (types.count > 0) [panel setAllowedFileTypes:types];
+      }
+
+      if ([panel runModal] == NSModalResponseOK) {
+        return std::string([[[panel URL] path] UTF8String]);
+      }
+    }
+
+    return "";
+  }
+
 #if 0
 std::vector<std::string> get_available_fonts() {
   std::vector<std::string> fonts;
