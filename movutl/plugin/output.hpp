@@ -10,9 +10,9 @@ namespace mu {
 // 出力(エクスポート)プラグイン構造体。InputPluginTable/FilterPluginTableと同じ素朴なCテーブル設計。
 struct OutputPluginTable {
   uint64_t guid;
-  char name[MAX_NAME];       //	プラグインの名前
-  char information[256];     //	プラグインの情報
-  bool is_sequence = false;  //	true: フレーム毎に別ファイルへ書き出す(png連番等) / false: 1ファイルへ連続して書き込む(mp4等)
+  char name[MAX_NAME];                       //	プラグインの名前
+  char information[256];                     //	プラグインの情報
+  bool is_sequence = false;                  //	true: フレーム毎に別ファイルへ書き出す(png連番等) / false: 1ファイルへ連続して書き込む(mp4等)
   const char* extensions[MAX_SUPPORTED_EXT]; //	対応拡張子
 
   //	エクスポート開始前に呼ばれ、設定可能なパラメータをpropsに登録し、defaultsへ初期値を設定する(NULLなら呼ばれません)

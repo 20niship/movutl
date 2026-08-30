@@ -34,7 +34,7 @@ static bool fn_exit() { return true; }
 
 static void* fn_open(const char* path, int, int, float, const cutil::Prop& props) {
   if(path == nullptr) return nullptr;
-  auto h  = new(std::nothrow) PngExportHandle();
+  auto h = new(std::nothrow) PngExportHandle();
   if(h == nullptr) return nullptr;
   fs::path p = path;
   h->dir     = p.has_parent_path() ? p.parent_path() : fs::path(".");

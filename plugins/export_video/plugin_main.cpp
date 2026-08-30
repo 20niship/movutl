@@ -79,7 +79,7 @@ static void* fn_open(const char* path, int width, int height, float framerate, c
     return nullptr;
   }
 
-  h->stream = avformat_new_stream(h->fmt_ctx, nullptr);
+  h->stream  = avformat_new_stream(h->fmt_ctx, nullptr);
   h->enc_ctx = avcodec_alloc_context3(codec);
   if(h->stream == nullptr || h->enc_ctx == nullptr) {
     close_and_free(h);
@@ -87,15 +87,15 @@ static void* fn_open(const char* path, int width, int height, float framerate, c
     return nullptr;
   }
 
-  const int fps_num       = framerate > 0 ? (int)(framerate * 1000 + 0.5f) : 30000;
-  const int fps_den       = 1000;
-  h->enc_ctx->width       = width;
-  h->enc_ctx->height      = height;
-  h->enc_ctx->time_base   = AVRational{fps_den, fps_num};
-  h->enc_ctx->framerate   = AVRational{fps_num, fps_den};
-  h->enc_ctx->pix_fmt     = codec->pix_fmts ? codec->pix_fmts[0] : AV_PIX_FMT_YUV420P;
-  h->enc_ctx->bit_rate    = (int64_t)cutil::get_or<int32_t>(props, "bitrate_kbps", 8000) * 1000;
-  h->enc_ctx->gop_size    = 12;
+  const int fps_num     = framerate > 0 ? (int)(framerate * 1000 + 0.5f) : 30000;
+  const int fps_den     = 1000;
+  h->enc_ctx->width     = width;
+  h->enc_ctx->height    = height;
+  h->enc_ctx->time_base = AVRational{fps_den, fps_num};
+  h->enc_ctx->framerate = AVRational{fps_num, fps_den};
+  h->enc_ctx->pix_fmt   = codec->pix_fmts ? codec->pix_fmts[0] : AV_PIX_FMT_YUV420P;
+  h->enc_ctx->bit_rate  = (int64_t)cutil::get_or<int32_t>(props, "bitrate_kbps", 8000) * 1000;
+  h->enc_ctx->gop_size  = 12;
   if(h->fmt_ctx->oformat->flags & AVFMT_GLOBALHEADER) h->enc_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
   if(avcodec_open2(h->enc_ctx, codec, nullptr) < 0) {
@@ -141,8 +141,8 @@ static bool fn_write_frame(void* handle, const Image* img, int) {
   h->sws = sws_getCachedContext(h->sws, h->width, h->height, AV_PIX_FMT_BGRA, h->width, h->height, h->enc_ctx->pix_fmt, SWS_BILINEAR, nullptr, nullptr, nullptr);
   if(h->sws == nullptr) return false;
 
-  const uint8_t* src_data[1]  = {(const uint8_t*)&(*img)[0]};
-  const int src_linesize[1]   = {h->width * 4};
+  const uint8_t* src_data[1] = {(const uint8_t*)&(*img)[0]};
+  const int src_linesize[1]  = {h->width * 4};
   sws_scale(h->sws, src_data, src_linesize, 0, h->height, h->frame->data, h->frame->linesize);
   h->frame->pts = h->next_pts++;
 
