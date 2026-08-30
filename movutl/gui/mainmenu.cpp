@@ -33,7 +33,13 @@ void render_main_menu_bar() {
         save_project();
     }
     if(ImGui::MenuItem("名前を付けて保存", "Ctrl+Shift+S")) open_path_popup([](const char* p) { save_project_as(p); });
-    if(ImGui::MenuItem("エクスポート")) open_export_window();
+    if(ImGui::BeginMenu("エクスポート")) {
+      auto& plugins = detail::AppMain::Get()->output_plugins;
+      if(plugins.empty()) ImGui::TextDisabled("出力プラグインが登録されていません");
+      for(int i = 0; i < (int)plugins.size(); i++)
+        if(ImGui::MenuItem(plugins[i].name)) open_export_window(i);
+      ImGui::EndMenu();
+    }
     if(ImGui::MenuItem("終了", "Ctrl+Q")) GUIManager::Get()->should_close = true;
     ImGui::EndMenu();
   }

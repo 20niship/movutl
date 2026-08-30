@@ -3,7 +3,8 @@
 
 namespace mu {
 
-void open_export_window();
+// plugin_indexで指定したAppMain::Get()->output_plugins[plugin_index]を選択済みの状態でウィンドウを開く
+void open_export_window(int plugin_index);
 
 class ExportWindow final : public UIPanel {
 public:
