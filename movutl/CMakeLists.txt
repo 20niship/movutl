@@ -143,6 +143,8 @@ if(APPLE)
   set(MOVUTL_LIBRARIES ${MOVUTL_LIBRARIES} "-framework Cocoa")
 endif()
 add_library(mucore ${MOVUTL_SRC})
+# export_png/export_video等の.so/.msoプラグインがmucoreを静的リンクするため、Linux/gccでも共有ライブラリへ組み込めるようPICを強制する
+set_target_properties(mucore PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(mucore PUBLIC ${MOVUTL_INCLUDES})
 target_link_libraries(mucore ${MOVUTL_LIBRARIES})
 set(MOVUTL_LIBRARIES ${MOVUTL_LIBRARIES} movutl)
