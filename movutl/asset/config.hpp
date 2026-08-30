@@ -17,14 +17,14 @@ public:
   Config()  = default;
   ~Config() = default;
 
-  Vec2d max_size                               = {3000, 3000}; // 編集出来る最大画像サイズ
-  int max_frame                                = 320000;       // 編集出来る最大フレーム数
-  int cache_frames                             = 10;
-  std::vector<std::string> plugin_search_paths = {"plugins"};
-  bool log_to_file                             = false;
-  std::string log_filename                     = "log.txt";
-  LogLevel log_level                           = LogLevel::DEBUG;
-  bool show_viewer_ruler                       = false; // Viewportにルーラー(目盛り)を表示するか
+  Vec2d max_size                        = {3000, 3000}; // 編集出来る最大画像サイズ
+  int max_frame                         = 320000;       // 編集出来る最大フレーム数
+  int cache_frames                      = 1024;
+  std::vector<std::string> plugin_paths = {"plugins"};
+  bool log_to_file                      = false;
+  std::string log_filename              = "log.txt";
+  LogLevel log_level                    = LogLevel::DEBUG;
+  bool show_viewer_ruler                = false; // Viewportにルーラー(目盛り)を表示するか
 
   // 以下 movutl/core/sys_info.hpp より統合
   int sys_flag = 0;                  // システムフラグ (kSysFlagEdit 等)
