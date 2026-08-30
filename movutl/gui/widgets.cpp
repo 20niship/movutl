@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <imgui.h>
 #include <imgui_internal.h>
+#include <movutl/asset/composition.hpp>
 #include <movutl/asset/entity.hpp>
 #include <movutl/core/assert.hpp>
 #include <movutl/core/filesystem.hpp>
@@ -124,6 +125,7 @@ void wd_entt_props_editor(Entity* e) {
     if(changed) {
       e->setProps(newp);
       if(is_path_field) e->reload_asset(); // パス変更時は新しいファイルを読み込み直す
+      if(auto* comp = e->get_comp()) comp->cache.invalidate_all();
     }
     ImGui::PopID();
   }

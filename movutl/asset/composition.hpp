@@ -3,6 +3,8 @@
 #include <cutil/prop.hpp>
 #include <cutil/string.hpp>
 #include <movutl/asset/image.hpp>
+#include <movutl/render2d/frame_cache.hpp>
+#include <mutex>
 
 namespace mu {
 
@@ -63,6 +65,11 @@ public:
 
   // ---------- track ----------
   std::vector<TrackLayer> layers;
+
+  // レイヤー/フレーム範囲などレンダリング結果に影響する状態を読み書きする際のロック
+  std::mutex mtx;
+  // フレーム単位のレンダリング結果キャッシュ(バックグラウンドレンダーワーカーが書き込む)
+  FrameCache cache;
 
   void resize(int32_t w, int32_t h);
 

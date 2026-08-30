@@ -34,7 +34,21 @@ void update_renderer_thread() {
   MOVUTL_ZONE_SCOPED_N("update_renderer_thread");
   auto cmp = Composition::GetActiveComp();
   if(!cmp) return;
-  render_comp(cmp);
+  auto* app = AppMain::Get();
+  app->render_pool.tick(cmp, app->is_playing());
+
+  // comp->frame/frame_finalはCPURenderer::render_frame(ワーカー)が一時的に書き換えるため、mtx無しだと再生中フレームが破壊される
+  std::lock_guard<std::mutex> lock(cmp->mtx);
+  Ref<Image> img;
+  bool hit = cmp->cache.get(cmp->frame, &img);
+  if(hit) {
+    if(!cmp->frame_final) cmp->frame_final = cutil::make_ref<Image>(cmp->size[0], cmp->size[1]);
+    *cmp->frame_final = *img;
+    cmp->frame_final->dirty();
+  } else if(!cmp->frame_final) {
+    // ワーカーの初回レンダリング完了までは空フレームを表示する
+    cmp->frame_final = cutil::make_ref<Image>(cmp->size[0], cmp->size[1]);
+  }
 }
 
 void AppMain::play() {
@@ -47,12 +61,15 @@ void AppMain::pause() { playing_ = false; }
 void AppMain::reset() {
   playing_ = false;
   auto cmp = Composition::GetActiveComp();
-  if(cmp) cmp->frame = cmp->fstart;
+  if(!cmp) return;
+  std::lock_guard<std::mutex> lock(cmp->mtx);
+  cmp->frame = cmp->fstart;
 }
 
 void AppMain::goto_frame(int frame) {
   auto cmp = Composition::GetActiveComp();
   if(!cmp) return;
+  std::lock_guard<std::mutex> lock(cmp->mtx);
   cmp->frame = std::clamp(frame, cmp->fstart, cmp->fend);
 }
 
@@ -65,6 +82,7 @@ void AppMain::update_frame_impl() {
   double now = mu_now_seconds();
   double fps = (double)cmp->framerate;
   if(now - last_frame_time_ >= 1.0 / fps) {
+    std::lock_guard<std::mutex> lock(cmp->mtx);
     cmp->frame++;
     if(cmp->frame > cmp->fend) cmp->frame = cmp->fstart;
     last_frame_time_ = now;

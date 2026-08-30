@@ -190,13 +190,14 @@ void update() {
     detail::gui_render_to_screen();
   }
 
-  { // renderer thread
+  { // レンダーワーカーへのenqueueとキャッシュ済みフレームの取得のみ(実際のレンダリングはバックグラウンドスレッドで行う)
     detail::update_renderer_thread();
   }
   MOVUTL_FRAME_MARK;
 }
 
 void GUIManager::terminate() {
+  detail::AppMain::Get()->render_pool.stop();
   ImGui_ImplOpenGL3_Shutdown();
   ImGui_ImplGlfw_Shutdown();
   glfwTerminate();

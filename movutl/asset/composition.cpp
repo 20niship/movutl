@@ -120,13 +120,17 @@ int Composition::insertable_layer_index() const {
 }
 
 void Composition::insert_entity(Ref<Entity> entt, int layer) {
-  if(layer < 0) layer = insertable_layer_index();
-  if(layer < 0) {
-    this->layers.push_back(TrackLayer());
-    layer = this->layers.size() - 1;
+  {
+    std::lock_guard<std::mutex> lock(mtx);
+    if(layer < 0) layer = insertable_layer_index();
+    if(layer < 0) {
+      this->layers.push_back(TrackLayer());
+      layer = this->layers.size() - 1;
+    }
+    MU_ASSERT(layer >= 0 && layer <= layers.size());
+    this->layers[layer].entts.push_back(entt);
   }
-  MU_ASSERT(layer >= 0 && layer <= layers.size());
-  this->layers[layer].entts.push_back(entt);
+  cache.invalidate_all();
 }
 
 } // namespace mu

@@ -4,6 +4,7 @@
 #include <movutl/core/defines.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/plugin/plugin.hpp>
+#include <movutl/render2d/render_worker.hpp>
 
 namespace mu::detail {
 
@@ -20,6 +21,8 @@ public:
 
   std::map<std::string, ImGuiStyle> imgui_styles;
   std::map<std::string, Workspace> workspaces;
+
+  RenderWorkerPool render_pool;
 
   // ------------ 再生制御 ------------
   void play();
