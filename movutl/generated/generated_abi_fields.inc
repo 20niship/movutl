@@ -7,3 +7,4 @@
   void (*process_command_shortcuts)() = nullptr;
   bool (*register_input_plugin)(const InputPluginTable* table) = nullptr;
   bool (*register_filter_plugin)(const FilterPluginTable* table) = nullptr;
+  bool (*register_output_plugin)(const OutputPluginTable* table) = nullptr;
