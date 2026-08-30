@@ -10,6 +10,7 @@
 #include <movutl/asset/image.hpp>
 #include <movutl/asset/movie.hpp>
 #include <movutl/asset/project.hpp>
+#include <movutl/asset/shape.hpp>
 #include <movutl/asset/text.hpp>
 #include <movutl/asset/track.hpp>
 #include <movutl/binding/imgui_binding.hpp>
@@ -23,6 +24,11 @@ extern "C" {
 #include <lua.h>
 #include <lualib.h>
 }
+
+namespace LuaIntf {
+// これが無いとRef<T>を返す関数の戻り値が常に"table expected, got nil"で壊れる(Ref<T>を値型Tと誤認識するため)
+LUA_USING_SHARED_PTR_TYPE(cutil::Ref)
+} // namespace LuaIntf
 
 namespace mu::detail {
 
