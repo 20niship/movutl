@@ -177,6 +177,10 @@ void gui_render_to_screen() {
 
 void update() {
   MOVUTL_ZONE_SCOPED_N("mu::update");
+  {
+    MOVUTL_ZONE_SCOPED_N("sleep");
+    std::this_thread::sleep_for(std::chrono::milliseconds(3));
+  }
   { // gui thread
     detail::gui_new_frame();
     detail::process_command_shortcuts();

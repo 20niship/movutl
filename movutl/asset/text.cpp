@@ -25,23 +25,40 @@ bool TextEntt::render(Composition* cmp) {
   if(text.empty()) return true;
   re_render_image();
   if(!img_ || img_->empty() || !cmp || !cmp->frame_final) return false;
-  Vec2d center(pos_[0] + img_->width * scale_x_ / 2.0, pos_[1] + img_->height * scale_y_ / 2.0);
+  Vec2d center(pos_[0] + text_offset_[0] + img_->width * scale_x_ / 2.0, pos_[1] + text_offset_[1] + img_->height * scale_y_ / 2.0);
   float rot_deg = rot_ * 180.0f / (float)M_PI; // rot_はradians=trueプロパティ、copyto()はdegreesを期待する
   img_->copyto(cmp->frame_final.get(), center, (scale_x_ + scale_y_) / 2.0f, rot_deg, alpha_ / 255.0f);
   return true;
 }
 
 void TextEntt::re_render_image() {
-  if(last_text_ == text && last_font_ == font) return;
-  last_text_ = text;
-  last_font_ = font;
+  bool need = last_text_ != text || last_font_ != font || last_color_ != color_ || last_border_color_ != border_color_ || last_border_width_ != border_width_;
+  if(!need) return;
+  last_text_         = text;
+  last_font_         = font;
+  last_color_        = color_;
+  last_border_color_ = border_color_;
+  last_border_width_ = border_width_;
   if(font.empty()) {
     LOG_F(ERROR, "TextEntt: no font available");
     return;
   }
   if(!img_) img_ = cutil::make_ref<Image>();
   using namespace detail;
-  FontRenderManager::renderText(img_.get(), text.c_str(), 16, 0, 0, font.c_str());
+  FontRenderManager::renderText(img_.get(), text.c_str(), 16, 0, 0, font.c_str(), color_);
+  text_offset_ = Vec2(0, 0);
+  if(border_width_ > 0) {
+    // outline()は既存の不透明部分の外側にしか描けないので、先にキャンバスへ枠線分の余白を足す
+    int pad      = border_width_;
+    auto padded  = cutil::make_ref<Image>();
+    padded->resize((int)img_->width + pad * 2, (int)img_->height + pad * 2);
+    padded->has_alpha = true;
+    padded->fill(0);
+    img_->copyto(padded.get(), Vec2d(pad, pad));
+    img_          = padded;
+    text_offset_  = Vec2(-(float)pad, -(float)pad);
+    img_->outline(border_color_, pad);
+  }
 }
 
 Ref<TextEntt> TextEntt::Create(const char* text, const char* font) {

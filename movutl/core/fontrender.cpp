@@ -103,7 +103,7 @@ void FontRenderManager::FontFace::set_fontsize(int size) {
   slot      = face->glyph; // グリフへのショートカット
 }
 
-void FontRenderManager::FontFace::render_text(const char* text, int space_x, int space_y, Image* img) {
+void FontRenderManager::FontFace::render_text(const char* text, int space_x, int space_y, Image* img, const Vec4b& color) {
   if(face == nullptr || slot == nullptr || img == nullptr) return;
   auto size = get_size(text);
   img->resize(size[0], size[1]);
@@ -124,7 +124,7 @@ void FontRenderManager::FontFace::render_text(const char* text, int space_x, int
       // int yMax = face->bbox.yMax;
       // int yMin = face->bbox.yMin;
       // int baseline = bitmap->rows * yMax / (yMax - yMin);
-      draw_bitmap(img, curPosX, curPosY - slot->bitmap_top); // imageにslot->bitmapの中身をコピーする
+      draw_bitmap(img, curPosX, curPosY - slot->bitmap_top, color); // imageにslot->bitmapの中身をコピーする
     }
     last_height = (slot->bitmap).rows;
 
@@ -135,7 +135,7 @@ void FontRenderManager::FontFace::render_text(const char* text, int space_x, int
 };
 
 // 生成された位置も自分の画像データをimageにコピーする
-void FontRenderManager::FontFace::draw_bitmap(Image* img, int x, int y) {
+void FontRenderManager::FontFace::draw_bitmap(Image* img, int x, int y, const Vec4b& color) {
   int i, j, p, q;
   const int x_max = x + (slot->bitmap).width;
   const int y_max = y + (slot->bitmap).rows;
@@ -144,17 +144,21 @@ void FontRenderManager::FontFace::draw_bitmap(Image* img, int x, int y) {
     Vec4b* image = img->data();
     for(i = x, p = 0; i < x_max; i++, p++) {
       if(i < 0 || j < 0 || i >= img->width || j >= img->height) continue;
-      char color   = (slot->bitmap).buffer[q * (slot->bitmap).width + p];
+      unsigned char coverage = (slot->bitmap).buffer[q * (slot->bitmap).width + p];
+      if(coverage == 0) continue;
       Vec4b* pixel = &image[j * img->width + i];
-      (*pixel)[0]  = color | (*pixel)[0];
-      (*pixel)[1]  = color | (*pixel)[1];
-      (*pixel)[2]  = color | (*pixel)[2];
-      (*pixel)[3]  = color | (*pixel)[3];
+      // グリフの縁が重なる箇所はアルファが大きい方を残す(小さい方で上書きしない)
+      if(coverage > (*pixel)[3]) {
+        (*pixel)[0] = color[0];
+        (*pixel)[1] = color[1];
+        (*pixel)[2] = color[2];
+        (*pixel)[3] = coverage;
+      }
     }
   }
 }
 
-bool FontRenderManager::renderText(Image* img, const char* text, int size, int sace_x, int space_y, const char* font_name) {
+bool FontRenderManager::renderText(Image* img, const char* text, int size, int sace_x, int space_y, const char* font_name, const Vec4b& color) {
   auto manager = FontRenderManager::Get();
   if(!manager->initialized) {
     LOG_F(ERROR, "FontRenderManager is not initialized");
@@ -166,7 +170,7 @@ bool FontRenderManager::renderText(Image* img, const char* text, int size, int s
     if(name == font_name) {
       if(font_face.face == nullptr) return false;
       font_face.set_fontsize(size);
-      font_face.render_text(text, sace_x, space_y, img);
+      font_face.render_text(text, sace_x, space_y, img, color);
       return true;
     }
   }
@@ -177,7 +181,7 @@ bool FontRenderManager::renderText(Image* img, const char* text, int size, int s
       LOG_F(ERROR, "Failed to load font: %s", font_name);
       return false;
     }
-    font_face.render_text(text, sace_x, space_y, img);
+    font_face.render_text(text, sace_x, space_y, img, color);
     return true;
   }
   return false;

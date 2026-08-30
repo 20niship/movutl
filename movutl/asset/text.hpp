@@ -10,6 +10,10 @@ class TextEntt final : public Entity {
 private:
   std::string last_text_;
   std::string last_font_;
+  Vec4b last_color_;
+  Vec4b last_border_color_;
+  int32_t last_border_width_ = -1;
+  Vec2 text_offset_; // 枠線用に余白を足した分、表示位置を補正するオフセット
 
   void re_render_image();
 
@@ -29,6 +33,9 @@ public:
   std::string font;       // MPROPERTY(name="フォント", type="font")
   std::string text;       // MPROPERTY(name="テキスト")
   bool separate = false;  // MPROPERTY(name="個別オブジェクト")
+  Vec4b color_          = Vec4b(255, 255, 255, 255); // 文字の色
+  Vec4b border_color_   = Vec4b(0, 0, 0, 255);       // 枠線の色
+  int32_t border_width_ = 0;                         // 枠線の太さ(0で非表示)
 
   static Ref<TextEntt> Create(const char* text, const char* font = nullptr);
   virtual EntityType getType() const override { return EntityType_3DText; }

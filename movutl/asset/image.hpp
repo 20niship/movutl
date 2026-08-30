@@ -67,6 +67,9 @@ public:
   bool copyto(Image* dst, const Vec2d& pmin, const Vec2d& pmax) const;
   bool copyto(Image* dst, const Vec2d& center, float scale, float angle, float alpha_mul = 1.0f) const;
 
+  // 現在の不透明部分の外側にborder_widthピクセル分border_colorで縁取りを描く(塗り部分は上書きしない)
+  void outline(const Vec4b& border_color, int border_width);
+
   void resize(const Vec2d& size) {
     MU_ASSERT(size[0] > 0 && size[1] > 0);
     width  = size[0];
@@ -93,8 +96,7 @@ public:
   Vec4b rgba(const size_t x, const size_t y) const {
     MU_ASSERT(x < width);
     MU_ASSERT(y < height);
-    constexpr int c = 4; // channels;
-    return data_[(y * width + x) * c];
+    return data_[y * width + x];
   }
 
   const Vec4b& operator()(const size_t x, const size_t y) const {

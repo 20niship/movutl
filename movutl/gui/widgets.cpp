@@ -54,7 +54,14 @@ void wd_entt_props_editor(Entity* e) {
       }
     } else if(f.type == cutil::prop_info_of<int32_t>()) {
       int32_t v = p.get<int32_t>(f.name);
-      if(ImGui::InputInt(name_, &v)) {
+      if(std::string(f.name) == "shape_type_") {
+        static const char* kShapeNames[] = {"三角形", "四角形", "六角形", "円", "カスタムパス"};
+        int idx                          = std::clamp(v, 0, 4);
+        if(ImGui::Combo(name_, &idx, kShapeNames, IM_ARRAYSIZE(kShapeNames))) {
+          newp.set<int32_t>(f.name, idx);
+          changed = true;
+        }
+      } else if(ImGui::InputInt(name_, &v)) {
         newp.set<int32_t>(f.name, v);
         changed = true;
       }

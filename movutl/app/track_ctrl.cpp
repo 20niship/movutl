@@ -3,6 +3,7 @@
 #include <movutl/asset/entity.hpp>
 #include <movutl/asset/movie.hpp>
 #include <movutl/asset/project.hpp>
+#include <movutl/asset/shape.hpp>
 #include <movutl/asset/text.hpp>
 #include <movutl/asset/track.hpp>
 #include <movutl/core/logger.hpp>
@@ -10,6 +11,19 @@
 #include <movutl/plugin/plugin.hpp>
 
 namespace mu {
+
+Ref<ShapeEntt> add_new_shape_track(const char* name, int start, int end, ShapeType type) {
+  MU_ASSERT(name != nullptr);
+  MU_ASSERT(start >= 0);
+  MU_ASSERT(end >= start);
+  auto shp               = ShapeEntt::Create(name, type);
+  Composition* main_comp = Composition::GetActiveComp();
+  MU_ASSERT(main_comp);
+  shp->trk.fstart = start;
+  shp->trk.fend   = end;
+  main_comp->insert_entity(shp);
+  return shp;
+}
 
 Ref<Entity> add_new_video_track(const char* name, const char* path, int start, int layer) {
   MU_ASSERT(name != nullptr);
@@ -30,7 +44,7 @@ Ref<Entity> add_new_video_track(const char* name, const char* path, int start, i
   }
   MU_ASSERT(main_comp);
   MU_ASSERT(layer >= 0 && layer <= 1000);
-  if(layer > main_comp->layers.size()) main_comp->layers.resize(layer);
+  if(layer >= (int)main_comp->layers.size()) main_comp->layers.resize(layer + 1);
   main_comp->layers[layer].entts.push_back(e);
   return e;
 }
@@ -74,6 +88,15 @@ bool add_new_track(const char* name, EntityType type, int start, int end) {
       txt->trk.fstart = start;
       txt->trk.fend   = end;
       main_comp->insert_entity(txt);
+      break;
+    }
+    case EntityType_Polygon: {
+      auto shp                = ShapeEntt::Create(name, ShapeType_Rect);
+      Composition* main_comp = Composition::GetActiveComp();
+      MU_ASSERT(main_comp);
+      shp->trk.fstart = start;
+      shp->trk.fend   = end;
+      main_comp->insert_entity(shp);
       break;
     }
     case EntityType_Audio: MU_FAIL("Not implemented yet");

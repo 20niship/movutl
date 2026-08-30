@@ -1,5 +1,6 @@
 #pragma once
 #include <movutl/asset/entity.hpp>
+#include <movutl/asset/shape.hpp>
 #include <vector>
 
 namespace mu {
@@ -11,6 +12,9 @@ void init();
 void update();
 void terminate();
 bool should_terminate();
+
+// 指定したLuaファイルを実行する(失敗時はfalseを返す)
+bool run_lua_file(const char* path);
 
 // ------------ Plugins ------------
 InputPluginTable* get_compatible_plugin(const char* path, EntityType type);
@@ -35,6 +39,7 @@ bool is_playing();
 
 Ref<Entity> add_new_video_track(const char* name, const char* path, int start, int layer);
 bool add_new_audio_track(const char* name, const char* path, int start, int layer);
+Ref<ShapeEntt> add_new_shape_track(const char* name, int start, int end, ShapeType type);
 
 std::vector<Ref<Entity>> get_selected_entts();
 void clear_selected_entts();

@@ -35,6 +35,15 @@ enum EntityType {
 };
 MOVUTL_DEFINE_ENUM_ATTR_BITFLAGS(EntityType);
 
+// EntityType_Polygon(ShapeEntt)が描画する図形の種類
+enum ShapeType {
+  ShapeType_Triangle = 0,
+  ShapeType_Rect     = 1,
+  ShapeType_Hexagon  = 2,
+  ShapeType_Circle   = 3,
+  ShapeType_Custom   = 4, // custom_pathで指定した任意の多角形
+};
+
 // プラグインがそのファイルを開いた時のインスタンスを返すときのポインタ
 typedef void* InputHandle;
 

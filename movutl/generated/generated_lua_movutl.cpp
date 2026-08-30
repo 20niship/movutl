@@ -10,6 +10,7 @@
 #include <movutl/asset/image.hpp>
 #include <movutl/asset/movie.hpp>
 #include <movutl/asset/project.hpp>
+#include <movutl/asset/shape.hpp>
 #include <movutl/asset/text.hpp>
 #include <movutl/asset/track.hpp>
 #include <movutl/binding/imgui_binding.hpp>
@@ -23,6 +24,11 @@ extern "C" {
 #include <lua.h>
 #include <lualib.h>
 }
+
+namespace LuaIntf {
+// これが無いとRef<T>を返す関数の戻り値が常に"table expected, got nil"で壊れる(Ref<T>を値型Tと誤認識するため)
+LUA_USING_SHARED_PTR_TYPE(cutil::Ref)
+} // namespace LuaIntf
 
 namespace mu::detail {
 
@@ -90,6 +96,17 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addConstant("ImageFormatRGBA", ImageFormat::ImageFormatRGBA)
     .addConstant("ImageFormatGRAYSCALE", ImageFormat::ImageFormatGRAYSCALE)
     .endModule()
+    .beginModule("ShapeType")
+    .addConstant("ShapeType_Triangle", ShapeType::ShapeType_Triangle)
+    .addConstant("ShapeType_Rect", ShapeType::ShapeType_Rect)
+    .addConstant("ShapeType_Hexagon", ShapeType::ShapeType_Hexagon)
+    .addConstant("ShapeType_Circle", ShapeType::ShapeType_Circle)
+    .addConstant("ShapeType_Custom", ShapeType::ShapeType_Custom)
+    .endModule()
+    .beginClass<Entity>("Entity")
+    .addFunction("getType", &Entity::getType)
+    .addFunction("visible", &Entity::visible)
+    .endClass()
     .beginClass<Composition>("Composition")
     .addFunction("resize", &Composition::resize)
     .addFunction("str", &Composition::str)
@@ -192,7 +209,22 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addVariable("alpha_", &TextEntt::alpha_)     // uint8_t
     .addVariable("font", &TextEntt::font)         // std::string
     .addVariable("text", &TextEntt::text)         // std::string
-    .addVariable("separate", &TextEntt::separate) // bool
+    .addVariable("separate", &TextEntt::separate)             // bool
+    .addVariable("color_", &TextEntt::color_)                 // Vec4b
+    .addVariable("border_color_", &TextEntt::border_color_)   // Vec4b
+    .addVariable("border_width_", &TextEntt::border_width_)   // int32_t
+    .endClass()
+    .beginClass<ShapeEntt>("ShapeEntt")
+    .addFunction("getType", &ShapeEntt::getType)
+    .addVariable("pos_", &ShapeEntt::pos_)                     // Vec3
+    .addVariable("size_", &ShapeEntt::size_)                   // Vec2
+    .addVariable("rot_", &ShapeEntt::rot_)                     // float
+    .addVariable("alpha_", &ShapeEntt::alpha_)                 // uint8_t
+    .addVariable("color_", &ShapeEntt::color_)                 // Vec4b
+    .addVariable("shape_type_", &ShapeEntt::shape_type_)       // int32_t (ShapeType)
+    .addVariable("custom_path", &ShapeEntt::custom_path)       // std::string
+    .addVariable("border_color_", &ShapeEntt::border_color_)   // Vec4b
+    .addVariable("border_width_", &ShapeEntt::border_width_)   // int32_t
     .endClass()
     .beginClass<TrackLayer>("TrackLayer")
     .addFunction("find_entt", &TrackLayer::find_entt)
@@ -225,6 +257,7 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addVariable("ratio", &WorkspaceEntry::ratio)             // float
     .endClass()
     .addFunction("add_new_audio_track", static_cast<bool (*)(const char*, const char*, int, int)>(&add_new_audio_track))
+    .addFunction("add_new_shape_track", static_cast<Ref<ShapeEntt> (*)(const char*, int, int, ShapeType)>(&add_new_shape_track))
     .addFunction("add_new_track", static_cast<bool (*)(const char*, EntityType, int, int)>(&add_new_track))
     .addFunction("add_new_video_track", static_cast<Ref<Entity> (*)(const char*, const char*, int, int)>(&add_new_video_track))
     .addFunction("apply_imgui_style", static_cast<void (*)(const char*)>(&apply_imgui_style))
