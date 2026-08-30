@@ -4,6 +4,7 @@
 #include <movutl/asset/entity.hpp>
 #include <movutl/asset/project.hpp>
 #include <movutl/core/prop_types.hpp>
+#include <movutl/render2d/renderer.hpp>
 
 namespace mu {
 
@@ -48,9 +49,6 @@ std::string TrackLayer::summary() const {
 void Composition::resize(int32_t w, int32_t h) {
   size[0] = w;
   size[1] = h;
-  if(frame_final) frame_final->resize(w, h);
-  if(frame_edit) frame_edit->resize(w, h);
-  if(frame_temp) frame_temp->resize(w, h);
 }
 
 Composition::Composition(const char* name, int32_t w, int32_t h, int32_t fps) {
@@ -97,7 +95,7 @@ cutil::Prop Composition::getProps() const {
   p.set<int32_t>("bg_color", bg_color);
   p.set<int32_t>("fstart", fstart);
   p.set<int32_t>("fend", fend);
-  p.set<int32_t>("frame", frame);
+  p.set<int32_t>("frame", frame.load());
   return p;
 }
 
@@ -108,7 +106,7 @@ void Composition::setProps(const cutil::Prop& p) {
   bg_color  = cutil::get_or<int32_t>(p, "bg_color", bg_color);
   fstart    = cutil::get_or<int32_t>(p, "fstart", fstart);
   fend      = cutil::get_or<int32_t>(p, "fend", fend);
-  frame     = cutil::get_or<int32_t>(p, "frame", frame);
+  frame.store(cutil::get_or<int32_t>(p, "frame", frame.load()));
 }
 
 
@@ -120,13 +118,37 @@ int Composition::insertable_layer_index() const {
 }
 
 void Composition::insert_entity(Ref<Entity> entt, int layer) {
-  if(layer < 0) layer = insertable_layer_index();
-  if(layer < 0) {
-    this->layers.push_back(TrackLayer());
-    layer = this->layers.size() - 1;
+  {
+    std::lock_guard<std::mutex> lock(mtx);
+    if(layer < 0) layer = insertable_layer_index();
+    if(layer < 0) {
+      this->layers.push_back(TrackLayer());
+      layer = this->layers.size() - 1;
+    }
+    MU_ASSERT(layer >= 0 && layer <= layers.size());
+    this->layers[layer].entts.push_back(entt);
   }
-  MU_ASSERT(layer >= 0 && layer <= layers.size());
-  this->layers[layer].entts.push_back(entt);
+  cache.invalidate_all();
+}
+
+std::vector<Ref<Entity>> Composition::get_all_entities() const {
+  std::lock_guard<std::mutex> lock(mtx);
+  std::vector<Ref<Entity>> out;
+  for(auto& layer : layers) {
+    if(!layer.active) continue;
+    for(auto& e : layer.entts)
+      if(e) out.push_back(e);
+  }
+  return out;
+}
+
+Ref<Image> Composition::render_current_frame_main_thread() {
+  Ref<Image> out;
+  if(cache.get(frame, &out)) return out;
+  CPURenderer renderer;
+  renderer.render_frame(this, frame, out);
+  cache.insert(frame, out, frame);
+  return out;
 }
 
 } // namespace mu

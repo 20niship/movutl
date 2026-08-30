@@ -21,15 +21,15 @@ Ref<Movie> Movie::Create(const char* name, const char* path) {
   return mov;
 }
 
-bool Movie::render(Composition* cmp) {
+bool Movie::render(Composition* cmp, Image* target, int frame) {
   MOVUTL_ZONE_SCOPED_N("Movie::render");
   MU_ASSERT(cmp);
-  MU_ASSERT(cmp->frame_final);
+  MU_ASSERT(target);
   /// ロード失敗した動画は警告スパムを避けるため黙ってスキップ
   if(load_failed_ || in_plg_ == nullptr || in_handle_ == nullptr) return false;
   if(info.width <= 0 || info.height <= 0 || info.nframes <= 0) return false;
 
-  int elapsed = cmp->frame - trk.fstart; // トラック上での経過フレーム数
+  int elapsed = frame - trk.fstart; // トラック上での経過フレーム数
   if(elapsed < 0 || elapsed >= trk.fend - trk.fstart) {
     if(!loop_) return false;
     elapsed %= (trk.fend - trk.fstart); // ループ再生
@@ -49,13 +49,13 @@ bool Movie::render(Composition* cmp) {
   int ch = cmp->size[1];
   if(cw <= 0 || ch <= 0) return false;
 
-  render_filters(cmp, img_.get());
+  render_filters(cmp, img_.get(), frame);
 
   MU_ASSERT(img_);
   int base_x  = trk.anchor[0] + (cw - img_->width) / 2 + pos[0];
   int base_y  = trk.anchor[1] + (ch - img_->height) / 2 + pos[1];
   Vec2 center = Vec2(base_x, base_y) + trk.anchor;
-  img_->copyto(cmp->frame_final.get(), center, this->scale.avg() / 100, this->rotation);
+  img_->copyto(target, center, this->scale.avg() / 100, this->rotation);
 
   return true;
 }

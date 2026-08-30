@@ -61,8 +61,10 @@ void TimelineWindow::Update() {
     SetTimelineViewRange(mn, mx);
   }
 
-  bool playing = false;
-  if(!BeginTimeline(cp->name.c_str(), &cp->frame, &cp->fstart, &cp->fend, &playing)) {
+  bool playing    = false;
+  FrameT frame_lo = cp->frame.load();
+  if(!BeginTimeline(cp->name.c_str(), &frame_lo, &cp->fstart, &cp->fend, &playing)) {
+    cp->frame.store(frame_lo);
     EndTimeline();
     ImGui::End();
     return;
@@ -90,6 +92,7 @@ void TimelineWindow::Update() {
     EndLayer();
   }
   EndTimeline();
+  cp->frame.store(frame_lo);
   ImGui::End();
 }
 

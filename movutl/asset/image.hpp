@@ -57,11 +57,8 @@ public:
     height = 0;
     data_.clear();
   }
-  void fill(const uint32_t& v) { std::memset(data_.data(), v, size_in_bytes()); }
-  void fill_rgba(const Vec4b& c) {
-    MOVUTL_ZONE_SCOPED_N("Image::fill_rgba");
-    for(size_t i = 0; i < size(); i++) (*this)[i] = c;
-  }
+  void fill(const uint32_t& v);
+  void fill_rgba(const Vec4b& c);
 
   bool copyto(Image* dst, const Vec2d& pmin, float alpha_mul = 1.0f) const;
   bool copyto(Image* dst, const Vec2d& pmin, const Vec2d& pmax) const;
@@ -122,7 +119,7 @@ public:
     }
   }
 
-  virtual bool render(Composition* cmp) override;
+  virtual bool render(Composition* cmp, Image* target, int frame) override;
   virtual EntityType getType() const override { return EntityType_Image; }
 
   static Ref<Image> Create(const char* name, const char* path = "");

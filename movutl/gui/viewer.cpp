@@ -29,8 +29,20 @@ void ViewerWindow::Update() {
     return;
   }
 
-  if(!tex.initialized() && comp->frame_final) tex.set(comp->frame_final);
-  tex.update_if_necessary();
+  Ref<Image> img;
+  if(comp->cache.get(comp->frame, &img)) {
+    if(last_bound_frame_.lock().get() != img.get()) {
+      tex.set(img);
+      last_bound_frame_ = img;
+    }
+  } else if(!tex.initialized()) {
+    img = comp->render_current_frame_main_thread(); // 初回のみ同期フォールバックで真っ黒を防ぐ
+    if(img) {
+      tex.set(img);
+      last_bound_frame_ = img;
+    }
+  }
+  // キャッシュ未ヒット時は直前のテクスチャをそのまま表示し続ける
   auto texture_id = tex.get_id();
 
   ImVec2 avail = ImGui::GetContentRegionAvail();

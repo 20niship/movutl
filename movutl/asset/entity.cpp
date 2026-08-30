@@ -83,7 +83,7 @@ std::string EntityInfo::str() const {
   return std::string(buf);
 }
 
-bool Entity::render_filters(Composition* cmp, Image* img) {
+bool Entity::render_filters(Composition* cmp, Image* img, int frame) {
   MU_ASSERT(cmp != nullptr);
   for(int i = 0; i < trk.filters.size(); i++) {
     auto& f = trk.filters[i];
@@ -97,8 +97,8 @@ bool Entity::render_filters(Composition* cmp, Image* img) {
     FilterInData in;
     in.img            = img;
     in.compo          = cmp;
-    cutil::Prop props = f.props.get(cmp->frame);
-    if(!f.plg_->fn_proc(fp, &in, f.props.get(cmp->frame))) {
+    cutil::Prop props = f.props.get(frame);
+    if(!f.plg_->fn_proc(fp, &in, f.props.get(frame))) {
       LOG_F(ERROR, "Plugin %s render failed", f.plg_->name.c_str());
       return false;
     }

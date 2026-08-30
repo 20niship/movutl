@@ -31,7 +31,7 @@ void init_external_plugins() {
   loaded = true;
 
   // xxx.mso ファイルを読み込む
-  auto search_paths = Config::Get()->plugin_search_paths;
+  auto search_paths = Config::Get()->plugin_paths;
   for(const auto& path : search_paths) {
     if(!fs::exists(path) || !fs::is_directory(path)) continue;
     for(const auto& entry : fs::directory_iterator(path)) {

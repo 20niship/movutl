@@ -21,13 +21,14 @@ static std::string find_default_font() {
   return all_fonts.front();
 }
 
-bool TextEntt::render(Composition* cmp) {
+bool TextEntt::render(Composition* cmp, Image* target, int frame) {
+  (void)frame;
   if(text.empty()) return true;
   re_render_image();
-  if(!img_ || img_->empty() || !cmp || !cmp->frame_final) return false;
+  if(!img_ || img_->empty() || !cmp || !target) return false;
   Vec2d center(pos_[0] + text_offset_[0] + img_->width * scale_x_ / 2.0, pos_[1] + text_offset_[1] + img_->height * scale_y_ / 2.0);
   float rot_deg = rot_ * 180.0f / (float)M_PI; // rot_はradians=trueプロパティ、copyto()はdegreesを期待する
-  img_->copyto(cmp->frame_final.get(), center, (scale_x_ + scale_y_) / 2.0f, rot_deg, alpha_ / 255.0f);
+  img_->copyto(target, center, (scale_x_ + scale_y_) / 2.0f, rot_deg, alpha_ / 255.0f);
   return true;
 }
 

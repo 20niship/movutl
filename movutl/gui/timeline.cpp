@@ -9,6 +9,7 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <movutl/app/app.hpp>
+#include <movutl/asset/composition.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/gui/timeline.hpp>
 
@@ -205,6 +206,13 @@ bool BeginTimeline(const char* name, FrameT* frame, FrameT* start, FrameT* end, 
     ed     = std::clamp<int>(ed, he.x.min, he.x.max);
     dl->AddRectFilled(ImVec2(st, he.y.max - 8), ImVec2(ed, he.y.max), IM_COL32(0, 150, 255, 100));
 
+    // レンダリング済み(キャッシュ済み)フレームをAfterEffects風に緑線で表示
+    if(ctx_.active_comp) {
+      for(int x = he.x.min; x < he.x.max; x++) {
+        if(ctx_.active_comp->cache.is_cached(ctx_.view2f(x))) dl->AddLine(ImVec2(x, he.y.max - 10), ImVec2(x, he.y.max - 8), IM_COL32(0, 200, 0, 200));
+      }
+    }
+
     // Compositionのスタートゴールを描画し、<kbd>[</kbd>と<kbd>]</kbd>キーで終端を設定
     ImRect comp_start_ = ImRect(ImVec2(st - 2, he.y.min), ImVec2(st + 2, he.y.max));
     ImRect comp_end_   = ImRect(ImVec2(ed - 2, he.y.min), ImVec2(ed + 2, he.y.max));
@@ -218,7 +226,7 @@ bool BeginTimeline(const char* name, FrameT* frame, FrameT* start, FrameT* end, 
   }
 
 
-  // 現在のフレームのバーを描画
+  // *frameは呼び出し元(timeline_window.cpp)がComposition::frame(atomic)をスナップショットしたローカル変数
   {
     auto x = ctx_.f2view(*frame);
 
@@ -235,7 +243,6 @@ bool BeginTimeline(const char* name, FrameT* frame, FrameT* start, FrameT* end, 
     bool in_header_area = ImGui::IsMouseHoveringRect(ImVec2(h_.x.min, h_.y.min), ImVec2(h_.x.max, h_.y.max));
     bool lclick         = ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseDragging(ImGuiMouseButton_Left);
     if(in_header_area && lclick) {
-      // ctx_.state = Draginctx_Cursor;
       *frame = ctx_.view2f(ImGui::GetMousePos().x);
     }
   }
@@ -274,17 +281,24 @@ int EndTimeline() {
 
   // レイヤーの削除/移動を遅延適用(ループ中のvector破壊を避けるため)
   if(ctx_.active_comp) {
-    auto* cp = ctx_.active_comp;
-    if(ctx_.pending_delete_layer >= 0 && ctx_.pending_delete_layer < (int)cp->layers.size()) {
-      cp->layers.erase(cp->layers.begin() + ctx_.pending_delete_layer);
-      ctx_.pending_delete_layer = -1;
+    auto* cp     = ctx_.active_comp;
+    bool changed = false;
+    {
+      std::lock_guard<std::mutex> lock(cp->mtx);
+      if(ctx_.pending_delete_layer >= 0 && ctx_.pending_delete_layer < (int)cp->layers.size()) {
+        cp->layers.erase(cp->layers.begin() + ctx_.pending_delete_layer);
+        ctx_.pending_delete_layer = -1;
+        changed                   = true;
+      }
+      if(ctx_.pending_move_layer >= 0 && ctx_.pending_move_layer < (int)cp->layers.size()) {
+        int i = ctx_.pending_move_layer;
+        int j = i + ctx_.pending_move_dir;
+        if(j >= 0 && j < (int)cp->layers.size()) std::swap(cp->layers[i], cp->layers[j]);
+        ctx_.pending_move_layer = -1;
+        changed                 = true;
+      }
     }
-    if(ctx_.pending_move_layer >= 0 && ctx_.pending_move_layer < (int)cp->layers.size()) {
-      int i = ctx_.pending_move_layer;
-      int j = i + ctx_.pending_move_dir;
-      if(j >= 0 && j < (int)cp->layers.size()) std::swap(cp->layers[i], cp->layers[j]);
-      ctx_.pending_move_layer = -1;
-    }
+    if(changed) cp->cache.invalidate_all();
   }
 
   if(ctx_.cur_frame && ctx_.vis_start && ctx_.vis_end) {
@@ -434,6 +448,7 @@ bool BeginTrack(const Ref<Entity>& entity) {
 
   if(ctx_.dragging_entt == entity.get()) {
     if(ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+      std::lock_guard<std::mutex> lock(entity->mtx);
       int delta_f  = ctx_.view2f((int)mouse_x) - ctx_.drag_start_frame;
       auto nframes = (int)entity->get_info().nframes; // 素材の総フレーム数(動画/音声のみ>0)
       if(ctx_.drag_mode == 1) {
@@ -453,6 +468,11 @@ bool BeginTrack(const Ref<Entity>& entity) {
       fe   = ctx_.f2view(*end);
       rect = ImRect(ImVec2(fs, htop), ImVec2(fe, htop + ctx_.height));
     } else {
+      if(auto* comp = entity->get_comp()) {
+        int f0 = std::min({ctx_.drag_orig_fstart, ctx_.drag_orig_fend, *start, *end});
+        int f1 = std::max({ctx_.drag_orig_fstart, ctx_.drag_orig_fend, *start, *end});
+        comp->cache.invalidate_range(f0, f1);
+      }
       ctx_.dragging_entt = nullptr;
       ctx_.drag_mode     = 0;
     }

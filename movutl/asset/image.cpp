@@ -1,3 +1,5 @@
+#include <algorithm>
+#include <cstring>
 #include <opencv2/opencv.hpp>
 //
 #include <movutl/app/app.hpp>
@@ -10,6 +12,16 @@
 #include <movutl/plugin/input.hpp>
 
 namespace mu {
+
+void Image::fill(const uint32_t& v) { std::memset(data_.data(), v, size_in_bytes()); }
+
+void Image::fill_rgba(const Vec4b& c) {
+  MOVUTL_ZONE_SCOPED_N("Image::fill_rgba");
+  static_assert(sizeof(Vec4b) == sizeof(uint32_t), "Vec4b size must match uint32_t");
+  uint32_t packed;
+  std::memcpy(&packed, &c, sizeof(uint32_t));
+  std::fill_n(reinterpret_cast<uint32_t*>(data()), size(), packed);
+}
 
 void Image::set_cv_img(const cv::Mat* cv_img) {
   MU_ASSERT(cv_img);
@@ -164,9 +176,10 @@ void Image::outline(const Vec4b& border_color, int border_width) {
   }
 }
 
-bool Image::render(Composition* cmp) {
+bool Image::render(Composition* cmp, Image* target, int frame) {
+  (void)frame;
   MU_ASSERT(cmp);
-  MU_ASSERT(cmp->frame_final);
+  MU_ASSERT(target);
   if(this->width <= 0 || this->height <= 0) return false;
   int cw = cmp->size[0];
   int ch = cmp->size[1];
@@ -174,7 +187,7 @@ bool Image::render(Composition* cmp) {
 
   int base_x = this->width / 2 + trk.anchor[0] - cw / 2;
   int base_y = this->height / 2 + trk.anchor[1] - ch / 2;
-  return this->copyto(cmp->frame_final.get(), Vec2d(base_x, base_y), this->scale.avg(), this->rotation, this->alpha);
+  return this->copyto(target, Vec2d(base_x, base_y), this->scale.avg(), this->rotation, this->alpha);
 }
 
 bool Image::load_file(const char* path) {

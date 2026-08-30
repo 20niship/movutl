@@ -4,6 +4,7 @@
 #include <movutl/asset/track.hpp>
 #include <movutl/core/defines.hpp>
 #include <movutl/core/prop_types.hpp>
+#include <mutex>
 #include <string>
 
 #define BITMAPINFOHEADER void
@@ -73,12 +74,15 @@ protected:
   InputHandle in_handle_    = nullptr;
   EntityInfo info;
 
-  bool render_filters(Composition* cmp, Image* img);
+  bool render_filters(Composition* cmp, Image* img, int frame);
 
 public:
   cutil::Str name;    // MPROPERTY(name="名前")
   uint64_t guid_ = 0; // MPROPERTY(name="GUID")
   TrackObject trk;    // MPROPERTY(name="トラック")
+
+  // このEntity固有の状態(trk/img_/デコーダハンドル等)を読み書きする際のロック。Composition::mtxとは別物
+  mutable std::mutex mtx;
 
   virtual constexpr EntityType getType() const = 0;
 
@@ -90,7 +94,7 @@ public:
   static Ref<Entity> fromSaveProps(const cutil::Prop& p);
 
   Composition* get_comp() const;
-  virtual bool render(Composition* cmp) = 0;
+  virtual bool render(Composition* cmp, Image* target, int frame) = 0;
 
   InputPluginTable* get_input_plugin() const { return in_plg_; }
   InputHandle get_input_handle() const { return in_handle_; }

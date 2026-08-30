@@ -7,7 +7,6 @@
 #include <movutl/core/logger.hpp>
 #include <movutl/core/profiler.hpp>
 #include <movutl/core/time.hpp>
-#include <movutl/render2d/render2d.hpp>
 
 namespace mu {
 
@@ -34,7 +33,8 @@ void update_renderer_thread() {
   MOVUTL_ZONE_SCOPED_N("update_renderer_thread");
   auto cmp = Composition::GetActiveComp();
   if(!cmp) return;
-  render_comp(cmp);
+  auto* app = AppMain::Get();
+  app->render_pool.tick(cmp, app->is_playing());
 }
 
 void AppMain::play() {
@@ -47,7 +47,8 @@ void AppMain::pause() { playing_ = false; }
 void AppMain::reset() {
   playing_ = false;
   auto cmp = Composition::GetActiveComp();
-  if(cmp) cmp->frame = cmp->fstart;
+  if(!cmp) return;
+  cmp->frame = cmp->fstart;
 }
 
 void AppMain::goto_frame(int frame) {
