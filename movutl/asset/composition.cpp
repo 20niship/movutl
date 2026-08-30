@@ -4,6 +4,7 @@
 #include <movutl/asset/entity.hpp>
 #include <movutl/asset/project.hpp>
 #include <movutl/core/prop_types.hpp>
+#include <movutl/render2d/renderer.hpp>
 
 namespace mu {
 
@@ -48,9 +49,6 @@ std::string TrackLayer::summary() const {
 void Composition::resize(int32_t w, int32_t h) {
   size[0] = w;
   size[1] = h;
-  if(frame_final) frame_final->resize(w, h);
-  if(frame_edit) frame_edit->resize(w, h);
-  if(frame_temp) frame_temp->resize(w, h);
 }
 
 Composition::Composition(const char* name, int32_t w, int32_t h, int32_t fps) {
@@ -131,6 +129,15 @@ void Composition::insert_entity(Ref<Entity> entt, int layer) {
     this->layers[layer].entts.push_back(entt);
   }
   cache.invalidate_all();
+}
+
+Ref<Image> Composition::render_current_frame_main_thread() {
+  Ref<Image> out;
+  if(cache.get(frame, &out)) return out;
+  CPURenderer renderer;
+  renderer.render_frame(this, frame, out);
+  cache.insert(frame, out, frame);
+  return out;
 }
 
 } // namespace mu

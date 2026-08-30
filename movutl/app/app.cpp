@@ -7,7 +7,6 @@
 #include <movutl/core/logger.hpp>
 #include <movutl/core/profiler.hpp>
 #include <movutl/core/time.hpp>
-#include <movutl/render2d/render2d.hpp>
 
 namespace mu {
 
@@ -36,19 +35,6 @@ void update_renderer_thread() {
   if(!cmp) return;
   auto* app = AppMain::Get();
   app->render_pool.tick(cmp, app->is_playing());
-
-  // comp->frame/frame_finalはCPURenderer::render_frame(ワーカー)が一時的に書き換えるため、mtx無しだと再生中フレームが破壊される
-  std::lock_guard<std::mutex> lock(cmp->mtx);
-  Ref<Image> img;
-  bool hit = cmp->cache.get(cmp->frame, &img);
-  if(hit) {
-    if(!cmp->frame_final) cmp->frame_final = cutil::make_ref<Image>(cmp->size[0], cmp->size[1]);
-    *cmp->frame_final = *img;
-    cmp->frame_final->dirty();
-  } else if(!cmp->frame_final) {
-    // ワーカーの初回レンダリング完了までは空フレームを表示する
-    cmp->frame_final = cutil::make_ref<Image>(cmp->size[0], cmp->size[1]);
-  }
 }
 
 void AppMain::play() {

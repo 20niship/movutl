@@ -36,7 +36,7 @@ public:
 
   static Ref<ShapeEntt> Create(const char* name, ShapeType type = ShapeType_Rect);
   virtual EntityType getType() const override { return EntityType_Polygon; }
-  virtual bool render(Composition* cmp) override;
+  virtual bool render(Composition* cmp, Image* target, int frame) override;
 
   virtual const cutil::PropInfo* getPropsInfo() const override; // MUFUNC_AUTOGEN
   virtual cutil::Prop getProps() const override;                // MUFUNC_AUTOGEN

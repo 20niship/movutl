@@ -39,7 +39,7 @@ public:
 
   static Ref<TextEntt> Create(const char* text, const char* font = nullptr);
   virtual EntityType getType() const override { return EntityType_3DText; }
-  virtual bool render(Composition* cmp) override;
+  virtual bool render(Composition* cmp, Image* target, int frame) override;
 
   virtual const cutil::PropInfo* getPropsInfo() const override; // MUFUNC_AUTOGEN
   virtual cutil::Prop getProps() const override;                // MUFUNC_AUTOGEN

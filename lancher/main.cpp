@@ -3,7 +3,6 @@
 #include <movutl/asset/project.hpp>
 #include <movutl/core/logger.hpp>
 #include <movutl/gui/gui.hpp>
-#include <movutl/render2d/render2d.hpp>
 #include <thread>
 
 using namespace mu;
@@ -11,8 +10,7 @@ using namespace mu;
 void util_show_main_cmp_result() {
   auto cmp = Project::Get()->get_main_comp();
   MU_ASSERT(cmp);
-  render_comp(cmp);
-  auto frame = cmp->frame_final;
+  auto frame = cmp->render_current_frame_main_thread();
   MU_ASSERT(frame);
 }
 

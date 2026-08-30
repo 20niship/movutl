@@ -35,7 +35,7 @@ public:
 
   enum Flag : uint32_t {
     setting_dialog     = 1 << 4,  // そのオブジェクトの設定ダイアログが表示されている
-    frame_alpha        = 1 << 8,  // frame_edit,frame_tempにアルファチャンネルあり
+    frame_alpha        = 1 << 8,  // レンダリング結果にアルファチャンネルあり
     fast_preview       = 1 << 9,  // 画像処理を間引いて表示
     preprocessing      = 1 << 10, // フィルタの前処理（Filter.Flagのpreprocess参照）
     hide_output_gui    = 1 << 11, // オブジェクト枠の点線などを表示しない
@@ -44,11 +44,6 @@ public:
     invert_interlace   = 1 << 17, // AviUtl::FilterProcInfo側のフラグ
   };
   Flag flag = (Flag)0;
-
-  // ---------- video ----------
-  Ref<Image> frame_final;
-  Ref<Image> frame_edit;
-  Ref<Image> frame_temp;
 
   Vec2d size       = {1920, 1080};
   float framerate  = 30.0f;
@@ -80,13 +75,15 @@ public:
 
   static Composition* GetActiveComp();
 
-  // name/size/framerate/fstart/fend/frameのみを対象とする(layers/entitiesはguid参照を含むためProject::Save/Loadで別途扱う)
   const cutil::PropInfo* getPropsInfo() const;
   cutil::Prop getProps() const;
   void setProps(const cutil::Prop& props);
 
   int insertable_layer_index() const;
   void insert_entity(Ref<Entity> entt, int layer = -1);
+
+  // 現在フレームをバックグラウンドキューを使わずその場で同期レンダリングして取得する(キャッシュ済みならそれを返す)
+  Ref<Image> render_current_frame_main_thread();
 };
 
 } // namespace mu

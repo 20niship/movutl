@@ -9,7 +9,6 @@
 #include <movutl/core/filesystem.hpp>
 #include <movutl/plugin/input.hpp>
 #include <movutl/plugin/plugin.hpp>
-#include <movutl/render2d/render2d.hpp>
 
 using namespace mu;
 
@@ -140,20 +139,20 @@ TEST_CASE("Movie::render: start_frame_とspeedが素材内フレーム位置に�
   mov->trk.fstart   = 0;
   mov->trk.fend     = (int)mov->get_info().nframes;
 
-  auto comp = Composition("SpeedTestComp", mov->get_info().width, mov->get_info().height, 10);
+  Composition comp("SpeedTestComp", mov->get_info().width, mov->get_info().height, 10);
   comp.insert_entity(mov, -1);
 
   comp.frame = 0;
-  REQUIRE(render_comp(&comp));
-  CHECK(same_image(comp.frame_final.get(), &r7)); // start_frame_起点
+  auto img0  = comp.render_current_frame_main_thread();
+  CHECK(same_image(img0.get(), &r7)); // start_frame_起点
 
   comp.frame = 1;
-  REQUIRE(render_comp(&comp));
-  CHECK(same_image(comp.frame_final.get(), &r9)); // 1フレーム経過 * speed200% = 素材2フレーム進む
+  auto img1  = comp.render_current_frame_main_thread();
+  CHECK(same_image(img1.get(), &r9)); // 1フレーム経過 * speed200% = 素材2フレーム進む
 
   comp.frame = 2;
-  REQUIRE(render_comp(&comp));
-  CHECK(same_image(comp.frame_final.get(), &r11));
+  auto img2  = comp.render_current_frame_main_thread();
+  CHECK(same_image(img2.get(), &r11));
 }
 
 TEST_CASE("duplicate_asset: Movieの複製が独立した読み込みプラグインのインスタンスを持つ") {
@@ -170,23 +169,23 @@ TEST_CASE("duplicate_asset: Movieの複製が独立した読み込みプラグ�
   CHECK(clone->get_input_handle());
   CHECK(clone->get_input_handle() != mov->get_input_handle()); // 元と複製でハンドルが別インスタンスであること
 
-  /// 複製後、両方から独立してフレームをrenderできること(render()の戻り値で検証、render_compは常にtrueを返すため使わない)
+  /// 複製後、両方から独立してフレームをrenderできること
   mov->trk.fstart = clone->trk.fstart = 0;
   mov->trk.fend = clone->trk.fend = (int)mov->get_info().nframes;
 
   Composition comp("DupTestComp", mov->get_info().width, mov->get_info().height, 10);
-  comp.frame_final = cutil::make_ref<Image>(comp.size[0], comp.size[1]);
-  comp.frame       = 3;
-  CHECK(mov->render(&comp));
+  Image target(comp.size[0], comp.size[1]);
+  comp.frame = 3;
+  CHECK(mov->render(&comp, &target, comp.frame));
 
   Composition comp2("DupTestComp2", clone->get_info().width, clone->get_info().height, 10);
-  comp2.frame_final = cutil::make_ref<Image>(comp2.size[0], comp2.size[1]);
-  comp2.frame       = 3;
-  CHECK(clone->render(&comp2));
+  Image target2(comp2.size[0], comp2.size[1]);
+  comp2.frame = 3;
+  CHECK(clone->render(&comp2, &target2, comp2.frame));
 }
 
 /// AVCodecContext::pkt_timebase未設定でframe->ptsがAV_NOPTS_VALUEになり毎フレームEOFまでデコードし続けていた不具合の再発防止
-TEST_CASE("PERF: 動画の逐次再生でrender_compが極端に遅くならないこと") {
+TEST_CASE("PERF: 動画の逐次再生でrender_current_frame_main_threadが極端に遅くならないこと") {
   using namespace std::chrono;
   auto mov = Movie::Create("bench_movie", "../assets/movies/big_buck_bunny_360_10s.mp4");
   REQUIRE(mov->get_input_plugin());
@@ -199,8 +198,8 @@ TEST_CASE("PERF: 動画の逐次再生でrender_compが極端に遅くならな�
   auto t0     = high_resolution_clock::now();
   for(int i = 0; i < N; i++) {
     comp.frame = i;
-    render_comp(&comp);
+    comp.render_current_frame_main_thread();
   }
   double avg_ms = duration<double, std::milli>(high_resolution_clock::now() - t0).count() / N;
-  CHECK_MESSAGE(avg_ms < 50.0, "render_comp avg=" << avg_ms << "ms (逐次再生が壊れて毎フレームEOFまでデコードしている可能性)");
+  CHECK_MESSAGE(avg_ms < 50.0, "render_current_frame_main_thread avg=" << avg_ms << "ms (逐次再生が壊れて毎フレームEOFまでデコードしている可能性)");
 }

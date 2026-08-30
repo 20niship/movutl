@@ -164,9 +164,10 @@ void Image::outline(const Vec4b& border_color, int border_width) {
   }
 }
 
-bool Image::render(Composition* cmp) {
+bool Image::render(Composition* cmp, Image* target, int frame) {
+  (void)frame;
   MU_ASSERT(cmp);
-  MU_ASSERT(cmp->frame_final);
+  MU_ASSERT(target);
   if(this->width <= 0 || this->height <= 0) return false;
   int cw = cmp->size[0];
   int ch = cmp->size[1];
@@ -174,7 +175,7 @@ bool Image::render(Composition* cmp) {
 
   int base_x = this->width / 2 + trk.anchor[0] - cw / 2;
   int base_y = this->height / 2 + trk.anchor[1] - ch / 2;
-  return this->copyto(cmp->frame_final.get(), Vec2d(base_x, base_y), this->scale.avg(), this->rotation, this->alpha);
+  return this->copyto(target, Vec2d(base_x, base_y), this->scale.avg(), this->rotation, this->alpha);
 }
 
 bool Image::load_file(const char* path) {

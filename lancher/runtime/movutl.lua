@@ -93,9 +93,6 @@ movutl.ShapeType = {}
 ---@class Composition
 ---@field guid number
 ---@field flag Flag
----@field frame_final Ref<Image>
----@field frame_edit Ref<Image>
----@field frame_temp Ref<Image>
 ---@field framerate number
 ---@field bg_color number
 ---@field fstart number
@@ -107,9 +104,6 @@ movutl.ShapeType = {}
 movutl.Composition = {}
 movutl.Composition.guid = 0
 movutl.Composition.flag = ( Flag ) 0
-movutl.Composition.frame_final = nil
-movutl.Composition.frame_edit = nil
-movutl.Composition.frame_temp = nil
 movutl.Composition.framerate = 30.0 f
 movutl.Composition.bg_color = ( int32_t ) 0xFF000000
 movutl.Composition.fstart = 0

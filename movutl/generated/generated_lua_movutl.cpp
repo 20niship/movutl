@@ -111,18 +111,15 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("insertable_layer_index", &Composition::insertable_layer_index)
     .addFunction("insert_entity", &Composition::insert_entity)
     .addVariable("guid", &Composition::guid)               // uint32_t
-    .addVariable("flag", &Composition::flag)               // Flag
-    .addVariable("frame_final", &Composition::frame_final) // Ref<Image>
-    .addVariable("frame_edit", &Composition::frame_edit)   // Ref<Image>
-    .addVariable("frame_temp", &Composition::frame_temp)   // Ref<Image>
-    .addVariable("framerate", &Composition::framerate)     // float
-    .addVariable("bg_color", &Composition::bg_color)       // int32_t
-    .addVariable("fstart", &Composition::fstart)           // int32_t
-    .addVariable("fend", &Composition::fend)               // int32_t
-    .addVariable("frame", &Composition::frame)             // int32_t
-    .addVariable("audio_n", &Composition::audio_n)         // int32_t
-    .addVariable("audio_ch", &Composition::audio_ch)       // int32_t
-    .addVariable("layers", &Composition::layers)           // std::vector<TrackLayer>
+    .addVariable("flag", &Composition::flag)           // Flag
+    .addVariable("framerate", &Composition::framerate) // float
+    .addVariable("bg_color", &Composition::bg_color)   // int32_t
+    .addVariable("fstart", &Composition::fstart)       // int32_t
+    .addVariable("fend", &Composition::fend)           // int32_t
+    .addVariable("frame", &Composition::frame)         // int32_t
+    .addVariable("audio_n", &Composition::audio_n)     // int32_t
+    .addVariable("audio_ch", &Composition::audio_ch)   // int32_t
+    .addVariable("layers", &Composition::layers)       // std::vector<TrackLayer>
     .endClass()
     .beginClass<Entity>("Entity")
     .addFunction("getType", &Entity::getType)

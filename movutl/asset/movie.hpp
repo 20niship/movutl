@@ -27,7 +27,7 @@ public:
   static Ref<Movie> Create(const char* name, const char* path = nullptr);
   bool load_file(const char* path);
   virtual EntityType getType() const override { return EntityType_Movie; }
-  virtual bool render(Composition* cmp) override;
+  virtual bool render(Composition* cmp, Image* target, int frame) override;
   virtual void reload_asset() override { load_file(path_.c_str()); }
 
   virtual const cutil::PropInfo* getPropsInfo() const override; // MUFUNC_AUTOGEN

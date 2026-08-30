@@ -6,8 +6,9 @@
 namespace mu {
 class ViewerWindow final : public UIPanel {
   GLTexture tex;
-  float zoom = 1.0f; // ダブルクリックで1.0にリセット
-  ImVec2 pan = ImVec2(0, 0);
+  float zoom               = 1.0f; // ダブルクリックで1.0にリセット
+  ImVec2 pan               = ImVec2(0, 0);
+  Image* last_bound_frame_ = nullptr; // texに束縛中のFrameCache由来Imageの識別用
 
 public:
   void header();

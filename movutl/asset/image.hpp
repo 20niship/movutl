@@ -122,7 +122,7 @@ public:
     }
   }
 
-  virtual bool render(Composition* cmp) override;
+  virtual bool render(Composition* cmp, Image* target, int frame) override;
   virtual EntityType getType() const override { return EntityType_Image; }
 
   static Ref<Image> Create(const char* name, const char* path = "");

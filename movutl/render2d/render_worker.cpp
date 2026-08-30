@@ -81,7 +81,6 @@ void RenderWorkerPool::worker_loop(size_t worker_idx) {
       if(stop_.load() && queue_.empty()) return;
       job = queue_.front();
       queue_.pop_front();
-      pending_.erase(std::make_pair(job.comp, job.frame));
     }
     worker_frame_[worker_idx].store(job.frame);
     Ref<Image> out;
@@ -95,6 +94,11 @@ void RenderWorkerPool::worker_loop(size_t worker_idx) {
       total_rendered_.fetch_add(1);
     }
     worker_frame_[worker_idx].store(-1);
+    {
+      // cache挿入後にpending_解除。早く外すとレンダリング中のフレームが「未処理」と誤認され二重発注される
+      std::lock_guard<std::mutex> lock(qmtx_);
+      pending_.erase(std::make_pair(job.comp, job.frame));
+    }
   }
 }
 
