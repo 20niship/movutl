@@ -6,9 +6,7 @@
 using namespace mu;
 
 namespace {
-Ref<Composition> make_test_comp(int w, int h) {
-  return cutil::make_ref<Composition>("test", w, h, 30);
-}
+Ref<Composition> make_test_comp(int w, int h) { return cutil::make_ref<Composition>("test", w, h, 30); }
 
 Image make_target(int w, int h) {
   Image target;

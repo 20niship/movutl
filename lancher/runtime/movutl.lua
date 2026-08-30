@@ -135,6 +135,9 @@ function movutl.Composition:insertable_layer_index( ) end
 ---@return nil
 function movutl.Composition:insert_entity( entt, layer, ) end
 
+---@return Ref<Image>
+function movutl.Composition:render_current_frame_main_thread( ) end
+
 ---@class EntityInfo
 ---@field flag EntityType
 ---@field framerate number

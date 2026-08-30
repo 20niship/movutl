@@ -110,7 +110,8 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addStaticFunction("GetActiveComp", &Composition::GetActiveComp)
     .addFunction("insertable_layer_index", &Composition::insertable_layer_index)
     .addFunction("insert_entity", &Composition::insert_entity)
-    .addVariable("guid", &Composition::guid)               // uint32_t
+    .addFunction("render_current_frame_main_thread", &Composition::render_current_frame_main_thread)
+    .addVariable("guid", &Composition::guid)           // uint32_t
     .addVariable("flag", &Composition::flag)           // Flag
     .addVariable("framerate", &Composition::framerate) // float
     .addVariable("bg_color", &Composition::bg_color)   // int32_t

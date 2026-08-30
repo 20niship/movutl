@@ -17,9 +17,9 @@ void DeveloperWindow::Update() {
   uint64_t rendered             = pool.total_rendered();
   double now                    = mu_now_seconds();
   if(now - last_sample_t >= 0.5) {
-    render_fps     = (float)((rendered - last_rendered) / (now - last_sample_t));
-    last_rendered  = rendered;
-    last_sample_t  = now;
+    render_fps    = (float)((rendered - last_rendered) / (now - last_sample_t));
+    last_rendered = rendered;
+    last_sample_t = now;
   }
 
   ImGui::Text("レンダー速度: %.1f frame/s", render_fps);

@@ -249,7 +249,7 @@ bool BeginTimeline(const char* name, FrameT* frame, FrameT* start, FrameT* end, 
     bool in_header_area = ImGui::IsMouseHoveringRect(ImVec2(h_.x.min, h_.y.min), ImVec2(h_.x.max, h_.y.max));
     bool lclick         = ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseDragging(ImGuiMouseButton_Left);
     if(in_header_area && lclick) {
-      *frame              = ctx_.view2f(ImGui::GetMousePos().x);
+      *frame             = ctx_.view2f(ImGui::GetMousePos().x);
       cur_frame_snapshot = *frame;
     }
   }
@@ -288,21 +288,21 @@ int EndTimeline() {
 
   // レイヤーの削除/移動を遅延適用(ループ中のvector破壊を避けるため)
   if(ctx_.active_comp) {
-    auto* cp = ctx_.active_comp;
+    auto* cp     = ctx_.active_comp;
     bool changed = false;
     {
       std::lock_guard<std::mutex> lock(cp->mtx);
       if(ctx_.pending_delete_layer >= 0 && ctx_.pending_delete_layer < (int)cp->layers.size()) {
         cp->layers.erase(cp->layers.begin() + ctx_.pending_delete_layer);
         ctx_.pending_delete_layer = -1;
-        changed = true;
+        changed                   = true;
       }
       if(ctx_.pending_move_layer >= 0 && ctx_.pending_move_layer < (int)cp->layers.size()) {
         int i = ctx_.pending_move_layer;
         int j = i + ctx_.pending_move_dir;
         if(j >= 0 && j < (int)cp->layers.size()) std::swap(cp->layers[i], cp->layers[j]);
         ctx_.pending_move_layer = -1;
-        changed = true;
+        changed                 = true;
       }
     }
     if(changed) cp->cache.invalidate_all();

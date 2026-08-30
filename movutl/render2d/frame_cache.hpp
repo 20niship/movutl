@@ -1,8 +1,8 @@
 #pragma once
 
-#include <map>
-#include <mutex>
 #include <movutl/asset/image.hpp>
+#include <mutex>
+#include <unordered_map>
 
 namespace mu {
 
@@ -19,10 +19,9 @@ public:
 
 private:
   mutable std::mutex mtx_;
-  std::map<int, Ref<Image>> frames_;
-  static constexpr size_t kMaxCachedFrames = 300;
+  std::unordered_map<int, Ref<Image>> frames_;
 
-  void evict_locked(int current_frame);
+  void evict_locked(int current_frame); // 保持上限はConfig::Get()->cache_framesを参照する
 };
 
 } // namespace mu

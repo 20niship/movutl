@@ -1,4 +1,6 @@
+#include <algorithm>
 #include <cstdlib>
+#include <movutl/asset/config.hpp>
 #include <movutl/render2d/frame_cache.hpp>
 
 namespace mu {
@@ -35,12 +37,18 @@ void FrameCache::invalidate_all() {
 void FrameCache::invalidate_range(int f0, int f1) {
   if(f0 > f1) std::swap(f0, f1);
   std::lock_guard<std::mutex> lock(mtx_);
-  frames_.erase(frames_.lower_bound(f0), frames_.upper_bound(f1));
+  for(auto it = frames_.begin(); it != frames_.end();) {
+    if(it->first >= f0 && it->first <= f1)
+      it = frames_.erase(it);
+    else
+      ++it;
+  }
 }
 
 void FrameCache::evict_locked(int current_frame) {
-  while(frames_.size() > kMaxCachedFrames) {
-    auto farthest = frames_.begin();
+  size_t cap = std::max(1, Config::Get()->cache_frames);
+  while(frames_.size() > cap) {
+    auto farthest     = frames_.begin();
     int farthest_dist = std::abs(farthest->first - current_frame);
     for(auto it = frames_.begin(); it != frames_.end(); ++it) {
       int dist = std::abs(it->first - current_frame);

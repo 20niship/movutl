@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <movutl/asset/config.hpp>
 #include <movutl/core/profiler.hpp>
 #include <movutl/render2d/render_worker.hpp>
 #include <movutl/render2d/renderer.hpp>
@@ -22,17 +23,17 @@ RenderWorkerPool::~RenderWorkerPool() { stop(); }
 void RenderWorkerPool::request(Composition* comp, int frame, bool urgent) {
   if(!comp) return;
   std::lock_guard<std::mutex> lock(qmtx_);
-  auto key = std::make_pair(comp, frame);
-  if(pending_.count(key)) return;
-  pending_.insert(key);
+  Job job{comp, frame};
+  if(pending_.count(job)) return;
+  pending_.insert(job);
   if(urgent)
-    queue_.push_front(Job{comp, frame});
+    queue_.push_front(job);
   else
-    queue_.push_back(Job{comp, frame});
+    queue_.push_back(job);
   cv_.notify_one();
 }
 
-void RenderWorkerPool::tick(Composition* comp, bool playing, int prefetch_ahead) {
+void RenderWorkerPool::tick(Composition* comp, bool playing) {
   if(!comp) return;
   int cur;
   {
@@ -40,8 +41,12 @@ void RenderWorkerPool::tick(Composition* comp, bool playing, int prefetch_ahead)
     cur = comp->frame;
   }
   if(!comp->cache.is_cached(cur)) request(comp, cur, true);
-  // 停止中も待機中のワーカーがcurrent frame周辺を先読みし続けるようにする(再生中は先読み範囲を広く取る)
-  int ahead = playing ? prefetch_ahead : std::min(prefetch_ahead, 10);
+
+  // 空きキャッシュ枠分だけ先読みする(停止中は再生中より控えめに)
+  int capacity  = std::max(1, Config::Get()->cache_frames);
+  int remaining = capacity - (int)comp->cache.size();
+  if(remaining <= 0) return;
+  int ahead = playing ? remaining : std::min(remaining, 10);
   for(int i = 1; i <= ahead; i++) {
     int f = cur + i;
     if(f > comp->fend) break;
@@ -60,8 +65,8 @@ void RenderWorkerPool::stop() {
 std::vector<RenderWorkerPool::WorkerStatus> RenderWorkerPool::worker_status() const {
   std::vector<WorkerStatus> out(workers_.size());
   for(size_t i = 0; i < workers_.size(); i++) {
-    int f      = worker_frame_[i].load();
-    out[i]     = {f, f >= 0};
+    int f  = worker_frame_[i].load();
+    out[i] = {f, f >= 0};
   }
   return out;
 }
@@ -97,7 +102,7 @@ void RenderWorkerPool::worker_loop(size_t worker_idx) {
     {
       // cache挿入後にpending_解除。早く外すとレンダリング中のフレームが「未処理」と誤認され二重発注される
       std::lock_guard<std::mutex> lock(qmtx_);
-      pending_.erase(std::make_pair(job.comp, job.frame));
+      pending_.erase(job);
     }
   }
 }

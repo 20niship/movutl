@@ -11,6 +11,8 @@ ignore_symbols = [  #
     ("", ""),
     ("Movie", "img_"),
     ("TextEntt", "img_"),
+    ("Composition", "mtx"),
+    ("Composition", "cache"),
     ("AnimKeyframe", ""),
     ("GUIManager", ""),
     ("AnimProps", ""),

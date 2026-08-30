@@ -21,8 +21,8 @@ public:
   RenderWorkerPool(const RenderWorkerPool&)            = delete;
   RenderWorkerPool& operator=(const RenderWorkerPool&) = delete;
 
-  // 現在フレームを優先(urgent)でキューイングし、再生中ならprefetch_ahead分先読みをキューイングする
-  void tick(Composition* comp, bool playing, int prefetch_ahead = 30);
+  // 現在フレームを優先(urgent)でキューイングし、Config::cache_framesの空き分だけ先読みをキューイングする
+  void tick(Composition* comp, bool playing);
 
   void request(Composition* comp, int frame, bool urgent);
 
@@ -44,13 +44,14 @@ private:
   struct Job {
     Composition* comp;
     int frame;
+    bool operator<(const Job& o) const { return comp != o.comp ? comp < o.comp : frame < o.frame; }
   };
 
   void worker_loop(size_t worker_idx);
 
   std::vector<std::thread> workers_;
   std::deque<Job> queue_;
-  std::set<std::pair<Composition*, int>> pending_;
+  std::set<Job> pending_; // キュー投入済み〜レンダリング完了(cache挿入)までを表す。二重発注防止用
   mutable std::mutex qmtx_;
   std::condition_variable cv_;
   std::atomic<bool> stop_{false};
