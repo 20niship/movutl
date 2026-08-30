@@ -9,9 +9,10 @@ bool draw_props_editor(const cutil::PropInfo* info, cutil::Prop* props) {
   bool changed = false;
   for(const auto& f : info->fields) {
     if(!props->contains(f.name)) continue;
+    const char* name_ = f.label[0] ? f.label : f.name;
     if(f.type == cutil::prop_info_of<bool>()) {
       bool v = props->get<bool>(f.name);
-      if(ImGui::Checkbox(f.name, &v)) {
+      if(ImGui::Checkbox(name_, &v)) {
         props->set<bool>(f.name, v);
         changed = true;
       }
