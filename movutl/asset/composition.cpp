@@ -131,6 +131,17 @@ void Composition::insert_entity(Ref<Entity> entt, int layer) {
   cache.invalidate_all();
 }
 
+std::vector<Ref<Entity>> Composition::get_all_entities() const {
+  std::lock_guard<std::mutex> lock(mtx);
+  std::vector<Ref<Entity>> out;
+  for(auto& layer : layers) {
+    if(!layer.active) continue;
+    for(auto& e : layer.entts)
+      if(e) out.push_back(e);
+  }
+  return out;
+}
+
 Ref<Image> Composition::render_current_frame_main_thread() {
   Ref<Image> out;
   if(cache.get(frame, &out)) return out;

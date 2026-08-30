@@ -448,7 +448,7 @@ bool BeginTrack(const Ref<Entity>& entity) {
 
   if(ctx_.dragging_entt == entity.get()) {
     if(ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
-      std::lock_guard<std::mutex> lock(entity->get_comp() ? entity->get_comp()->mtx : ctx_.active_comp->mtx);
+      std::lock_guard<std::mutex> lock(entity->mtx);
       int delta_f  = ctx_.view2f((int)mouse_x) - ctx_.drag_start_frame;
       auto nframes = (int)entity->get_info().nframes; // 素材の総フレーム数(動画/音声のみ>0)
       if(ctx_.drag_mode == 1) {

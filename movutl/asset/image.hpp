@@ -1,7 +1,5 @@
 #pragma once
 
-#include <algorithm>
-#include <cstring>
 #include <movutl/asset/entity.hpp>
 #include <movutl/core/profiler.hpp>
 #include <movutl/core/vector.hpp>
@@ -59,14 +57,8 @@ public:
     height = 0;
     data_.clear();
   }
-  void fill(const uint32_t& v) { std::memset(data_.data(), v, size_in_bytes()); }
-  void fill_rgba(const Vec4b& c) {
-    MOVUTL_ZONE_SCOPED_N("Image::fill_rgba");
-    static_assert(sizeof(Vec4b) == sizeof(uint32_t), "Vec4b size must match uint32_t");
-    uint32_t packed;
-    std::memcpy(&packed, &c, sizeof(uint32_t));
-    std::fill_n(reinterpret_cast<uint32_t*>(data()), size(), packed);
-  }
+  void fill(const uint32_t& v);
+  void fill_rgba(const Vec4b& c);
 
   bool copyto(Image* dst, const Vec2d& pmin, float alpha_mul = 1.0f) const;
   bool copyto(Image* dst, const Vec2d& pmin, const Vec2d& pmax) const;

@@ -22,12 +22,10 @@ bool CPURenderer::render_frame(Composition* comp, int frame, Ref<Image>& out) {
     out->fill_rgba(Vec4b{(unsigned char)(bg & 0xFF), (unsigned char)((bg >> 8) & 0xFF), (unsigned char)((bg >> 16) & 0xFF), (unsigned char)((bg >> 24) & 0xFF)});
   }
 
-  // layers/entts/trkの読み取り保護のためlockするが、comp自身のフィールドへの書き込みは一切行わない
-  std::lock_guard<std::mutex> lock(comp->mtx);
-  for(auto& layer : comp->layers) {
-    if(!layer.active) continue;
-    auto e = layer.find_entt(frame);
-    if(!e) continue;
+  // comp->mtxはget_all_entities()内で短時間lockするのみ。Entity個々のレンダリング中はe->mtxだけをlockする
+  for(auto& e : comp->get_all_entities()) {
+    std::lock_guard<std::mutex> lock(e->mtx);
+    if(!e->visible(frame)) continue;
     e->render(comp, out.get(), frame);
   }
   out->dirty();

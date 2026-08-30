@@ -4,6 +4,7 @@
 #include <movutl/asset/track.hpp>
 #include <movutl/core/defines.hpp>
 #include <movutl/core/prop_types.hpp>
+#include <mutex>
 #include <string>
 
 #define BITMAPINFOHEADER void
@@ -79,6 +80,9 @@ public:
   cutil::Str name;    // MPROPERTY(name="名前")
   uint64_t guid_ = 0; // MPROPERTY(name="GUID")
   TrackObject trk;    // MPROPERTY(name="トラック")
+
+  // このEntity固有の状態(trk/img_/デコーダハンドル等)を読み書きする際のロック。Composition::mtxとは別物
+  mutable std::mutex mtx;
 
   virtual constexpr EntityType getType() const = 0;
 

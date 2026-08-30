@@ -63,8 +63,8 @@ public:
   // ---------- track ----------
   std::vector<TrackLayer> layers;
 
-  // レイヤー/フレーム範囲などレンダリング結果に影響する状態を読み書きする際のロック
-  std::mutex mtx;
+  // layers(レイヤー構成/エンティティの追加削除)を読み書きする際のロック。各Entity固有の状態はEntity::mtxで個別に守る
+  mutable std::mutex mtx;
   // フレーム単位のレンダリング結果キャッシュ(バックグラウンドレンダーワーカーが書き込む)
   FrameCache cache;
 
@@ -83,6 +83,9 @@ public:
 
   int insertable_layer_index() const;
   void insert_entity(Ref<Entity> entt, int layer = -1);
+
+  // アクティブなレイヤーに乗っている全Entityのスナップショットを返す(mtxを短時間だけlockする)
+  std::vector<Ref<Entity>> get_all_entities() const;
 
   // 現在フレームをバックグラウンドキューを使わずその場で同期レンダリングして取得する(キャッシュ済みならそれを返す)
   Ref<Image> render_current_frame_main_thread();

@@ -1,3 +1,5 @@
+#include <algorithm>
+#include <cstring>
 #include <opencv2/opencv.hpp>
 //
 #include <movutl/app/app.hpp>
@@ -10,6 +12,16 @@
 #include <movutl/plugin/input.hpp>
 
 namespace mu {
+
+void Image::fill(const uint32_t& v) { std::memset(data_.data(), v, size_in_bytes()); }
+
+void Image::fill_rgba(const Vec4b& c) {
+  MOVUTL_ZONE_SCOPED_N("Image::fill_rgba");
+  static_assert(sizeof(Vec4b) == sizeof(uint32_t), "Vec4b size must match uint32_t");
+  uint32_t packed;
+  std::memcpy(&packed, &c, sizeof(uint32_t));
+  std::fill_n(reinterpret_cast<uint32_t*>(data()), size(), packed);
+}
 
 void Image::set_cv_img(const cv::Mat* cv_img) {
   MU_ASSERT(cv_img);
