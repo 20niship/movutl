@@ -14,6 +14,7 @@ ignore_symbols = [  #
     ("Composition", "mtx"),
     ("Composition", "cache"),
     ("Composition", "frame"),
+    ("Entity", "mtx"),
     ("AnimKeyframe", ""),
     ("GUIManager", ""),
     ("AnimProps", ""),

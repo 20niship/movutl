@@ -110,6 +110,7 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addStaticFunction("GetActiveComp", &Composition::GetActiveComp)
     .addFunction("insertable_layer_index", &Composition::insertable_layer_index)
     .addFunction("insert_entity", &Composition::insert_entity)
+    .addFunction("get_all_entities", &Composition::get_all_entities)
     .addFunction("render_current_frame_main_thread", &Composition::render_current_frame_main_thread)
     .addFunction("get_frame", &Composition::get_frame)
     .addFunction("set_frame", &Composition::set_frame)
