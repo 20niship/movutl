@@ -2,6 +2,7 @@
 #include <movutl/app/app_impl.hpp>
 #include <movutl/asset/config.hpp>
 #include <movutl/asset/project.hpp>
+#include <movutl/gui/export_window.hpp>
 #include <movutl/gui/gui.hpp>
 
 namespace mu {
@@ -32,6 +33,7 @@ void render_main_menu_bar() {
         save_project();
     }
     if(ImGui::MenuItem("名前を付けて保存", "Ctrl+Shift+S")) open_path_popup([](const char* p) { save_project_as(p); });
+    if(ImGui::MenuItem("エクスポート")) open_export_window();
     if(ImGui::MenuItem("終了", "Ctrl+Q")) GUIManager::Get()->should_close = true;
     ImGui::EndMenu();
   }

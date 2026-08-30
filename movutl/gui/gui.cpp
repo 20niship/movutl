@@ -8,6 +8,7 @@
 #include <movutl/core/logger.hpp>
 #include <movutl/core/profiler.hpp>
 #include <movutl/gui/composition_settings.hpp>
+#include <movutl/gui/export_window.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/gui/inspector.hpp>
 #include <movutl/gui/timeline.hpp>
@@ -21,7 +22,7 @@ namespace detail {
 void init_gui_panels() {
   auto g    = GUIManager::Get();
   g->panels = {
-    cutil::make_ref<InspectorWindow>(), cutil::make_ref<TimelineWindow>(), cutil::make_ref<ViewerWindow>(), cutil::make_ref<UtilityWindow>(), cutil::make_ref<CompositionSettingsWindow>(), cutil::make_ref<DeveloperWindow>(),
+    cutil::make_ref<InspectorWindow>(), cutil::make_ref<TimelineWindow>(), cutil::make_ref<ViewerWindow>(), cutil::make_ref<UtilityWindow>(), cutil::make_ref<CompositionSettingsWindow>(), cutil::make_ref<DeveloperWindow>(), cutil::make_ref<ExportWindow>(),
   };
 
   // デフォルトワークスペース(初回起動時に適用される)
