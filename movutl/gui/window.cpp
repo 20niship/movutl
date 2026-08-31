@@ -192,12 +192,15 @@ void update() {
 
   { // レンダーワーカーへのenqueueとキャッシュ済みフレームの取得のみ(実際のレンダリングはバックグラウンドスレッドで行う)
     detail::update_renderer_thread();
+    detail::update_audio_thread();
   }
   MOVUTL_FRAME_MARK;
 }
 
 void GUIManager::terminate() {
   detail::AppMain::Get()->render_pool.stop();
+  detail::AppMain::Get()->audio_worker.stop();
+  detail::AppMain::Get()->audio_player.stop();
   ImGui_ImplOpenGL3_Shutdown();
   ImGui_ImplGlfw_Shutdown();
   glfwTerminate();

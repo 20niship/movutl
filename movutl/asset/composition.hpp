@@ -10,6 +10,7 @@
 namespace mu {
 
 class Entity;
+class AudioRingBuffer;
 
 /**
  */
@@ -56,9 +57,12 @@ public:
   std::atomic<int32_t> frame{0};
 
   // ---------- audio ----------
-  int16_t* audio_p;
-  int32_t audio_n;
-  int32_t audio_ch;
+  int32_t audio_sample_rate = 48000; // 音声サンプリングレート(Hz)
+  int32_t audio_channels    = 2;     // 音声チャンネル数
+  Ref<AudioRingBuffer> audio_buf; // AudioMixWorkerが書き込むミックス済みPCM。内部mutexで保護(mtxとは別ロック)
+
+  // frameとaudio_sample_rateからサンプル位置へ変換する
+  int64_t frame_to_sample(int frame) const { return (int64_t)((double)frame / (double)framerate * (double)audio_sample_rate); }
 
   // ---------- track ----------
   std::vector<TrackLayer> layers;
@@ -70,7 +74,7 @@ public:
 
   void resize(int32_t w, int32_t h);
 
-  Composition() = default;
+  Composition();
   Composition(const char* name, int32_t w = 1920, int32_t h = 1080, int32_t fps = 30);
   std::string str() const;
   std::string summary() const;

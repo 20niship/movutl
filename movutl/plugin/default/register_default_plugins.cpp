@@ -1,4 +1,8 @@
 #include <movutl/app/app_impl.hpp>
+#include <movutl/plugin/default/audio_echo_filter.hpp>
+#include <movutl/plugin/default/audio_eq_filter.hpp>
+#include <movutl/plugin/default/audio_reverb_filter.hpp>
+#include <movutl/plugin/default/audio_volume_filter.hpp>
 #include <movutl/plugin/default/image_color_filter.hpp>
 #include <movutl/plugin/plugin.hpp>
 
@@ -11,6 +15,11 @@ void register_default_plugins() {
 void register_default_filters() {
   auto Main = AppMain::Get();
   Main->filters.push_back(f_color_correction);
+  Main->filters.push_back(f_audio_volume);
+  Main->filters.push_back(f_audio_pan);
+  Main->filters.push_back(f_audio_eq);
+  Main->filters.push_back(f_audio_reverb);
+  Main->filters.push_back(f_audio_echo);
 }
 
 } // namespace mu::detail

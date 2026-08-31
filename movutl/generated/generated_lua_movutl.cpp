@@ -120,8 +120,8 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addVariable("bg_color", &Composition::bg_color)   // int32_t
     .addVariable("fstart", &Composition::fstart)       // int32_t
     .addVariable("fend", &Composition::fend)           // int32_t
-    .addVariable("audio_n", &Composition::audio_n)     // int32_t
-    .addVariable("audio_ch", &Composition::audio_ch)   // int32_t
+    .addVariable("audio_sample_rate", &Composition::audio_sample_rate) // int32_t
+    .addVariable("audio_channels", &Composition::audio_channels)      // int32_t
     .addVariable("layers", &Composition::layers)       // std::vector<TrackLayer>
     .endClass()
     .beginClass<Entity>("Entity")

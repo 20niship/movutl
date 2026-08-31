@@ -37,6 +37,20 @@ void update_renderer_thread() {
   app->render_pool.tick(cmp, app->is_playing());
 }
 
+void update_audio_thread() {
+  MOVUTL_ZONE_SCOPED_N("update_audio_thread");
+  auto cmp = Composition::GetActiveComp();
+  if(!cmp) return;
+  auto* app = AppMain::Get();
+  app->audio_worker.tick(cmp, app->is_playing());
+  if(app->audio_player.is_running() == app->is_playing()) return;
+  app->audio_player.set_composition(cmp);
+  if(app->is_playing())
+    app->audio_player.start();
+  else
+    app->audio_player.stop();
+}
+
 void AppMain::play() {
   playing_         = true;
   last_frame_time_ = mu_now_seconds();

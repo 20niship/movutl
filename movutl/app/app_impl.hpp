@@ -1,6 +1,8 @@
 #pragma once
 #include <imgui.h>
 #include <map>
+#include <movutl/audio/audio_mixer.hpp>
+#include <movutl/audio/audio_player.hpp>
 #include <movutl/core/defines.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/plugin/plugin.hpp>
@@ -24,6 +26,8 @@ public:
   std::map<std::string, Workspace> workspaces;
 
   RenderWorkerPool render_pool;
+  AudioMixWorker audio_worker;
+  AudioPlayer audio_player;
 
   // ------------ 再生制御 ------------
   void play();

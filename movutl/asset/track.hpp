@@ -52,6 +52,8 @@ public:
     uint32_t guid           = 0; // フィルタID
     AnimProps props;             // フィルタプロパティ
     bool enabled  = true;
+    // 音声フィルタ用のトラックオブジェクト固有DSP状態(ディレイライン等)。fn_proc(&instance_state, ...)としてfp引数に渡される
+    void* instance_state = nullptr;
     FilterParam() = default;
     FilterParam(FilterPluginTable* plg, uint32_t guid) : plg_(plg), guid(guid) {}
     ~FilterParam() = default;

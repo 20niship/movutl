@@ -1,4 +1,5 @@
 #include <movutl/app/app.hpp>
+#include <movutl/asset/audio.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/entity.hpp>
 #include <movutl/asset/movie.hpp>
@@ -50,12 +51,27 @@ Ref<Entity> add_new_video_track(const char* name, const char* path, int start, i
 }
 
 bool add_new_audio_track(const char* name, const char* path, int start, int layer) {
-  MU_FAIL("Not implemented yet");
-  MU_UNUSED(name);
-  MU_UNUSED(path);
-  MU_UNUSED(start);
-  MU_UNUSED(layer);
-  return false;
+  MU_ASSERT(name != nullptr);
+  MU_ASSERT(path != nullptr);
+  auto e = AudioEntt::Create(name, path);
+  if(!e) {
+    LOG_F(ERROR, "Failed to load audio file: %s", path);
+    return false;
+  }
+  e->trk.fstart = start;
+  e->trk.fend   = start + 1; // 音声が読み込めなかった時用
+  e->load_file(path);
+  auto pj                = Project::Get();
+  Composition* main_comp = pj->get_main_comp();
+  if(!main_comp) {
+    Project::New();
+    main_comp = pj->get_main_comp();
+  }
+  MU_ASSERT(main_comp);
+  MU_ASSERT(layer >= 0 && layer <= 1000);
+  if(layer >= (int)main_comp->layers.size()) main_comp->layers.resize(layer + 1);
+  main_comp->layers[layer].entts.push_back(e);
+  return true;
 }
 
 bool add_new_track(const char* name, EntityType type, int start, int end) {
@@ -99,7 +115,15 @@ bool add_new_track(const char* name, EntityType type, int start, int end) {
       main_comp->insert_entity(shp);
       break;
     }
-    case EntityType_Audio: MU_FAIL("Not implemented yet");
+    case EntityType_Audio: {
+      auto a                 = AudioEntt::Create(name);
+      Composition* main_comp = Composition::GetActiveComp();
+      MU_ASSERT(main_comp);
+      a->trk.fstart = start;
+      a->trk.fend   = end;
+      main_comp->insert_entity(a);
+      break;
+    }
     default: MU_FAIL("Not implemented yet"); break;
   }
   return true;
