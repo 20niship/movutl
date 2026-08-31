@@ -63,11 +63,11 @@ void AudioMixWorker::tick(Composition* comp, bool playing) {
   playing_.store(playing);
 }
 
-void AudioMixWorker::mix_range(Composition* comp, int64_t start_sample, int n) {
-  MOVUTL_ZONE_SCOPED_N("AudioMixWorker::mix_range");
+void mix_audio_range(Composition* comp, int64_t start_sample, int n, int16_t* out) {
+  MOVUTL_ZONE_SCOPED_N("mix_audio_range");
   maxiSettings::setup(comp->audio_sample_rate, comp->audio_channels, n);
   int ch = std::max(1, comp->audio_channels);
-  std::vector<int16_t> master((size_t)n * ch, 0);
+  std::fill(out, out + (size_t)n * ch, (int16_t)0);
   std::vector<int16_t> track_buf((size_t)n * ch, 0);
 
   int frame = (int)((double)start_sample / std::max(1, comp->audio_sample_rate) * comp->framerate); // このチャンクの時刻に対応するフレーム(現在再生フレームではない)
@@ -90,9 +90,14 @@ void AudioMixWorker::mix_range(Composition* comp, int64_t start_sample, int n) {
       f.plg_->fn_proc(&f.instance_state, &fin, f.props.get(frame));
     }
 
-    for(size_t i = 0; i < master.size(); i++) master[i] = (int16_t)std::clamp((int32_t)master[i] + (int32_t)track_buf[i], -32768, 32767);
+    for(int i = 0; i < n * ch; i++) out[i] = (int16_t)std::clamp((int32_t)out[i] + (int32_t)track_buf[i], -32768, 32767);
   }
+}
 
+void AudioMixWorker::mix_range(Composition* comp, int64_t start_sample, int n) {
+  int ch = std::max(1, comp->audio_channels);
+  std::vector<int16_t> master((size_t)n * ch, 0);
+  mix_audio_range(comp, start_sample, n, master.data());
   comp->audio_buf->write(start_sample, master.data(), n);
 }
 

@@ -33,7 +33,7 @@ static bool fn_init(cutil::PropInfo* props, cutil::Prop* defaults) {
 
 static bool fn_exit() { return true; }
 
-static void* fn_open(const char* path, int, int, float, const cutil::Prop& props) {
+static void* fn_open(const char* path, int, int, float, int, int, const cutil::Prop& props) {
   if(path == nullptr) return nullptr;
   auto h = new(std::nothrow) PngExportHandle();
   if(h == nullptr) return nullptr;
@@ -84,6 +84,7 @@ OutputPluginTable out_export_png = {
   fn_exit,
   fn_open,
   fn_write_frame,
+  nullptr, // fn_write_audio(png連番は音声非対応)
   fn_close,
 };
 

@@ -11,6 +11,9 @@ namespace mu {
 
 class Composition;
 
+// Compositionの[start_sample, start_sample+n)分の音声をミックスしoutへ書き込む(PCM16 interleaved)。AudioMixWorkerとexport処理が共用する
+void mix_audio_range(Composition* comp, int64_t start_sample, int n, int16_t* out);
+
 // 固定長circular buffer。PCM16bit interleaved(FilterInData::audiopと同一形式)
 class AudioRingBuffer {
 public:
