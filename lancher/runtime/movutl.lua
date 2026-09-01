@@ -90,6 +90,36 @@ movutl.ImageFormat = {}
 ---@field ShapeType_Custom number
 movutl.ShapeType = {}
 
+---@class AudioEntt
+---@field start_frame_ number
+---@field speed number
+---@field volume_ number
+---@field loop_ boolean
+---@field mute_ boolean
+---@field path_ string
+movutl.AudioEntt = {}
+movutl.AudioEntt.start_frame_ = 0
+movutl.AudioEntt.speed = 100.0 f
+movutl.AudioEntt.volume_ = 100.0 f
+movutl.AudioEntt.loop_ = false
+movutl.AudioEntt.mute_ = false
+movutl.AudioEntt.path_ = ""
+
+---@param name string
+---@param path string
+---@return Ref<AudioEntt>
+function movutl.AudioEntt:Create( name, path, ) end
+
+---@param path string
+---@return boolean
+function movutl.AudioEntt:load_file( path, ) end
+
+---@return EntityType
+function movutl.AudioEntt:getType( ) end
+
+---@return nil
+function movutl.AudioEntt:reload_asset( ) end
+
 ---@class Composition
 ---@field guid number
 ---@field flag Flag
@@ -97,8 +127,9 @@ movutl.ShapeType = {}
 ---@field bg_color number
 ---@field fstart number
 ---@field fend number
----@field audio_n number
----@field audio_ch number
+---@field audio_sample_rate number
+---@field audio_channels number
+---@field audio_buf Ref<AudioRingBuffer>
 ---@field layers table
 movutl.Composition = {}
 movutl.Composition.guid = 0
@@ -107,9 +138,14 @@ movutl.Composition.framerate = 30.0 f
 movutl.Composition.bg_color = ( int32_t ) 0xFF000000
 movutl.Composition.fstart = 0
 movutl.Composition.fend = 200
-movutl.Composition.audio_n = 0
-movutl.Composition.audio_ch = 0
+movutl.Composition.audio_sample_rate = 48000
+movutl.Composition.audio_channels = 2
+movutl.Composition.audio_buf = nil
 movutl.Composition.layers = {}
+
+---@param frame number
+---@return number
+function movutl.Composition:frame_to_sample( frame, ) end
 
 ---@param w number
 ---@param h number
@@ -154,6 +190,8 @@ function movutl.Composition:set_frame( f, ) end
 ---@field width number
 ---@field height number
 ---@field audio_n number
+---@field audio_sample_rate number
+---@field audio_channels number
 ---@field audio_format_size number
 movutl.EntityInfo = {}
 movutl.EntityInfo.flag = EntityType_Movie
@@ -163,6 +201,8 @@ movutl.EntityInfo.format = ImageFormatRGB
 movutl.EntityInfo.width = 0
 movutl.EntityInfo.height = 0
 movutl.EntityInfo.audio_n = 0
+movutl.EntityInfo.audio_sample_rate = 0
+movutl.EntityInfo.audio_channels = 0
 movutl.EntityInfo.audio_format_size = 0
 
 ---@return string

@@ -1,19 +1,16 @@
 #include <algorithm>
 #include <chrono>
 #include <cstring>
+#include <maximilian.h>
 #include <movutl/asset/audio.hpp>
 #include <movutl/asset/composition.hpp>
-#include <maximilian.h>
 #include <movutl/audio/audio_mixer.hpp>
 #include <movutl/core/profiler.hpp>
 #include <movutl/plugin/filter.hpp>
 
 namespace mu {
 
-AudioRingBuffer::AudioRingBuffer(int32_t sample_rate, int32_t channels, double capacity_seconds)
-  : sample_rate_(sample_rate), channels_(channels), capacity_samples_((int64_t)(sample_rate * capacity_seconds)) {
-  ring_.assign((size_t)capacity_samples_ * std::max(1, channels_), 0);
-}
+AudioRingBuffer::AudioRingBuffer(int32_t sample_rate, int32_t channels, double capacity_seconds) : sample_rate_(sample_rate), channels_(channels), capacity_samples_((int64_t)(sample_rate * capacity_seconds)) { ring_.assign((size_t)capacity_samples_ * std::max(1, channels_), 0); }
 
 void AudioRingBuffer::write(int64_t from_sample, const int16_t* data, int n) {
   std::lock_guard<std::mutex> lock(mtx_);
@@ -108,10 +105,10 @@ void AudioMixWorker::worker_loop() {
     Composition* comp = comp_.load();
     if(!comp || !comp->audio_buf) continue;
 
-    int64_t cur_sample   = comp->frame_to_sample(comp->get_frame());
-    int64_t head         = comp->audio_buf->write_head();
-    int64_t lookahead     = comp->audio_sample_rate; // 常時1秒分先読みしておく
-    if(head < cur_sample) head = cur_sample; // シーク直後などバッファが現在地より遅れている場合は追いつく
+    int64_t cur_sample = comp->frame_to_sample(comp->get_frame());
+    int64_t head       = comp->audio_buf->write_head();
+    int64_t lookahead  = comp->audio_sample_rate; // 常時1秒分先読みしておく
+    if(head < cur_sample) head = cur_sample;      // シーク直後などバッファが現在地より遅れている場合は追いつく
 
     int chunk_samples = comp->audio_sample_rate * kChunkMs / 1000;
     if(head - cur_sample >= lookahead) continue; // 十分先まで作ってあるので待機

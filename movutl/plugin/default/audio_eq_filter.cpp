@@ -59,15 +59,7 @@ bool eq_init(void* fp, ABIContext* editp, cutil::PropInfo* props, cutil::Prop* d
 } // namespace
 
 FilterPluginTable f_audio_eq = {
-  GUID(0x0003),
-  FilterAudioOnly,
-  cutil::Str("EQ"),
-  cutil::Str("3バンドイコライザー(Maximilian maxiFilter使用)"),
-  0, "0",
-  nullptr, nullptr,
-  eq_init, nullptr,
-  eq_proc, nullptr,
-  nullptr, nullptr, nullptr,
+  GUID(0x0003), FilterAudioOnly, cutil::Str("EQ"), cutil::Str("3バンドイコライザー(Maximilian maxiFilter使用)"), 0, "0", nullptr, nullptr, eq_init, nullptr, eq_proc, nullptr, nullptr, nullptr, nullptr,
 };
 
 } // namespace mu::detail

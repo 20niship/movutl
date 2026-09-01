@@ -132,7 +132,7 @@ TEST_CASE("Output Plugin: 登録済みの全プラグイン×全対応拡張子�
         if(plg.fn_write_audio != nullptr) {
           int64_t s0 = comp.frame_to_sample(f);
           int64_t s1 = comp.frame_to_sample(f + 1);
-          int n        = (int)std::max<int64_t>(1, s1 - s0);
+          int n      = (int)std::max<int64_t>(1, s1 - s0);
           std::vector<int16_t> audio_buf((size_t)n * comp.audio_channels);
           mix_audio_range(&comp, s0, n, audio_buf.data());
           CHECK(plg.fn_write_audio(handle, audio_buf.data(), n));

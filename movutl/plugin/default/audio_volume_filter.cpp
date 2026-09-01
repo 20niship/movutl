@@ -59,27 +59,25 @@ bool pan_init(void* fp, ABIContext* editp, cutil::PropInfo* props, cutil::Prop* 
 } // namespace
 
 FilterPluginTable f_audio_volume = {
-  GUID(0x0001),        // id
-  FilterAudioOnly,     // flag
-  cutil::Str("音量調整"), // name
+  GUID(0x0001),                           // id
+  FilterAudioOnly,                        // flag
+  cutil::Str("音量調整"),                 // name
   cutil::Str("音声トラックの音量を調整"), // desc
-  0, "0",
-  nullptr, nullptr,
-  volume_init, nullptr,
-  volume_proc, nullptr,
-  nullptr, nullptr, nullptr,
+  0,
+  "0",
+  nullptr,
+  nullptr,
+  volume_init,
+  nullptr,
+  volume_proc,
+  nullptr,
+  nullptr,
+  nullptr,
+  nullptr,
 };
 
 FilterPluginTable f_audio_pan = {
-  GUID(0x0002),
-  FilterAudioOnly,
-  cutil::Str("左右パン"),
-  cutil::Str("音声トラックの左右バランスを調整"),
-  0, "0",
-  nullptr, nullptr,
-  pan_init, nullptr,
-  pan_proc, nullptr,
-  nullptr, nullptr, nullptr,
+  GUID(0x0002), FilterAudioOnly, cutil::Str("左右パン"), cutil::Str("音声トラックの左右バランスを調整"), 0, "0", nullptr, nullptr, pan_init, nullptr, pan_proc, nullptr, nullptr, nullptr, nullptr,
 };
 
 } // namespace mu::detail

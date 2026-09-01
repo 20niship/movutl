@@ -5,6 +5,7 @@
 #include <imgui.h>
 #include <lua.hpp>
 #include <movutl/app/app.hpp>
+#include <movutl/asset/audio.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/entity.hpp>
 #include <movutl/asset/image.hpp>

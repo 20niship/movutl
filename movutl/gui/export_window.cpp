@@ -28,13 +28,13 @@ bool composition_has_audio(Composition* comp) {
 
 // バックグラウンドスレッドで実行(gui.cpp/mainmenu.cppがis_exporting()中UIを無効化するためplugin/comp/path/propsは実行中不変)
 void export_thread_func(OutputPluginTable* plugin, Composition* comp, std::string path, cutil::Prop props, int fstart, int fend) {
-  auto& prog         = get_export_progress();
-  prog.total_frames  = fend - fstart + 1;
-  prog.current_frame = 0;
+  auto& prog            = get_export_progress();
+  prog.total_frames     = fend - fstart + 1;
+  prog.current_frame    = 0;
   const bool with_audio = composition_has_audio(comp);
-  int audio_sr           = with_audio ? comp->audio_sample_rate : 0;
-  int audio_ch            = with_audio ? comp->audio_channels : 0;
-  void* handle             = plugin->fn_open(path.c_str(), (int)comp->size[0], (int)comp->size[1], comp->framerate, audio_sr, audio_ch, props);
+  int audio_sr          = with_audio ? comp->audio_sample_rate : 0;
+  int audio_ch          = with_audio ? comp->audio_channels : 0;
+  void* handle          = plugin->fn_open(path.c_str(), (int)comp->size[0], (int)comp->size[1], comp->framerate, audio_sr, audio_ch, props);
   if(handle != nullptr) {
     CPURenderer renderer;
     Ref<Image> frame_buf;
@@ -45,7 +45,7 @@ void export_thread_func(OutputPluginTable* plugin, Composition* comp, std::strin
       if(with_audio && plugin->fn_write_audio != nullptr) {
         int64_t s0 = comp->frame_to_sample(f);
         int64_t s1 = comp->frame_to_sample(f + 1);
-        int n        = (int)std::max<int64_t>(1, s1 - s0);
+        int n      = (int)std::max<int64_t>(1, s1 - s0);
         audio_buf.assign((size_t)n * audio_ch, 0);
         mix_audio_range(comp, s0, n, audio_buf.data());
         plugin->fn_write_audio(handle, audio_buf.data(), n);

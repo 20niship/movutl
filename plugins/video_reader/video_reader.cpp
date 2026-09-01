@@ -43,9 +43,9 @@ struct FFmpegVideoHandle {
   bool has_pending         = false;
 
   // ---------- audio: fn_open時に全体をPCM16へデコードして保持(ponytail: 長時間音声はメモリ消費大、必要ならvideoと同様のシーク+逐次デコードへ切替) ----------
-  int audio_stream_index    = -1;
-  int audio_native_rate     = 0;
-  int audio_native_channels = 0;
+  int audio_stream_index      = -1;
+  int audio_native_rate       = 0;
+  int audio_native_channels   = 0;
   int64_t audio_total_samples = 0; // 1chあたりのサンプル数
   std::vector<int16_t> audio_pcm;  // interleaved PCM16, audio_total_samples * audio_native_channels 個
 
@@ -93,9 +93,9 @@ static void decode_audio_track(FFmpegVideoHandle* h) {
     return;
   }
 
-  AVPacket* pkt   = av_packet_alloc();
-  AVFrame* frame  = av_frame_alloc();
-  int channels    = out_layout.nb_channels;
+  AVPacket* pkt            = av_packet_alloc();
+  AVFrame* frame           = av_frame_alloc();
+  int channels             = out_layout.nb_channels;
   h->audio_native_rate     = actx->sample_rate;
   h->audio_native_channels = channels;
   h->audio_stream_index    = idx;
@@ -105,7 +105,7 @@ static void decode_audio_track(FFmpegVideoHandle* h) {
     if(max_out <= 0) max_out = 4096;
     std::vector<int16_t> buf((size_t)max_out * channels);
     uint8_t* out_planes[1] = {(uint8_t*)buf.data()};
-    int n = swr_convert(swr, out_planes, (int)max_out, f ? (const uint8_t**)f->data : nullptr, f ? f->nb_samples : 0);
+    int n                  = swr_convert(swr, out_planes, (int)max_out, f ? (const uint8_t**)f->data : nullptr, f ? f->nb_samples : 0);
     if(n > 0) h->audio_pcm.insert(h->audio_pcm.end(), buf.data(), buf.data() + (size_t)n * channels);
   };
 
@@ -225,9 +225,9 @@ static bool fn_info_get(InputHandle ih, EntityInfo* iip) {
   std::lock_guard<std::mutex> lock(h->mtx);
   if(h->dec_ctx == nullptr && h->audio_total_samples <= 0) return false;
 
-  iip->flag = (EntityType)((h->dec_ctx ? (int)EntityType_Movie : 0) | (h->audio_total_samples > 0 ? (int)EntityType_Audio : 0));
-  iip->framerate        = h->dec_ctx ? av_q2d(h->fps) : 0.0f;
-  iip->nframes          = (uint32_t)(h->nb_frames > 0 ? h->nb_frames : 0);
+  iip->flag              = (EntityType)((h->dec_ctx ? (int)EntityType_Movie : 0) | (h->audio_total_samples > 0 ? (int)EntityType_Audio : 0));
+  iip->framerate         = h->dec_ctx ? av_q2d(h->fps) : 0.0f;
+  iip->nframes           = (uint32_t)(h->nb_frames > 0 ? h->nb_frames : 0);
   iip->width             = h->width;
   iip->height            = h->height;
   iip->format            = ImageFormatRGBA; /// メモリレイアウトはBGRA8 (Image::data_ と同一)
@@ -351,7 +351,7 @@ static int fn_read_audio(InputHandle ih, int start, int length, void* buf) {
   int ch = h->audio_native_channels;
   if(ch <= 0 || h->audio_total_samples <= 0) return 0;
 
-  auto* out = (int16_t*)buf;
+  auto* out  = (int16_t*)buf;
   int copied = 0;
   for(int i = 0; i < length; i++) {
     int64_t s = (int64_t)start + i;
@@ -382,12 +382,12 @@ static bool stub_init() {
 namespace mu::detail {
 
 mu::InputPluginTable plg_video_reader = {
-  0x00000001,                                                                   // guid
+  0x00000001,                                                                 // guid
   InputPluginFlag_Video | InputPluginFlag_Audio | InputPluginFlag_Concurrent, // flag
-  (EntityType)(EntityType_Movie | EntityType_Audio),                           // supports
-  "FFmpeg Video Reader",                              // name
-  "",                                                 // filepath
-  "Read video/audio files via FFmpeg",                // information
+  (EntityType)(EntityType_Movie | EntityType_Audio),                          // supports
+  "FFmpeg Video Reader",                                                      // name
+  "",                                                                         // filepath
+  "Read video/audio files via FFmpeg",                                        // information
   {"avi", "mp4", "mov", "mkv", "webm", "mpg", "mpeg", "m4v", "wav", "mp3", "flac", "aac", "m4a", "ogg", "", ""},
 #ifdef MOVUTL_HAS_FFMPEG
   fn_init,       //	DLL開始時に呼ばれる関数へのポインタ (NULLなら呼ばれません)

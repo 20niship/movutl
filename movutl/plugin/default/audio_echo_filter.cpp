@@ -21,18 +21,18 @@ bool echo_proc(void* fp, FilterInData* fpip, const cutil::Prop& p) {
   auto* st = (EchoState*)*slot;
   if((int)st->lines.size() != fpip->audio_ch) st->lines.assign(std::max(1, fpip->audio_ch), maxiDelayline());
 
-  float delay_ms = std::max(1.0f, cutil::get_or<float>(p, "delay_ms", 300.0f));
-  float feedback = std::clamp(cutil::get_or<float>(p, "feedback", 40.0f) / 100.0f, 0.0f, 0.95f);
-  float mix      = std::clamp(cutil::get_or<float>(p, "mix", 30.0f) / 100.0f, 0.0f, 1.0f);
-  int sr           = fpip->compo ? fpip->compo->audio_sample_rate : 48000;
+  float delay_ms    = std::max(1.0f, cutil::get_or<float>(p, "delay_ms", 300.0f));
+  float feedback    = std::clamp(cutil::get_or<float>(p, "feedback", 40.0f) / 100.0f, 0.0f, 0.95f);
+  float mix         = std::clamp(cutil::get_or<float>(p, "mix", 30.0f) / 100.0f, 0.0f, 1.0f);
+  int sr            = fpip->compo ? fpip->compo->audio_sample_rate : 48000;
   int delay_samples = std::max(1, (int)(delay_ms / 1000.0f * sr));
 
   for(int i = 0; i < fpip->audio_n; i++) {
     for(int c = 0; c < fpip->audio_ch; c++) {
-      int idx        = i * fpip->audio_ch + c;
-      double in      = fpip->audiop[idx] / 32768.0;
-      double wet     = st->lines[c].dl(in, delay_samples, feedback);
-      double out     = in * (1.0 - mix) + wet * mix;
+      int idx           = i * fpip->audio_ch + c;
+      double in         = fpip->audiop[idx] / 32768.0;
+      double wet        = st->lines[c].dl(in, delay_samples, feedback);
+      double out        = in * (1.0 - mix) + wet * mix;
       fpip->audiop[idx] = (int16_t)std::clamp((int32_t)(out * 32768.0), -32768, 32767);
     }
   }
@@ -58,15 +58,7 @@ bool echo_init(void* fp, ABIContext* editp, cutil::PropInfo* props, cutil::Prop*
 } // namespace
 
 FilterPluginTable f_audio_echo = {
-  GUID(0x0005),
-  FilterAudioOnly,
-  cutil::Str("エコー"),
-  cutil::Str("ディレイ+フィードバックによるエコーエフェクト(Maximilian maxiDelayline使用)"),
-  0, "0",
-  nullptr, nullptr,
-  echo_init, nullptr,
-  echo_proc, nullptr,
-  nullptr, nullptr, nullptr,
+  GUID(0x0005), FilterAudioOnly, cutil::Str("エコー"), cutil::Str("ディレイ+フィードバックによるエコーエフェクト(Maximilian maxiDelayline使用)"), 0, "0", nullptr, nullptr, echo_init, nullptr, echo_proc, nullptr, nullptr, nullptr, nullptr,
 };
 
 } // namespace mu::detail

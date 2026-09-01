@@ -40,13 +40,13 @@ void AudioPlayer::set_composition(Composition* comp) {
   }
   if(!comp_) return;
 
-  auto* device = new ma_device();
-  ma_device_config cfg    = ma_device_config_init(ma_device_type_playback);
+  auto* device          = new ma_device();
+  ma_device_config cfg  = ma_device_config_init(ma_device_type_playback);
   cfg.playback.format   = ma_format_s16;
   cfg.playback.channels = (ma_uint32)comp_->audio_channels;
-  cfg.sampleRate         = (ma_uint32)comp_->audio_sample_rate;
-  cfg.dataCallback       = data_callback;
-  cfg.pUserData           = comp_;
+  cfg.sampleRate        = (ma_uint32)comp_->audio_sample_rate;
+  cfg.dataCallback      = data_callback;
+  cfg.pUserData         = comp_;
 
   if(ma_device_init(nullptr, &cfg, device) != MA_SUCCESS) {
     LOG_F(ERROR, "AudioPlayer: failed to init playback device");

@@ -27,10 +27,10 @@ bool reverb_proc(void* fp, FilterInData* fpip, const cutil::Prop& p) {
 
   for(int i = 0; i < fpip->audio_n; i++) {
     for(int c = 0; c < fpip->audio_ch; c++) {
-      int idx        = i * fpip->audio_ch + c;
-      double in      = fpip->audiop[idx] / 32768.0;
-      double wet     = st->verbs[c].play(in, roomsize, absorb);
-      double out     = in * (1.0 - mix) + wet * mix;
+      int idx           = i * fpip->audio_ch + c;
+      double in         = fpip->audiop[idx] / 32768.0;
+      double wet        = st->verbs[c].play(in, roomsize, absorb);
+      double out        = in * (1.0 - mix) + wet * mix;
       fpip->audiop[idx] = (int16_t)std::clamp((int32_t)(out * 32768.0), -32768, 32767);
     }
   }
@@ -56,15 +56,7 @@ bool reverb_init(void* fp, ABIContext* editp, cutil::PropInfo* props, cutil::Pro
 } // namespace
 
 FilterPluginTable f_audio_reverb = {
-  GUID(0x0004),
-  FilterAudioOnly,
-  cutil::Str("Reverb"),
-  cutil::Str("残響エフェクト(Maximilian maxiFreeVerb使用)"),
-  0, "0",
-  nullptr, nullptr,
-  reverb_init, nullptr,
-  reverb_proc, nullptr,
-  nullptr, nullptr, nullptr,
+  GUID(0x0004), FilterAudioOnly, cutil::Str("Reverb"), cutil::Str("残響エフェクト(Maximilian maxiFreeVerb使用)"), 0, "0", nullptr, nullptr, reverb_init, nullptr, reverb_proc, nullptr, nullptr, nullptr, nullptr,
 };
 
 } // namespace mu::detail

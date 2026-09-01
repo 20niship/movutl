@@ -106,12 +106,12 @@ cutil::Prop Composition::getProps() const {
 }
 
 void Composition::setProps(const cutil::Prop& p) {
-  name              = cutil::get_or<std::string>(p, "name", name.c_str());
-  size              = Vec2d(cutil::get_or<Vec2>(p, "size", Vec2(size)));
-  framerate         = cutil::get_or<float>(p, "framerate", framerate);
-  bg_color          = cutil::get_or<int32_t>(p, "bg_color", bg_color);
-  fstart            = cutil::get_or<int32_t>(p, "fstart", fstart);
-  fend              = cutil::get_or<int32_t>(p, "fend", fend);
+  name      = cutil::get_or<std::string>(p, "name", name.c_str());
+  size      = Vec2d(cutil::get_or<Vec2>(p, "size", Vec2(size)));
+  framerate = cutil::get_or<float>(p, "framerate", framerate);
+  bg_color  = cutil::get_or<int32_t>(p, "bg_color", bg_color);
+  fstart    = cutil::get_or<int32_t>(p, "fstart", fstart);
+  fend      = cutil::get_or<int32_t>(p, "fend", fend);
   frame.store(cutil::get_or<int32_t>(p, "frame", frame.load()));
   audio_sample_rate = cutil::get_or<int32_t>(p, "audio_sample_rate", audio_sample_rate);
   audio_channels    = cutil::get_or<int32_t>(p, "audio_channels", audio_channels);

@@ -12,11 +12,11 @@ public:
   AudioEntt(const char* path);
   ~AudioEntt() = default;
 
-  int start_frame_ = 0;     // MPROPERTY(name="開始フレーム")
-  float speed       = 100.0f; // MPROPERTY(name="再生速度", min=0.0, max=1000.0, step=5.0)
-  float volume_      = 100.0f; // MPROPERTY(name="音量", min=0.0, max=200.0)
-  bool loop_          = false; // MPROPERTY(name="ループ再生")
-  bool mute_          = false; // MPROPERTY(name="ミュート")
+  int start_frame_ = 0;      // MPROPERTY(name="開始フレーム")
+  float speed      = 100.0f; // MPROPERTY(name="再生速度", min=0.0, max=1000.0, step=5.0)
+  float volume_    = 100.0f; // MPROPERTY(name="音量", min=0.0, max=200.0)
+  bool loop_       = false;  // MPROPERTY(name="ループ再生")
+  bool mute_       = false;  // MPROPERTY(name="ミュート")
   std::string path_;         // MPROPERTY(name="ファイル", type="path")
 
   static Ref<AudioEntt> Create(const char* name, const char* path = nullptr);

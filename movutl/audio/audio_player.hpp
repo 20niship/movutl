@@ -20,9 +20,9 @@ public:
   bool is_running() const { return running_; }
 
 private:
-  void* device_ = nullptr; // ma_device*(実体はaudio_player.cppで確保、ヘッダをmovutl全体へ波及させないためvoid*で保持)
+  void* device_      = nullptr; // ma_device*(実体はaudio_player.cppで確保、ヘッダをmovutl全体へ波及させないためvoid*で保持)
   Composition* comp_ = nullptr;
-  bool running_        = false;
+  bool running_      = false;
 };
 
 } // namespace mu

@@ -10,6 +10,7 @@ ABIContext make_abi() {
   ABIContext abi{};
   abi.abi_version               = 1;
   abi.update_renderer_thread    = &update_renderer_thread;
+  abi.update_audio_thread       = &update_audio_thread;
   abi.init_gui_panels           = &init_gui_panels;
   abi.update_gui_panels         = &update_gui_panels;
   abi.gui_new_frame             = &gui_new_frame;

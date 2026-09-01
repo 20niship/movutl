@@ -7,7 +7,7 @@ namespace mu {
 namespace detail {
 void update_renderer_thread();
 void update_audio_thread();
-}
+} // namespace detail
 
 void init();
 void update();

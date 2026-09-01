@@ -59,7 +59,7 @@ public:
   // ---------- audio ----------
   int32_t audio_sample_rate = 48000; // 音声サンプリングレート(Hz)
   int32_t audio_channels    = 2;     // 音声チャンネル数
-  Ref<AudioRingBuffer> audio_buf; // AudioMixWorkerが書き込むミックス済みPCM。内部mutexで保護(mtxとは別ロック)
+  Ref<AudioRingBuffer> audio_buf;    // AudioMixWorkerが書き込むミックス済みPCM。内部mutexで保護(mtxとは別ロック)
 
   // frameとaudio_sample_rateからサンプル位置へ変換する
   int64_t frame_to_sample(int frame) const { return (int64_t)((double)frame / (double)framerate * (double)audio_sample_rate); }

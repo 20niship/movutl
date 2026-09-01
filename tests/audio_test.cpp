@@ -5,7 +5,7 @@
 using namespace mu;
 
 TEST_CASE("audio_resample-passthrough") {
-  int16_t in[4] = {100, -100, 200, -200}; // 2ch x 2samples
+  int16_t in[4]  = {100, -100, 200, -200}; // 2ch x 2samples
   int16_t out[4] = {0, 0, 0, 0};
   audio_resample(in, 2, 2, out, 2, 2, 1.0);
   CHECK(out[0] == 100);
@@ -25,7 +25,7 @@ TEST_CASE("audio_resample-mono-to-stereo") {
 }
 
 TEST_CASE("AudioRingBuffer-write-then-snapshot") {
-  AudioRingBuffer rb(1000, 2, 1.0); // 1000Hz, stereo, 1秒分
+  AudioRingBuffer rb(1000, 2, 1.0);     // 1000Hz, stereo, 1秒分
   int16_t data[6] = {1, 2, 3, 4, 5, 6}; // 3サンプル分
   rb.write(0, data, 3);
 

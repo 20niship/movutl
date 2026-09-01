@@ -40,7 +40,7 @@ private:
   int32_t sample_rate_;
   int32_t channels_;
   int64_t capacity_samples_;
-  std::vector<int16_t> ring_; // capacity_samples_ * channels_
+  std::vector<int16_t> ring_;          // capacity_samples_ * channels_
   std::atomic<int64_t> write_head_{0}; // 直近書き込んだ絶対サンプル位置の次(バッファに反映済みの範囲の終端)
   std::atomic<int64_t> read_cursor_{0};
   mutable std::mutex mtx_;
