@@ -31,6 +31,8 @@ if(APPLE)
   set(OpenMP_ROOT "/opt/homebrew/opt/libomp")
 endif()
 
+find_package(OpenMP QUIET)
+
 pkg_check_modules(LuaJIT REQUIRED IMPORTED_TARGET luajit)
 
 # --------------------------------------------------------------
@@ -66,6 +68,9 @@ set(MOVUTL_INCLUDES
 )
 
 set(MOVUTL_LIBRARIES ${MOVUTL_LIBRARIES} GLEW::GLEW)
+if(OpenMP_CXX_FOUND)
+  set(MOVUTL_LIBRARIES ${MOVUTL_LIBRARIES} OpenMP::OpenMP_CXX)
+endif()
 
 # --------------------------------------------------------------
 # ------------     Tracy Profiler -------------------------------
