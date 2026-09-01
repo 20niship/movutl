@@ -45,6 +45,7 @@ private:
   std::vector<int16_t> ring_;          // capacity_samples_ * channels_
   std::atomic<int64_t> write_head_{0}; // 直近書き込んだ絶対サンプル位置の次(バッファに反映済みの範囲の終端)
   std::atomic<int64_t> read_cursor_{0};
+  std::atomic<int64_t> last_underrun_log_ms_{0}; // アンダーラン警告ログのスロットル用
   mutable std::mutex mtx_;
 };
 

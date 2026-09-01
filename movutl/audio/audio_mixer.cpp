@@ -5,6 +5,7 @@
 #include <movutl/asset/audio.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/audio/audio_mixer.hpp>
+#include <movutl/core/logger.hpp>
 #include <movutl/core/profiler.hpp>
 #include <movutl/plugin/filter.hpp>
 
@@ -44,7 +45,14 @@ void AudioRingBuffer::seek(int64_t sample) {
 }
 
 int AudioRingBuffer::read_consume(int16_t* out, int n) {
-  int64_t cur = read_cursor_.load();
+  int64_t cur  = read_cursor_.load();
+  int64_t head = write_head_.load();
+  if(cur + n > head) {
+    // アンダーラン検出。リアルタイムスレッドでの頻発を避けるため200ms間隔に抑制してログする
+    int64_t now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+    int64_t last   = last_underrun_log_ms_.load();
+    if(now_ms - last > 200 && last_underrun_log_ms_.compare_exchange_strong(last, now_ms)) LOG_F(WARNING, "AudioRingBuffer: underrun, short by %lld samples (read_cursor=%lld, write_head=%lld)", (long long)(cur + n - head), (long long)cur, (long long)head);
+  }
   snapshot(cur, n, out);
   read_cursor_.store(cur + n);
   return n;
@@ -107,9 +115,11 @@ void AudioMixWorker::mix_range(Composition* comp, int64_t start_sample, int n) {
 void AudioMixWorker::worker_loop() {
   constexpr int kChunkMs = 20;
   while(!stop_.load()) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(kChunkMs));
     Composition* comp = comp_.load();
-    if(!comp || !comp->audio_buf) continue;
+    if(!comp || !comp->audio_buf) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(kChunkMs));
+      continue;
+    }
 
     // 基準はComposition::frame(GUI描画で律速され重いシーンでは実時間より遅れうる)ではなくread_cursor(実際の再生位置)。frame基準だと先読み済みと誤判定して音切れする
     int64_t play_pos  = comp->audio_buf->read_cursor();
@@ -117,8 +127,13 @@ void AudioMixWorker::worker_loop() {
     int64_t lookahead = comp->audio_sample_rate; // 常時1秒分先読みしておく
     if(head < play_pos) head = play_pos;         // シーク直後などバッファが再生位置より遅れている場合は追いつく
 
+    if(head - play_pos >= lookahead) {
+      // 先読み十分な時だけ待機する(先頭で無条件sleepだと生産速度が常に等速止まりになり、一度遅れると二度と追いつけない)
+      std::this_thread::sleep_for(std::chrono::milliseconds(kChunkMs));
+      continue;
+    }
+
     int chunk_samples = comp->audio_sample_rate * kChunkMs / 1000;
-    if(head - play_pos >= lookahead) continue; // 十分先まで作ってあるので待機
     mix_range(comp, head, chunk_samples);
   }
 }

@@ -58,10 +58,10 @@ void update_audio_thread() {
   }
 
   if(playing) {
-    // タイムラインバー上のドラッグ等、再生中のシークを検出したら音声もそこへ追従させる(0.2秒以上のズレをシークとみなす)
+    // 前方への手動シーク(0.2秒以上先へ飛んだ)のみ追従。expect<currentは単に描画が実時間に遅れているだけなので巻き戻さない(巻き戻すと毎フレーム音声が止まり音切れする)
     int64_t expect  = cmp->frame_to_sample(cmp->get_frame());
     int64_t current = cmp->audio_buf->read_cursor();
-    if(std::llabs(current - expect) > cmp->audio_sample_rate / 5) cmp->audio_buf->seek(expect);
+    if(expect - current > cmp->audio_sample_rate / 5) cmp->audio_buf->seek(expect);
   }
 }
 
@@ -83,6 +83,8 @@ void AppMain::goto_frame(int frame) {
   auto cmp = Composition::GetActiveComp();
   if(!cmp) return;
   cmp->frame = std::clamp(frame, cmp->fstart, cmp->fend);
+  // Viewer/タイムラインクリック等の明示的なシークはここを必ず通るので、ここで直接音声を追従させる(推測に頼らない)
+  if(cmp->audio_buf) cmp->audio_buf->seek(cmp->frame_to_sample(cmp->get_frame()));
 }
 
 void AppMain::update_frame_impl() {
