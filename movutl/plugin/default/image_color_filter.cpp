@@ -1,3 +1,4 @@
+#include <movutl/core/profiler.hpp>
 #include <movutl/plugin/default/image_color_filter.hpp>
 
 #define GUID(x) (0x0000000000000000 | x)
@@ -8,16 +9,25 @@ bool fn_proc(void* fp, FilterInData* fpip, const cutil::Prop& p) {
   MU_UNUSED(fp);
   MU_ASSERT(fpip != nullptr);
   MU_ASSERT(fpip->img != nullptr);
+  MOVUTL_ZONE_SCOPED_N("ColorCorrection::fn_proc");
 
   float brightness = cutil::get_or<float>(p, "brightness", 100.0f) / 100.0f;
   float contrast   = cutil::get_or<float>(p, "contrast", 100.0f) / 100.0f;
+  if(brightness == 1.0f && contrast == 1.0f) return true; // 変化なしなら何もしない
 
-  for(int i = 0; i < fpip->img->size(); i++) {
-    Vec4b& pixel = (*fpip->img)[i];
-    for(int j = 0; j < 3; j++) {
-      float v  = ((pixel[j] - 127) * contrast + 127) * brightness;
-      pixel[j] = std::clamp(v, 0.0f, 255.0f);
-    }
+  // 256階調のLUTを事前計算し、ピクセルごとの浮動小数点演算をテーブル参照に置き換える
+  uint8_t lut[256];
+  for(int v = 0; v < 256; v++) {
+    float f = ((v - 127) * contrast + 127) * brightness;
+    lut[v]  = (uint8_t)std::clamp(f, 0.0f, 255.0f);
+  }
+
+  Vec4b* px      = fpip->img->data();
+  const size_t n = fpip->img->size();
+  for(size_t i = 0; i < n; i++) {
+    px[i][0] = lut[px[i][0]];
+    px[i][1] = lut[px[i][1]];
+    px[i][2] = lut[px[i][2]];
   }
 
   return true;
