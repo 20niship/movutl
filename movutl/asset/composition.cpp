@@ -61,7 +61,7 @@ Composition::Composition(const char* name, int32_t w, int32_t h, int32_t fps) {
   this->name      = name;
   for(int i = 0; i < 10; i++) {
     TrackLayer layer;
-    std::string name_str = "Layer" + std::to_string(i + 1);
+    std::string name_str = "レイヤー" + std::to_string(i + 1);
     layer.name           = name_str;
     this->layers.push_back(layer);
   }
