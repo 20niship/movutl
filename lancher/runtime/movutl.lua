@@ -206,6 +206,21 @@ movutl.EntityInfo.audio_format_size = 0
 ---@return string
 function movutl.EntityInfo:str( ) end
 
+---@class FramebufferEntt
+---@field clear_original_ boolean
+movutl.FramebufferEntt = {}
+movutl.FramebufferEntt.clear_original_ = false
+
+---@param name string
+---@return Ref<FramebufferEntt>
+function movutl.FramebufferEntt:Create( name, ) end
+
+---@return EntityType
+function movutl.FramebufferEntt:getType( ) end
+
+---@return Ref<Image> 
+function movutl.FramebufferEntt:captured_image( ) end
+
 ---@class Image
 ---@field width number
 ---@field height number

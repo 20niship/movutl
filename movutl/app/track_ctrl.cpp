@@ -2,6 +2,7 @@
 #include <movutl/asset/audio.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/entity.hpp>
+#include <movutl/asset/framebuffer.hpp>
 #include <movutl/asset/movie.hpp>
 #include <movutl/asset/project.hpp>
 #include <movutl/asset/shape.hpp>
@@ -125,6 +126,15 @@ bool add_new_track(const char* name, EntityType type, int start, int end) {
       a->trk.fstart = start;
       a->trk.fend   = end;
       main_comp->insert_entity(a);
+      break;
+    }
+    case EntityType_Framebuffer: {
+      auto fb                = FramebufferEntt::Create(name);
+      Composition* main_comp = Composition::GetActiveComp();
+      MU_ASSERT(main_comp);
+      fb->trk.fstart = start;
+      fb->trk.fend   = end;
+      main_comp->insert_entity(fb);
       break;
     }
     default: MU_FAIL("Not implemented yet"); break;

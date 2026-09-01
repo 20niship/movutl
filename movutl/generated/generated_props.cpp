@@ -4,6 +4,7 @@
 #include <movutl/asset/audio.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/entity.hpp>
+#include <movutl/asset/framebuffer.hpp>
 #include <movutl/asset/image.hpp>
 #include <movutl/asset/movie.hpp>
 #include <movutl/asset/text.hpp>
@@ -38,6 +39,22 @@ cutil::Prop AudioEntt::getProps() const {
   return p;
 }
 void AudioEntt::setProps(const cutil::Prop& p) { (void)p.load_to(this, getPropsInfo()); }
+const cutil::PropInfo* FramebufferEntt::getPropsInfo() const {
+  static const cutil::PropInfo info = [] {
+    cutil::PropInfo p;
+    p.fields.push_back(cutil::PropInfo::Field("clear_original_", offsetof(FramebufferEntt, clear_original_), cutil::prop_info_of<bool>()));
+    p.fields.back().set_label("元のバッファをクリア");
+    p.fields.back().set_desc("キャプチャ後に合成先バッファを透明でクリアする");
+    return p;
+  }();
+  return &info;
+}
+cutil::Prop FramebufferEntt::getProps() const {
+  cutil::Prop p;
+  p.dump(this, getPropsInfo());
+  return p;
+}
+void FramebufferEntt::setProps(const cutil::Prop& p) { (void)p.load_to(this, getPropsInfo()); }
 const cutil::PropInfo* Image::getPropsInfo() const {
   static const cutil::PropInfo info = [] {
     cutil::PropInfo p;
