@@ -2,6 +2,7 @@
 #include <movutl/app/app_impl.hpp>
 #include <movutl/asset/entity.hpp>
 #include <movutl/asset/project.hpp>
+#include <movutl/core/profiler.hpp>
 #include <movutl/plugin/filter.hpp>
 #include <movutl/plugin/plugin.hpp>
 //
@@ -87,6 +88,7 @@ std::string EntityInfo::str() const {
 
 bool Entity::render_filters(Composition* cmp, Image* img, int frame) {
   MU_ASSERT(cmp != nullptr);
+  MOVUTL_ZONE_SCOPED_N("Entity::render_filters");
   for(int i = 0; i < trk.filters.size(); i++) {
     auto& f = trk.filters[i];
     if(!f.enabled) continue;
@@ -95,6 +97,8 @@ bool Entity::render_filters(Composition* cmp, Image* img, int frame) {
       LOG_F(ERROR, "Plugin %s has no render function", f.plg_->name.c_str());
       continue;
     }
+    MOVUTL_ZONE_SCOPED;
+    MOVUTL_ZONE_NAME(f.plg_->name.c_str(), f.plg_->name.size());
     void* fp = f.plg_;
     FilterInData in;
     in.img            = img;

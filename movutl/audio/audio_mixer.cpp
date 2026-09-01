@@ -92,6 +92,8 @@ void mix_audio_range(Composition* comp, int64_t start_sample, int n, int16_t* ou
 
     for(auto& f : a->trk.filters) {
       if(!f.enabled || f.plg_ == nullptr || f.plg_->fn_proc == nullptr) continue;
+      MOVUTL_ZONE_SCOPED;
+      MOVUTL_ZONE_NAME(f.plg_->name.c_str(), f.plg_->name.size());
       FilterInData fin;
       fin.audiop   = track_buf.data();
       fin.audio_n  = n;
