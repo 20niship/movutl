@@ -195,12 +195,7 @@ public:
     }
     return true;
   }
-  template <typename U> bool operator!=(const _Vec<U, LEN>& other) const {
-    for(size_t i = 0; i < LEN; i++) {
-      if(value[i] == other[i]) return false;
-    }
-    return true;
-  }
+  template <typename U> bool operator!=(const _Vec<U, LEN>& other) const { return !(*this == other); }
 
   inline _Vec<T, 3> cross(const _Vec<T, 3>& other) const {
     static_assert(LEN == 3);
