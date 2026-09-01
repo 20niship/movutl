@@ -111,13 +111,14 @@ void AudioMixWorker::worker_loop() {
     Composition* comp = comp_.load();
     if(!comp || !comp->audio_buf) continue;
 
-    int64_t cur_sample = comp->frame_to_sample(comp->get_frame());
-    int64_t head       = comp->audio_buf->write_head();
-    int64_t lookahead  = comp->audio_sample_rate; // 常時1秒分先読みしておく
-    if(head < cur_sample) head = cur_sample;      // シーク直後などバッファが現在地より遅れている場合は追いつく
+    // 基準はComposition::frame(GUI描画で律速され重いシーンでは実時間より遅れうる)ではなくread_cursor(実際の再生位置)。frame基準だと先読み済みと誤判定して音切れする
+    int64_t play_pos  = comp->audio_buf->read_cursor();
+    int64_t head      = comp->audio_buf->write_head();
+    int64_t lookahead = comp->audio_sample_rate; // 常時1秒分先読みしておく
+    if(head < play_pos) head = play_pos;         // シーク直後などバッファが再生位置より遅れている場合は追いつく
 
     int chunk_samples = comp->audio_sample_rate * kChunkMs / 1000;
-    if(head - cur_sample >= lookahead) continue; // 十分先まで作ってあるので待機
+    if(head - play_pos >= lookahead) continue; // 十分先まで作ってあるので待機
     mix_range(comp, head, chunk_samples);
   }
 }
