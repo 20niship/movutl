@@ -53,14 +53,6 @@ Ref<Entity> add_new_video_track(const char* name, const char* path, int start, i
 bool add_new_audio_track(const char* name, const char* path, int start, int layer) {
   MU_ASSERT(name != nullptr);
   MU_ASSERT(path != nullptr);
-  auto e = AudioEntt::Create(name, path);
-  if(!e) {
-    LOG_F(ERROR, "Failed to load audio file: %s", path);
-    return false;
-  }
-  e->trk.fstart = start;
-  e->trk.fend   = start + 1; // 音声が読み込めなかった時用
-  e->load_file(path);
   auto pj                = Project::Get();
   Composition* main_comp = pj->get_main_comp();
   if(!main_comp) {
@@ -69,6 +61,17 @@ bool add_new_audio_track(const char* name, const char* path, int start, int laye
   }
   MU_ASSERT(main_comp);
   MU_ASSERT(layer >= 0 && layer <= 1000);
+
+  // Composition未確定のままload_file()するとGetActiveComp()がnullptrでframerateが既定値30にフォールバックしend frameがずれるため、先にtrk.fstartを設定してからload_file()する
+  auto e = AudioEntt::Create(name);
+  if(!e) {
+    LOG_F(ERROR, "Failed to create audio entity: %s", path);
+    return false;
+  }
+  e->trk.fstart = start;
+  e->trk.fend   = start + 1; // 読み込み失敗時用
+  if(!e->load_file(path)) LOG_F(ERROR, "Failed to load audio file: %s", path);
+
   if(layer >= (int)main_comp->layers.size()) main_comp->layers.resize(layer + 1);
   main_comp->layers[layer].entts.push_back(e);
   return true;
