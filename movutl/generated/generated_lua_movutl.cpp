@@ -109,12 +109,11 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("load_file", &AudioEntt::load_file)
     .addFunction("getType", &AudioEntt::getType)
     .addFunction("reload_asset", &AudioEntt::reload_asset)
-    .addVariable("start_frame_", &AudioEntt::start_frame_) // int
-    .addVariable("speed", &AudioEntt::speed)               // float
-    .addVariable("volume_", &AudioEntt::volume_)           // float
-    .addVariable("loop_", &AudioEntt::loop_)               // bool
-    .addVariable("mute_", &AudioEntt::mute_)               // bool
-    .addVariable("path_", &AudioEntt::path_)               // std::string
+    .addVariable("offset_sec_", &AudioEntt::offset_sec_) // double
+    .addVariable("speed", &AudioEntt::speed)             // float
+    .addVariable("volume_", &AudioEntt::volume_)         // float
+    .addVariable("loop_", &AudioEntt::loop_)             // bool
+    .addVariable("path_", &AudioEntt::path_)             // std::string
     .endClass()
     .beginClass<Composition>("Composition")
     .addFunction("frame_to_sample", &Composition::frame_to_sample)

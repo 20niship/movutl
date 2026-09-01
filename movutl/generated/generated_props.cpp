@@ -14,8 +14,7 @@ namespace mu {
 const cutil::PropInfo* AudioEntt::getPropsInfo() const {
   static const cutil::PropInfo info = [] {
     cutil::PropInfo p;
-    p.fields.push_back(cutil::PropInfo::Field("start_frame_", offsetof(AudioEntt, start_frame_), cutil::prop_info_of<int>()));
-    p.fields.back().set_label("開始フレーム");
+    // offset_sec_ has an unsupported type (double)
     p.fields.push_back(cutil::PropInfo::Field("speed", offsetof(AudioEntt, speed), cutil::prop_info_of<float>()));
     p.fields.back().set_label("再生速度");
     p.fields.back().min_value  = 0.0;
@@ -27,8 +26,6 @@ const cutil::PropInfo* AudioEntt::getPropsInfo() const {
     p.fields.back().max_value = 200.0;
     p.fields.push_back(cutil::PropInfo::Field("loop_", offsetof(AudioEntt, loop_), cutil::prop_info_of<bool>()));
     p.fields.back().set_label("ループ再生");
-    p.fields.push_back(cutil::PropInfo::Field("mute_", offsetof(AudioEntt, mute_), cutil::prop_info_of<bool>()));
-    p.fields.back().set_label("ミュート");
     p.fields.push_back(cutil::PropInfo::Field("path_", offsetof(AudioEntt, path_), cutil::prop_info_of<std::string>()));
     p.fields.back().set_label("ファイル");
     return p;

@@ -91,18 +91,16 @@ movutl.ImageFormat = {}
 movutl.ShapeType = {}
 
 ---@class AudioEntt
----@field start_frame_ number
+---@field offset_sec_ number
 ---@field speed number
 ---@field volume_ number
 ---@field loop_ boolean
----@field mute_ boolean
 ---@field path_ string
 movutl.AudioEntt = {}
-movutl.AudioEntt.start_frame_ = 0
+movutl.AudioEntt.offset_sec_ = 0.0
 movutl.AudioEntt.speed = 100.0 f
 movutl.AudioEntt.volume_ = 100.0 f
 movutl.AudioEntt.loop_ = false
-movutl.AudioEntt.mute_ = false
 movutl.AudioEntt.path_ = ""
 
 ---@param name string

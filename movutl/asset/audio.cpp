@@ -69,7 +69,7 @@ bool AudioEntt::render(Composition* cmp, Image* target, int frame) {
 bool AudioEntt::fetch_audio(Composition* cmp, int64_t start_sample, int n, int16_t* out) {
   MU_ASSERT(cmp != nullptr);
   MU_ASSERT(out != nullptr);
-  if(load_failed_ || mute_ || in_plg_ == nullptr || in_handle_ == nullptr || in_plg_->fn_read_audio == nullptr) return false;
+  if(load_failed_ || !trk.active_ || in_plg_ == nullptr || in_handle_ == nullptr || in_plg_->fn_read_audio == nullptr) return false;
   if(info.audio_n <= 0) return false;
 
   int64_t track_start = cmp->frame_to_sample(trk.fstart);
@@ -86,9 +86,8 @@ bool AudioEntt::fetch_audio(Composition* cmp, int64_t start_sample, int n, int16
   int32_t native_ch   = info.audio_channels > 0 ? info.audio_channels : cmp->audio_channels;
   double speed_ratio  = std::max(0.01, (double)speed / 100.0);
 
-  double native_offset_sec = (double)start_frame_ / std::max(1.0f, cmp->framerate);
-  int64_t native_start     = (int64_t)((double)elapsed / cmp->audio_sample_rate * native_rate * speed_ratio) + (int64_t)(native_offset_sec * native_rate);
-  int native_n             = std::max(1, (int)std::ceil((double)n * native_rate * speed_ratio / cmp->audio_sample_rate) + 2);
+  int64_t native_start = (int64_t)((double)elapsed / cmp->audio_sample_rate * native_rate * speed_ratio) + (int64_t)(offset_sec_ * native_rate);
+  int native_n         = std::max(1, (int)std::ceil((double)n * native_rate * speed_ratio / cmp->audio_sample_rate) + 2);
 
   std::vector<int16_t> native_buf((size_t)native_n * native_ch, 0);
   int read = in_plg_->fn_read_audio(in_handle_, (int)native_start, native_n, native_buf.data());
