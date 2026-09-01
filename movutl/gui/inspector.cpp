@@ -154,18 +154,24 @@ void InspectorWindow::Update() {
   }
 
   {
-    static bool open_popup        = false;
-    static char search_buffer[64] = "";
+    static bool open_popup         = false;
+    static bool focus_search       = false;
+    static char search_buffer[64]  = "";
 
     // 「Add Filter」ボタン
     if(ImGui::Button("フィルタを追加する")) {
-      open_popup = true;
+      open_popup    = true;
+      focus_search  = true;
       ImGui::OpenPopup("##INSPECTOR_FILTER_POPUP");
     }
     if(open_popup && ImGui::BeginPopup("##INSPECTOR_FILTER_POPUP")) {
       ImGui::Text("エフェクトを追加する");
       ImGui::Separator();
 
+      if(focus_search) {
+        ImGui::SetKeyboardFocusHere();
+        focus_search = false;
+      }
       ImGui::InputText("Search", search_buffer, IM_ARRAYSIZE(search_buffer));
       auto filters       = &detail::AppMain::Get()->filters;
       bool is_audio_entt = e->getType() == EntityType_Audio;
