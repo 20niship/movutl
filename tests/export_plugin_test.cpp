@@ -140,7 +140,20 @@ TEST_CASE("Output Plugin: 登録済みの全プラグイン×全対応拡張子�
       }
       CHECK(plg.fn_close(handle));
 
-      if(plg.is_sequence) {
+      if(std::string(plg.name) == "Audio (FFmpeg)") {
+        // 音声専用プラグイン(映像フレームは持たない)。映像デコード検証はスキップし、音声が入っていることのみ確認する
+        REQUIRE(fs::exists(out_file));
+        CHECK(fs::file_size(out_file) > 0);
+
+        auto* reader = find_input_plugin("FFmpeg Video Reader");
+        REQUIRE(reader != nullptr);
+        InputHandle rh = reader->fn_open(out_file.string().c_str());
+        REQUIRE(rh != nullptr);
+        EntityInfo info;
+        REQUIRE(reader->fn_info_get(rh, &info));
+        CHECK_MESSAGE(info.audio_n > 0, "exported " << ext << " has no audio track");
+        reader->fn_close(rh);
+      } else if(plg.is_sequence) {
         const fs::path first_frame = out_dir / (stem + "_000000." + ext);
         REQUIRE(fs::exists(first_frame));
         auto loaded = Image::Create("loaded", first_frame.string().c_str());

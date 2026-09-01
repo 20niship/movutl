@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cstdlib>
 #include <movutl/app/app.hpp>
 #include <movutl/app/app_impl.hpp>
 #include <movutl/asset/composition.hpp>
@@ -40,15 +41,28 @@ void update_renderer_thread() {
 void update_audio_thread() {
   MOVUTL_ZONE_SCOPED_N("update_audio_thread");
   auto cmp = Composition::GetActiveComp();
-  if(!cmp) return;
-  auto* app = AppMain::Get();
-  app->audio_worker.tick(cmp, app->is_playing());
-  if(app->audio_player.is_running() == app->is_playing()) return;
-  app->audio_player.set_composition(cmp);
-  if(app->is_playing())
-    app->audio_player.start();
-  else
-    app->audio_player.stop();
+  if(!cmp || !cmp->audio_buf) return;
+  auto* app          = AppMain::Get();
+  const bool playing = app->is_playing();
+  app->audio_worker.tick(cmp, playing);
+
+  if(app->audio_player.is_running() != playing) {
+    app->audio_player.set_composition(cmp);
+    if(playing) {
+      cmp->audio_buf->seek(cmp->frame_to_sample(cmp->get_frame())); // 再生開始位置をViewerの現在フレームへ合わせる
+      app->audio_player.start();
+    } else {
+      app->audio_player.stop();
+    }
+    return;
+  }
+
+  if(playing) {
+    // タイムラインバー上のドラッグ等、再生中のシークを検出したら音声もそこへ追従させる(0.2秒以上のズレをシークとみなす)
+    int64_t expect  = cmp->frame_to_sample(cmp->get_frame());
+    int64_t current = cmp->audio_buf->read_cursor();
+    if(std::llabs(current - expect) > cmp->audio_sample_rate / 5) cmp->audio_buf->seek(expect);
+  }
 }
 
 void AppMain::play() {

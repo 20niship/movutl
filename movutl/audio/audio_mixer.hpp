@@ -33,8 +33,10 @@ public:
   // 再生カーソルからnサンプル読み取り、カーソルを進める(再生デバイスコールバック専用)。戻り値は実際に読めたサンプル数
   int read_consume(int16_t* out, int n);
 
-  void set_read_cursor(int64_t sample) { read_cursor_.store(sample); }
   int64_t read_cursor() const { return read_cursor_.load(); }
+
+  // シーク時に読み書きカーソル双方を指定サンプル位置へ飛ばす(ミキサーはここから再度前方へ書き直す)
+  void seek(int64_t sample);
 
 private:
   int32_t sample_rate_;

@@ -37,6 +37,12 @@ void AudioRingBuffer::snapshot(int64_t from_sample, int n, int16_t* out) const {
   }
 }
 
+void AudioRingBuffer::seek(int64_t sample) {
+  std::lock_guard<std::mutex> lock(mtx_);
+  write_head_.store(sample);
+  read_cursor_.store(sample);
+}
+
 int AudioRingBuffer::read_consume(int16_t* out, int n) {
   int64_t cur = read_cursor_.load();
   snapshot(cur, n, out);
