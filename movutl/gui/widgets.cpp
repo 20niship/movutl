@@ -128,7 +128,8 @@ void wd_entt_props_editor(Entity* e) {
           if(!new_path.empty()) e->name = std::filesystem::path(new_path).stem().string();
         }
       }
-      if(auto* comp = e->get_comp()) comp->cache.invalidate_all();
+      // Compositionの全フレームではなく、このEntityが映る範囲だけを無効化する(Positionドラッグ等が重くなるのを防ぐ)
+      if(auto* comp = e->get_comp()) comp->cache.invalidate_range(e->trk.fstart, e->trk.fend);
     }
     ImGui::PopID();
   }
