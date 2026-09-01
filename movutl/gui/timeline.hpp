@@ -21,7 +21,7 @@ enum ImTimelineFlags {
   ImTimelineFlags_NoContextMenu  = 1 << 1,
 };
 
-bool BeginTimeline(const char* name, FrameT* frame, FrameT* start, FrameT* end, bool* playing, const ImVec2& size = ImVec2(0, 0));
+bool BeginTimeline(const char* name, FrameT* frame, FrameT* start, FrameT* end, bool* playing, float fps = 30.0f, const ImVec2& size = ImVec2(0, 0));
 int EndTimeline();                               // returns current key
 bool BeginLayer(Composition* cp, int layer_idx); // depth = レイヤのインデックス
 void EndLayer();
@@ -32,6 +32,10 @@ bool IsTimelineKeyHovered();
 bool IsTimeline_LineHovered();
 bool IsTimelineClickedLeftButton(); // タイムラインのプロパティ名の左側にあるボタンをクリックしたか
 void SetTimelineViewRange(FrameT start, FrameT end);
+// ヘッダーのフィットアイコンが押されたか(押されていたらtrueを返しフラグをリセットする)
+bool ConsumeTimelineFitRequest();
+// ヘッダーの検索欄(レイヤー名/エンティティ名フィルタ)の現在の文字列
+const char* GetTimelineLayerSearch();
 
 void ResetTimelineState();
 
