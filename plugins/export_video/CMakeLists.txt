@@ -1,5 +1,5 @@
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(FFMPEG_EV QUIET IMPORTED_TARGET libavformat libavcodec libavutil libswscale)
+pkg_check_modules(FFMPEG_EV QUIET IMPORTED_TARGET libavformat libavcodec libavutil libswscale libswresample)
 if(NOT FFMPEG_EV_FOUND)
   message(WARNING "FFmpeg not found: export_video plugin (.mso) is skipped")
   return()

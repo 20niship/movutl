@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cstdlib>
 #include <movutl/app/app.hpp>
 #include <movutl/app/app_impl.hpp>
 #include <movutl/asset/composition.hpp>
@@ -37,6 +38,33 @@ void update_renderer_thread() {
   app->render_pool.tick(cmp, app->is_playing());
 }
 
+void update_audio_thread() {
+  MOVUTL_ZONE_SCOPED_N("update_audio_thread");
+  auto cmp = Composition::GetActiveComp();
+  if(!cmp || !cmp->audio_buf) return;
+  auto* app          = AppMain::Get();
+  const bool playing = app->is_playing();
+  app->audio_worker.tick(cmp, playing);
+
+  if(app->audio_player.is_running() != playing) {
+    app->audio_player.set_composition(cmp);
+    if(playing) {
+      cmp->audio_buf->seek(cmp->frame_to_sample(cmp->get_frame())); // 再生開始位置をViewerの現在フレームへ合わせる
+      app->audio_player.start();
+    } else {
+      app->audio_player.stop();
+    }
+    return;
+  }
+
+  if(playing) {
+    // 前方への手動シーク(0.2秒以上先へ飛んだ)のみ追従。expect<currentは単に描画が実時間に遅れているだけなので巻き戻さない(巻き戻すと毎フレーム音声が止まり音切れする)
+    int64_t expect  = cmp->frame_to_sample(cmp->get_frame());
+    int64_t current = cmp->audio_buf->read_cursor();
+    if(expect - current > cmp->audio_sample_rate / 5) cmp->audio_buf->seek(expect);
+  }
+}
+
 void AppMain::play() {
   playing_         = true;
   last_frame_time_ = mu_now_seconds();
@@ -55,6 +83,8 @@ void AppMain::goto_frame(int frame) {
   auto cmp = Composition::GetActiveComp();
   if(!cmp) return;
   cmp->frame = std::clamp(frame, cmp->fstart, cmp->fend);
+  // Viewer/タイムラインクリック等の明示的なシークはここを必ず通るので、ここで直接音声を追従させる(推測に頼らない)
+  if(cmp->audio_buf) cmp->audio_buf->seek(cmp->frame_to_sample(cmp->get_frame()));
 }
 
 void AppMain::update_frame_impl() {

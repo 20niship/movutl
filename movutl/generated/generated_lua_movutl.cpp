@@ -5,6 +5,7 @@
 #include <imgui.h>
 #include <lua.hpp>
 #include <movutl/app/app.hpp>
+#include <movutl/asset/audio.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/entity.hpp>
 #include <movutl/asset/image.hpp>
@@ -103,7 +104,19 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addConstant("ShapeType_Circle", ShapeType::ShapeType_Circle)
     .addConstant("ShapeType_Custom", ShapeType::ShapeType_Custom)
     .endModule()
+    .beginClass<AudioEntt>("AudioEntt")
+    .addStaticFunction("Create", &AudioEntt::Create)
+    .addFunction("load_file", &AudioEntt::load_file)
+    .addFunction("getType", &AudioEntt::getType)
+    .addFunction("reload_asset", &AudioEntt::reload_asset)
+    .addVariable("offset_sec_", &AudioEntt::offset_sec_) // double
+    .addVariable("speed", &AudioEntt::speed)             // float
+    .addVariable("volume_", &AudioEntt::volume_)         // float
+    .addVariable("loop_", &AudioEntt::loop_)             // bool
+    .addVariable("path_", &AudioEntt::path_)             // std::string
+    .endClass()
     .beginClass<Composition>("Composition")
+    .addFunction("frame_to_sample", &Composition::frame_to_sample)
     .addFunction("resize", &Composition::resize)
     .addFunction("str", &Composition::str)
     .addFunction("summary", &Composition::summary)
@@ -114,15 +127,16 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("render_current_frame_main_thread", &Composition::render_current_frame_main_thread)
     .addFunction("get_frame", &Composition::get_frame)
     .addFunction("set_frame", &Composition::set_frame)
-    .addVariable("guid", &Composition::guid)           // uint32_t
-    .addVariable("flag", &Composition::flag)           // Flag
-    .addVariable("framerate", &Composition::framerate) // float
-    .addVariable("bg_color", &Composition::bg_color)   // int32_t
-    .addVariable("fstart", &Composition::fstart)       // int32_t
-    .addVariable("fend", &Composition::fend)           // int32_t
-    .addVariable("audio_n", &Composition::audio_n)     // int32_t
-    .addVariable("audio_ch", &Composition::audio_ch)   // int32_t
-    .addVariable("layers", &Composition::layers)       // std::vector<TrackLayer>
+    .addVariable("guid", &Composition::guid)                           // uint32_t
+    .addVariable("flag", &Composition::flag)                           // Flag
+    .addVariable("framerate", &Composition::framerate)                 // float
+    .addVariable("bg_color", &Composition::bg_color)                   // int32_t
+    .addVariable("fstart", &Composition::fstart)                       // int32_t
+    .addVariable("fend", &Composition::fend)                           // int32_t
+    .addVariable("audio_sample_rate", &Composition::audio_sample_rate) // int32_t
+    .addVariable("audio_channels", &Composition::audio_channels)       // int32_t
+    .addVariable("audio_buf", &Composition::audio_buf)                 // Ref<AudioRingBuffer>
+    .addVariable("layers", &Composition::layers)                       // std::vector<TrackLayer>
     .endClass()
     .beginClass<Entity>("Entity")
     .addFunction("getType", &Entity::getType)
@@ -149,6 +163,8 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addVariable("width", &EntityInfo::width)                         // uint16_t
     .addVariable("height", &EntityInfo::height)                       // uint16_t
     .addVariable("audio_n", &EntityInfo::audio_n)                     // int32_t
+    .addVariable("audio_sample_rate", &EntityInfo::audio_sample_rate) // int32_t
+    .addVariable("audio_channels", &EntityInfo::audio_channels)       // int32_t
     .addVariable("audio_format_size", &EntityInfo::audio_format_size) // int32_t
     .endClass()
     .beginClass<Image>("Image")

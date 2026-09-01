@@ -4,6 +4,7 @@
 #include <movutl/app/app_impl.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/image.hpp>
+#include <movutl/audio/audio_mixer.hpp>
 #include <movutl/plugin/plugin.hpp>
 #include <movutl/render2d/renderer.hpp>
 #include <opencv2/opencv.hpp>
@@ -17,6 +18,12 @@ namespace {
 
 OutputPluginTable* find_output_plugin(const char* name) {
   for(auto& p : detail::AppMain::Get()->output_plugins)
+    if(std::string(p.name) == name) return &p;
+  return nullptr;
+}
+
+InputPluginTable* find_input_plugin(const char* name) {
+  for(auto& p : detail::AppMain::Get()->input_plugins)
     if(std::string(p.name) == name) return &p;
   return nullptr;
 }
@@ -79,7 +86,7 @@ TEST_CASE("Output Plugin: fn_open/fn_write_frame/fn_closeを直接呼び出し�
   fs::remove_all(out_dir);
   fs::create_directories(out_dir);
 
-  void* handle = plg->fn_open((out_dir / "frame.png").string().c_str(), 4, 4, 30.0f, plg->defaults);
+  void* handle = plg->fn_open((out_dir / "frame.png").string().c_str(), 4, 4, 30.0f, 0, 0, plg->defaults);
   REQUIRE(handle != nullptr);
   Image img(4, 4);
   img.fill_rgba(Vec4b(10, 20, 30, 255));
@@ -118,12 +125,35 @@ TEST_CASE("Output Plugin: 登録済みの全プラグイン×全対応拡張子�
 
       const std::string stem  = "scene_" + std::to_string(plugin_idx);
       const fs::path out_file = out_dir / (stem + "." + ext);
-      void* handle            = plg.fn_open(out_file.string().c_str(), comp.size[0], comp.size[1], comp.framerate, plg.defaults);
+      void* handle            = plg.fn_open(out_file.string().c_str(), comp.size[0], comp.size[1], comp.framerate, comp.audio_sample_rate, comp.audio_channels, plg.defaults);
       REQUIRE(handle != nullptr);
-      for(int f = 0; f < kNumFrames; f++) CHECK(plg.fn_write_frame(handle, frames[f].get(), f));
+      for(int f = 0; f < kNumFrames; f++) {
+        CHECK(plg.fn_write_frame(handle, frames[f].get(), f));
+        if(plg.fn_write_audio != nullptr) {
+          int64_t s0 = comp.frame_to_sample(f);
+          int64_t s1 = comp.frame_to_sample(f + 1);
+          int n      = (int)std::max<int64_t>(1, s1 - s0);
+          std::vector<int16_t> audio_buf((size_t)n * comp.audio_channels);
+          mix_audio_range(&comp, s0, n, audio_buf.data());
+          CHECK(plg.fn_write_audio(handle, audio_buf.data(), n));
+        }
+      }
       CHECK(plg.fn_close(handle));
 
-      if(plg.is_sequence) {
+      if(std::string(plg.name) == "Audio (FFmpeg)") {
+        // 音声専用プラグイン(映像フレームは持たない)。映像デコード検証はスキップし、音声が入っていることのみ確認する
+        REQUIRE(fs::exists(out_file));
+        CHECK(fs::file_size(out_file) > 0);
+
+        auto* reader = find_input_plugin("FFmpeg Video Reader");
+        REQUIRE(reader != nullptr);
+        InputHandle rh = reader->fn_open(out_file.string().c_str());
+        REQUIRE(rh != nullptr);
+        EntityInfo info;
+        REQUIRE(reader->fn_info_get(rh, &info));
+        CHECK_MESSAGE(info.audio_n > 0, "exported " << ext << " has no audio track");
+        reader->fn_close(rh);
+      } else if(plg.is_sequence) {
         const fs::path first_frame = out_dir / (stem + "_000000." + ext);
         REQUIRE(fs::exists(first_frame));
         auto loaded = Image::Create("loaded", first_frame.string().c_str());
@@ -144,6 +174,17 @@ TEST_CASE("Output Plugin: 登録済みの全プラグイン×全対応拡張子�
         cap.release();
         REQUIRE(decoded.size() >= (size_t)kNumFrames - 2); // エンコーダの端数でわずかに前後する場合がある
         verify_scene_frame(decoded[decoded.size() / 2], scene);
+
+        if(plg.fn_write_audio != nullptr) {
+          auto* reader = find_input_plugin("FFmpeg Video Reader");
+          REQUIRE(reader != nullptr);
+          InputHandle rh = reader->fn_open(out_file.string().c_str());
+          REQUIRE(rh != nullptr);
+          EntityInfo info;
+          REQUIRE(reader->fn_info_get(rh, &info));
+          CHECK_MESSAGE(info.audio_n > 0, "exported " << ext << " has no audio track");
+          reader->fn_close(rh);
+        }
       }
     }
     plugin_idx++;

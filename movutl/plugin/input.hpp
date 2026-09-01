@@ -7,7 +7,7 @@
 namespace mu {
 
 #define MAX_NAME 64
-#define MAX_SUPPORTED_EXT 10
+#define MAX_SUPPORTED_EXT 16
 
 /// 入力プラグインのフラグ (aviutl2 SDK の INPUT_PLUGIN_TABLE 方針に準拠)
 enum InputPluginFlag {

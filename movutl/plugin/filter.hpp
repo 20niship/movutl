@@ -31,6 +31,7 @@ enum FilterInfoType {
   FilterAlwaysActive,
   Filter_ManualRedraw,
   Filter_NoInitData,
+  FilterAudioOnly, // 音声トラック用フィルタ(GUIのフィルタ選択で映像用と分離表示する)
   // TODO: AEとかの設定を読み込んでくる
 };
 

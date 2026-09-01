@@ -61,6 +61,8 @@ struct EntityInfo {
   uint16_t width             = 0;                // 画像サイズ
   uint16_t height            = 0;                // 画像サイズ
   int32_t audio_n            = 0;                // 音声サンプル数
+  int32_t audio_sample_rate  = 0;                // 音声サンプリングレート(Hz)
+  int32_t audio_channels     = 0;                // 音声チャンネル数
   WAVEFORMATEX* audio_format = nullptr;          // 音声フォーマットへのポインタ(次に関数が呼ばれるまで内容を有効にしておく)
   int32_t audio_format_size;                     // 音声フォーマットのサイズ
   void* handler;                                 // 画像codecハンドラ

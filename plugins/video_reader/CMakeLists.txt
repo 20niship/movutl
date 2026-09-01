@@ -1,5 +1,5 @@
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(FFMPEG_VR QUIET IMPORTED_TARGET libavformat libavcodec libavutil libswscale)
+pkg_check_modules(FFMPEG_VR QUIET IMPORTED_TARGET libavformat libavcodec libavutil libswscale libswresample)
 if(NOT FFMPEG_VR_FOUND)
   message(WARNING "FFmpeg not found: video_reader plugin (.mso) is skipped")
   return()

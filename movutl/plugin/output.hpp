@@ -19,11 +19,14 @@ struct OutputPluginTable {
   bool (*fn_init)(cutil::PropInfo* props, cutil::Prop* defaults) = nullptr;
   bool (*fn_exit)()                                              = nullptr; //	DLL終了時に呼ばれる関数へのポインタ(NULLなら呼ばれません)
 
-  // 出力を開始する関数へのポインタ。pathはis_sequence時はフレーム番号埋め込み前のベースパス。戻り値は出力ハンドル(失敗時nullptr)
-  void* (*fn_open)(const char* path, int width, int height, float framerate, const cutil::Prop& props) = nullptr;
+  // 出力を開始する関数へのポインタ(pathはis_sequence時はフレーム番号埋め込み前のベースパス。audio_sample_rate=0は音声なしの意)。戻り値は出力ハンドル(失敗時nullptr)
+  void* (*fn_open)(const char* path, int width, int height, float framerate, int audio_sample_rate, int audio_channels, const cutil::Prop& props) = nullptr;
 
   // 1フレーム書き込む関数へのポインタ。imgはBGRA8(Image::data()と同じ並び)、frameは0始まりのエクスポート範囲内相対番号
   bool (*fn_write_frame)(void* handle, const Image* img, int frame) = nullptr;
+
+  // 音声データを書き込む関数へのポインタ(音声非対応、またはfn_openにaudio_sample_rate=0を渡した場合はNULLのまま)。PCM16 interleaved
+  bool (*fn_write_audio)(void* handle, const int16_t* pcm, int n_samples) = nullptr;
 
   //	出力を終了する関数へのポインタ(mp4等はここでmuxのtrailerを書く)
   bool (*fn_close)(void* handle) = nullptr;

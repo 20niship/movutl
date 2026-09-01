@@ -3,6 +3,7 @@
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/entity.hpp>
 #include <movutl/asset/project.hpp>
+#include <movutl/audio/audio_mixer.hpp>
 #include <movutl/core/prop_types.hpp>
 #include <movutl/render2d/renderer.hpp>
 
@@ -51,6 +52,8 @@ void Composition::resize(int32_t w, int32_t h) {
   size[1] = h;
 }
 
+Composition::Composition() { audio_buf = cutil::make_ref<AudioRingBuffer>(audio_sample_rate, audio_channels); }
+
 Composition::Composition(const char* name, int32_t w, int32_t h, int32_t fps) {
   this->size[0]   = w;
   this->size[1]   = h;
@@ -62,6 +65,7 @@ Composition::Composition(const char* name, int32_t w, int32_t h, int32_t fps) {
     layer.name           = name_str;
     this->layers.push_back(layer);
   }
+  audio_buf = cutil::make_ref<AudioRingBuffer>(audio_sample_rate, audio_channels);
 }
 
 std::string Composition::str() const {
@@ -96,6 +100,8 @@ cutil::Prop Composition::getProps() const {
   p.set<int32_t>("fstart", fstart);
   p.set<int32_t>("fend", fend);
   p.set<int32_t>("frame", frame.load());
+  p.set<int32_t>("audio_sample_rate", audio_sample_rate);
+  p.set<int32_t>("audio_channels", audio_channels);
   return p;
 }
 
@@ -107,6 +113,9 @@ void Composition::setProps(const cutil::Prop& p) {
   fstart    = cutil::get_or<int32_t>(p, "fstart", fstart);
   fend      = cutil::get_or<int32_t>(p, "fend", fend);
   frame.store(cutil::get_or<int32_t>(p, "frame", frame.load()));
+  audio_sample_rate = cutil::get_or<int32_t>(p, "audio_sample_rate", audio_sample_rate);
+  audio_channels    = cutil::get_or<int32_t>(p, "audio_channels", audio_channels);
+  audio_buf         = cutil::make_ref<AudioRingBuffer>(audio_sample_rate, audio_channels);
 }
 
 

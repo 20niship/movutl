@@ -5,6 +5,7 @@
 #include <movutl/plugin/filter.hpp>
 #include <movutl/plugin/plugin.hpp>
 //
+#include <movutl/asset/audio.hpp>
 #include <movutl/asset/camera.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/image.hpp>
@@ -20,6 +21,7 @@ Ref<Entity> Entity::CreateEntity(const char* name, EntityType type) {
     case EntityType_Movie: e = cutil::make_ref<Movie>(); break;
     case EntityType_Image: e = cutil::make_ref<Image>(); break;
     case EntityType_3DText: e = cutil::make_ref<TextEntt>(); break;
+    case EntityType_Audio: e = cutil::make_ref<AudioEntt>(); break;
     default: break;
   }
   if(!e) {

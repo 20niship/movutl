@@ -85,6 +85,44 @@ if(MOVUTL_TRACY)
   add_compile_definitions(MOVUTL_TRACY_ENABLED)
 endif()
 
+# --------------------------------------------------------------
+# ------------     miniaudio (再生I/O) --------------------------
+# --------------------------------------------------------------
+# miniaudio/Maximilianはヘッダ/ソースをmucoreへ直接コンパイルするだけで、両者ともCMakeターゲットとしては消費しない。
+# miniaudioのCMakeLists.txt(examples/tests込み)やMaximilian(CMakeLists.txtを持たない)をadd_subdirectoryさせないよう、
+# FetchContent_MakeAvailableではなくFetchContent_Populateでソース取得のみ行う
+include(FetchContent)
+if(POLICY CMP0169)
+  cmake_policy(SET CMP0169 OLD) # FetchContent_Populate(単体呼び出し、add_subdirectoryしない用途)を許可する
+endif()
+FetchContent_Declare(
+  miniaudio
+  GIT_REPOSITORY https://github.com/mackron/miniaudio.git
+  GIT_TAG 9634bedb5b5a2ca38c1ee7108a9358a4e233f14d
+  GIT_SHALLOW TRUE
+)
+FetchContent_GetProperties(miniaudio)
+if(NOT miniaudio_POPULATED)
+  FetchContent_Populate(miniaudio)
+endif()
+set(MOVUTL_INCLUDES ${MOVUTL_INCLUDES} ${miniaudio_SOURCE_DIR})
+
+# --------------------------------------------------------------
+# ------------     Maximilian (音声エフェクトDSP) -----------------
+# --------------------------------------------------------------
+FetchContent_Declare(
+  maximilian
+  GIT_REPOSITORY https://github.com/micknoise/Maximilian.git
+  GIT_TAG f937afb71aee841607f87a7f8bbd9783581fbd30
+  GIT_SHALLOW TRUE
+)
+FetchContent_GetProperties(maximilian)
+if(NOT maximilian_POPULATED)
+  FetchContent_Populate(maximilian)
+endif()
+set(MOVUTL_INCLUDES ${MOVUTL_INCLUDES} ${maximilian_SOURCE_DIR}/src)
+set(MOVUTL_MAXIMILIAN_SRC ${maximilian_SOURCE_DIR}/src/maximilian.cpp ${maximilian_SOURCE_DIR}/src/libs/maxiReverb.cpp)
+
 file(GLOB DATA_FILES ${CMAKE_CURRENT_SOURCE_DIR}/data/*)
 file(COPY ${DATA_FILES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
@@ -135,7 +173,7 @@ file(GLOB MOVUTL_EXT_SRC
 
 include_directories(${MOVUTL_INCLUDES})
 
-set(MOVUTL_SRC ${MOVUTL_SOURCE_1} ${MOVUTL_SOURCE_2} ${MOVUTL_SOURCE_3} ${MOVUTL_SOURCE_4} ${MOVUTL_EXT_SRC} ${MOVUTL_SOURCE_5})
+set(MOVUTL_SRC ${MOVUTL_SOURCE_1} ${MOVUTL_SOURCE_2} ${MOVUTL_SOURCE_3} ${MOVUTL_SOURCE_4} ${MOVUTL_EXT_SRC} ${MOVUTL_SOURCE_5} ${MOVUTL_MAXIMILIAN_SRC})
 if(APPLE)
   file(GLOB MOVUTL_SRC_MAC ${CMAKE_CURRENT_SOURCE_DIR}/core/*.mm)
   set(MOVUTL_SRC ${MOVUTL_SRC} ${MOVUTL_SRC_MAC})

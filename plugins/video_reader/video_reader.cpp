@@ -9,8 +9,10 @@ extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libavutil/imgutils.h>
+#include <libswresample/swresample.h>
 #include <libswscale/swscale.h>
 }
+#include <vector>
 
 namespace mu::detail {
 
@@ -40,6 +42,13 @@ struct FFmpegVideoHandle {
   bool eof                 = false;
   bool has_pending         = false;
 
+  // ---------- audio: fn_open時に全体をPCM16へデコードして保持(ponytail: 長時間音声はメモリ消費大、必要ならvideoと同様のシーク+逐次デコードへ切替) ----------
+  int audio_stream_index      = -1;
+  int audio_native_rate       = 0;
+  int audio_native_channels   = 0;
+  int64_t audio_total_samples = 0; // 1chあたりのサンプル数
+  std::vector<int16_t> audio_pcm;  // interleaved PCM16, audio_total_samples * audio_native_channels 個
+
   ~FFmpegVideoHandle() { release(); }
 
   void release() {
@@ -59,6 +68,67 @@ struct FFmpegVideoHandle {
     has_pending   = false;
   }
 };
+
+/// 音声ストリームをh->audio_pcmへ全デコードする。無ければ何もしない(動画のみのファイルもあるためエラー扱いしない)
+static void decode_audio_track(FFmpegVideoHandle* h) {
+  int idx = av_find_best_stream(h->fmt_ctx, AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
+  if(idx < 0) return;
+  auto st  = h->fmt_ctx->streams[idx];
+  auto dec = avcodec_find_decoder(st->codecpar->codec_id);
+  if(!dec) return;
+
+  AVCodecContext* actx = avcodec_alloc_context3(dec);
+  if(!actx || avcodec_parameters_to_context(actx, st->codecpar) < 0 || avcodec_open2(actx, dec, nullptr) < 0) {
+    if(actx) avcodec_free_context(&actx);
+    return;
+  }
+
+  AVChannelLayout out_layout;
+  av_channel_layout_copy(&out_layout, &actx->ch_layout);
+  SwrContext* swr = nullptr;
+  if(swr_alloc_set_opts2(&swr, &out_layout, AV_SAMPLE_FMT_S16, actx->sample_rate, &actx->ch_layout, actx->sample_fmt, actx->sample_rate, 0, nullptr) < 0 || !swr || swr_init(swr) < 0) {
+    if(swr) swr_free(&swr);
+    av_channel_layout_uninit(&out_layout);
+    avcodec_free_context(&actx);
+    return;
+  }
+
+  AVPacket* pkt            = av_packet_alloc();
+  AVFrame* frame           = av_frame_alloc();
+  int channels             = out_layout.nb_channels;
+  h->audio_native_rate     = actx->sample_rate;
+  h->audio_native_channels = channels;
+  h->audio_stream_index    = idx;
+
+  auto drain_frame = [&](AVFrame* f) {
+    int64_t max_out = swr_get_out_samples(swr, f ? f->nb_samples : 0);
+    if(max_out <= 0) max_out = 4096;
+    std::vector<int16_t> buf((size_t)max_out * channels);
+    uint8_t* out_planes[1] = {(uint8_t*)buf.data()};
+    int n                  = swr_convert(swr, out_planes, (int)max_out, f ? (const uint8_t**)f->data : nullptr, f ? f->nb_samples : 0);
+    if(n > 0) h->audio_pcm.insert(h->audio_pcm.end(), buf.data(), buf.data() + (size_t)n * channels);
+  };
+
+  while(av_read_frame(h->fmt_ctx, pkt) >= 0) {
+    if(pkt->stream_index == idx) {
+      if(avcodec_send_packet(actx, pkt) == 0) {
+        while(avcodec_receive_frame(actx, frame) == 0) drain_frame(frame);
+      }
+    }
+    av_packet_unref(pkt);
+  }
+  avcodec_send_packet(actx, nullptr);
+  while(avcodec_receive_frame(actx, frame) == 0) drain_frame(frame);
+  drain_frame(nullptr); // swr内部に残ったサンプルを吐き出す
+
+  h->audio_total_samples = channels > 0 ? (int64_t)h->audio_pcm.size() / channels : 0;
+
+  av_frame_free(&frame);
+  av_packet_free(&pkt);
+  swr_free(&swr);
+  av_channel_layout_uninit(&out_layout);
+  avcodec_free_context(&actx);
+}
 
 static bool fn_init() { return true; }
 static bool fn_exit() { return true; }
@@ -81,9 +151,14 @@ static InputHandle fn_open(const char* file) {
 
   h->stream_index = av_find_best_stream(h->fmt_ctx, AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
   if(h->stream_index < 0) {
-    LOG_F(ERROR, "No video stream found: %s", file);
-    delete h;
-    return nullptr;
+    // 映像ストリームが無い場合は音声のみのファイル(mp3/wav等)として扱う
+    decode_audio_track(h);
+    if(h->audio_total_samples <= 0) {
+      LOG_F(ERROR, "No video or audio stream found: %s", file);
+      delete h;
+      return nullptr;
+    }
+    return h;
   }
   auto st  = h->fmt_ctx->streams[h->stream_index];
   auto dec = avcodec_find_decoder(st->codecpar->codec_id);
@@ -133,6 +208,8 @@ static InputHandle fn_open(const char* file) {
     return nullptr;
   }
 
+  decode_audio_track(h);
+
   return h;
 }
 
@@ -146,15 +223,18 @@ static bool fn_info_get(InputHandle ih, EntityInfo* iip) {
   if(ih == nullptr || iip == nullptr) return false;
   auto h = (FFmpegVideoHandle*)ih;
   std::lock_guard<std::mutex> lock(h->mtx);
-  if(h->dec_ctx == nullptr) return false;
+  if(h->dec_ctx == nullptr && h->audio_total_samples <= 0) return false;
 
-  iip->flag      = EntityType_Movie;
-  iip->framerate = av_q2d(h->fps);
-  iip->nframes   = (uint32_t)(h->nb_frames > 0 ? h->nb_frames : 0);
-  iip->width     = h->width;
-  iip->height    = h->height;
-  iip->format    = ImageFormatRGBA; /// メモリレイアウトはBGRA8 (Image::data_ と同一)
-  iip->handler   = 0;
+  iip->flag              = (EntityType)((h->dec_ctx ? (int)EntityType_Movie : 0) | (h->audio_total_samples > 0 ? (int)EntityType_Audio : 0));
+  iip->framerate         = h->dec_ctx ? av_q2d(h->fps) : 0.0f;
+  iip->nframes           = (uint32_t)(h->nb_frames > 0 ? h->nb_frames : 0);
+  iip->width             = h->width;
+  iip->height            = h->height;
+  iip->format            = ImageFormatRGBA; /// メモリレイアウトはBGRA8 (Image::data_ と同一)
+  iip->handler           = 0;
+  iip->audio_n           = (int32_t)h->audio_total_samples;
+  iip->audio_sample_rate = h->audio_native_rate;
+  iip->audio_channels    = h->audio_native_channels;
   return true;
 }
 
@@ -264,6 +344,27 @@ static int fn_read_video(InputHandle ih, int frame_no, void* buf) {
   return h->width * h->height * 4;
 }
 
+static int fn_read_audio(InputHandle ih, int start, int length, void* buf) {
+  if(ih == nullptr || buf == nullptr || length <= 0) return 0;
+  auto h = (FFmpegVideoHandle*)ih;
+  std::lock_guard<std::mutex> lock(h->mtx);
+  int ch = h->audio_native_channels;
+  if(ch <= 0 || h->audio_total_samples <= 0) return 0;
+
+  auto* out  = (int16_t*)buf;
+  int copied = 0;
+  for(int i = 0; i < length; i++) {
+    int64_t s = (int64_t)start + i;
+    if(s < 0 || s >= h->audio_total_samples) {
+      for(int c = 0; c < ch; c++) out[(size_t)i * ch + c] = 0;
+    } else {
+      for(int c = 0; c < ch; c++) out[(size_t)i * ch + c] = h->audio_pcm[(size_t)s * ch + c];
+      copied++;
+    }
+  }
+  return copied > 0 ? length : 0;
+}
+
 } // namespace mu::detail
 
 #else
@@ -281,13 +382,13 @@ static bool stub_init() {
 namespace mu::detail {
 
 mu::InputPluginTable plg_video_reader = {
-  0x00000001,                                         // guid
-  InputPluginFlag_Video | InputPluginFlag_Concurrent, // flag
-  EntityType_Movie,                                   // supports
-  "FFmpeg Video Reader",                              // name
-  "",                                                 // filepath
-  "Read video files via FFmpeg",                      // information
-  {"avi", "mp4", "mov", "mkv", "webm", "mpg", "mpeg", "m4v", "", ""},
+  0x00000001,                                                                 // guid
+  InputPluginFlag_Video | InputPluginFlag_Audio | InputPluginFlag_Concurrent, // flag
+  (EntityType)(EntityType_Movie | EntityType_Audio),                          // supports
+  "FFmpeg Video Reader",                                                      // name
+  "",                                                                         // filepath
+  "Read video/audio files via FFmpeg",                                        // information
+  {"avi", "mp4", "mov", "mkv", "webm", "mpg", "mpeg", "m4v", "wav", "mp3", "flac", "aac", "m4a", "ogg", "", ""},
 #ifdef MOVUTL_HAS_FFMPEG
   fn_init,       //	DLL開始時に呼ばれる関数へのポインタ (NULLなら呼ばれません)
   fn_exit,       //	DLL終了時に呼ばれる関数へのポインタ (NULLなら呼ばれません)
@@ -295,7 +396,7 @@ mu::InputPluginTable plg_video_reader = {
   fn_close,      //	入力ファイルをクローズする関数へのポインタ
   fn_info_get,   //	入力ファイルの情報を取得する関数へのポインタ
   fn_read_video, //	画像データを読み込む関数へのポインタ (フレーム指定+呼び出し側バッファ)
-  nullptr,       //	音声データを読み込む関数へのポインタ
+  fn_read_audio, //	音声データを読み込む関数へのポインタ
   nullptr,       //	キーフレームか調べる関数へのポインタ (NULLなら全てキーフレーム)
   nullptr,       //	入力設定のダイアログを要求された時に呼ばれる関数へのポインタ (NULLなら呼ばれません)
 #else

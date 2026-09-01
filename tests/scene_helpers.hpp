@@ -1,6 +1,7 @@
 #pragma once
 #include <algorithm>
 #include <cutil/ref.hpp>
+#include <movutl/asset/audio.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/movie.hpp>
 #include <movutl/asset/shape.hpp>
@@ -19,6 +20,7 @@ struct VisualTestScene {
   Ref<TextEntt> text;
   Ref<Movie> movie_a;
   Ref<Movie> movie_b;
+  Ref<AudioEntt> audio;
 };
 
 // assets/movies配下の2本の動画を全画面に拡大して重ね、再生開始フレームをずらした上へ赤い矩形(左上)/緑の円(中央やや下)/白いテキスト(左下)を重ねた検証用シーンを構築する
@@ -62,12 +64,17 @@ inline VisualTestScene make_visual_test_scene(int nframes) {
   s.text->trk.fstart = 0;
   s.text->trk.fend   = nframes - 1;
 
+  s.audio             = AudioEntt::Create("audio", "../assets/audio/file_example_WAV_1MG.wav");
+  s.audio->trk.fstart = 0;
+  s.audio->trk.fend   = nframes - 1;
+
   s.comp = cutil::make_ref<Composition>("VisualTestComp", kSceneWidth, kSceneHeight, (int)s.movie_a->get_info().framerate);
   s.comp->insert_entity(s.movie_a, -1); // layer0(背景)
   s.comp->insert_entity(s.movie_b, -1); // layer1(背景の上に重畳)
   s.comp->insert_entity(s.rect, -1);    // layer2
   s.comp->insert_entity(s.circle, -1);  // layer3
   s.comp->insert_entity(s.text, -1);    // layer4(最前面)
+  s.comp->insert_entity(s.audio, -1);   // layer5(音声)
   return s;
 }
 

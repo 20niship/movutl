@@ -37,6 +37,12 @@ for i = 1, 5 do
   end
 end
 
-print("perf_test: 20 layers created (movie x10, text x5, shape x5)")
+-- 音声トラック x3 (layer 11-13、開始位置を30フレームずつずらして重ねる)
+local audio_path = "../assets/audio/file_example_WAV_1MG.wav"
+movutl.add_new_audio_track("audio_1", audio_path, FSTART, 11)
+movutl.add_new_audio_track("audio_2", audio_path, FSTART + 30, 12)
+movutl.add_new_audio_track("audio_3", audio_path, FSTART + 60, 13)
+
+print("perf_test: 14 layers created (movie x1, text x5, shape x5, audio x3)")
 
 movutl.play()
