@@ -27,8 +27,8 @@ struct VisualTestScene {
 inline Ref<Movie> make_fullscreen_movie(const char* name, const char* path, int fstart, int nframes) {
   auto mov = Movie::Create(name, path);
   MU_ASSERT(mov->get_input_plugin());
-  mov->trk.fstart      = fstart;
-  mov->trk.fend        = fstart + nframes - 1;
+  mov->fstart          = fstart;
+  mov->fend            = fstart + nframes - 1;
   const float native_w = (float)mov->get_info().width;
   const float native_h = (float)mov->get_info().height;
   const float cover    = std::max((float)kSceneWidth / native_w, (float)kSceneHeight / native_h) * 100.0f;
@@ -44,29 +44,29 @@ inline VisualTestScene make_visual_test_scene(int nframes) {
   constexpr float w = (float)kSceneWidth;
   constexpr float h = (float)kSceneHeight;
 
-  s.rect             = ShapeEntt::Create("rect", ShapeType_Rect);
-  s.rect->pos_       = Vec3(w * 0.05f, h * 0.05f, 0);
-  s.rect->size_      = Vec2(w * 0.2f, h * 0.2f);
-  s.rect->color_     = Vec4b(0, 0, 255, 255); // BGRA順: 赤
-  s.rect->trk.fstart = 0;
-  s.rect->trk.fend   = nframes - 1;
+  s.rect         = ShapeEntt::Create("rect", ShapeType_Rect);
+  s.rect->pos_   = Vec3(w * 0.05f, h * 0.05f, 0);
+  s.rect->size_  = Vec2(w * 0.2f, h * 0.2f);
+  s.rect->color_ = Vec4b(0, 0, 255, 255); // BGRA順: 赤
+  s.rect->fstart = 0;
+  s.rect->fend   = nframes - 1;
 
-  s.circle             = ShapeEntt::Create("circ", ShapeType_Circle);
-  s.circle->pos_       = Vec3(w * 0.5f, h * 0.4f, 0);
-  s.circle->size_      = Vec2(w * 0.2f, h * 0.2f);
-  s.circle->color_     = Vec4b(0, 255, 0, 255); // BGRA順: 緑
-  s.circle->trk.fstart = 0;
-  s.circle->trk.fend   = nframes - 1;
+  s.circle         = ShapeEntt::Create("circ", ShapeType_Circle);
+  s.circle->pos_   = Vec3(w * 0.5f, h * 0.4f, 0);
+  s.circle->size_  = Vec2(w * 0.2f, h * 0.2f);
+  s.circle->color_ = Vec4b(0, 255, 0, 255); // BGRA順: 緑
+  s.circle->fstart = 0;
+  s.circle->fend   = nframes - 1;
 
-  s.text             = TextEntt::Create("HI");
-  s.text->pos_       = Vec3(w * 0.05f, h * 0.75f, 0);
-  s.text->color_     = Vec4b(255, 255, 255, 255);
-  s.text->trk.fstart = 0;
-  s.text->trk.fend   = nframes - 1;
+  s.text         = TextEntt::Create("HI");
+  s.text->pos_   = Vec3(w * 0.05f, h * 0.75f, 0);
+  s.text->color_ = Vec4b(255, 255, 255, 255);
+  s.text->fstart = 0;
+  s.text->fend   = nframes - 1;
 
-  s.audio             = AudioEntt::Create("audio", "../assets/audio/file_example_WAV_1MG.wav");
-  s.audio->trk.fstart = 0;
-  s.audio->trk.fend   = nframes - 1;
+  s.audio         = AudioEntt::Create("audio", "../assets/audio/file_example_WAV_1MG.wav");
+  s.audio->fstart = 0;
+  s.audio->fend   = nframes - 1;
 
   s.comp = cutil::make_ref<Composition>("VisualTestComp", kSceneWidth, kSceneHeight, (int)s.movie_a->get_info().framerate);
   s.comp->insert_entity(s.movie_a, -1); // layer0(背景)

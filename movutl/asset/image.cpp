@@ -185,8 +185,8 @@ bool Image::render(Composition* cmp, Image* target, int frame) {
   int ch = cmp->size[1];
   if(cw <= 0 || ch <= 0) return false;
 
-  int base_x = this->width / 2 + trk.anchor[0] - cw / 2;
-  int base_y = this->height / 2 + trk.anchor[1] - ch / 2;
+  int base_x = this->width / 2 + anchor[0] - cw / 2;
+  int base_y = this->height / 2 + anchor[1] - ch / 2;
   return this->copyto(target, Vec2d(base_x, base_y), this->scale.avg(), this->rotation, this->alpha);
 }
 

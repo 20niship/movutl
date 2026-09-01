@@ -90,7 +90,7 @@ void mix_audio_range(Composition* comp, int64_t start_sample, int n, int16_t* ou
     std::fill(track_buf.begin(), track_buf.end(), (int16_t)0);
     if(!a->fetch_audio(comp, start_sample, n, track_buf.data())) continue;
 
-    for(auto& f : a->trk.filters) {
+    for(auto& f : a->filters) {
       if(!f.enabled || f.plg_ == nullptr || f.plg_->fn_proc == nullptr) continue;
       FilterInData fin;
       fin.audiop   = track_buf.data();

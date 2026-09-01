@@ -35,7 +35,7 @@ struct FrameStepCommand final : mCommand {
   int dir_;
 };
 
-// entt->trk範囲からエンティティをComposition::layersから取り除く(Compositionにremove_entity APIが無いため直接操作)
+// エンティティをComposition::layersから取り除く(Compositionにremove_entity APIが無いため直接操作)
 void remove_entity_from_comp(Composition* comp, const Ref<Entity>& entt) {
   if(!comp || !entt) return;
   for(auto& layer : comp->layers) {
@@ -49,7 +49,7 @@ struct SplitCommand final : mCommand {
   struct SplitState {
     Ref<Entity> original; // 分割された元のクリップ(前半)
     Ref<Entity> clone;    // 分割で新規生成されたクリップ(後半)
-    int orig_fend;        // 分割前のoriginal->trk.fend
+    int orig_fend;        // 分割前のoriginal->fend
   };
 
   CommandStatus on_start() override {
@@ -59,7 +59,7 @@ struct SplitCommand final : mCommand {
 
     for(auto& entt : get_selected_entts()) {
       if(!entt) continue;
-      if(entt->trk.fstart >= frame || frame >= entt->trk.fend) continue; // 現在フレームがクリップ範囲外
+      if(entt->fstart >= frame || frame >= entt->fend) continue; // 現在フレームがクリップ範囲外
 
       auto clone = duplicate_asset(entt);
       if(!clone) {
@@ -69,11 +69,10 @@ struct SplitCommand final : mCommand {
 
       SplitState st;
       st.original  = entt;
-      st.orig_fend = entt->trk.fend;
+      st.orig_fend = entt->fend;
 
-      clone->trk        = entt->trk; // fstart/fend/anchor等をコピー
-      clone->trk.fstart = frame;     // 後半
-      entt->trk.fend    = frame;     // 前半
+      clone->fstart = frame; // 後半
+      entt->fend    = frame; // 前半
 
       auto* comp = entt->get_comp();
       if(comp) comp->insert_entity(clone, -1);
@@ -88,7 +87,7 @@ struct SplitCommand final : mCommand {
   void on_undo() override {
     for(auto& st : splits_) {
       if(!st.original) continue;
-      st.original->trk.fend = st.orig_fend;
+      st.original->fend = st.orig_fend;
       if(st.clone) remove_entity_from_comp(st.clone->get_comp(), st.clone);
     }
   }
@@ -97,8 +96,8 @@ struct SplitCommand final : mCommand {
   void on_redo() override {
     for(auto& st : splits_) {
       if(!st.original || !st.clone) continue;
-      st.original->trk.fend = st.clone->trk.fstart;
-      auto* comp            = st.original->get_comp();
+      st.original->fend = st.clone->fstart;
+      auto* comp        = st.original->get_comp();
       if(comp) comp->insert_entity(st.clone, -1);
     }
   }

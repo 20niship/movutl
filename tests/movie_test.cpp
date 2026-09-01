@@ -52,7 +52,7 @@ TEST_CASE("FFmpeg Video Reader: ファイル情報取得") {
   CHECK(mov.get_info().height == 120);
   CHECK(mov.get_info().nframes == 20);
   CHECK(std::abs(mov.get_info().framerate - 10.0f) < 0.5f);
-  CHECK(mov.trk.fend == (int)mov.get_info().nframes);
+  CHECK(mov.fend == (int)mov.get_info().nframes);
 
   /// 存在しないファイル
   {
@@ -136,8 +136,8 @@ TEST_CASE("Movie::render: start_frame_とspeedが素材内フレーム位置に�
   REQUIRE(mov->get_input_plugin());
   mov->start_frame_ = 7;      // 素材の7フレーム目から再生開始
   mov->speed        = 200.0f; // 倍速再生 (トラック上2フレーム進む毎に素材は4フレーム進む)
-  mov->trk.fstart   = 0;
-  mov->trk.fend     = (int)mov->get_info().nframes;
+  mov->fstart       = 0;
+  mov->fend         = (int)mov->get_info().nframes;
 
   Composition comp("SpeedTestComp", mov->get_info().width, mov->get_info().height, 10);
   comp.insert_entity(mov, -1);
@@ -170,8 +170,8 @@ TEST_CASE("duplicate_asset: Movieの複製が独立した読み込みプラグ�
   CHECK(clone->get_input_handle() != mov->get_input_handle()); // 元と複製でハンドルが別インスタンスであること
 
   /// 複製後、両方から独立してフレームをrenderできること
-  mov->trk.fstart = clone->trk.fstart = 0;
-  mov->trk.fend = clone->trk.fend = (int)mov->get_info().nframes;
+  mov->fstart = clone->fstart = 0;
+  mov->fend = clone->fend = (int)mov->get_info().nframes;
 
   Composition comp("DupTestComp", mov->get_info().width, mov->get_info().height, 10);
   Image target(comp.size[0], comp.size[1]);
@@ -189,9 +189,9 @@ TEST_CASE("PERF: 動画の逐次再生でrender_current_frame_main_threadが極�
   using namespace std::chrono;
   auto mov = Movie::Create("bench_movie", "../assets/movies/big_buck_bunny_360_10s.mp4");
   REQUIRE(mov->get_input_plugin());
-  auto comp       = Composition("BenchComp", mov->get_info().width, mov->get_info().height, 30);
-  mov->trk.fstart = 0;
-  mov->trk.fend   = (int)mov->get_info().nframes;
+  auto comp   = Composition("BenchComp", mov->get_info().width, mov->get_info().height, 30);
+  mov->fstart = 0;
+  mov->fend   = (int)mov->get_info().nframes;
   comp.insert_entity(mov, -1);
 
   const int N = 30;

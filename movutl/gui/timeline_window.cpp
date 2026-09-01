@@ -49,12 +49,12 @@ void TimelineWindow::Update() {
       for(auto& e : layer.entts) {
         if(!e) continue;
         if(!any) {
-          mn  = e->trk.fstart;
-          mx  = e->trk.fend;
+          mn  = e->fstart;
+          mx  = e->fend;
           any = true;
         } else {
-          mn = std::min(mn, e->trk.fstart);
-          mx = std::max(mx, e->trk.fend);
+          mn = std::min(mn, e->fstart);
+          mx = std::max(mx, e->fend);
         }
       }
     }

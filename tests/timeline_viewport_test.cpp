@@ -27,8 +27,8 @@ TEST_CASE("SplitCommand: 選択中クリップを現在フレームで分割す�
 
   auto img = Image::Create("clip", 64, 64);
   REQUIRE(img != nullptr);
-  img->trk.fstart = 0;
-  img->trk.fend   = 100;
+  img->fstart = 0;
+  img->fend   = 100;
   cmp->insert_entity(img);
   cmp->frame = 40;
 
@@ -37,12 +37,12 @@ TEST_CASE("SplitCommand: 選択中クリップを現在フレームで分割す�
 
   CHECK(run_command("split"));
 
-  CHECK(img->trk.fend == 40); // 前半は現在フレームまで短縮される
+  CHECK(img->fend == 40); // 前半は現在フレームまで短縮される
 
   bool found_second_half = false;
   for(auto& layer : cmp->layers) {
     for(auto& e : layer.entts) {
-      if(e && e.get() != img.get() && e->trk.fstart == 40 && e->trk.fend == 100) found_second_half = true;
+      if(e && e.get() != img.get() && e->fstart == 40 && e->fend == 100) found_second_half = true;
     }
   }
   CHECK(found_second_half);
@@ -52,8 +52,8 @@ TEST_CASE("duplicate_asset: Entityを複製できる") {
   Project::New();
   auto img = Image::Create("clip", 64, 64);
   REQUIRE(img != nullptr);
-  img->trk.fstart = 10;
-  img->trk.fend   = 90;
+  img->fstart = 10;
+  img->fend   = 90;
 
   auto clone = duplicate_asset(img);
   REQUIRE(clone != nullptr);
@@ -73,8 +73,8 @@ TEST_CASE("SplitCommand: 範囲外フレームでは分割しない") {
 
   auto img = Image::Create("clip2", 64, 64);
   REQUIRE(img != nullptr);
-  img->trk.fstart = 0;
-  img->trk.fend   = 100;
+  img->fstart = 0;
+  img->fend   = 100;
   cmp->insert_entity(img);
   cmp->frame = 200; // クリップ範囲外
 
@@ -82,5 +82,5 @@ TEST_CASE("SplitCommand: 範囲外フレームでは分割しない") {
   select_entt(img);
 
   CHECK(run_command("split"));
-  CHECK(img->trk.fend == 100); // 変化なし
+  CHECK(img->fend == 100); // 変化なし
 }

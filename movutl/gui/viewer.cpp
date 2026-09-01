@@ -138,7 +138,7 @@ void ViewerWindow::Update() {
     for(auto& layer : comp->layers) {
       for(auto& e : layer.entts) {
         if(!e || !e->visible(comp->frame)) continue;
-        ImRect r(ImVec2(e->trk.anchor[0] - kHalfSize, e->trk.anchor[1] - kHalfSize), ImVec2(e->trk.anchor[0] + kHalfSize, e->trk.anchor[1] + kHalfSize));
+        ImRect r(ImVec2(e->anchor[0] - kHalfSize, e->anchor[1] - kHalfSize), ImVec2(e->anchor[0] + kHalfSize, e->anchor[1] + kHalfSize));
         if(r.Contains(ImVec2(comp_pt.x, comp_pt.y))) hit = e;
       }
     }

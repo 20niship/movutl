@@ -405,8 +405,8 @@ bool IsTimelineClickedLeftButton() { return ctx_.last_entt_hov; }
 bool BeginTrack(const Ref<Entity>& entity) {
   MU_ASSERT(entity);
   const char* name = entity->name.c_str();
-  int* start       = &entity->trk.fstart;
-  int* end         = &entity->trk.fend;
+  int* start       = &entity->fstart;
+  int* end         = &entity->fend;
   int htop         = ctx_.layer_y1();
 
   constexpr int kEdgeW = 5; // 左右端のドラッグ判定幅(px)
@@ -483,7 +483,7 @@ bool BeginTrack(const Ref<Entity>& entity) {
     ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
   }
 
-  auto col    = entity->trk.custom_color ? (ImU32)entity->trk.custom_color : get_entt_color(entity);
+  auto col    = entity->custom_color ? (ImU32)entity->custom_color : get_entt_color(entity);
   auto dl     = ImGui::GetWindowDrawList();
   auto inside = ctx_.tl_area(); // レイヤー名カラムへのはみ出し描画を防ぐためこの範囲でクリップする
   dl->PushClipRect(ImVec2(inside.left(), ctx_.all_area.top()), ImVec2(inside.right(), ctx_.all_area.bottom()), true);

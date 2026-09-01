@@ -47,7 +47,10 @@ cutil::Prop Entity::getSaveProps() const {
   p.set<std::string>("name", name.c_str());
   p.set<int32_t>("guid", (int32_t)guid_);
   p.set_child("props", getProps());
-  p.set_child("trk", trk.getProps());
+  // getProps()は内部でgetPropsInfo()を仮想呼び出しするため派生クラスのPropInfoに化ける。dumpに直接Entity::getPropsInfo()を渡し回避する
+  cutil::Prop trk;
+  trk.dump(this, this->Entity::getPropsInfo());
+  p.set_child("trk", trk);
   return p;
 }
 
@@ -58,7 +61,7 @@ Ref<Entity> Entity::fromSaveProps(const cutil::Prop& p) {
   if(!e) return nullptr;
   e->guid_ = (uint64_t)cutil::get_or<int32_t>(p, "guid", (int32_t)e->guid_);
   if(p.contains("props")) e->setProps(p.get_child("props"));
-  if(p.contains("trk")) e->trk.setProps(p.get_child("trk"));
+  if(p.contains("trk")) (void)p.get_child("trk").load_to(e.get(), e->Entity::getPropsInfo());
   e->reload_asset(); // pathはsetProps()でコピーされるだけなので、ここで独立した読み込みプラグインのインスタンスを持たせる
   return e;
 }
@@ -87,8 +90,8 @@ std::string EntityInfo::str() const {
 
 bool Entity::render_filters(Composition* cmp, Image* img, int frame) {
   MU_ASSERT(cmp != nullptr);
-  for(int i = 0; i < trk.filters.size(); i++) {
-    auto& f = trk.filters[i];
+  for(int i = 0; i < filters.size(); i++) {
+    auto& f = filters[i];
     if(!f.enabled) continue;
     MU_ASSERT(f.plg_ != nullptr);
     if(!f.plg_->fn_proc) {

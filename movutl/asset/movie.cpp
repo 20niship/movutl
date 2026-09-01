@@ -29,10 +29,10 @@ bool Movie::render(Composition* cmp, Image* target, int frame) {
   if(load_failed_ || in_plg_ == nullptr || in_handle_ == nullptr) return false;
   if(info.width <= 0 || info.height <= 0 || info.nframes <= 0) return false;
 
-  int elapsed = frame - trk.fstart; // トラック上での経過フレーム数
-  if(elapsed < 0 || elapsed >= trk.fend - trk.fstart) {
+  int elapsed = frame - fstart; // トラック上での経過フレーム数
+  if(elapsed < 0 || elapsed >= fend - fstart) {
     if(!loop_) return false;
-    elapsed %= (trk.fend - trk.fstart); // ループ再生
+    elapsed %= (fend - fstart); // ループ再生
   }
   /// 開始フレーム(start_frame_)を起点に再生速度(speed, 100=等速)を適用した素材内フレーム位置
   int tlocal = start_frame_ + (int)(elapsed * (speed / 100.0f));
@@ -52,9 +52,9 @@ bool Movie::render(Composition* cmp, Image* target, int frame) {
   render_filters(cmp, img_.get(), frame);
 
   MU_ASSERT(img_);
-  int base_x  = trk.anchor[0] + (cw - img_->width) / 2 + pos[0];
-  int base_y  = trk.anchor[1] + (ch - img_->height) / 2 + pos[1];
-  Vec2 center = Vec2(base_x, base_y) + trk.anchor;
+  int base_x  = anchor[0] + (cw - img_->width) / 2 + pos[0];
+  int base_y  = anchor[1] + (ch - img_->height) / 2 + pos[1];
+  Vec2 center = Vec2(base_x, base_y) + anchor;
   img_->copyto(target, center, this->scale.avg() / 100, this->rotation);
 
   return true;
@@ -95,8 +95,8 @@ bool Movie::load_file(const char* path) {
     return false;
   }
 
-  this->trk.fend = info.nframes;
-  load_failed_   = false;
+  this->fend   = info.nframes;
+  load_failed_ = false;
   LOG_F(INFO, "Movie loaded: %s (%dx%d, %d frames, %.3f fps, plugin=%s)", path, info.width, info.height, info.nframes, info.framerate, p->name);
   return true;
 }

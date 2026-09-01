@@ -13,7 +13,6 @@
 #include <movutl/asset/project.hpp>
 #include <movutl/asset/shape.hpp>
 #include <movutl/asset/text.hpp>
-#include <movutl/asset/track.hpp>
 #include <movutl/binding/imgui_binding.hpp>
 #include <movutl/core/anim.hpp>
 #include <movutl/gui/gui.hpp>
@@ -150,9 +149,17 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("get_info", &Entity::get_info)
     .addFunction("reload_asset", &Entity::reload_asset)
     .addFunction("visible", &Entity::visible)
-    .addVariable("name", &Entity::name)   // cutil::Str
-    .addVariable("guid_", &Entity::guid_) // uint64_t
-    .addVariable("trk", &Entity::trk)     // TrackObject
+    .addVariable("name", &Entity::name)               // cutil::Str
+    .addVariable("guid_", &Entity::guid_)             // uint64_t
+    .addVariable("fstart", &Entity::fstart)           // int
+    .addVariable("fend", &Entity::fend)               // int
+    .addVariable("anchor", &Entity::anchor)           // Vec2
+    .addVariable("blend_", &Entity::blend_)           // BlendType
+    .addVariable("active_", &Entity::active_)         // bool
+    .addVariable("solo_", &Entity::solo_)             // bool
+    .addVariable("clipping_up", &Entity::clipping_up) // bool
+    .addVariable("camera_ctrl", &Entity::camera_ctrl) // bool
+    .addVariable("custom_color", &Entity::custom_color) // int32_t
     .endClass()
     .beginClass<EntityInfo>("EntityInfo")
     .addFunction("str", &EntityInfo::str)
@@ -262,18 +269,6 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("summary", &TrackLayer::summary)
     .addVariable("active", &TrackLayer::active) // bool
     .addVariable("entts", &TrackLayer::entts)   // std::vector<Ref<Entity> >
-    .endClass()
-    .beginClass<TrackObject>("TrackObject")
-    .addFunction("visible", &TrackObject::visible)
-    .addVariable("fstart", &TrackObject::fstart)             // int
-    .addVariable("fend", &TrackObject::fend)                 // int
-    .addVariable("anchor", &TrackObject::anchor)             // Vec2
-    .addVariable("blend_", &TrackObject::blend_)             // BlendType
-    .addVariable("active_", &TrackObject::active_)           // bool
-    .addVariable("solo_", &TrackObject::solo_)               // bool
-    .addVariable("clipping_up", &TrackObject::clipping_up)   // bool
-    .addVariable("camera_ctrl", &TrackObject::camera_ctrl)   // bool
-    .addVariable("custom_color", &TrackObject::custom_color) // int32_t
     .endClass()
     .beginClass<Workspace>("Workspace")
     .addFunction("add_entry", &Workspace::add_entry)

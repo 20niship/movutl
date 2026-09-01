@@ -6,7 +6,6 @@
 #include <movutl/asset/project.hpp>
 #include <movutl/asset/shape.hpp>
 #include <movutl/asset/text.hpp>
-#include <movutl/asset/track.hpp>
 #include <movutl/core/logger.hpp>
 #include <movutl/plugin/input.hpp>
 #include <movutl/plugin/plugin.hpp>
@@ -20,8 +19,8 @@ Ref<ShapeEntt> add_new_shape_track(const char* name, int start, int end, ShapeTy
   auto shp               = ShapeEntt::Create(name, type);
   Composition* main_comp = Composition::GetActiveComp();
   MU_ASSERT(main_comp);
-  shp->trk.fstart = start;
-  shp->trk.fend   = end;
+  shp->fstart = start;
+  shp->fend   = end;
   main_comp->insert_entity(shp);
   return shp;
 }
@@ -34,8 +33,8 @@ Ref<Entity> add_new_video_track(const char* name, const char* path, int start, i
     LOG_F(ERROR, "Failed to load file: %s", path);
     return nullptr;
   }
-  e->trk.fstart = start;
-  e->trk.fend   = start + 1; // 動画が読み込めなかった時用
+  e->fstart = start;
+  e->fend   = start + 1; // 動画が読み込めなかった時用
   e->load_file(path);
   auto pj                = Project::Get();
   Composition* main_comp = pj->get_main_comp();
@@ -62,14 +61,14 @@ bool add_new_audio_track(const char* name, const char* path, int start, int laye
   MU_ASSERT(main_comp);
   MU_ASSERT(layer >= 0 && layer <= 1000);
 
-  // Composition未確定のままload_file()するとGetActiveComp()がnullptrでframerateが既定値30にフォールバックしend frameがずれるため、先にtrk.fstartを設定してからload_file()する
+  // Composition未確定のままload_file()するとGetActiveComp()がnullptrでframerateが既定値30にフォールバックしend frameがずれるため、先にfstartを設定してからload_file()する
   auto e = AudioEntt::Create(name);
   if(!e) {
     LOG_F(ERROR, "Failed to create audio entity: %s", path);
     return false;
   }
-  e->trk.fstart = start;
-  e->trk.fend   = start + 1; // 読み込み失敗時用
+  e->fstart = start;
+  e->fend   = start + 1; // 読み込み失敗時用
   if(!e->load_file(path)) LOG_F(ERROR, "Failed to load audio file: %s", path);
 
   if(layer >= (int)main_comp->layers.size()) main_comp->layers.resize(layer + 1);
@@ -86,8 +85,8 @@ bool add_new_track(const char* name, EntityType type, int start, int end) {
       auto img               = Image::Create(name, "");
       Composition* main_comp = Composition::GetActiveComp();
       MU_ASSERT(main_comp);
-      img->trk.fstart = start;
-      img->trk.fend   = end;
+      img->fstart = start;
+      img->fend   = end;
       main_comp->insert_entity(img);
       break;
     }
@@ -95,8 +94,8 @@ bool add_new_track(const char* name, EntityType type, int start, int end) {
       auto mov               = Movie::Create(name, "");
       Composition* main_comp = Composition::GetActiveComp();
       MU_ASSERT(main_comp);
-      mov->trk.fstart = start;
-      mov->trk.fend   = end;
+      mov->fstart = start;
+      mov->fend   = end;
       main_comp->insert_entity(mov);
       break;
     }
@@ -104,8 +103,8 @@ bool add_new_track(const char* name, EntityType type, int start, int end) {
       auto txt               = TextEntt::Create(name);
       Composition* main_comp = Composition::GetActiveComp();
       MU_ASSERT(main_comp);
-      txt->trk.fstart = start;
-      txt->trk.fend   = end;
+      txt->fstart = start;
+      txt->fend   = end;
       main_comp->insert_entity(txt);
       break;
     }
@@ -113,8 +112,8 @@ bool add_new_track(const char* name, EntityType type, int start, int end) {
       auto shp               = ShapeEntt::Create(name, ShapeType_Rect);
       Composition* main_comp = Composition::GetActiveComp();
       MU_ASSERT(main_comp);
-      shp->trk.fstart = start;
-      shp->trk.fend   = end;
+      shp->fstart = start;
+      shp->fend   = end;
       main_comp->insert_entity(shp);
       break;
     }
@@ -122,8 +121,8 @@ bool add_new_track(const char* name, EntityType type, int start, int end) {
       auto a                 = AudioEntt::Create(name);
       Composition* main_comp = Composition::GetActiveComp();
       MU_ASSERT(main_comp);
-      a->trk.fstart = start;
-      a->trk.fend   = end;
+      a->fstart = start;
+      a->fend   = end;
       main_comp->insert_entity(a);
       break;
     }

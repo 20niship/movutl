@@ -105,7 +105,7 @@ template <> struct PropInfoOf<mu::Entity*> {
   }
 };
 
-// uint32_t: cutilはint32_t/uint8_tのみ組み込みなので別途登録する(TrackObject::group_guid用)。
+// uint32_t: cutilはint32_t/uint8_tのみ組み込みなので別途登録する(Entity::group_guid用)。
 template <> struct PropInfoOf<uint32_t> {
   static const PropInfo* get() {
     static const PropInfo info = [] {

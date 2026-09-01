@@ -145,9 +145,8 @@ ignore_symbols = [  #
     ("", "TextColoredV"),
     ("", "TextDisabled"),
     ("FilterParam", ""),
-    ("TrackObject", "filters"),
-    ("TrackObject", "guid"),
-    ("TrackObject", "group_guid"),
+    ("Entity", "filters"),
+    ("Entity", "group_guid"),
     # ----
     ("ImGuiIO", "MousDown"),
     ("ImGuiIO", "keysData"),

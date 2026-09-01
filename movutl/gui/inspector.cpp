@@ -43,8 +43,8 @@ void InspectorWindow::Update() {
   }
   wd_entt_props_editor(e.get());
 
-  for(int i = 0; i < e->trk.filters.size(); i++) {
-    auto& f = e->trk.filters[i];
+  for(int i = 0; i < e->filters.size(); i++) {
+    auto& f = e->filters[i];
     MU_ASSERT(f.plg_ != nullptr);
     ImGui::PushID(i);
     std::string FX_ICON = ICON_FA_PLUG " ";
@@ -62,7 +62,7 @@ void InspectorWindow::Update() {
       }
     }
     if(ImGui::TreeNode(str.c_str())) {
-      int size_ = std::min<int>(f.props.size(), (int)e->trk.filters[i].plg_->props.fields.size());
+      int size_ = std::min<int>(f.props.size(), (int)e->filters[i].plg_->props.fields.size());
       for(int k = 0; k < size_; k++) {
         const auto& info = f.plg_->props.fields[k];
         ImGui::PushID(k);
@@ -124,11 +124,11 @@ void InspectorWindow::Update() {
         const char* name = (*filters)[i].name.c_str();
         if(!fuzzy_match(name, search_buffer)) continue;
         if(ImGui::Selectable(name)) {
-          TrackObject::FilterParam fp;
+          Entity::FilterParam fp;
           fp.plg_ = &(*filters)[i];
           fp.props.add_props((*filters)[i].defaults);
           fp.enabled = true;
-          e->trk.filters.push_back(fp);
+          e->filters.push_back(fp);
         }
       }
       ImGui::EndPopup();

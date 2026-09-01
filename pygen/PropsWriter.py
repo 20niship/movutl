@@ -42,7 +42,6 @@ class PropsWriter:
             "#include <movutl/asset/audio.hpp>\n"
             "#include <movutl/core/anim.hpp>\n"
             "#include <movutl/core/prop_types.hpp>\n"
-            "#include <movutl/asset/track.hpp>\n"
             "#include <movutl/asset/composition.hpp>\n"
             "namespace mu { \n"
         )

@@ -50,8 +50,8 @@ void open_media_file(const char* path) {
       return;
     }
     Composition* main_comp = Composition::GetActiveComp();
-    img->trk.fstart        = 0;
-    img->trk.fend          = Config::Get()->default_image_frames;
+    img->fstart            = 0;
+    img->fend              = Config::Get()->default_image_frames;
     main_comp->insert_entity(img);
   } else {
     LOG_F(ERROR, "No compatible plugin found for file: %s", path);
