@@ -5,9 +5,7 @@
 #include <movutl/asset/composition.hpp>
 #include <movutl/audio/audio_mixer.hpp>
 #include <movutl/core/audio_resample.hpp>
-#include <movutl/plugin/default/audio_echo_filter.hpp>
-#include <movutl/plugin/default/audio_eq_filter.hpp>
-#include <movutl/plugin/default/audio_reverb_filter.hpp>
+#include <movutl/plugin/default/audio_filters.hpp>
 #include <movutl/plugin/default/audio_volume_filter.hpp>
 #include <movutl/plugin/plugin.hpp>
 #include <thread>

@@ -1,6 +1,6 @@
 #include <algorithm>
 #include <maximilian.h>
-#include <movutl/plugin/default/audio_eq_filter.hpp>
+#include <movutl/plugin/default/audio_filters.hpp>
 
 #define GUID(x) (0x0000000100000000 | x)
 

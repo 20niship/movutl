@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <maximilian.h>
 #include <movutl/asset/composition.hpp>
-#include <movutl/plugin/default/audio_echo_filter.hpp>
+#include <movutl/plugin/default/audio_filters.hpp>
 #include <vector>
 
 #define GUID(x) (0x0000000100000000 | x)
