@@ -1,3 +1,4 @@
+#include <IconsFontAwesome6.h>
 #include <algorithm>
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -45,12 +46,18 @@ void ViewerWindow::Update() {
   // キャッシュ未ヒット時は直前のテクスチャをそのまま表示し続ける
   auto texture_id = tex.get_id();
 
-  ImVec2 avail = ImGui::GetContentRegionAvail();
+  constexpr float kFooterH = 28.0f; // 下部フッター(ズーム率/フィットボタン)の高さ
+  ImVec2 avail             = ImGui::GetContentRegionAvail();
+  avail.y -= kFooterH;
   if(avail.x < 1 || avail.y < 1) {
     ImGui::End();
     return;
   }
   ImVec2 origin = ImGui::GetCursorScreenPos();
+  auto reset_view = [&]() {
+    zoom = 1.0f;
+    pan  = ImVec2(0, 0);
+  };
 
   float cmp_w      = std::max(1.0f, (float)comp->size[0]);
   float cmp_h      = std::max(1.0f, (float)comp->size[1]);
@@ -94,10 +101,7 @@ void ViewerWindow::Update() {
       zoom  = new_zoom;
     }
 
-    if(ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
-      zoom = 1.0f;
-      pan  = ImVec2(0, 0);
-    }
+    if(ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) reset_view();
   }
 
   if(Config::Get()->show_viewer_ruler) {
@@ -147,6 +151,21 @@ void ViewerWindow::Update() {
       select_entt(hit);
     }
   }
+
+  // フッター(拡大率/フィット/実寸): AEのビューアフッターを参考
+  ImGui::SetCursorScreenPos(ImVec2(origin.x, origin.y + avail.y));
+  ImGui::BeginChild("##viewer_footer", ImVec2(0, kFooterH), false);
+  float zoom_pct = zoom * 100.0f;
+  ImGui::SetNextItemWidth(80);
+  if(ImGui::DragFloat("##zoom_pct", &zoom_pct, 1.0f, 5.0f, 5000.0f, "%.0f%%")) zoom = zoom_pct / 100.0f;
+  ImGui::SameLine();
+  if(ImGui::Button(ICON_FA_EXPAND " フィット")) reset_view();
+  ImGui::SameLine();
+  if(ImGui::Button("100%") && base_scale > 0.0f) {
+    zoom = 1.0f / base_scale;
+    pan  = ImVec2(0, 0);
+  }
+  ImGui::EndChild();
 
   ImGui::End();
 }
