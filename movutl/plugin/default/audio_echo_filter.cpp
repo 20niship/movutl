@@ -19,7 +19,8 @@ bool echo_proc(void* fp, FilterInData* fpip, const cutil::Prop& p) {
   auto* slot = (void**)fp;
   if(*slot == nullptr) *slot = new EchoState();
   auto* st = (EchoState*)*slot;
-  if((int)st->lines.size() != fpip->audio_ch) st->lines.assign(std::max(1, fpip->audio_ch), maxiDelayline());
+  // assign(count,value)は一時オブジェクトをスタックに作ってからコピーするため、maxiDelaylineの巨大配列メンバでスタックが溢れる。resize()はvector内で直接構築する
+  if((int)st->lines.size() != fpip->audio_ch) st->lines.resize(std::max(1, fpip->audio_ch));
 
   float delay_ms    = std::max(1.0f, cutil::get_or<float>(p, "delay_ms", 300.0f));
   float feedback    = std::clamp(cutil::get_or<float>(p, "feedback", 40.0f) / 100.0f, 0.0f, 0.95f);

@@ -5,6 +5,7 @@
 #include <movutl/plugin/default/audio_eq_filter.hpp>
 #include <movutl/plugin/default/audio_reverb_filter.hpp>
 #include <movutl/plugin/default/audio_volume_filter.hpp>
+#include <thread>
 #include <vector>
 
 using namespace mu;
@@ -167,4 +168,39 @@ TEST_CASE("audio_echo_filter: 遅延時間だけずれたところにエコー�
   for(int i = delay_samples; i < delay_samples + 5 && i < kN; i++)
     if(buf[(size_t)i * kCh] != 0) echoed = true;
   CHECK(echoed);
+}
+
+// RenderWorkerPoolのOSデフォルト小スタック(macOSで512KB程度)で、旧assign(count,value)実装がSIGBUSで落ちていたのを実機確認済み。同条件で再現しないことを確認する
+TEST_CASE("audio_echo_filter/audio_reverb_filter: 小さいスタックのスレッドで呼んでも落ちない") {
+  Composition comp;
+  bool echo_ok   = false;
+  bool reverb_ok = false;
+
+  std::thread t([&] {
+    void* echo_state = nullptr;
+    auto buf1        = impulse_buffer();
+    cutil::Prop p1;
+    p1.set<float>("delay_ms", 5.0f);
+    FilterInData fin1;
+    fin1.audiop   = buf1.data();
+    fin1.audio_n  = kN;
+    fin1.audio_ch = kCh;
+    fin1.compo    = &comp;
+    echo_ok       = mu::detail::f_audio_echo.fn_proc(&echo_state, &fin1, p1);
+
+    void* reverb_state = nullptr;
+    auto buf2          = impulse_buffer();
+    cutil::Prop p2;
+    p2.set<float>("mix", 50.0f);
+    FilterInData fin2;
+    fin2.audiop   = buf2.data();
+    fin2.audio_n  = kN;
+    fin2.audio_ch = kCh;
+    fin2.compo    = &comp;
+    reverb_ok     = mu::detail::f_audio_reverb.fn_proc(&reverb_state, &fin2, p2);
+  });
+  t.join();
+
+  CHECK(echo_ok);
+  CHECK(reverb_ok);
 }

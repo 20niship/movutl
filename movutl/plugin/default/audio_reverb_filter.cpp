@@ -19,7 +19,7 @@ bool reverb_proc(void* fp, FilterInData* fpip, const cutil::Prop& p) {
   auto* slot = (void**)fp;
   if(*slot == nullptr) *slot = new ReverbState();
   auto* st = (ReverbState*)*slot;
-  if((int)st->verbs.size() != fpip->audio_ch) st->verbs.assign(std::max(1, fpip->audio_ch), maxiFreeVerb());
+  if((int)st->verbs.size() != fpip->audio_ch) st->verbs.resize(std::max(1, fpip->audio_ch)); // assign(count,value)によるスタック上の一時構築を避ける
 
   float roomsize = std::clamp(cutil::get_or<float>(p, "roomsize", 50.0f) / 100.0f, 0.0f, 1.0f);
   float absorb   = std::clamp(cutil::get_or<float>(p, "absorbtion", 50.0f) / 100.0f, 0.0f, 1.0f);

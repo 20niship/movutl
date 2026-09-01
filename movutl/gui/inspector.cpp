@@ -116,8 +116,11 @@ void InspectorWindow::Update() {
       ImGui::Separator();
 
       ImGui::InputText("Search", search_buffer, IM_ARRAYSIZE(search_buffer));
-      auto filters = &detail::AppMain::Get()->filters;
+      auto filters       = &detail::AppMain::Get()->filters;
+      bool is_audio_entt = e->getType() == EntityType_Audio;
       for(int i = 0; i < filters->size(); i++) {
+        // 音声専用フィルタを音声トラック以外に付けると描画スレッドで音声処理関数が呼ばれ落ちるため出し分ける
+        if(((*filters)[i].flag == FilterAudioOnly) != is_audio_entt) continue;
         const char* name = (*filters)[i].name.c_str();
         if(!fuzzy_match(name, search_buffer)) continue;
         if(ImGui::Selectable(name)) {
