@@ -521,25 +521,28 @@ bool BeginTrack(const Ref<Entity>& entity) {
 
   if(ctx_.dragging_entt == entity.get()) {
     if(!is_exporting() && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
-      std::lock_guard<std::mutex> lock(entity->mtx);
-      int delta_f  = ctx_.view2f((int)mouse_x) - ctx_.drag_start_frame;
-      auto nframes = (int)entity->get_info().nframes; // 素材の総フレーム数(動画/音声のみ>0)
-      if(ctx_.drag_mode == 1) {
-        *start = ctx_.drag_orig_fstart + delta_f;
-        *end   = ctx_.drag_orig_fend + delta_f;
-      } else if(ctx_.drag_mode == 2) {
-        int new_start = std::min(ctx_.drag_orig_fstart + delta_f, *end - 1);
-        // 素材内オフセット管理は未実装のため、尺が素材の総フレーム数を超えないようclampするに留める
-        if(nframes > 0 && (*end - new_start) > nframes) new_start = *end - nframes;
-        *start = new_start;
-      } else if(ctx_.drag_mode == 3) {
-        int new_end = std::max(ctx_.drag_orig_fend + delta_f, *start + 1);
-        if(nframes > 0 && (new_end - *start) > nframes) new_end = *start + nframes;
-        *end = new_end;
+      // ワーカースレッドがrender中はentity->mtxを長時間保持するため、ここはブロックせずtry_lockする(取れなければ次フレームで再試行)
+      std::unique_lock<std::mutex> lock(entity->mtx, std::try_to_lock);
+      if(lock.owns_lock()) {
+        int delta_f  = ctx_.view2f((int)mouse_x) - ctx_.drag_start_frame;
+        auto nframes = (int)entity->get_info().nframes; // 素材の総フレーム数(動画/音声のみ>0)
+        if(ctx_.drag_mode == 1) {
+          *start = ctx_.drag_orig_fstart + delta_f;
+          *end   = ctx_.drag_orig_fend + delta_f;
+        } else if(ctx_.drag_mode == 2) {
+          int new_start = std::min(ctx_.drag_orig_fstart + delta_f, *end - 1);
+          // 素材内オフセット管理は未実装のため、尺が素材の総フレーム数を超えないようclampするに留める
+          if(nframes > 0 && (*end - new_start) > nframes) new_start = *end - nframes;
+          *start = new_start;
+        } else if(ctx_.drag_mode == 3) {
+          int new_end = std::max(ctx_.drag_orig_fend + delta_f, *start + 1);
+          if(nframes > 0 && (new_end - *start) > nframes) new_end = *start + nframes;
+          *end = new_end;
+        }
+        fs   = ctx_.f2view(*start);
+        fe   = ctx_.f2view(*end);
+        rect = ImRect(ImVec2(fs, htop), ImVec2(fe, htop + ctx_.height));
       }
-      fs   = ctx_.f2view(*start);
-      fe   = ctx_.f2view(*end);
-      rect = ImRect(ImVec2(fs, htop), ImVec2(fe, htop + ctx_.height));
     } else {
       if(auto* comp = entity->get_comp()) {
         int f0 = std::min({ctx_.drag_orig_fstart, ctx_.drag_orig_fend, *start, *end});
