@@ -1,10 +1,14 @@
 #include <cmath>
 #include <doctest/doctest.h>
+#include <movutl/app/app_impl.hpp>
+#include <movutl/asset/audio.hpp>
 #include <movutl/asset/composition.hpp>
+#include <movutl/audio/audio_mixer.hpp>
 #include <movutl/plugin/default/audio_echo_filter.hpp>
 #include <movutl/plugin/default/audio_eq_filter.hpp>
 #include <movutl/plugin/default/audio_reverb_filter.hpp>
 #include <movutl/plugin/default/audio_volume_filter.hpp>
+#include <movutl/plugin/plugin.hpp>
 #include <thread>
 #include <vector>
 
@@ -203,4 +207,36 @@ TEST_CASE("audio_echo_filter/audio_reverb_filter: 小さいスタックのスレ
 
   CHECK(echo_ok);
   CHECK(reverb_ok);
+}
+
+// Inspectorの手順(trk.filtersへFilterParamを積む)をそのまま再現し、mix_audio_range経由でも効果が反映されるか確認する(fn_proc直接呼び出しだけでは経路全体を検証できないため)
+TEST_CASE("音声トラックにエコーフィルタをGUIと同じ手順で付けるとミキシング結果に反映される") {
+  detail::register_default_filters();
+  detail::activate_all_plugins();
+
+  auto comp         = cutil::make_ref<Composition>("t", 100, 100, 30);
+  auto audio        = AudioEntt::Create("a", "../assets/audio/file_example_WAV_1MG.wav");
+  audio->trk.fstart = 0;
+  audio->trk.fend   = 150;
+  comp->insert_entity(audio);
+
+  std::vector<int16_t> baseline((size_t)kN * kCh);
+  mix_audio_range(comp.get(), 0, kN, baseline.data());
+
+  auto* filters               = &detail::AppMain::Get()->filters;
+  FilterPluginTable* echo_plg = nullptr;
+  for(auto& f : *filters)
+    if(std::string(f.name.c_str()) == "エコー") echo_plg = &f;
+  REQUIRE(echo_plg != nullptr);
+
+  TrackObject::FilterParam fp;
+  fp.plg_ = echo_plg;
+  fp.props.add_props(echo_plg->defaults);
+  fp.enabled = true;
+  audio->trk.filters.push_back(fp);
+
+  std::vector<int16_t> filtered((size_t)kN * kCh);
+  mix_audio_range(comp.get(), 0, kN, filtered.data());
+
+  CHECK(baseline != filtered);
 }
