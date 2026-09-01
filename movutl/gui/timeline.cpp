@@ -291,8 +291,11 @@ bool BeginTimeline(const char* name, FrameT* frame, FrameT* start, FrameT* end, 
     ImVec2 p2(x + scl_w, ctx_.all_area.y.min + H);
     auto col = IM_COL32(170, 0, 0, 200);
     if(ImGui::IsMouseHoveringRect(p1, p2)) col = IM_COL32(255, 0, 0, 255);
+    // トラック名カラム(サイドバー)へのはみ出しを防ぐ
+    dl->PushClipRect(ImVec2(all.left() + ctx_.trackname_width, all.top()), ImVec2(all.right(), all.bottom()), true);
     dl->AddRectFilled(p1, p2, col);
     dl->AddLine(ImVec2(x, ctx_.all_area.y.min), ImVec2(x, ctx_.all_area.bottom()), col);
+    dl->PopClipRect();
 
     auto h_             = ctx_.header_area();
     bool in_header_area = ImGui::IsMouseHoveringRect(ImVec2(h_.x.min, h_.y.min), ImVec2(h_.x.max, h_.y.max));
