@@ -206,6 +206,9 @@ const cutil::PropInfo* TrackObject::getPropsInfo() const {
     p.fields.push_back(cutil::PropInfo::Field("anchor", offsetof(TrackObject, anchor), cutil::prop_info_of<Vec2>()));
     p.fields.back().set_label("アンカー");
     // blend_ has an unsupported type (BlendType)
+    p.fields.push_back(cutil::PropInfo::Field("group_guid", offsetof(TrackObject, group_guid), cutil::prop_info_of<uint32_t>()));
+    p.fields.back().set_label("グループID");
+    p.fields.back().set_desc("グループ化されている時のグループID");
     p.fields.push_back(cutil::PropInfo::Field("active_", offsetof(TrackObject, active_), cutil::prop_info_of<bool>()));
     p.fields.back().set_label("アクティブ");
     p.fields.back().set_desc("オブジェクトが有効かどうか");

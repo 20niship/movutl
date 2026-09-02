@@ -33,7 +33,7 @@ bool FramebufferEntt::render(Composition* cmp, Image* target, int frame) {
   int base_x  = trk.anchor[0] + (cw - captured_->width) / 2 + pos_[0];
   int base_y  = trk.anchor[1] + (ch - captured_->height) / 2 + pos_[1];
   Vec2 center = Vec2(base_x, base_y) + trk.anchor;
-  captured_->copyto(target, center, scale_.avg() / 100, rotation_, alpha_ / 255.0f);
+  captured_->copyto(target, center, scale_.avg() / 100, rotation_, alpha_ / 255.0f, trk.blend_);
   return true;
 }
 

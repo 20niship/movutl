@@ -11,6 +11,7 @@
 #include <movutl/asset/framebuffer.hpp>
 #include <movutl/asset/image.hpp>
 #include <movutl/asset/movie.hpp>
+#include <movutl/asset/shape.hpp>
 #include <movutl/asset/text.hpp>
 
 namespace mu {
@@ -24,6 +25,8 @@ Ref<Entity> Entity::CreateEntity(const char* name, EntityType type) {
     case EntityType_3DText: e = cutil::make_ref<TextEntt>(); break;
     case EntityType_Audio: e = cutil::make_ref<AudioEntt>(); break;
     case EntityType_Framebuffer: e = cutil::make_ref<FramebufferEntt>(); break;
+    case EntityType_Polygon: e = cutil::make_ref<ShapeEntt>(); break;
+    case EntityType_Camera: e = cutil::make_ref<Camera3D>(); break;
     default: break;
   }
   if(!e) {

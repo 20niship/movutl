@@ -488,6 +488,7 @@ function movutl.TrackLayer:summary( ) end
 ---@field fend number
 ---@field anchor Vec2
 ---@field blend_ BlendType
+---@field group_guid number
 ---@field active_ boolean
 ---@field solo_ boolean
 ---@field clipping_up boolean
@@ -498,6 +499,7 @@ movutl.TrackObject.fstart = - 1
 movutl.TrackObject.fend = - 1
 movutl.TrackObject.anchor = Vec2()
 movutl.TrackObject.blend_ = Blend_Alpha
+movutl.TrackObject.group_guid = 0
 movutl.TrackObject.active_ = true
 movutl.TrackObject.solo_ = false
 movutl.TrackObject.clipping_up = false

@@ -60,9 +60,9 @@ public:
   void fill(const uint32_t& v);
   void fill_rgba(const Vec4b& c);
 
-  bool copyto(Image* dst, const Vec2d& pmin, float alpha_mul = 1.0f) const;
+  bool copyto(Image* dst, const Vec2d& pmin, float alpha_mul = 1.0f, BlendType blend = Blend_Alpha) const;
   bool copyto(Image* dst, const Vec2d& pmin, const Vec2d& pmax) const;
-  bool copyto(Image* dst, const Vec2d& center, float scale, float angle, float alpha_mul = 1.0f) const;
+  bool copyto(Image* dst, const Vec2d& center, float scale, float angle, float alpha_mul = 1.0f, BlendType blend = Blend_Alpha) const;
 
   // 現在の不透明部分の外側にborder_widthピクセル分border_colorで縁取りを描く(塗り部分は上書きしない)
   void outline(const Vec4b& border_color, int border_width);

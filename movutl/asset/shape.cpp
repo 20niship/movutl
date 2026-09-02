@@ -129,7 +129,7 @@ bool ShapeEntt::render(Composition* cmp, Image* target, int frame) {
   if(!img_ || img_->empty() || !cmp || !target) return false;
   Vec2d pmin(pos_[0] + shape_offset_[0], pos_[1] + shape_offset_[1]);
   float rot_deg = rot_ * 180.0f / (float)M_PI;
-  img_->copyto(target, pmin, 1.0f, rot_deg, alpha_ / 255.0f);
+  img_->copyto(target, pmin, 1.0f, rot_deg, alpha_ / 255.0f, trk.blend_);
   return true;
 }
 
