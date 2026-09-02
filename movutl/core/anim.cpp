@@ -25,14 +25,15 @@ void AnimProps::add_props(const cutil::Prop& defaults) {
 }
 
 struct PropsSetVisitor {
-  PropsSetVisitor(cutil::Prop& props) : props(props) {}
+  PropsSetVisitor(cutil::Prop& props, uint32_t frame) : props(props), frame(frame) {}
   cutil::Prop& props;
-  template <typename T> void operator()(const PAniClip<T>& clip) { props.set<T>(clip.keyname.c_str(), clip.get(0)); }
+  uint32_t frame;
+  template <typename T> void operator()(const PAniClip<T>& clip) { props.set<T>(clip.keyname.c_str(), clip.get(frame)); }
 };
 
 cutil::Prop AnimProps::get(uint32_t frame) {
   cutil::Prop p;
-  PropsSetVisitor visitor(p);
+  PropsSetVisitor visitor(p, frame);
   for(auto& prop : props) std::visit(visitor, prop);
   return p;
 }
