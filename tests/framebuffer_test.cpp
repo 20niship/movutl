@@ -32,24 +32,41 @@ TEST_CASE("FramebufferEntt::render targetの現在の内容をそのままキャ
   CHECK(fb->captured_image()->rgba(5, 5) == Vec4b(10, 20, 30, 255));
 }
 
-TEST_CASE("FramebufferEntt::render clear_original_=falseならtargetは変更されない") {
-  auto comp           = make_test_comp(10, 10);
-  auto target         = make_target(10, 10);
-  auto before         = target->rgba(3, 3);
-  auto fb             = FramebufferEntt::Create("fb");
-  fb->clear_original_ = false;
+TEST_CASE("FramebufferEntt::render デフォルトパラメータ(pos=0,scale=100,alpha=255)では貼り戻しにより見た目が変化しない") {
+  auto comp   = make_test_comp(10, 10);
+  auto target = make_target(10, 10);
+  auto before = target->rgba(3, 3);
+  auto fb     = FramebufferEntt::Create("fb");
+
+  SUBCASE("clear_original_=false") { fb->clear_original_ = false; }
+  SUBCASE("clear_original_=true") { fb->clear_original_ = true; } // クリアしても等倍で同じ位置に貼り戻すため結果的に見た目は変わらない
+
   CHECK(fb->render(comp.get(), target.get(), 0));
   CHECK(target->rgba(3, 3) == before);
 }
 
-TEST_CASE("FramebufferEntt::render clear_original_=trueならtargetが透明にクリアされる") {
+TEST_CASE("FramebufferEntt::render alpha_=0で貼り戻しを無効化するとclear_original_の効果だけが残る") {
   auto comp           = make_test_comp(10, 10);
   auto target         = make_target(10, 10);
   auto fb             = FramebufferEntt::Create("fb");
   fb->clear_original_ = true;
+  fb->alpha_          = 0;
   CHECK(fb->render(comp.get(), target.get(), 0));
   for(int y = 0; y < 10; y++)
     for(int x = 0; x < 10; x++) CHECK(target->rgba(x, y) == Vec4b(0, 0, 0, 0));
+}
+
+TEST_CASE("FramebufferEntt::render scale_を縮小すると貼り戻し範囲外はclear_original_により透明になる") {
+  auto comp   = make_test_comp(60, 60);
+  auto target = make_target(60, 60);
+  target->fill_rgba(Vec4b(255, 0, 0, 255)); // 全面赤
+  auto fb             = FramebufferEntt::Create("fb");
+  fb->clear_original_ = true;
+  fb->scale_          = Vec2(50, 50); // 半分に縮小して中央に貼り戻す
+  CHECK(fb->render(comp.get(), target.get(), 0));
+
+  CHECK(target->rgba(29, 29) == Vec4b(255, 0, 0, 255)); // 縮小後の範囲内(中央)は元の赤が残る
+  CHECK(target->rgba(1, 1) == Vec4b(0, 0, 0, 0));       // 縮小後の範囲外はクリアされ透明
 }
 
 TEST_CASE("FramebufferEntt: レイヤーをまたいでグループ化的に使える(下のレイヤーをキャプチャしてクリアし、上のレイヤーだけが最終出力に残る)") {
@@ -64,6 +81,7 @@ TEST_CASE("FramebufferEntt: レイヤーをまたいでグループ化的に使�
 
   auto fb             = FramebufferEntt::Create("fb");
   fb->clear_original_ = true;
+  fb->alpha_          = 0; // 貼り戻しを無効化し、clear_original_の効果だけを見る
   fb->trk.fstart      = 0;
   fb->trk.fend        = 10;
 

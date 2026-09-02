@@ -173,6 +173,10 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("getType", &FramebufferEntt::getType)
     .addFunction("captured_image", &FramebufferEntt::captured_image)
     .addVariable("clear_original_", &FramebufferEntt::clear_original_) // bool
+    .addVariable("pos_", &FramebufferEntt::pos_)                       // Vec3
+    .addVariable("scale_", &FramebufferEntt::scale_)                   // Vec2
+    .addVariable("rotation_", &FramebufferEntt::rotation_)             // float
+    .addVariable("alpha_", &FramebufferEntt::alpha_)                   // uint8_t
     .endClass()
     .beginClass<Image>("Image")
     .addFunction("dirty", &Image::dirty)

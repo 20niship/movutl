@@ -26,6 +26,14 @@ bool FramebufferEntt::render(Composition* cmp, Image* target, int frame) {
   captured_->dirty();
 
   if(clear_original_) target->fill_rgba(Vec4b(0, 0, 0, 0));
+
+  // キャプチャした画像を自身のpos_/scale_/rotation_/alpha_で貼り戻す(Movie::renderと同じ配置ロジック)
+  int cw      = target->width;
+  int ch      = target->height;
+  int base_x  = trk.anchor[0] + (cw - captured_->width) / 2 + pos_[0];
+  int base_y  = trk.anchor[1] + (ch - captured_->height) / 2 + pos_[1];
+  Vec2 center = Vec2(base_x, base_y) + trk.anchor;
+  captured_->copyto(target, center, scale_.avg() / 100, rotation_, alpha_ / 255.0f);
   return true;
 }
 

@@ -45,6 +45,14 @@ const cutil::PropInfo* FramebufferEntt::getPropsInfo() const {
     p.fields.push_back(cutil::PropInfo::Field("clear_original_", offsetof(FramebufferEntt, clear_original_), cutil::prop_info_of<bool>()));
     p.fields.back().set_label("元のバッファをクリア");
     p.fields.back().set_desc("キャプチャ後に合成先バッファを透明でクリアする");
+    p.fields.push_back(cutil::PropInfo::Field("pos_", offsetof(FramebufferEntt, pos_), cutil::prop_info_of<Vec3>()));
+    p.fields.back().set_label("位置");
+    p.fields.push_back(cutil::PropInfo::Field("scale_", offsetof(FramebufferEntt, scale_), cutil::prop_info_of<Vec2>()));
+    p.fields.back().set_label("拡大率");
+    p.fields.push_back(cutil::PropInfo::Field("rotation_", offsetof(FramebufferEntt, rotation_), cutil::prop_info_of<float>()));
+    p.fields.back().set_label("回転");
+    p.fields.push_back(cutil::PropInfo::Field("alpha_", offsetof(FramebufferEntt, alpha_), cutil::prop_info_of<uint8_t>()));
+    p.fields.back().set_label("透明度");
     return p;
   }();
   return &info;
