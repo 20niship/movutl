@@ -1,13 +1,16 @@
 #include <algorithm>
+#include <cmath>
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <movutl/app/app.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/config.hpp>
 #include <movutl/asset/image.hpp>
+#include <movutl/audio/audio_mixer.hpp>
 #include <movutl/core/profiler.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/gui/viewer.hpp>
+#include <vector>
 
 namespace mu {
 
@@ -45,7 +48,9 @@ void ViewerWindow::Update() {
   // キャッシュ未ヒット時は直前のテクスチャをそのまま表示し続ける
   auto texture_id = tex.get_id();
 
-  ImVec2 avail = ImGui::GetContentRegionAvail();
+  constexpr float kFooterH = 60.0f;
+  ImVec2 full_avail        = ImGui::GetContentRegionAvail();
+  ImVec2 avail(full_avail.x, std::max(1.0f, full_avail.y - kFooterH));
   if(avail.x < 1 || avail.y < 1) {
     ImGui::End();
     return;
@@ -146,6 +151,47 @@ void ViewerWindow::Update() {
       clear_selected_entts();
       select_entt(hit);
     }
+  }
+
+  if(comp->audio_buf) {
+    int64_t cur_sample = comp->frame_to_sample(comp->frame);
+    int channels       = std::max(1, comp->audio_channels);
+    constexpr int kN   = 1024;
+    std::vector<int16_t> pcm((size_t)kN * channels, 0);
+    comp->audio_buf->snapshot(cur_sample, kN, pcm.data());
+
+    ImVec2 footer_min = ImGui::GetCursorScreenPos();
+    ImVec2 footer_size(full_avail.x, kFooterH);
+    dl->AddRectFilled(footer_min, ImVec2(footer_min.x + footer_size.x, footer_min.y + footer_size.y), IM_COL32(20, 20, 20, 255));
+
+    float meter_w = 60.0f;
+    float wave_w  = std::max(1.0f, footer_size.x - meter_w);
+    float mid_y   = footer_min.y + kFooterH / 2.0f;
+    for(int x = 0; x < (int)wave_w; x++) {
+      int i     = x * kN / (int)wave_w;
+      int16_t l = pcm[(size_t)i * channels];
+      float amp = l / 32768.0f;
+      dl->AddLine(ImVec2(footer_min.x + x, mid_y - amp * kFooterH / 2), ImVec2(footer_min.x + x, mid_y + amp * kFooterH / 2), IM_COL32(120, 220, 160, 220));
+    }
+
+    double sum_l = 0, sum_r = 0;
+    for(int i = 0; i < kN; i++) {
+      int16_t l = pcm[(size_t)i * channels];
+      int16_t r = channels > 1 ? pcm[(size_t)i * channels + 1] : l;
+      sum_l += (double)l * l;
+      sum_r += (double)r * r;
+    }
+    float rms_l     = (float)(std::sqrt(sum_l / kN) / 32768.0);
+    float rms_r     = (float)(std::sqrt(sum_r / kN) / 32768.0);
+    auto draw_meter = [&](float x0, float level) {
+      float h   = std::clamp(level, 0.0f, 1.0f) * kFooterH;
+      ImU32 col = level > 0.9f ? IM_COL32(220, 60, 60, 255) : level > 0.7f ? IM_COL32(220, 200, 60, 255) : IM_COL32(80, 200, 120, 255);
+      dl->AddRectFilled(ImVec2(x0, footer_min.y + kFooterH - h), ImVec2(x0 + meter_w / 2 - 2, footer_min.y + kFooterH), col);
+    };
+    draw_meter(footer_min.x + wave_w, rms_l);
+    draw_meter(footer_min.x + wave_w + meter_w / 2, rms_r);
+
+    ImGui::Dummy(footer_size);
   }
 
   ImGui::End();

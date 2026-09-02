@@ -118,6 +118,9 @@ function movutl.AudioEntt:getType( ) end
 ---@return nil
 function movutl.AudioEntt:reload_asset( ) end
 
+---@return WaveformData 
+function movutl.AudioEntt:waveform( ) end
+
 ---@class Composition
 ---@field guid number
 ---@field flag Flag

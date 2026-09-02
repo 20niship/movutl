@@ -110,6 +110,7 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("load_file", &AudioEntt::load_file)
     .addFunction("getType", &AudioEntt::getType)
     .addFunction("reload_asset", &AudioEntt::reload_asset)
+    .addFunction("waveform", &AudioEntt::waveform)
     .addVariable("offset_sec_", &AudioEntt::offset_sec_) // double
     .addVariable("speed", &AudioEntt::speed)             // float
     .addVariable("volume_", &AudioEntt::volume_)         // float

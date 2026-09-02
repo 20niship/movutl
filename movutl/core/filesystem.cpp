@@ -1,4 +1,6 @@
+#include <cstdio>
 #include <filesystem>
+#include <functional>
 #include <movutl/core/assert.hpp>
 #include <string>
 
@@ -59,6 +61,21 @@ std::string fs_extension(const std::string& path) {
   auto ext = sfs::path(path).extension().string();
   if(!ext.empty() && ext[0] == '.') ext = ext.substr(1);
   return ext;
+}
+
+int64_t fs_last_write_time_raw(const std::string& path) {
+  std::error_code ec;
+  auto t = sfs::last_write_time(path, ec);
+  if(ec) return 0;
+  return (int64_t)t.time_since_epoch().count();
+}
+
+std::string fs_cache_key(const std::string& path, int64_t mtime) {
+  std::hash<std::string> h;
+  size_t v = h(path + "|" + std::to_string(mtime));
+  char buf[32];
+  std::snprintf(buf, sizeof(buf), "%016zx", v);
+  return buf;
 }
 
 std::vector<std::string> get_available_fonts() {
