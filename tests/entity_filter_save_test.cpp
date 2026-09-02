@@ -23,7 +23,7 @@ TEST_CASE("Entity::getSaveProps/fromSaveProps: フィルタ(enabled/パラメー
   auto img = Image::Create("filter_save_test", 4, 4);
   REQUIRE(img != nullptr);
 
-  auto* filters = &detail::AppMain::Get()->filters;
+  auto* filters                       = &detail::AppMain::Get()->filters;
   FilterPluginTable* color_correction = nullptr;
   for(auto& f : *filters)
     if(std::string(f.name.c_str()) == "色調補正") color_correction = &f;

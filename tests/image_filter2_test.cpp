@@ -19,7 +19,7 @@ FilterInData make_fin(Image* img) {
 
 TEST_CASE("クロマキー: しきい値内の色は透明になる") {
   Image img(1, 1);
-  img[0] = Vec4b(0, 255, 0, 255); // 緑
+  img[0]   = Vec4b(0, 255, 0, 255); // 緑
   auto fin = make_fin(&img);
   cutil::Prop p;
   p.set<Vec4b>("key_color", Vec4b(0, 255, 0, 255));
@@ -31,7 +31,7 @@ TEST_CASE("クロマキー: しきい値内の色は透明になる") {
 
 TEST_CASE("クロマキー: しきい値外の色はそのまま") {
   Image img(1, 1);
-  img[0] = Vec4b(255, 0, 0, 255); // 赤(キー色=緑から遠い)
+  img[0]   = Vec4b(255, 0, 0, 255); // 赤(キー色=緑から遠い)
   auto fin = make_fin(&img);
   cutil::Prop p;
   p.set<Vec4b>("key_color", Vec4b(0, 255, 0, 255));
@@ -43,7 +43,7 @@ TEST_CASE("クロマキー: しきい値外の色はそのまま") {
 
 TEST_CASE("ルミナンスキー: 暗い部分がデフォルトで抜ける") {
   Image img(1, 1);
-  img[0] = Vec4b(0, 0, 0, 255); // 黒(輝度0)
+  img[0]   = Vec4b(0, 0, 0, 255); // 黒(輝度0)
   auto fin = make_fin(&img);
   cutil::Prop p;
   p.set<float>("threshold", 50.0f);
@@ -55,7 +55,7 @@ TEST_CASE("ルミナンスキー: 暗い部分がデフォルトで抜ける") {
 
 TEST_CASE("ルミナンスキー: invert=trueで明るい部分が抜ける") {
   Image img(1, 1);
-  img[0] = Vec4b(255, 255, 255, 255); // 白(輝度255)
+  img[0]   = Vec4b(255, 255, 255, 255); // 白(輝度255)
   auto fin = make_fin(&img);
   cutil::Prop p;
   p.set<float>("threshold", 50.0f);
@@ -68,7 +68,7 @@ TEST_CASE("ルミナンスキー: invert=trueで明るい部分が抜ける") {
 TEST_CASE("発光: しきい値以上の明部が周囲を明るくする") {
   Image img(5, 1);
   for(size_t i = 0; i < img.size(); i++) img[i] = Vec4b(0, 0, 0, 255);
-  img[2] = Vec4b(255, 255, 255, 255); // 中央だけ明るい
+  img[2]   = Vec4b(255, 255, 255, 255); // 中央だけ明るい
   auto fin = make_fin(&img);
   cutil::Prop p;
   p.set<float>("threshold", 200.0f);
@@ -81,7 +81,7 @@ TEST_CASE("発光: しきい値以上の明部が周囲を明るくする") {
 TEST_CASE("グロー: 全体をぼかして明るさが混ざる") {
   Image img(5, 1);
   for(size_t i = 0; i < img.size(); i++) img[i] = Vec4b(0, 0, 0, 255);
-  img[2] = Vec4b(255, 255, 255, 255);
+  img[2]   = Vec4b(255, 255, 255, 255);
   auto fin = make_fin(&img);
   cutil::Prop p;
   p.set<float>("range", 3.0f);
@@ -94,7 +94,7 @@ TEST_CASE("縁取り: 透明部分に指定色の縁が付く") {
   Image img(5, 5);
   for(size_t i = 0; i < img.size(); i++) img[i] = Vec4b(0, 0, 0, 0);
   img(2, 2) = Vec4b(255, 255, 255, 255); // 中央だけ不透明
-  auto fin = make_fin(&img);
+  auto fin  = make_fin(&img);
   cutil::Prop p;
   p.set<Vec4b>("color", Vec4b(255, 0, 0, 255));
   p.set<float>("width", 1.0f);
@@ -105,10 +105,10 @@ TEST_CASE("縁取り: 透明部分に指定色の縁が付く") {
 
 TEST_CASE("クリッピング&リサイズ: クロップ範囲外の色が消え元サイズへ戻る") {
   Image img(4, 1);
-  img[0] = Vec4b(255, 0, 0, 255);
-  img[1] = Vec4b(0, 255, 0, 255);
-  img[2] = Vec4b(0, 0, 255, 255);
-  img[3] = Vec4b(255, 255, 0, 255);
+  img[0]   = Vec4b(255, 0, 0, 255);
+  img[1]   = Vec4b(0, 255, 0, 255);
+  img[2]   = Vec4b(0, 0, 255, 255);
+  img[3]   = Vec4b(255, 255, 0, 255);
   auto fin = make_fin(&img);
   cutil::Prop p;
   p.set<float>("left", 1.0f);
@@ -122,7 +122,7 @@ TEST_CASE("クリッピング&リサイズ: クロップ範囲外の色が消え
 
 TEST_CASE("反転: RGBが255から引いた値になる") {
   Image img(1, 1);
-  img[0] = Vec4b(10, 100, 200, 255);
+  img[0]   = Vec4b(10, 100, 200, 255);
   auto fin = make_fin(&img);
   cutil::Prop p;
   p.set<bool>("invert_alpha", false);
@@ -135,7 +135,7 @@ TEST_CASE("反転: RGBが255から引いた値になる") {
 
 TEST_CASE("モノクロ: RGB成分が全て同じ値になる") {
   Image img(1, 1);
-  img[0] = Vec4b(10, 100, 200, 255);
+  img[0]   = Vec4b(10, 100, 200, 255);
   auto fin = make_fin(&img);
   cutil::Prop p;
   p.set<float>("strength", 100.0f);
@@ -146,7 +146,7 @@ TEST_CASE("モノクロ: RGB成分が全て同じ値になる") {
 
 TEST_CASE("セピア: 元がグレーではRGBの比率が偏る") {
   Image img(1, 1);
-  img[0] = Vec4b(128, 128, 128, 255);
+  img[0]   = Vec4b(128, 128, 128, 255);
   auto fin = make_fin(&img);
   cutil::Prop p;
   p.set<float>("strength", 100.0f);
@@ -181,7 +181,7 @@ TEST_CASE("モザイク: ブロック内が均一な値になる") {
   img(1, 0) = Vec4b(0, 0, 0, 255);
   img(0, 1) = Vec4b(0, 0, 0, 255);
   img(1, 1) = Vec4b(0, 0, 0, 255);
-  auto fin = make_fin(&img);
+  auto fin  = make_fin(&img);
   cutil::Prop p;
   p.set<float>("block_size", 2.0f);
   CHECK(mu::detail::f_mosaic.fn_proc(nullptr, &fin, p));

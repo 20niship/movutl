@@ -16,8 +16,8 @@ bool fn_proc_glow(void* fp, FilterInData* fpip, const cutil::Prop& p) {
   MOVUTL_ZONE_SCOPED_N("Glow::fn_proc");
 
   float threshold = cutil::get_or<float>(p, "threshold", 200.0f);
-  float range      = cutil::get_or<float>(p, "range", 10.0f);
-  float intensity  = cutil::get_or<float>(p, "intensity", 100.0f) / 100.0f;
+  float range     = cutil::get_or<float>(p, "range", 10.0f);
+  float intensity = cutil::get_or<float>(p, "intensity", 100.0f) / 100.0f;
   if(range <= 0.0f || intensity <= 0.0f) return true;
 
   Image* img = fpip->img;

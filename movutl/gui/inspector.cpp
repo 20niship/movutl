@@ -52,7 +52,7 @@ void InspectorWindow::Update() {
 
   { // 合成モード(BlendType): TrackObject側のプロパティのため専用UIとして扱う
     static const char* kBlendNames[] = {"通常", "加算", "減算", "乗算", "除算", "スクリーン", "オーバーレイ", "比較(暗)", "比較(明)", "ハードライト"};
-    int idx = std::clamp((int)e->trk.blend_, 0, (int)IM_ARRAYSIZE(kBlendNames) - 1);
+    int idx                          = std::clamp((int)e->trk.blend_, 0, (int)IM_ARRAYSIZE(kBlendNames) - 1);
     ImGui::SetNextItemWidth(-1);
     if(ImGui::Combo("合成モード", &idx, kBlendNames, IM_ARRAYSIZE(kBlendNames))) {
       e->trk.blend_ = (BlendType)idx;
@@ -69,9 +69,9 @@ void InspectorWindow::Update() {
     std::string FX_ICON = ICON_FA_PLUG " ";
     std::string str     = FX_ICON + f.plg_->name.c_str();
     { // チェックボックス風のON/OFF切り替え(クリックでenabledを反転)
-      auto c        = ImGui::GetCursorScreenPos();
-      auto h        = ImGui::GetTextLineHeight();
-      auto dl       = ImGui::GetWindowDrawList();
+      auto c  = ImGui::GetCursorScreenPos();
+      auto h  = ImGui::GetTextLineHeight();
+      auto dl = ImGui::GetWindowDrawList();
       ImRect box(c, ImVec2(c.x + h, c.y + h));
       bool hovers = ImGui::IsMouseHoveringRect(box.Min, box.Max);
       dl->AddRectFilled(box.Min, box.Max, hovers ? IM_COL32(255, 255, 255, 45) : IM_COL32(255, 255, 255, 20), 3.0f);
@@ -154,14 +154,14 @@ void InspectorWindow::Update() {
   }
 
   {
-    static bool open_popup         = false;
-    static bool focus_search       = false;
-    static char search_buffer[64]  = "";
+    static bool open_popup        = false;
+    static bool focus_search      = false;
+    static char search_buffer[64] = "";
 
     // 「Add Filter」ボタン
     if(ImGui::Button("フィルタを追加する")) {
-      open_popup    = true;
-      focus_search  = true;
+      open_popup   = true;
+      focus_search = true;
       ImGui::OpenPopup("##INSPECTOR_FILTER_POPUP");
     }
     if(open_popup && ImGui::BeginPopup("##INSPECTOR_FILTER_POPUP")) {

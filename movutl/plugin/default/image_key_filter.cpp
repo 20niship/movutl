@@ -75,7 +75,7 @@ bool fn_proc_luminance_key(void* fp, FilterInData* fpip, const cutil::Prop& p) {
 #pragma omp parallel for schedule(static)
   for(long i = 0; i < (long)n; i++) {
     float y         = 0.299f * px[i][0] + 0.587f * px[i][1] + 0.114f * px[i][2];
-    float diff       = invert ? (threshold - y) : (y - threshold);
+    float diff      = invert ? (threshold - y) : (y - threshold);
     float alpha_mul = std::clamp(diff / edge, 0.0f, 1.0f);
     px[i][3]        = (uint8_t)(px[i][3] * alpha_mul);
   }

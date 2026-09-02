@@ -206,6 +206,29 @@ movutl.EntityInfo.audio_format_size = 0
 ---@return string
 function movutl.EntityInfo:str( ) end
 
+---@class FramebufferEntt
+---@field clear_original_ boolean
+---@field pos_ Vec3
+---@field scale_ Vec2
+---@field rotation_ number
+---@field alpha_ number
+movutl.FramebufferEntt = {}
+movutl.FramebufferEntt.clear_original_ = false
+movutl.FramebufferEntt.pos_ = Vec3 ( 0 , 0 , 0 )
+movutl.FramebufferEntt.scale_ = Vec2 ( 100 , 100 )
+movutl.FramebufferEntt.rotation_ = 0
+movutl.FramebufferEntt.alpha_ = 255
+
+---@param name string
+---@return Ref<FramebufferEntt>
+function movutl.FramebufferEntt:Create( name, ) end
+
+---@return EntityType
+function movutl.FramebufferEntt:getType( ) end
+
+---@return Ref<Image> 
+function movutl.FramebufferEntt:captured_image( ) end
+
 ---@class Image
 ---@field width number
 ---@field height number
@@ -465,6 +488,7 @@ function movutl.TrackLayer:summary( ) end
 ---@field fend number
 ---@field anchor Vec2
 ---@field blend_ BlendType
+---@field group_guid number
 ---@field active_ boolean
 ---@field solo_ boolean
 ---@field clipping_up boolean
@@ -475,6 +499,7 @@ movutl.TrackObject.fstart = - 1
 movutl.TrackObject.fend = - 1
 movutl.TrackObject.anchor = Vec2()
 movutl.TrackObject.blend_ = Blend_Alpha
+movutl.TrackObject.group_guid = 0
 movutl.TrackObject.active_ = true
 movutl.TrackObject.solo_ = false
 movutl.TrackObject.clipping_up = false

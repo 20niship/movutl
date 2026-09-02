@@ -58,8 +58,8 @@ bool fn_proc_binarize(void* fp, FilterInData* fpip, const cutil::Prop& p) {
   const size_t n  = fpip->img->size();
 #pragma omp parallel for schedule(static)
   for(long i = 0; i < (long)n; i++) {
-    float y      = 0.299f * px[i][0] + 0.587f * px[i][1] + 0.114f * px[i][2];
-    uint8_t out  = y >= threshold ? 255 : 0;
+    float y     = 0.299f * px[i][0] + 0.587f * px[i][1] + 0.114f * px[i][2];
+    uint8_t out = y >= threshold ? 255 : 0;
     px[i][0] = px[i][1] = px[i][2] = out;
   }
   return true;

@@ -87,10 +87,10 @@ bool fn_proc_sepia(void* fp, FilterInData* fpip, const cutil::Prop& p) {
   const size_t n = fpip->img->size();
 #pragma omp parallel for schedule(static)
   for(long i = 0; i < (long)n; i++) {
-    float y = 0.299f * px[i][0] + 0.587f * px[i][1] + 0.114f * px[i][2];
-    float r = std::clamp(y * 1.07f, 0.0f, 255.0f);
-    float g = std::clamp(y * 0.74f, 0.0f, 255.0f);
-    float b = std::clamp(y * 0.43f, 0.0f, 255.0f);
+    float y  = 0.299f * px[i][0] + 0.587f * px[i][1] + 0.114f * px[i][2];
+    float r  = std::clamp(y * 1.07f, 0.0f, 255.0f);
+    float g  = std::clamp(y * 0.74f, 0.0f, 255.0f);
+    float b  = std::clamp(y * 0.43f, 0.0f, 255.0f);
     px[i][0] = (uint8_t)(px[i][0] * (1.0f - strength) + r * strength);
     px[i][1] = (uint8_t)(px[i][1] * (1.0f - strength) + g * strength);
     px[i][2] = (uint8_t)(px[i][2] * (1.0f - strength) + b * strength);

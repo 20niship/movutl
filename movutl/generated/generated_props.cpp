@@ -4,6 +4,7 @@
 #include <movutl/asset/audio.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/entity.hpp>
+#include <movutl/asset/framebuffer.hpp>
 #include <movutl/asset/image.hpp>
 #include <movutl/asset/movie.hpp>
 #include <movutl/asset/text.hpp>
@@ -38,6 +39,30 @@ cutil::Prop AudioEntt::getProps() const {
   return p;
 }
 void AudioEntt::setProps(const cutil::Prop& p) { (void)p.load_to(this, getPropsInfo()); }
+const cutil::PropInfo* FramebufferEntt::getPropsInfo() const {
+  static const cutil::PropInfo info = [] {
+    cutil::PropInfo p;
+    p.fields.push_back(cutil::PropInfo::Field("clear_original_", offsetof(FramebufferEntt, clear_original_), cutil::prop_info_of<bool>()));
+    p.fields.back().set_label("元のバッファをクリア");
+    p.fields.back().set_desc("キャプチャ後に合成先バッファを透明でクリアする");
+    p.fields.push_back(cutil::PropInfo::Field("pos_", offsetof(FramebufferEntt, pos_), cutil::prop_info_of<Vec3>()));
+    p.fields.back().set_label("位置");
+    p.fields.push_back(cutil::PropInfo::Field("scale_", offsetof(FramebufferEntt, scale_), cutil::prop_info_of<Vec2>()));
+    p.fields.back().set_label("拡大率");
+    p.fields.push_back(cutil::PropInfo::Field("rotation_", offsetof(FramebufferEntt, rotation_), cutil::prop_info_of<float>()));
+    p.fields.back().set_label("回転");
+    p.fields.push_back(cutil::PropInfo::Field("alpha_", offsetof(FramebufferEntt, alpha_), cutil::prop_info_of<uint8_t>()));
+    p.fields.back().set_label("透明度");
+    return p;
+  }();
+  return &info;
+}
+cutil::Prop FramebufferEntt::getProps() const {
+  cutil::Prop p;
+  p.dump(this, getPropsInfo());
+  return p;
+}
+void FramebufferEntt::setProps(const cutil::Prop& p) { (void)p.load_to(this, getPropsInfo()); }
 const cutil::PropInfo* Image::getPropsInfo() const {
   static const cutil::PropInfo info = [] {
     cutil::PropInfo p;
@@ -181,6 +206,9 @@ const cutil::PropInfo* TrackObject::getPropsInfo() const {
     p.fields.push_back(cutil::PropInfo::Field("anchor", offsetof(TrackObject, anchor), cutil::prop_info_of<Vec2>()));
     p.fields.back().set_label("アンカー");
     // blend_ has an unsupported type (BlendType)
+    p.fields.push_back(cutil::PropInfo::Field("group_guid", offsetof(TrackObject, group_guid), cutil::prop_info_of<uint32_t>()));
+    p.fields.back().set_label("グループID");
+    p.fields.back().set_desc("グループ化されている時のグループID");
     p.fields.push_back(cutil::PropInfo::Field("active_", offsetof(TrackObject, active_), cutil::prop_info_of<bool>()));
     p.fields.back().set_label("アクティブ");
     p.fields.back().set_desc("オブジェクトが有効かどうか");

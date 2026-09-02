@@ -76,12 +76,12 @@ bool fn_proc_ripple(void* fp, FilterInData* fpip, const cutil::Prop& p) {
 #pragma omp parallel for schedule(static)
   for(int y = 0; y < h; y++) {
     for(int x = 0; x < w; x++) {
-      float dx   = x - cx, dy = y - cy;
-      float dist = std::sqrt(dx * dx + dy * dy);
-      float wave = std::sin(dist * frequency - frame * 0.2f + phase) * amplitude;
-      float scale = dist > 1.0f ? (dist + wave) / dist : 1.0f;
-      int sx = std::clamp((int)(cx + dx * scale), 0, w - 1);
-      int sy = std::clamp((int)(cy + dy * scale), 0, h - 1);
+      float dx = x - cx, dy = y - cy;
+      float dist   = std::sqrt(dx * dx + dy * dy);
+      float wave   = std::sin(dist * frequency - frame * 0.2f + phase) * amplitude;
+      float scale  = dist > 1.0f ? (dist + wave) / dist : 1.0f;
+      int sx       = std::clamp((int)(cx + dx * scale), 0, w - 1);
+      int sy       = std::clamp((int)(cy + dy * scale), 0, h - 1);
       (*img)(x, y) = src[(size_t)sy * w + sx];
     }
   }
@@ -186,14 +186,14 @@ bool fn_proc_kaleidoscope(void* fp, FilterInData* fpip, const cutil::Prop& p) {
 #pragma omp parallel for schedule(static)
   for(int y = 0; y < h; y++) {
     for(int x = 0; x < w; x++) {
-      float dx   = x - cx, dy = y - cy;
-      float dist = std::sqrt(dx * dx + dy * dy);
+      float dx = x - cx, dy = y - cy;
+      float dist  = std::sqrt(dx * dx + dy * dy);
       float angle = std::atan2(dy, dx);
       float a     = std::fmod(angle, seg_angle);
       if(a < 0.0f) a += seg_angle;
       if(a > seg_angle / 2.0f) a = seg_angle - a;
-      int sx = std::clamp((int)(cx + std::cos(a) * dist), 0, w - 1);
-      int sy = std::clamp((int)(cy + std::sin(a) * dist), 0, h - 1);
+      int sx       = std::clamp((int)(cx + std::cos(a) * dist), 0, w - 1);
+      int sy       = std::clamp((int)(cy + std::sin(a) * dist), 0, h - 1);
       (*img)(x, y) = src[(size_t)sy * w + sx];
     }
   }

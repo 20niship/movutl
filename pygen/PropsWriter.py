@@ -40,6 +40,7 @@ class PropsWriter:
             "#include <movutl/asset/image.hpp>\n"
             "#include <movutl/asset/movie.hpp>\n"
             "#include <movutl/asset/audio.hpp>\n"
+            "#include <movutl/asset/framebuffer.hpp>\n"
             "#include <movutl/core/anim.hpp>\n"
             "#include <movutl/core/prop_types.hpp>\n"
             "#include <movutl/asset/track.hpp>\n"

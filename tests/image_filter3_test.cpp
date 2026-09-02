@@ -28,8 +28,8 @@ TEST_CASE("4色グラデーション: 四隅がそれぞれの指定色に近づ
   p.set<Vec4b>("color_br", Vec4b(255, 255, 0, 255));
   p.set<float>("opacity", 100.0f);
   CHECK(mu::detail::f_four_color_gradient.fn_proc(nullptr, &fin, p));
-  CHECK(img(0, 0)[0] > img(9, 0)[0]);   // 左上は赤寄り
-  CHECK(img(9, 0)[1] > img(0, 0)[1]);   // 右上は緑寄り
+  CHECK(img(0, 0)[0] > img(9, 0)[0]); // 左上は赤寄り
+  CHECK(img(9, 0)[1] > img(0, 0)[1]); // 右上は緑寄り
 }
 
 TEST_CASE("放射グラデーション: 中心が中心色、外側が外側色に近づく") {
@@ -98,9 +98,9 @@ TEST_CASE("走査線: 一部の行が暗くなる") {
 
 TEST_CASE("ポスタリゼーション: levels=2で0か255のどちらかになる") {
   Image img(1, 3);
-  img[0] = Vec4b(10, 10, 10, 255);
-  img[1] = Vec4b(130, 130, 130, 255);
-  img[2] = Vec4b(250, 250, 250, 255);
+  img[0]   = Vec4b(10, 10, 10, 255);
+  img[1]   = Vec4b(130, 130, 130, 255);
+  img[2]   = Vec4b(250, 250, 250, 255);
   auto fin = make_fin(&img);
   cutil::Prop p;
   p.set<float>("levels", 2.0f);
@@ -110,8 +110,8 @@ TEST_CASE("ポスタリゼーション: levels=2で0か255のどちらかにな�
 
 TEST_CASE("2値化: しきい値未満は0、以上は255になる") {
   Image img(1, 2);
-  img[0] = Vec4b(50, 50, 50, 255);
-  img[1] = Vec4b(200, 200, 200, 255);
+  img[0]   = Vec4b(50, 50, 50, 255);
+  img[1]   = Vec4b(200, 200, 200, 255);
   auto fin = make_fin(&img);
   cutil::Prop p;
   p.set<float>("threshold", 128.0f);
@@ -145,7 +145,7 @@ TEST_CASE("万華鏡: segments指定で画素がサンプリングし直され�
   Image img(20, 20);
   for(size_t i = 0; i < img.size(); i++) img[i] = Vec4b(0, 0, 0, 255);
   img(15, 10) = Vec4b(255, 0, 0, 255);
-  auto fin = make_fin(&img);
+  auto fin    = make_fin(&img);
   cutil::Prop p;
   p.set<float>("segments", 4.0f);
   CHECK(mu::detail::f_kaleidoscope.fn_proc(nullptr, &fin, p));
@@ -153,7 +153,7 @@ TEST_CASE("万華鏡: segments指定で画素がサンプリングし直され�
 
 TEST_CASE("カラーバランス: ハイライトのオフセットが明部に加算される") {
   Image img(1, 1);
-  img[0] = Vec4b(240, 240, 240, 255); // 明るい画素
+  img[0]   = Vec4b(240, 240, 240, 255); // 明るい画素
   auto fin = make_fin(&img);
   cutil::Prop p;
   p.set<float>("highlight_r", 10.0f);
@@ -164,7 +164,7 @@ TEST_CASE("カラーバランス: ハイライトのオフセットが明部に�
 
 TEST_CASE("カラーLUT: gamma=100(1.0)なら画素は変わらない") {
   Image img(1, 1);
-  img[0] = Vec4b(100, 150, 200, 255);
+  img[0]   = Vec4b(100, 150, 200, 255);
   auto fin = make_fin(&img);
   cutil::Prop p;
   p.set<float>("gamma_r", 100.0f);
@@ -195,6 +195,6 @@ TEST_CASE("インターレースシフト: 偶数行は変わらず奇数行だ�
   cutil::Prop p;
   p.set<float>("shift", 1.0f);
   CHECK(mu::detail::f_interlace_shift.fn_proc(nullptr, &fin, p));
-  CHECK(img(2, 0)[0] == 20);  // 偶数行(y=0)は変化しない
-  CHECK(img(2, 1)[0] == 10);  // 奇数行(y=1)は1pxシフトしている
+  CHECK(img(2, 0)[0] == 20); // 偶数行(y=0)は変化しない
+  CHECK(img(2, 1)[0] == 10); // 奇数行(y=1)は1pxシフトしている
 }
