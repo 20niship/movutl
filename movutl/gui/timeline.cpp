@@ -14,6 +14,7 @@
 #include <movutl/asset/composition.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/gui/timeline.hpp>
+#include <tuple>
 
 enum ImTimelineState {
   None,
@@ -58,8 +59,9 @@ struct TimelineContext {
   Entity* dragging_entt = nullptr;
   int drag_mode         = 0; // 0=none, 1=move, 2=resize_left, 3=resize_right
   int drag_orig_fstart  = 0;
-  int drag_orig_fend    = 0;
-  int drag_start_frame  = 0;
+  std::vector<std::tuple<Entity*, int, int>> drag_group_orig; // group_guidが同じ他エンティティの(entity, orig_fstart, orig_fend)。移動ドラッグ開始時のみ使う
+  int drag_orig_fend   = 0;
+  int drag_start_frame = 0;
 
   cutil::Rect tl_area() {
     auto r = all_area;
@@ -445,6 +447,16 @@ bool BeginTrack(const Ref<Entity>& entity) {
       ctx_.drag_orig_fstart = *start;
       ctx_.drag_orig_fend   = *end;
       ctx_.drag_start_frame = ctx_.view2f((int)mouse_x);
+
+      ctx_.drag_group_orig.clear();
+      if(ctx_.drag_mode == 1 && entity->trk.group_guid != 0) {
+        if(auto* comp = entity->get_comp()) {
+          for(auto& other : comp->get_all_entities()) {
+            if(other.get() == entity.get() || other->trk.group_guid != entity->trk.group_guid) continue;
+            ctx_.drag_group_orig.push_back({other.get(), other->trk.fstart, other->trk.fend});
+          }
+        }
+      }
     }
   }
 
@@ -456,6 +468,10 @@ bool BeginTrack(const Ref<Entity>& entity) {
       if(ctx_.drag_mode == 1) {
         *start = ctx_.drag_orig_fstart + delta_f;
         *end   = ctx_.drag_orig_fend + delta_f;
+        for(auto& [other, ofs, ofe] : ctx_.drag_group_orig) {
+          other->trk.fstart = ofs + delta_f;
+          other->trk.fend   = ofe + delta_f;
+        }
       } else if(ctx_.drag_mode == 2) {
         int new_start = std::min(ctx_.drag_orig_fstart + delta_f, *end - 1);
         // 素材内オフセット管理は未実装のため、尺が素材の総フレーム数を超えないようclampするに留める

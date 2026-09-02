@@ -56,20 +56,45 @@ void Image::to_cv_img(cv::Mat* cv_img) const {
 }
 
 namespace {
-/// srcをdstへアルファブレンドで合成する。alpha=255(かつalpha_mul=1)なら単純上書きと同じ結果になる
-inline void blend_pixel(Vec4b& d, const Vec4b& src, float alpha_mul) {
+// BlendTypeに応じたチャンネル合成式(0-255域)。dはブレンド前の合成先(base)、sはブレンド元(blend)の値
+inline uint8_t blend_channel(BlendType mode, uint8_t d, uint8_t s) {
+  switch(mode) {
+    case Blend_Add: return (uint8_t)std::min(255, (int)d + (int)s);
+    case Blend_Sub: return (uint8_t)std::max(0, (int)d - (int)s);
+    case Blend_Mul: return (uint8_t)((int)d * (int)s / 255);
+    case Blend_Div: return s > 0 ? (uint8_t)std::min(255, (int)d * 255 / (int)s) : 255;
+    case Blend_Screen: return (uint8_t)(255 - (255 - d) * (255 - s) / 255);
+    case Blend_Overlay: return d < 128 ? (uint8_t)(2 * d * s / 255) : (uint8_t)(255 - 2 * (255 - d) * (255 - s) / 255);
+    case Blend_Darken: return std::min(d, s);
+    case Blend_Lighten: return std::max(d, s);
+    case Blend_HardLight: return s < 128 ? (uint8_t)(2 * d * s / 255) : (uint8_t)(255 - 2 * (255 - d) * (255 - s) / 255);
+    case Blend_Alpha:
+    default: return s;
+  }
+}
+
+/// srcをdstへ合成する。alpha=255(かつalpha_mul=1、blend=Blend_Alpha)なら単純上書きと同じ結果になる
+inline void blend_pixel(Vec4b& d, const Vec4b& src, float alpha_mul, BlendType blend = Blend_Alpha) {
   float a = (src[3] / 255.0f) * alpha_mul;
   if(a <= 0.0f) return;
-  if(a >= 1.0f) {
-    d = src;
+  if(blend == Blend_Alpha) {
+    if(a >= 1.0f) {
+      d = src;
+      return;
+    }
+    for(int c = 0; c < 3; c++) d[c] = (unsigned char)(src[c] * a + d[c] * (1.0f - a));
+    d[3] = (unsigned char)(a * 255.0f + d[3] * (1.0f - a));
     return;
   }
-  for(int c = 0; c < 3; c++) d[c] = (unsigned char)(src[c] * a + d[c] * (1.0f - a));
+  for(int c = 0; c < 3; c++) {
+    uint8_t blended = blend_channel(blend, d[c], src[c]);
+    d[c]            = (unsigned char)(blended * a + d[c] * (1.0f - a));
+  }
   d[3] = (unsigned char)(a * 255.0f + d[3] * (1.0f - a));
 }
 } // namespace
 
-bool Image::copyto(Image* dst, const Vec2d& pmin, float alpha_mul) const {
+bool Image::copyto(Image* dst, const Vec2d& pmin, float alpha_mul, BlendType blend) const {
   MOVUTL_ZONE_SCOPED_N("Image::copyto(pmin)");
   MU_ASSERT(dst);
   if(this->width <= 0 || this->height <= 0 || dst->width <= 0 || dst->height <= 0) return false;
@@ -85,8 +110,8 @@ bool Image::copyto(Image* dst, const Vec2d& pmin, float alpha_mul) const {
   int y1 = std::min((int)this->height, ch - py);
   if(x0 >= x1 || y0 >= y1) return true;
 
-  // alphaを考慮しない(不透明かつalpha_mul=1)なら行単位memcpyで済む
-  bool opaque_copy = !this->has_alpha && alpha_mul >= 1.0f;
+  // alphaを考慮しない(不透明かつalpha_mul=1、通常合成)なら行単位memcpyで済む
+  bool opaque_copy = !this->has_alpha && alpha_mul >= 1.0f && blend == Blend_Alpha;
   int row_w        = x1 - x0;
   for(int y = y0; y < y1; y++) {
     Vec4b* dst_row       = &dst->data_[(py + y) * cw + (px + x0)];
@@ -94,15 +119,15 @@ bool Image::copyto(Image* dst, const Vec2d& pmin, float alpha_mul) const {
     if(opaque_copy) {
       std::memcpy(dst_row, src_row, row_w * sizeof(Vec4b));
     } else {
-      for(int x = 0; x < row_w; x++) blend_pixel(dst_row[x], src_row[x], alpha_mul);
+      for(int x = 0; x < row_w; x++) blend_pixel(dst_row[x], src_row[x], alpha_mul, blend);
     }
   }
   return true;
 }
 
-bool Image::copyto(Image* dst, const Vec2d& center, float scale, float angle, float alpha_mul) const {
+bool Image::copyto(Image* dst, const Vec2d& center, float scale, float angle, float alpha_mul, BlendType blend) const {
   MOVUTL_ZONE_SCOPED_N("Image::copyto(center,scale,angle)");
-  if(angle == 0 && scale == 1.0) return this->copyto(dst, center, alpha_mul);
+  if(angle == 0 && scale == 1.0) return this->copyto(dst, center, alpha_mul, blend);
   if(this->width <= 0 || this->height <= 0 || dst->width <= 0 || dst->height <= 0) return false;
   // centerはpmin相当。回転/拡大の軸はdst全体の中心ではなく画像自身の中心にする(旧実装は中心からズレた位置で意図せず移動して見えるバグがあった)
   float rad     = angle * M_PI / 180.0f;
@@ -147,7 +172,7 @@ bool Image::copyto(Image* dst, const Vec2d& center, float scale, float angle, fl
       int src_y_int = static_cast<int>(std::floor(src_y));
       if(src_y_int < 0 || src_y_int >= this->height) continue;
 
-      blend_pixel(dst->data_[y * dst->width + x], data_[src_y_int * width + src_x_int], alpha_mul);
+      blend_pixel(dst->data_[y * dst->width + x], data_[src_y_int * width + src_x_int], alpha_mul, blend);
     }
   }
   return true;
@@ -187,7 +212,7 @@ bool Image::render(Composition* cmp, Image* target, int frame) {
 
   int base_x = this->width / 2 + trk.anchor[0] - cw / 2;
   int base_y = this->height / 2 + trk.anchor[1] - ch / 2;
-  return this->copyto(target, Vec2d(base_x, base_y), this->scale.avg(), this->rotation, this->alpha);
+  return this->copyto(target, Vec2d(base_x, base_y), this->scale.avg(), this->rotation, this->alpha, trk.blend_);
 }
 
 bool Image::load_file(const char* path) {

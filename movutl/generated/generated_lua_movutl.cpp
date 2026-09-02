@@ -281,6 +281,7 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addVariable("fend", &TrackObject::fend)                 // int
     .addVariable("anchor", &TrackObject::anchor)             // Vec2
     .addVariable("blend_", &TrackObject::blend_)             // BlendType
+    .addVariable("group_guid", &TrackObject::group_guid)     // uint32_t
     .addVariable("active_", &TrackObject::active_)           // bool
     .addVariable("solo_", &TrackObject::solo_)               // bool
     .addVariable("clipping_up", &TrackObject::clipping_up)   // bool

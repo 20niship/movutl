@@ -82,10 +82,21 @@ void mix_audio_range(Composition* comp, int64_t start_sample, int n, int16_t* ou
   std::vector<int16_t> track_buf((size_t)n * ch, 0);
 
   int frame = (int)((double)start_sample / std::max(1, comp->audio_sample_rate) * comp->framerate); // このチャンクの時刻に対応するフレーム(現在再生フレームではない)
-  for(auto& e : comp->get_all_entities()) {
+
+  auto entities = comp->get_all_entities();
+  bool any_solo = false;
+  for(auto& e : entities) {
+    if(e->getType() == EntityType_Audio && e->visible(frame) && e->trk.solo_) {
+      any_solo = true;
+      break;
+    }
+  }
+
+  for(auto& e : entities) {
     if(e->getType() != EntityType_Audio) continue;
     auto* a = static_cast<AudioEntt*>(e.get());
     if(!a->visible(frame)) continue;
+    if(any_solo && !a->trk.solo_) continue; // ソロ中のトラックが1つでもあれば、ソロでないトラックはミュートする
 
     std::fill(track_buf.begin(), track_buf.end(), (int16_t)0);
     if(!a->fetch_audio(comp, start_sample, n, track_buf.data())) continue;

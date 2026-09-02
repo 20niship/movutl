@@ -276,3 +276,34 @@ TEST_CASE("音声トラックにエコーフィルタをGUIと同じ手順で付
 
   CHECK(baseline != filtered);
 }
+
+TEST_CASE("mix_audio_range: solo_中のトラックのみがミックスされる(#35)") {
+  auto comp_full = cutil::make_ref<Composition>("full", 100, 100, 30);
+  auto a         = AudioEntt::Create("a", "../assets/audio/file_example_WAV_1MG.wav");
+  a->trk.fstart  = 0;
+  a->trk.fend    = 150;
+  comp_full->insert_entity(a);
+  auto b        = AudioEntt::Create("b", "../assets/audio/file_example_WAV_1MG.wav");
+  b->trk.fstart = 0;
+  b->trk.fend   = 150;
+  b->volume_    = 150.0f; // Aと区別できるよう音量を変えておく
+  comp_full->insert_entity(b);
+
+  std::vector<int16_t> both((size_t)kN * kCh);
+  mix_audio_range(comp_full.get(), 0, kN, both.data());
+
+  a->trk.solo_ = true;
+  std::vector<int16_t> solo_a((size_t)kN * kCh);
+  mix_audio_range(comp_full.get(), 0, kN, solo_a.data());
+
+  auto comp_a_only = cutil::make_ref<Composition>("a_only", 100, 100, 30);
+  auto a2          = AudioEntt::Create("a2", "../assets/audio/file_example_WAV_1MG.wav");
+  a2->trk.fstart   = 0;
+  a2->trk.fend     = 150;
+  comp_a_only->insert_entity(a2);
+  std::vector<int16_t> a_only((size_t)kN * kCh);
+  mix_audio_range(comp_a_only.get(), 0, kN, a_only.data());
+
+  CHECK(both != solo_a);   // ソロ有効化でミックス結果が変わる(Bが除外される)
+  CHECK(solo_a == a_only); // ソロ中はAだけをミックスしたのと同じ結果になる
+}
