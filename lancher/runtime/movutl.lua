@@ -206,6 +206,29 @@ movutl.EntityInfo.audio_format_size = 0
 ---@return string
 function movutl.EntityInfo:str( ) end
 
+---@class FramebufferEntt
+---@field clear_original_ boolean
+---@field pos_ Vec3
+---@field scale_ Vec2
+---@field rotation_ number
+---@field alpha_ number
+movutl.FramebufferEntt = {}
+movutl.FramebufferEntt.clear_original_ = false
+movutl.FramebufferEntt.pos_ = Vec3 ( 0 , 0 , 0 )
+movutl.FramebufferEntt.scale_ = Vec2 ( 100 , 100 )
+movutl.FramebufferEntt.rotation_ = 0
+movutl.FramebufferEntt.alpha_ = 255
+
+---@param name string
+---@return Ref<FramebufferEntt>
+function movutl.FramebufferEntt:Create( name, ) end
+
+---@return EntityType
+function movutl.FramebufferEntt:getType( ) end
+
+---@return Ref<Image> 
+function movutl.FramebufferEntt:captured_image( ) end
+
 ---@class Image
 ---@field width number
 ---@field height number

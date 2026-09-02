@@ -8,6 +8,7 @@
 #include <movutl/asset/audio.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/entity.hpp>
+#include <movutl/asset/framebuffer.hpp>
 #include <movutl/asset/image.hpp>
 #include <movutl/asset/movie.hpp>
 #include <movutl/asset/project.hpp>
@@ -166,6 +167,16 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addVariable("audio_sample_rate", &EntityInfo::audio_sample_rate) // int32_t
     .addVariable("audio_channels", &EntityInfo::audio_channels)       // int32_t
     .addVariable("audio_format_size", &EntityInfo::audio_format_size) // int32_t
+    .endClass()
+    .beginClass<FramebufferEntt>("FramebufferEntt")
+    .addStaticFunction("Create", &FramebufferEntt::Create)
+    .addFunction("getType", &FramebufferEntt::getType)
+    .addFunction("captured_image", &FramebufferEntt::captured_image)
+    .addVariable("clear_original_", &FramebufferEntt::clear_original_) // bool
+    .addVariable("pos_", &FramebufferEntt::pos_)                       // Vec3
+    .addVariable("scale_", &FramebufferEntt::scale_)                   // Vec2
+    .addVariable("rotation_", &FramebufferEntt::rotation_)             // float
+    .addVariable("alpha_", &FramebufferEntt::alpha_)                   // uint8_t
     .endClass()
     .beginClass<Image>("Image")
     .addFunction("dirty", &Image::dirty)
