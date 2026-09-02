@@ -49,6 +49,19 @@ cutil::Prop Entity::getSaveProps() const {
   p.set<int32_t>("guid", (int32_t)guid_);
   p.set_child("props", getProps());
   p.set_child("trk", trk.getProps());
+
+  // trk.filtersはTrackObject::getPropsInfo()の自動生成対象外(std::vector<FilterParam>)のため個別にシリアライズする
+  cutil::Prop filters_p;
+  filters_p.set<int32_t>("count", (int32_t)trk.filters.size());
+  for(size_t i = 0; i < trk.filters.size(); i++) {
+    const auto& f = trk.filters[i];
+    cutil::Prop fp;
+    fp.set<int32_t>("plugin_guid", (int32_t)(f.plg_ ? f.plg_->guid : 0));
+    fp.set<bool>("enabled", f.enabled);
+    fp.set_child("params", f.props.get(0));
+    filters_p.set_child(("filter_" + std::to_string(i)).c_str(), fp);
+  }
+  p.set_child("filters", filters_p);
   return p;
 }
 
@@ -60,6 +73,31 @@ Ref<Entity> Entity::fromSaveProps(const cutil::Prop& p) {
   e->guid_ = (uint64_t)cutil::get_or<int32_t>(p, "guid", (int32_t)e->guid_);
   if(p.contains("props")) e->setProps(p.get_child("props"));
   if(p.contains("trk")) e->trk.setProps(p.get_child("trk"));
+
+  if(p.contains("filters")) {
+    const auto& filters_p = p.get_child("filters");
+    int32_t count         = cutil::get_or<int32_t>(filters_p, "count", 0);
+    auto* main            = detail::AppMain::Get();
+    for(int32_t i = 0; i < count; i++) {
+      const auto& fp = filters_p.get_child(("filter_" + std::to_string(i)).c_str());
+      int32_t guid   = cutil::get_or<int32_t>(fp, "plugin_guid", 0);
+      TrackObject::FilterParam f;
+      for(auto& plg : main->filters) {
+        if((int32_t)plg.guid == guid) {
+          f.plg_ = &plg;
+          break;
+        }
+      }
+      if(!f.plg_) {
+        LOG_F(WARNING, "Entity::fromSaveProps: filter plugin (guid=%d) not found, skipping", guid);
+        continue;
+      }
+      f.enabled = cutil::get_or<bool>(fp, "enabled", true);
+      if(fp.contains("params")) f.props.add_props(fp.get_child("params"));
+      e->trk.filters.push_back(f);
+    }
+  }
+
   e->reload_asset(); // pathはsetProps()でコピーされるだけなので、ここで独立した読み込みプラグインのインスタンスを持たせる
   return e;
 }

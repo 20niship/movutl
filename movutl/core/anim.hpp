@@ -77,7 +77,7 @@ public:
   // clang-format on
 
   std::vector<Types> props;
-  cutil::Prop get(uint32_t frame);
+  cutil::Prop get(uint32_t frame) const;
 
   const cutil::PropInfo* get_type(int index) const {
     if(index < 0 || index >= (int)props.size()) return nullptr;
