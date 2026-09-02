@@ -15,8 +15,6 @@ Ref<FramebufferEntt> FramebufferEntt::Create(const char* name) {
 }
 
 bool FramebufferEntt::render(Composition* cmp, Image* target, int frame) {
-  MU_UNUSED(frame);
-  MU_UNUSED(cmp);
   if(!target || target->empty()) return false;
 
   if(!captured_) captured_ = cutil::make_ref<Image>();
@@ -24,6 +22,8 @@ bool FramebufferEntt::render(Composition* cmp, Image* target, int frame) {
   std::memcpy(captured_->data(), target->data(), target->size_in_bytes());
   captured_->has_alpha = target->has_alpha;
   captured_->dirty();
+
+  render_filters(cmp, captured_.get(), frame); // trk.filters(色調補正等)をキャプチャ画像に適用してから貼り戻す
 
   if(clear_original_) target->fill_rgba(Vec4b(0, 0, 0, 0));
 
