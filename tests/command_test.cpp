@@ -62,3 +62,64 @@ TEST_CASE("CommandManager creates a fresh instance on every run") {
   CHECK(run_command("reinit_test_command"));
   CHECK(run_command("reinit_test_command")); // 2回目もReinitCommand::startedがfalseから始まるはず
 }
+
+namespace {
+// undoable()==trueなコマンド。on_undo/on_redoの呼び出し回数を記録する
+struct UndoableCommand : mCommand {
+  CommandStatus on_start() override {
+    value += 1;
+    return CommandStatus::Finished;
+  }
+  void on_undo() override { value -= 1; }
+  void on_redo() override { value += 1; }
+  bool undoable() const override { return true; }
+  static int value;
+};
+int UndoableCommand::value = 0;
+
+// undoable()==false(既定)のコマンド。undo履歴に積まれないことを確認する
+struct NonUndoableCommand : mCommand {
+  CommandStatus on_start() override {
+    runs++;
+    return CommandStatus::Finished;
+  }
+  static int runs;
+};
+int NonUndoableCommand::runs = 0;
+} // namespace
+
+TEST_CASE("undo_command/redo_command: undoable()なコマンドの履歴を取り消し/やり直しできる") {
+  register_command<UndoableCommand>({"undoable_test_command", "", "", ""});
+  UndoableCommand::value = 0;
+
+  CHECK(run_command("undoable_test_command"));
+  CHECK(UndoableCommand::value == 1);
+
+  CHECK(undo_command());
+  CHECK(UndoableCommand::value == 0);
+
+  CHECK(redo_command());
+  CHECK(UndoableCommand::value == 1);
+}
+
+TEST_CASE("undo_command: undoable()==falseなコマンドは履歴に積まれない") {
+  register_command<NonUndoableCommand>({"non_undoable_test_command", "", "", ""});
+  while(can_undo()) undo_command(); // CommandManagerはプロセス全体で共有のシングルトンのため、他テストの履歴が残っていても影響を受けないようクリアする
+  NonUndoableCommand::runs = 0;
+
+  CHECK(run_command("non_undoable_test_command"));
+  CHECK(NonUndoableCommand::runs == 1);
+  CHECK_FALSE(can_undo()); // 直前の履歴に積まれていないので取り消せない
+}
+
+TEST_CASE("run_command: 新規実行はredo履歴をクリアする") {
+  register_command<UndoableCommand>({"undoable_test_command2", "", "", ""});
+  UndoableCommand::value = 0;
+
+  CHECK(run_command("undoable_test_command2"));
+  CHECK(undo_command());
+  CHECK(can_redo());
+
+  CHECK(run_command("undoable_test_command2")); // 新規実行でredo履歴が消える
+  CHECK_FALSE(can_redo());
+}

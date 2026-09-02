@@ -35,8 +35,8 @@ bool fn_proc_four_color_gradient(void* fp, FilterInData* fpip, const cutil::Prop
       Vec4b& px = (*img)(x, y);
       float a   = opacity * lerpf(lerpf(tl[3], tr[3], u), lerpf(bl[3], br[3], u), v) / 255.0f;
       for(int c = 0; c < 3; c++) {
-        float g  = lerpf(lerpf(tl[c], tr[c], u), lerpf(bl[c], br[c], u), v);
-        px[c]    = (uint8_t)std::clamp(px[c] * (1.0f - a) + g * a, 0.0f, 255.0f);
+        float g = lerpf(lerpf(tl[c], tr[c], u), lerpf(bl[c], br[c], u), v);
+        px[c]   = (uint8_t)std::clamp(px[c] * (1.0f - a) + g * a, 0.0f, 255.0f);
       }
     }
   }
@@ -84,7 +84,7 @@ bool fn_proc_radial_gradient(void* fp, FilterInData* fpip, const cutil::Prop& p)
 
   Image* img = fpip->img;
   int w = (int)img->width, h = (int)img->height;
-  float cx  = w * cx_pct / 100.0f, cy = h * cy_pct / 100.0f;
+  float cx = w * cx_pct / 100.0f, cy = h * cy_pct / 100.0f;
   float rpx = std::max(w, h) * radius / 100.0f;
 
 #pragma omp parallel for schedule(static)
@@ -229,15 +229,15 @@ bool fn_proc_circle_clip(void* fp, FilterInData* fpip, const cutil::Prop& p) {
 
   Image* img = fpip->img;
   int w = (int)img->width, h = (int)img->height;
-  float cx  = w * cx_pct / 100.0f, cy = h * cy_pct / 100.0f;
+  float cx = w * cx_pct / 100.0f, cy = h * cy_pct / 100.0f;
   float rpx = std::max(w, h) * radius / 100.0f;
 
 #pragma omp parallel for schedule(static)
   for(int y = 0; y < h; y++) {
     for(int x = 0; x < w; x++) {
       float dx = x - cx, dy = y - cy;
-      float dist = std::sqrt(dx * dx + dy * dy);
-      float d    = invert ? (dist - rpx) : (rpx - dist);
+      float dist      = std::sqrt(dx * dx + dy * dy);
+      float d         = invert ? (dist - rpx) : (rpx - dist);
       float alpha_mul = std::clamp(0.5f + d / edge, 0.0f, 1.0f);
       Vec4b& px       = (*img)(x, y);
       px[3]           = (uint8_t)(px[3] * alpha_mul);

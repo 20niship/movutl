@@ -103,7 +103,18 @@ struct SplitCommand final : mCommand {
     }
   }
 
+  bool undoable() const override { return true; }
+
   std::vector<SplitState> splits_;
+};
+
+// undo/redoコマンド自身はCommandManagerの履歴には積まない(undoable()==false、既定のまま)
+struct UndoCommand final : mCommand {
+  CommandStatus on_start() override { return undo_command() ? CommandStatus::Finished : CommandStatus::Failed; }
+};
+
+struct RedoCommand final : mCommand {
+  CommandStatus on_start() override { return redo_command() ? CommandStatus::Finished : CommandStatus::Failed; }
 };
 
 } // namespace
@@ -113,6 +124,8 @@ void register_default_commands() {
   register_command<FrameStepCommand>({"frame_step_forward", "次のフレーム", "現在フレームを1つ進める", "right"}, 1);
   register_command<FrameStepCommand>({"frame_step_backward", "前のフレーム", "現在フレームを1つ戻す", "left"}, -1);
   register_command<SplitCommand>({"split", "分割", "選択中のクリップを現在フレームで分割する", "s"});
+  register_command<UndoCommand>({"undo", "元に戻す", "直前の操作を取り消す", "ctrl+z"});
+  register_command<RedoCommand>({"redo", "やり直し", "取り消した操作をやり直す", "ctrl+y"});
 }
 
 } // namespace mu::detail

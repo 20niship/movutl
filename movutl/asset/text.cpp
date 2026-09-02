@@ -28,7 +28,7 @@ bool TextEntt::render(Composition* cmp, Image* target, int frame) {
   render_filters(cmp, img_.get(), frame);
   Vec2d center(pos_[0] + text_offset_[0] + img_->width * scale_x_ / 2.0, pos_[1] + text_offset_[1] + img_->height * scale_y_ / 2.0);
   float rot_deg = rot_ * 180.0f / (float)M_PI; // rot_はradians=trueプロパティ、copyto()はdegreesを期待する
-  img_->copyto(target, center, (scale_x_ + scale_y_) / 2.0f, rot_deg, alpha_ / 255.0f);
+  img_->copyto(target, center, (scale_x_ + scale_y_) / 2.0f, rot_deg, alpha_ / 255.0f, trk.blend_);
   return true;
 }
 

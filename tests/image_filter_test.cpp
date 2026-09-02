@@ -16,7 +16,7 @@ FilterInData make_fin(Image* img) {
 
 TEST_CASE("色調補正: brightness/contrastが変化なしなら画素は変わらない") {
   Image img(2, 2);
-  img[0] = Vec4b(100, 120, 140, 255);
+  img[0]   = Vec4b(100, 120, 140, 255);
   auto fin = make_fin(&img);
   cutil::Prop p;
   p.set<float>("brightness", 100.0f);
@@ -29,7 +29,7 @@ TEST_CASE("色調補正: brightness/contrastが変化なしなら画素は変わ
 
 TEST_CASE("色調補正: brightness=200で明るくなる") {
   Image img(1, 1);
-  img[0] = Vec4b(100, 100, 100, 255);
+  img[0]   = Vec4b(100, 100, 100, 255);
   auto fin = make_fin(&img);
   cutil::Prop p;
   p.set<float>("brightness", 200.0f);
@@ -40,7 +40,7 @@ TEST_CASE("色調補正: brightness=200で明るくなる") {
 
 TEST_CASE("色調補正: hueで色相が回転する(彩度のある色が変化する)") {
   Image img(1, 1);
-  img[0] = Vec4b(255, 0, 0, 255); // 赤
+  img[0]   = Vec4b(255, 0, 0, 255); // 赤
   auto fin = make_fin(&img);
   cutil::Prop p;
   p.set<float>("hue", 120.0f); // 赤->緑方向へ回転
@@ -53,7 +53,7 @@ TEST_CASE("色調補正: hueで色相が回転する(彩度のある色が変化
 
 TEST_CASE("単色化: strength=100で輝度に応じた単色になる") {
   Image img(1, 1);
-  img[0] = Vec4b(200, 50, 10, 255);
+  img[0]   = Vec4b(200, 50, 10, 255);
   auto fin = make_fin(&img);
   cutil::Prop p;
   p.set<Vec4b>("color", Vec4b(0, 0, 255, 255)); // 青
@@ -66,7 +66,7 @@ TEST_CASE("単色化: strength=100で輝度に応じた単色になる") {
 
 TEST_CASE("単色化: strength=0なら画素は変わらない") {
   Image img(1, 1);
-  img[0] = Vec4b(200, 50, 10, 255);
+  img[0]   = Vec4b(200, 50, 10, 255);
   auto fin = make_fin(&img);
   cutil::Prop p;
   p.set<Vec4b>("color", Vec4b(0, 0, 255, 255));
@@ -79,9 +79,9 @@ TEST_CASE("単色化: strength=0なら画素は変わらない") {
 
 TEST_CASE("色ずらし: shift_xでRとBが左右逆方向にずれる") {
   Image img(3, 1);
-  img[0] = Vec4b(255, 0, 0, 255);   // R
-  img[1] = Vec4b(0, 255, 0, 255);   // G
-  img[2] = Vec4b(0, 0, 255, 255);   // B
+  img[0]   = Vec4b(255, 0, 0, 255); // R
+  img[1]   = Vec4b(0, 255, 0, 255); // G
+  img[2]   = Vec4b(0, 0, 255, 255); // B
   auto fin = make_fin(&img);
   cutil::Prop p;
   p.set<float>("shift_x", 1.0f);
@@ -107,7 +107,7 @@ TEST_CASE("グラデーション: angle=0で左端がcolor1寄り、右端がcol
 
 TEST_CASE("拡張色調補正: 各チャンネルへオフセットが加算される") {
   Image img(1, 1);
-  img[0] = Vec4b(100, 100, 100, 255);
+  img[0]   = Vec4b(100, 100, 100, 255);
   auto fin = make_fin(&img);
   cutil::Prop p;
   p.set<float>("r", 50.0f);
@@ -121,7 +121,7 @@ TEST_CASE("拡張色調補正: 各チャンネルへオフセットが加算さ�
 
 TEST_CASE("拡張色調補正: オフセットは0-255にクランプされる") {
   Image img(1, 1);
-  img[0] = Vec4b(240, 10, 0, 255);
+  img[0]   = Vec4b(240, 10, 0, 255);
   auto fin = make_fin(&img);
   cutil::Prop p;
   p.set<float>("r", 50.0f);
@@ -136,7 +136,7 @@ TEST_CASE("ぼかし: エッジが平滑化される") {
   Image img(5, 1);
   img[0] = img[1] = Vec4b(0, 0, 0, 255);
   img[2] = img[3] = img[4] = Vec4b(255, 255, 255, 255);
-  auto fin = make_fin(&img);
+  auto fin                 = make_fin(&img);
   cutil::Prop p;
   p.set<float>("range", 3.0f);
   CHECK(mu::detail::f_blur.fn_proc(nullptr, &fin, p));
@@ -147,8 +147,8 @@ TEST_CASE("ぼかし: エッジが平滑化される") {
 
 TEST_CASE("ぼかし: range<=0なら画素は変わらない") {
   Image img(2, 1);
-  img[0] = Vec4b(10, 20, 30, 255);
-  img[1] = Vec4b(200, 210, 220, 255);
+  img[0]   = Vec4b(10, 20, 30, 255);
+  img[1]   = Vec4b(200, 210, 220, 255);
   auto fin = make_fin(&img);
   cutil::Prop p;
   p.set<float>("range", 0.0f);
@@ -161,7 +161,7 @@ TEST_CASE("方向ぼかし: 水平方向にエッジが平滑化される") {
   Image img(5, 1);
   img[0] = img[1] = Vec4b(0, 0, 0, 255);
   img[2] = img[3] = img[4] = Vec4b(255, 255, 255, 255);
-  auto fin = make_fin(&img);
+  auto fin                 = make_fin(&img);
   cutil::Prop p;
   p.set<float>("range", 3.0f);
   p.set<float>("angle", 0.0f); // 水平方向
@@ -174,7 +174,7 @@ TEST_CASE("放射ぼかし: 中心から離れた位置ほど周辺画素と混�
   Image img(9, 9);
   for(size_t i = 0; i < img.size(); i++) img[i] = Vec4b(0, 0, 0, 255);
   img[9 * 4 + 8] = Vec4b(255, 255, 255, 255); // 右端中央に白ドット
-  auto fin = make_fin(&img);
+  auto fin       = make_fin(&img);
   cutil::Prop p;
   p.set<float>("range", 50.0f);
   CHECK(mu::detail::f_radial_blur.fn_proc(nullptr, &fin, p));
@@ -184,8 +184,8 @@ TEST_CASE("放射ぼかし: 中心から離れた位置ほど周辺画素と混�
 
 TEST_CASE("放射ぼかし: range<=0なら画素は変わらない") {
   Image img(2, 1);
-  img[0] = Vec4b(10, 20, 30, 255);
-  img[1] = Vec4b(200, 210, 220, 255);
+  img[0]   = Vec4b(10, 20, 30, 255);
+  img[1]   = Vec4b(200, 210, 220, 255);
   auto fin = make_fin(&img);
   cutil::Prop p;
   p.set<float>("range", 0.0f);

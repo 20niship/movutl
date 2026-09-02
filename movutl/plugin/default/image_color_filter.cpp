@@ -47,13 +47,13 @@ bool fn_proc(void* fp, FilterInData* fpip, const cutil::Prop& p) {
 #pragma omp parallel for schedule(static)
   for(long i = 0; i < (long)n; i++) {
     cutil::Vector3b rgb{px[i][0], px[i][1], px[i][2]};
-    auto hsv    = cutil::RGB2HSV<double>(rgb);
-    double h    = std::fmod(hsv[0] + hue + 360.0, 360.0);
-    double s    = std::clamp(hsv[1] * saturation / 100.0, 0.0, 100.0);
-    auto out    = cutil::HSVtoRGB(cutil::_Vec<double, 3>{h, s, hsv[2]});
-    px[i][0]    = out[0];
-    px[i][1]    = out[1];
-    px[i][2]    = out[2];
+    auto hsv = cutil::RGB2HSV<double>(rgb);
+    double h = std::fmod(hsv[0] + hue + 360.0, 360.0);
+    double s = std::clamp(hsv[1] * saturation / 100.0, 0.0, 100.0);
+    auto out = cutil::HSVtoRGB(cutil::_Vec<double, 3>{h, s, hsv[2]});
+    px[i][0] = out[0];
+    px[i][1] = out[1];
+    px[i][2] = out[2];
   }
   apply_brightness_contrast_lut(px, n, brightness, contrast);
 
@@ -213,27 +213,27 @@ bool fn_proc_gradient(void* fp, FilterInData* fpip, const cutil::Prop& p) {
   MU_ASSERT(fpip->img != nullptr);
   MOVUTL_ZONE_SCOPED_N("Gradient::fn_proc");
 
-  Vec4b color1   = cutil::get_or<Vec4b>(p, "color1", Vec4b(0, 0, 0, 255));
-  Vec4b color2   = cutil::get_or<Vec4b>(p, "color2", Vec4b(255, 255, 255, 255));
-  float angle    = cutil::get_or<float>(p, "angle", 0.0f) * (float)M_PI / 180.0f;
-  float opacity  = cutil::get_or<float>(p, "opacity", 100.0f) / 100.0f;
+  Vec4b color1  = cutil::get_or<Vec4b>(p, "color1", Vec4b(0, 0, 0, 255));
+  Vec4b color2  = cutil::get_or<Vec4b>(p, "color2", Vec4b(255, 255, 255, 255));
+  float angle   = cutil::get_or<float>(p, "angle", 0.0f) * (float)M_PI / 180.0f;
+  float opacity = cutil::get_or<float>(p, "opacity", 100.0f) / 100.0f;
 
   Image* img = fpip->img;
   int w = (int)img->width, h = (int)img->height;
-  float dx   = std::cos(angle), dy = std::sin(angle);
+  float dx = std::cos(angle), dy = std::sin(angle);
   float diag = std::sqrt((float)(w * w + h * h));
   if(diag <= 0.0f) return true;
 
 #pragma omp parallel for schedule(static)
   for(int y = 0; y < h; y++) {
     for(int x = 0; x < w; x++) {
-      float t = ((x - w / 2.0f) * dx + (y - h / 2.0f) * dy) / diag + 0.5f;
-      t       = std::clamp(t, 0.0f, 1.0f);
+      float t   = ((x - w / 2.0f) * dx + (y - h / 2.0f) * dy) / diag + 0.5f;
+      t         = std::clamp(t, 0.0f, 1.0f);
       Vec4b& px = (*img)(x, y);
       float a   = (color1[3] * (1.0f - t) + color2[3] * t) / 255.0f * opacity;
       for(int c = 0; c < 3; c++) {
-        float g  = color1[c] * (1.0f - t) + color2[c] * t;
-        px[c]    = (uint8_t)std::clamp(px[c] * (1.0f - a) + g * a, 0.0f, 255.0f);
+        float g = color1[c] * (1.0f - t) + color2[c] * t;
+        px[c]   = (uint8_t)std::clamp(px[c] * (1.0f - a) + g * a, 0.0f, 255.0f);
       }
     }
   }

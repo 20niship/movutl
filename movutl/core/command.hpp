@@ -27,10 +27,13 @@ public:
   // Running状態の間、毎フレーム呼ばれる
   virtual CommandStatus tick() { return CommandStatus::Finished; }
   virtual void on_cancel() {}      // cancel_command()から呼ばれる
-  virtual void on_undo() {}        // 将来のUndoスタック実装用フック(今回は中身なし)
-  virtual void on_redo() {}        // 将来のRedoスタック実装用フック(今回は中身なし)
+  virtual void on_undo() {}        // undo_command()から呼ばれる。既定は何もしない(undoable()をfalseにするのが望ましい)
+  virtual void on_redo() {}        // redo_command()から呼ばれる。既定はon_start()と同じ結果になる想定
   virtual void update_ui() {}      // メニュー等にこのコマンド用のUIを描画したい場合に使うフック
   virtual void update_tool_ui() {} // ツールバー拡張用フック(今回は未使用)
+
+  // Undo履歴に積むかどうか。on_undo()を実装しないコマンド(再生/一時停止等)やundo/redoコマンド自身はfalseを返すこと
+  virtual bool undoable() const { return false; }
 };
 
 // コマンドの登録情報。mCommandのインスタンス(実行の度に生成/破棄される)とは分離して管理する
@@ -54,5 +57,11 @@ bool has_command(const char* id);
 void cancel_command(const char* id);
 void tick_running_commands();
 const std::vector<CommandInfo>& get_command_infos(); // 登録済みコマンド一覧(メニュー表示やショートカット判定に使う)
+
+// undoable()がtrueなコマンドの実行履歴を1つ取り消す/やり直す。履歴が空ならfalseを返す
+bool undo_command();
+bool redo_command();
+bool can_undo();
+bool can_redo();
 
 } // namespace mu

@@ -53,7 +53,7 @@ void ViewerWindow::Update() {
     ImGui::End();
     return;
   }
-  ImVec2 origin = ImGui::GetCursorScreenPos();
+  ImVec2 origin   = ImGui::GetCursorScreenPos();
   auto reset_view = [&]() {
     zoom = 1.0f;
     pan  = ImVec2(0, 0);

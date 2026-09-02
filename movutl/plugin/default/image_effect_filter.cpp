@@ -173,8 +173,8 @@ bool fn_proc_resize(void* fp, FilterInData* fpip, const cutil::Prop& p) {
   if(scale <= 0.0f || scale == 1.0f) return true;
 
   Image* img = fpip->img;
-  int nw = std::max(1, (int)(img->width * scale));
-  int nh = std::max(1, (int)(img->height * scale));
+  int nw     = std::max(1, (int)(img->width * scale));
+  int nh     = std::max(1, (int)(img->height * scale));
   cv::Mat src;
   img->to_cv_img(&src);
   cv::Mat resized;

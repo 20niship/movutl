@@ -107,8 +107,8 @@ bool fn_proc_scanline(void* fp, FilterInData* fpip, const cutil::Prop& p) {
   MU_ASSERT(fpip->img != nullptr);
   MOVUTL_ZONE_SCOPED_N("Scanline::fn_proc");
 
-  float strength  = cutil::get_or<float>(p, "strength", 50.0f) / 100.0f;
-  int line_width  = std::max(1, (int)cutil::get_or<float>(p, "line_width", 1.0f));
+  float strength = cutil::get_or<float>(p, "strength", 50.0f) / 100.0f;
+  int line_width = std::max(1, (int)cutil::get_or<float>(p, "line_width", 1.0f));
   if(strength <= 0.0f) return true;
 
   Image* img = fpip->img;

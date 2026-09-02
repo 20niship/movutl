@@ -2,6 +2,7 @@
 
 #include <cutil/quaternion.hpp>
 #include <movutl/asset/entity.hpp>
+#include <movutl/core/assert.hpp>
 #include <movutl/core/core.hpp>
 #include <movutl/core/logger.hpp>
 #include <movutl/core/vector.hpp>
@@ -39,6 +40,15 @@ public:
   // camera options
   float move_speed   = 2.5f;
   float rotate_speed = 0.1f;
+
+  virtual EntityType getType() const override { return EntityType_Camera; }
+  // ponytail: CPURendererは2D合成のみでカメラ変換パスが無いため、自身は何も描画しない(trk.camera_ctrlで参照される側)
+  virtual bool render(Composition* cmp, Image* target, int frame) override {
+    MU_UNUSED(cmp);
+    MU_UNUSED(target);
+    MU_UNUSED(frame);
+    return true;
+  }
 };
 
 } // namespace mu
