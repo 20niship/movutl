@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cmath>
 #include <imgui.h>
 #include <movutl/asset/composition.hpp>
 #include <movutl/audio/audio_mixer.hpp>
@@ -37,9 +38,11 @@ void FFTWindow::Update() {
     auto dl       = ImGui::GetWindowDrawList();
     ImVec2 origin = ImGui::GetCursorScreenPos();
     int bars      = std::min((int)spectrum.size(), (int)avail.x);
+    // 通常の音声は振幅が周波数帯に分散するためリニア表示だとほぼ見えない。dB(対数)スケールにして-60dB〜0dBを0-1へ正規化する
     for(int x = 0; x < bars; x++) {
-      int i   = x * (int)spectrum.size() / bars;
-      float h = std::clamp(spectrum[i], 0.0f, 1.0f) * avail.y;
+      int i    = x * (int)spectrum.size() / bars;
+      float db = 20.0f * std::log10(std::max(spectrum[i], 1e-6f));
+      float h  = std::clamp((db + 60.0f) / 60.0f, 0.0f, 1.0f) * avail.y;
       dl->AddLine(ImVec2(origin.x + x, origin.y + avail.y), ImVec2(origin.x + x, origin.y + avail.y - h), IM_COL32(120, 200, 220, 255));
     }
     ImGui::Dummy(avail);

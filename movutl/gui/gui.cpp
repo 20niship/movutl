@@ -33,6 +33,7 @@ void init_gui_panels() {
   default_workspace.add_entry("MOVUTL TIMELINE WINDOW", ImGuiDir_Down, 0.40f);
   default_workspace.add_entry("ツール", ImGuiDir_Left, 0.2f);
   default_workspace.add_entry(ICON_FA_PLUG " エフェクト制御", ImGuiDir_Right, 0.25f);
+  default_workspace.add_entry("FFT", ImGuiDir_Right, 0.3f);
   default_workspace.add_entry("Viewer", ImGuiDir_None, 1.0f);
   register_workspace("Default", default_workspace);
 }

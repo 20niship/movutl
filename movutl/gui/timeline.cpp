@@ -608,7 +608,7 @@ bool BeginTrack(const Ref<Entity>& entity) {
         int idx = wf.index_for_second((f - *start) / (double)fps);
         if(idx < 0 || idx >= (int)wf.levels.size()) continue;
         int len = (int)(half * (wf.levels[idx] / 255.0f));
-        if(len > 0) dl->AddLine(ImVec2((float)x, (float)(mid - len)), ImVec2((float)x, (float)(mid + len)), IM_COL32(20, 60, 30, 200));
+        if(len > 0) dl->AddLine(ImVec2((float)x, (float)(mid - len)), ImVec2((float)x, (float)(mid + len)), IM_COL32(255, 255, 255, 200)); // トラック背景(緑系)とのコントラストを確保するため白系にする
       }
     }
   }

@@ -11,6 +11,7 @@ namespace mu {
 
 using cutil::Ref;
 class Entity;
+class Image;
 
 class UIPanel {
 public:
@@ -88,5 +89,8 @@ inline Workspace workspace_add_entry(Workspace workspace, const char* window_nam
 
 void render_main_menu_bar();
 void render_status_bar();
+
+// GLFWウィンドウの現在のフレームバッファ(直近にswapされた画面。ImGui描画済みのUI込み)をキャプチャして返す
+Ref<Image> capture_screen();
 
 } // namespace mu

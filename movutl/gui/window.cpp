@@ -3,8 +3,10 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 // --
+#include <cstring>
 #include <movutl/app/app.hpp>
 #include <movutl/app/app_impl.hpp>
+#include <movutl/asset/image.hpp>
 #include <movutl/core/command.hpp>
 #include <movutl/core/filesystem.hpp>
 #include <movutl/core/logger.hpp>
@@ -12,6 +14,7 @@
 #include <movutl/core/vector.hpp>
 #include <movutl/gui/gui.hpp>
 #include <stdio.h>
+#include <vector>
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -174,6 +177,26 @@ void gui_render_to_screen() {
 }
 
 } // namespace detail
+
+Ref<Image> capture_screen() {
+  auto window = GUIManager::Get()->glfw_window;
+  if(!window) return nullptr;
+  int w, h;
+  glfwGetFramebufferSize(window, &w, &h);
+  if(w <= 0 || h <= 0) return nullptr;
+
+  glReadBuffer(GL_FRONT); // 直近にswapされた(=表示中の)バッファを読む
+  glPixelStorei(GL_PACK_ALIGNMENT, 1);
+  std::vector<uint8_t> buf((size_t)w * h * 4);
+  glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, buf.data());
+
+  auto img       = cutil::make_ref<Image>(w, h);
+  img->has_alpha = false;
+  // OpenGLは画像を下から上に読み出すため、Y反転してコピーする
+  for(int y = 0; y < h; y++) std::memcpy(&img->data()[(size_t)(h - 1 - y) * w], &buf[(size_t)y * w * 4], (size_t)w * 4);
+  img->dirty();
+  return img;
+}
 
 void update() {
   MOVUTL_ZONE_SCOPED_N("mu::update");
