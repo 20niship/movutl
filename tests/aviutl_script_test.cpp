@@ -90,3 +90,47 @@ TEST_CASE("register_aviutl_filter: 2値化スクリプトをフィルタとし�
   CHECK(plg->fn_proc(plg, &fin, p));
   CHECK(img[0][0] == 0); // 200 < 250 なので黒
 }
+
+TEST_CASE("register_aviutl_filter: obj.drawpolyで台形変形を実行できる") {
+  std::string text = "@あおりテスト\n"
+                     "local w, h = obj.getinfo(\"image_w\"), obj.getinfo(\"image_h\")\n"
+                     "obj.drawpoly(-2, -h / 2, 0, 2, -h / 2, 0, -w / 2, h / 2, 0, w / 2, h / 2, 0)\n";
+
+  auto defs = parse_aviutl_script(text);
+  REQUIRE(defs.size() == 1);
+  REQUIRE(register_aviutl_filter(defs[0]));
+  FilterPluginTable* plg = find_filter("あおりテスト");
+  REQUIRE(plg != nullptr);
+
+  Image img(10, 10);
+  for(size_t i = 0; i < img.size(); i++) img[i] = Vec4b(255, 255, 255, 255);
+  FilterInData fin;
+  fin.img = &img;
+  CHECK(plg->fn_proc(plg, &fin, cutil::Prop{}));
+
+  CHECK(img(5, 0)[3] > 0);  // 狭めた上辺の中央付近は残る
+  CHECK(img(0, 0)[3] == 0); // 上辺左端は狭められた範囲外で透明になる
+}
+
+TEST_CASE("register_aviutl_filter: obj.drawで移動・拡大縮小を実行できる") {
+  std::string text = "@移動テスト\n"
+                     "obj.ox = 3\n"
+                     "obj.zoom = 1\n"
+                     "obj.draw()\n";
+
+  auto defs = parse_aviutl_script(text);
+  REQUIRE(defs.size() == 1);
+  REQUIRE(register_aviutl_filter(defs[0]));
+  FilterPluginTable* plg = find_filter("移動テスト");
+  REQUIRE(plg != nullptr);
+
+  Image img(10, 10);
+  for(size_t i = 0; i < img.size(); i++) img[i] = Vec4b(0, 0, 0, 0);
+  img(2, 5) = Vec4b(255, 0, 0, 255);
+  FilterInData fin;
+  fin.img = &img;
+  CHECK(plg->fn_proc(plg, &fin, cutil::Prop{}));
+
+  CHECK(img(5, 5)[0] == 255); // ox=3だけ右へ移動しているはず(2+3=5)
+  CHECK(img(2, 5)[3] == 0);   // 元の位置は透明にクリアされている
+}

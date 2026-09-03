@@ -178,6 +178,49 @@ bool Image::copyto(Image* dst, const Vec2d& center, float scale, float angle, fl
   return true;
 }
 
+bool Image::drawpoly(Image* dst, const Vec2d corners[4], float alpha_mul, BlendType blend) const {
+  MOVUTL_ZONE_SCOPED_N("Image::drawpoly");
+  MU_ASSERT(dst);
+  if(this->width <= 0 || this->height <= 0 || dst->width <= 0 || dst->height <= 0) return false;
+
+  // corners順は左上,右上,左下,右下(AviUtl obj.drawpolyの引数順に合わせる)
+  cv::Point2f src_pts[4] = {{0, 0}, {(float)width, 0}, {0, (float)height}, {(float)width, (float)height}};
+  cv::Point2f dst_pts[4];
+  float min_x = std::numeric_limits<float>::max(), max_x = std::numeric_limits<float>::lowest();
+  float min_y = std::numeric_limits<float>::max(), max_y = std::numeric_limits<float>::lowest();
+  for(int i = 0; i < 4; i++) {
+    dst_pts[i] = cv::Point2f((float)corners[i][0], (float)corners[i][1]);
+    min_x      = std::min(min_x, (float)corners[i][0]);
+    max_x      = std::max(max_x, (float)corners[i][0]);
+    min_y      = std::min(min_y, (float)corners[i][1]);
+    max_y      = std::max(max_y, (float)corners[i][1]);
+  }
+  cv::Mat fwd = cv::getPerspectiveTransform(src_pts, dst_pts);
+  cv::Mat inv;
+  cv::invert(fwd, inv);
+
+  int bbox_x0 = std::max(0, (int)std::floor(min_x));
+  int bbox_x1 = std::min((int)dst->width, (int)std::ceil(max_x));
+  int bbox_y0 = std::max(0, (int)std::floor(min_y));
+  int bbox_y1 = std::min((int)dst->height, (int)std::ceil(max_y));
+
+  // dst上の各画素から逆射影変換でsrc座標を求め、範囲内ならblend_pixelで合成する(既存BlendTypeに対応するためcv::warpPerspectiveは使わない)
+  const double* m = inv.ptr<double>();
+  for(int y = bbox_y0; y < bbox_y1; ++y) {
+    for(int x = bbox_x0; x < bbox_x1; ++x) {
+      double w = m[6] * x + m[7] * y + m[8];
+      if(std::abs(w) < 1e-9) continue;
+      double src_x = (m[0] * x + m[1] * y + m[2]) / w;
+      double src_y = (m[3] * x + m[4] * y + m[5]) / w;
+      int sx       = (int)std::floor(src_x);
+      int sy       = (int)std::floor(src_y);
+      if(sx < 0 || sx >= (int)this->width || sy < 0 || sy >= (int)this->height) continue;
+      blend_pixel(dst->data_[y * dst->width + x], data_[sy * width + sx], alpha_mul, blend);
+    }
+  }
+  return true;
+}
+
 void Image::outline(const Vec4b& border_color, int border_width) {
   MOVUTL_ZONE_SCOPED_N("Image::outline");
   if(border_width <= 0 || this->width == 0 || this->height == 0) return;

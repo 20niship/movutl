@@ -109,8 +109,63 @@ int l_obj_effect(lua_State* L) {
   return 0;
 }
 
-// obj.draw()単体呼び出しの受け皿(既に描画済みの画像を加工するアニメーション効果では実質no-op)
-int l_obj_draw_noop(lua_State*) { return 0; }
+// 引数省略時はobjテーブルの現在値(スクリプトが直接書き換えた値)を使う(AviUtl仕様に合わせる)
+double obj_field_or_arg(lua_State* L, int argi, const char* field, double def) {
+  if(!lua_isnoneornil(L, argi)) return luaL_checknumber(L, argi);
+  lua_getglobal(L, "obj");
+  lua_getfield(L, -1, field);
+  double v = lua_isnumber(L, -1) ? lua_tonumber(L, -1) : def;
+  lua_pop(L, 2);
+  return v;
+}
+
+// obj.draw(x,y,z,zoom,alpha,rx,ry,rz): 現在の描画済みバッファを中心原点で移動・拡縮・Z回転して描き直す(rx/ryの3D回転は非対応)
+int l_obj_draw(lua_State* L) {
+  auto* ctx  = get_ctx(L);
+  Image* img = ctx->fpip->img;
+  if(!img || img->empty()) return 0;
+
+  double x     = obj_field_or_arg(L, 1, "ox", 0.0);
+  double y     = obj_field_or_arg(L, 2, "oy", 0.0);
+  double zoom  = obj_field_or_arg(L, 4, "zoom", 1.0);
+  double alpha = obj_field_or_arg(L, 5, "alpha", 1.0);
+  double rz    = obj_field_or_arg(L, 8, "rz", 0.0);
+
+  Image tmp(img->width, img->height);
+  tmp.has_alpha = true;
+  std::memcpy(tmp.data(), img->data(), img->size_in_bytes());
+  img->fill_rgba(Vec4b(0, 0, 0, 0));
+  // Image::copytoのcenter引数はpmin相当(内部でwidth/2が加算される)なので、AviUtlの中心原点オフセットx,yをそのまま渡す
+  tmp.copyto(img, Vec2d(x, y), (float)zoom, (float)rz, (float)alpha, Blend_Alpha);
+  return 0;
+}
+
+// obj.drawpoly(x0,y0,z0, x1,y1,z1, x2,y2,z2, x3,y3,z3): 四隅(左上,右上,左下,右下)を個別移動させ射影変形して描き直す(UV引数は非対応)
+int l_obj_drawpoly(lua_State* L) {
+  auto* ctx  = get_ctx(L);
+  Image* img = ctx->fpip->img;
+  if(!img || img->empty()) return 0;
+  if(lua_gettop(L) < 12) {
+    LOG_F(WARNING, "obj.drawpoly: 引数が不足しています(x0,y0,z0,...,x3,y3,z3の12個が必要)");
+    return 0;
+  }
+
+  Vec2d corners[4];
+  for(int i = 0; i < 4; i++) {
+    double x   = luaL_checknumber(L, i * 3 + 1);
+    double y   = luaL_checknumber(L, i * 3 + 2);
+    corners[i] = Vec2d(img->width / 2.0 + x, img->height / 2.0 + y);
+  }
+
+  Image tmp(img->width, img->height);
+  tmp.has_alpha = true;
+  std::memcpy(tmp.data(), img->data(), img->size_in_bytes());
+  img->fill_rgba(Vec4b(0, 0, 0, 0));
+  tmp.drawpoly(img, corners, 1.0f, Blend_Alpha);
+  return 0;
+}
+
+int l_obj_noop(lua_State*) { return 0; }
 
 } // namespace
 
@@ -126,11 +181,11 @@ void setup_obj_table(lua_State* L, AviUtlObjContext* ctx) {
   reg_fn("putpixeldata", l_obj_putpixeldata);
   reg_fn("getinfo", l_obj_getinfo);
   reg_fn("effect", l_obj_effect);
-  reg_fn("draw", l_obj_draw_noop);
-  reg_fn("drawpoly", l_obj_draw_noop);
-  reg_fn("copybuffer", l_obj_draw_noop);
-  reg_fn("setoption", l_obj_draw_noop);
-  reg_fn("getoption", l_obj_draw_noop);
+  reg_fn("draw", l_obj_draw);
+  reg_fn("drawpoly", l_obj_drawpoly);
+  reg_fn("copybuffer", l_obj_noop);
+  reg_fn("setoption", l_obj_noop);
+  reg_fn("getoption", l_obj_noop);
 
   lua_pushnumber(L, 0);
   lua_setfield(L, -2, "ox");

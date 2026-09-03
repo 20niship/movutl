@@ -64,6 +64,8 @@ public:
   bool copyto(Image* dst, const Vec2d& pmin, float alpha_mul = 1.0f, BlendType blend = Blend_Alpha) const;
   bool copyto(Image* dst, const Vec2d& pmin, const Vec2d& pmax) const;
   bool copyto(Image* dst, const Vec2d& center, float scale, float angle, float alpha_mul = 1.0f, BlendType blend = Blend_Alpha) const;
+  // 自身の四隅(左上,右上,左下,右下)をdst上の任意の4点corners[4]へ射影変換して合成する(AviUtl obj.drawpoly相当)
+  bool drawpoly(Image* dst, const Vec2d corners[4], float alpha_mul = 1.0f, BlendType blend = Blend_Alpha) const;
 
   // 現在の不透明部分の外側にborder_widthピクセル分border_colorで縁取りを描く(塗り部分は上書きしない)
   void outline(const Vec4b& border_color, int border_width);

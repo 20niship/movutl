@@ -1,0 +1,7 @@
+--track0:振幅,0,50,15,1
+@シェイク
+math.randomseed(obj.frame)
+obj.ox = (math.random() - 0.5) * track0 * 2
+obj.oy = (math.random() - 0.5) * track0 * 2
+obj.rz = (math.random() - 0.5) * 10
+obj.draw()
