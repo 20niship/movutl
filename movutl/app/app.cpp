@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cstdlib>
+#include <fstream>
 #include <movutl/app/app.hpp>
 #include <movutl/app/app_impl.hpp>
 #include <movutl/asset/composition.hpp>
@@ -8,6 +9,9 @@
 #include <movutl/core/logger.hpp>
 #include <movutl/core/profiler.hpp>
 #include <movutl/core/time.hpp>
+#include <movutl/plugin/aviutl_script/aviutl_filter_bridge.hpp>
+#include <movutl/plugin/aviutl_script/aviutl_script_parser.hpp>
+#include <sstream>
 
 namespace mu {
 
@@ -173,6 +177,20 @@ bool export_current_frame_png(const char* path) {
   bool ok = plg->fn_write_frame(handle, img.get(), 0);
   ok      = plg->fn_close(handle) && ok;
   return ok;
+}
+
+bool load_aviutl_effect_script(const char* path) {
+  std::ifstream ifs(path);
+  if(!ifs) {
+    LOG_F(ERROR, "load_aviutl_effect_script: ファイルを開けません: %s", path);
+    return false;
+  }
+  std::ostringstream ss;
+  ss << ifs.rdbuf();
+  auto defs = detail::parse_aviutl_script(ss.str());
+  if(defs.empty()) return false;
+  for(auto& def : defs) detail::register_aviutl_filter(std::move(def));
+  return true;
 }
 
 Ref<Entity> duplicate_asset(const Ref<Entity>& src) {
