@@ -3,6 +3,7 @@
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/entity.hpp>
 #include <movutl/asset/framebuffer.hpp>
+#include <movutl/asset/image.hpp>
 #include <movutl/asset/movie.hpp>
 #include <movutl/asset/project.hpp>
 #include <movutl/asset/shape.hpp>
@@ -25,6 +26,22 @@ Ref<ShapeEntt> add_new_shape_track(const char* name, int start, int end, ShapeTy
   shp->trk.fend   = end;
   main_comp->insert_entity(shp);
   return shp;
+}
+
+Ref<Image> add_new_image_track(const char* name, const char* path, int start, int end) {
+  MU_ASSERT(name != nullptr);
+  MU_ASSERT(path != nullptr);
+  auto img = Image::Create(name, path);
+  if(!img || img->width == 0) {
+    LOG_F(ERROR, "Failed to load image: %s", path);
+    return nullptr;
+  }
+  Composition* main_comp = Composition::GetActiveComp();
+  MU_ASSERT(main_comp);
+  img->trk.fstart = start;
+  img->trk.fend   = end;
+  main_comp->insert_entity(img);
+  return img;
 }
 
 Ref<TextEntt> add_new_text_track(const char* name, int start, int end) {

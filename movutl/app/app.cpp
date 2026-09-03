@@ -131,14 +131,10 @@ bool add_filter_impl(Entity* e, const char* filter_name) {
   LOG_F(ERROR, "add_filter_to_entity: filter not found: %s", filter_name);
   return false;
 }
-} // namespace
 
-bool add_filter_to_entity(const Ref<Entity>& entt, const char* filter_name) { return add_filter_impl(entt.get(), filter_name); }
-bool add_filter_to_shape(const Ref<ShapeEntt>& entt, const char* filter_name) { return add_filter_impl(entt.get(), filter_name); }
-
-bool set_shape_filter_param(const Ref<ShapeEntt>& entt, const char* filter_name, const char* param_name, float value) {
-  if(!entt || !filter_name || !param_name) return false;
-  for(auto& f : entt->trk.filters) {
+bool set_filter_param_impl(Entity* e, const char* filter_name, const char* param_name, float value) {
+  if(!e || !filter_name || !param_name) return false;
+  for(auto& f : e->trk.filters) {
     if(!f.plg_ || std::string(f.plg_->name.c_str()) != filter_name) continue;
     for(size_t i = 0; i < f.props.size(); i++) {
       bool matched = std::visit([&](auto&& clip) { return clip.keyname == param_name; }, f.props[i]);
@@ -149,6 +145,14 @@ bool set_shape_filter_param(const Ref<ShapeEntt>& entt, const char* filter_name,
   }
   return false;
 }
+} // namespace
+
+bool add_filter_to_entity(const Ref<Entity>& entt, const char* filter_name) { return add_filter_impl(entt.get(), filter_name); }
+bool add_filter_to_shape(const Ref<ShapeEntt>& entt, const char* filter_name) { return add_filter_impl(entt.get(), filter_name); }
+bool add_filter_to_image(const Ref<Image>& entt, const char* filter_name) { return add_filter_impl(entt.get(), filter_name); }
+
+bool set_shape_filter_param(const Ref<ShapeEntt>& entt, const char* filter_name, const char* param_name, float value) { return set_filter_param_impl(entt.get(), filter_name, param_name, value); }
+bool set_image_filter_param(const Ref<Image>& entt, const char* filter_name, const char* param_name, float value) { return set_filter_param_impl(entt.get(), filter_name, param_name, value); }
 
 bool export_current_frame_png(const char* path) {
   auto cmp = Composition::GetActiveComp();
