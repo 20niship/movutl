@@ -540,6 +540,11 @@ movutl.WorkspaceEntry.ratio = 0.5 f
 ---@return boolean
 function movutl.add_filter_to_entity( entt, filter_name, )end
 
+---@param entt Ref<Image> 
+---@param filter_name string
+---@return boolean
+function movutl.add_filter_to_image( entt, filter_name, )end
+
 ---@param entt Ref<ShapeEntt> 
 ---@param filter_name string
 ---@return boolean
@@ -551,6 +556,13 @@ function movutl.add_filter_to_shape( entt, filter_name, )end
 ---@param layer number
 ---@return boolean
 function movutl.add_new_audio_track( name, path, start, layer, )end
+
+---@param name string
+---@param path string
+---@param start number
+---@param end number
+---@return Ref<Image>
+function movutl.add_new_image_track( name, path, start, end, )end
 
 ---@param name string
 ---@param start number
@@ -682,6 +694,13 @@ function movutl.select_entt( entt, )end
 ---@param entts table
 ---@return nil
 function movutl.select_entts( entts, )end
+
+---@param entt Ref<Image> 
+---@param filter_name string
+---@param param_name string
+---@param value number
+---@return boolean
+function movutl.set_image_filter_param( entt, filter_name, param_name, value, )end
 
 ---@param entt Ref<ShapeEntt> 
 ---@param filter_name string
