@@ -636,6 +636,10 @@ function movutl.init( )end
 ---@return boolean
 function movutl.is_playing( )end
 
+---@param path string
+---@return boolean
+function movutl.load_aviutl_effect_script( path, )end
+
 ---@return nil
 function movutl.new_project( )end
 
