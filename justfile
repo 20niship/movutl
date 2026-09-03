@@ -5,7 +5,7 @@ default:
 build build_dir="build":
     git submodule update --init --recursive
     cmake -S . -B {{build_dir}}
-    cmake --build {{build_dir}} -j2
+    cmake --build {{build_dir}} -j${BUILD_JOBS:-$(nproc 2>/dev/null || sysctl -n hw.ncpu)}
 
 # ビルドしてテストを実行する
 test: build
