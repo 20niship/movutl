@@ -16,7 +16,7 @@ class AudioRingBuffer;
  */
 struct TrackLayer {
 public:
-  cutil::Str name{"Layer"};
+  cutil::Str name{"レイヤー"};
   bool active = true;
   std::vector<Ref<Entity>> entts;
 

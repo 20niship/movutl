@@ -13,6 +13,7 @@ namespace mu {
 class Image final : public Entity {
 private:
   Vec<Vec4b> data_;
+  Ref<Image> filtered_; // フィルタ適用結果を保持するスクラッチバッファ(元のdata_を破壊しないため)
 
   void reserve(size_t new_capacity) { data_.resize(new_capacity); }
 

@@ -5,6 +5,7 @@
 #include <IconsFontAwesome6.h>
 #include <algorithm>
 #include <cstdio>
+#include <cstring>
 #include <cutil/rect.hpp>
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -14,6 +15,7 @@
 #include <movutl/asset/composition.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/gui/timeline.hpp>
+#include <string>
 #include <tuple>
 
 enum ImTimelineState {
@@ -33,7 +35,7 @@ namespace mu {
 struct TimelineContext {
   cutil::Rect all_area;
   int hidx              = 0;
-  int trackname_width   = 100;
+  int trackname_width   = 140;
   bool toggle_play      = false;
   int height            = 16;
   int lasy_mouse_x      = 0;
@@ -43,11 +45,17 @@ struct TimelineContext {
   int vis_end           = 100;
   int cur_frame         = 0;
   bool first            = true;
-  std::vector<Entity*> sel; // TODO: 複数選択を可能にする
+  bool cur_layer_active = true; // BeginLayerで設定し、そのレイヤー内のBeginTrackが参照する
+  std::vector<Entity*> sel;     // TODO: 複数選択を可能にする
 
   // レイヤー名インライン編集
   int editing_layer_idx      = -1;
   char editing_layer_buf[64] = {0};
+
+  // ヘッダー左端(フィット/タイムコード/検索)
+  bool pending_fit          = false;
+  bool search_open          = false;
+  char layer_search_buf[64] = {0};
 
   // レイヤーの削除/移動は破壊的操作のためEndTimeline()側で遅延適用する
   Composition* active_comp = nullptr;
@@ -94,6 +102,21 @@ static TimelineContext ctx_;
 ImTimelineColors col_;
 
 
+// フレーム番号をAE風のタイムコード(HH:MM:SS:FF)へ変換する
+static std::string frame_to_timecode(int frame, float fps) {
+  if(fps <= 0.0f) fps = 30.0f;
+  int fps_i        = std::max(1, (int)std::round(fps));
+  int total_frames = std::max(0, frame);
+  int ff           = total_frames % fps_i;
+  int total_sec    = total_frames / fps_i;
+  int ss           = total_sec % 60;
+  int mm           = (total_sec / 60) % 60;
+  int hh           = total_sec / 3600;
+  char buf[32];
+  std::snprintf(buf, sizeof(buf), "%02d:%02d:%02d:%02d", hh, mm, ss, ff);
+  return buf;
+}
+
 inline void draw_diamond(int x, int y, float size, ImU32 color, ImDrawList* dl, bool fill_ = true) {
   const auto r = 0.607f * size / 2.0f;
 
@@ -113,7 +136,7 @@ inline void draw_diamond(int x, int y, float size, ImU32 color, ImDrawList* dl, 
   }
 }
 
-bool BeginTimeline(const char* name, FrameT* frame, FrameT* start, FrameT* end, bool* playing, const ImVec2& size) {
+bool BeginTimeline(const char* name, FrameT* frame, FrameT* start, FrameT* end, bool* playing, float fps, const ImVec2& size) {
   if(playing != nullptr && ctx_.toggle_play) *playing = !*playing;
   ctx_.toggle_play = false;
 
@@ -141,17 +164,6 @@ bool BeginTimeline(const char* name, FrameT* frame, FrameT* start, FrameT* end, 
   }
 
   auto dl = ImGui::GetWindowDrawList();
-  {
-    auto width = ImGui::GetTextLineHeightWithSpacing();
-    ImRect re(all.x.min, all.y.min, all.x.min + width, all.y.min + width);
-    auto hovered = ImGui::IsMouseHoveringRect(re.Min, re.Max);
-    auto bg      = ImGui::GetStyle().Colors[hovered ? ImGuiCol_ButtonHovered : ImGuiCol_ButtonActive];
-    auto col     = IM_COL32(bg.x * 255, bg.y * 255, bg.z * 255, bg.w * 255);
-    dl->AddRectFilled(re.Min, re.Max, col);
-    dl->AddRect(re.Min, re.Max, col_.border);
-    /*dl->AddText(re.Min, IM_COL32(255, 255, 255, 255), (ctx_.locked ? ICON_FA_LOCK : ICON_FA_UNLOCK));*/
-    /*if(ImGui::IsMouseClicked(ImGuiMouseButton_Left) && hovered && ImGui::IsWindowHovered()) ctx_.locked = !ctx_.locked;*/
-  }
 
   auto bg = ImGui::GetStyle().Colors[ImGuiCol_WindowBg];
   dl->AddRectFilled(ImVec2(all.left() + ctx_.trackname_width, all.top()), ImVec2(all.right(), all.bottom()), IM_COL32(bg.x * 255, bg.y * 255, bg.z * 255, bg.w * 255));
@@ -227,6 +239,48 @@ bool BeginTimeline(const char* name, FrameT* frame, FrameT* start, FrameT* end, 
     if(end_hovered) ImGui::SetTooltip("エンドフレーム=%d", *end);
     dl->AddRectFilled(comp_start_.Min, comp_start_.Max, IM_COL32(0, 180, 255, start_hovered ? 255 : 200));
     dl->AddRectFilled(comp_end_.Min, comp_end_.Max, IM_COL32(0, 180, 255, end_hovered ? 255 : 200));
+
+    // Composition範囲外を暗くする(AE参考)
+    auto trk_area = ctx_.tl_area();
+    trk_area.y    = all.y;
+    if(st > trk_area.x.min) dl->AddRectFilled(ImVec2(trk_area.x.min, trk_area.y.min), ImVec2(st, trk_area.y.max), IM_COL32(0, 0, 0, 80));
+    if(ed < trk_area.x.max) dl->AddRectFilled(ImVec2(ed, trk_area.y.min), ImVec2(trk_area.x.max, trk_area.y.max), IM_COL32(0, 0, 0, 80));
+  }
+
+  // ヘッダー左端(トラック名カラム幅ぶん): フィット/検索/タイムコードをまとめる
+  {
+    ImVec2 h_min(all.x.min, all.y.min);
+    ImVec2 h_max(all.x.min + ctx_.trackname_width, all.y.min + ctx_.header_h);
+    dl->AddRectFilled(h_min, h_max, col_.header_bg);
+    dl->AddRect(h_min, h_max, col_.border);
+
+    float item_h  = ctx_.header_h;
+    float bx      = h_min.x + 2;
+    auto icon_btn = [&](const char* icon, bool highlighted) -> bool {
+      ImVec2 p0(bx, h_min.y);
+      ImVec2 p1(bx + item_h, h_max.y);
+      bool hov = ImGui::IsMouseHoveringRect(p0, p1);
+      if(hov) dl->AddRectFilled(p0, p1, IM_COL32(255, 255, 255, 30));
+      dl->AddText(ImVec2(p0.x + 2, p0.y + 2), highlighted ? IM_COL32(120, 180, 255, 255) : IM_COL32(255, 255, 255, 180), icon);
+      bx += item_h;
+      return hov && ImGui::IsMouseClicked(ImGuiMouseButton_Left);
+    };
+
+    if(icon_btn(ICON_FA_EXPAND, false)) ctx_.pending_fit = true;
+    if(icon_btn(ICON_FA_MAGNIFYING_GLASS, ctx_.search_open)) ctx_.search_open = !ctx_.search_open;
+
+    float rest_w = h_max.x - bx - 4;
+    if(ctx_.search_open) {
+      ImGui::SetCursorScreenPos(ImVec2(bx, h_min.y + 1));
+      ImGui::PushID("tl_search");
+      ImGui::SetNextItemWidth(std::max(10.0f, rest_w));
+      if(ImGui::IsWindowAppearing()) ImGui::SetKeyboardFocusHere(-1);
+      ImGui::InputText("##layer_search", ctx_.layer_search_buf, sizeof(ctx_.layer_search_buf));
+      ImGui::PopID();
+    } else {
+      std::string tc = frame_to_timecode((int)*frame, fps);
+      dl->AddText(ImVec2(bx + 2, h_min.y + 2), IM_COL32(255, 255, 255, 200), tc.c_str());
+    }
   }
 
 
@@ -240,8 +294,11 @@ bool BeginTimeline(const char* name, FrameT* frame, FrameT* start, FrameT* end, 
     ImVec2 p2(x + scl_w, ctx_.all_area.y.min + H);
     auto col = IM_COL32(170, 0, 0, 200);
     if(ImGui::IsMouseHoveringRect(p1, p2)) col = IM_COL32(255, 0, 0, 255);
+    // トラック名カラム(サイドバー)へのはみ出しを防ぐ
+    dl->PushClipRect(ImVec2(all.left() + ctx_.trackname_width, all.top()), ImVec2(all.right(), all.bottom()), true);
     dl->AddRectFilled(p1, p2, col);
     dl->AddLine(ImVec2(x, ctx_.all_area.y.min), ImVec2(x, ctx_.all_area.bottom()), col);
+    dl->PopClipRect();
 
     auto h_             = ctx_.header_area();
     bool in_header_area = ImGui::IsMouseHoveringRect(ImVec2(h_.x.min, h_.y.min), ImVec2(h_.x.max, h_.y.max));
@@ -321,9 +378,6 @@ int EndTimeline() {
     p2.y += header_height;
   }
 
-  ImGui::SameLine();
-  ImGui::SetNextItemWidth(60);
-  ImGui::DragInt("## frame", &ctx_.cur_frame);
   ImGui::EndChild();
   return return_value;
 }
@@ -331,8 +385,9 @@ int EndTimeline() {
 bool BeginLayer(Composition* cp, int layer_idx) {
   MU_ASSERT(cp);
   MU_ASSERT(layer_idx >= 0 && layer_idx < (int)cp->layers.size());
-  TrackLayer* layer = &cp->layers[layer_idx];
-  ctx_.active_comp  = cp;
+  TrackLayer* layer     = &cp->layers[layer_idx];
+  ctx_.active_comp      = cp;
+  ctx_.cur_layer_active = layer->active;
 
   auto dl     = ImGui::GetWindowDrawList();
   auto inside = ctx_.tl_area();
@@ -341,14 +396,22 @@ bool BeginLayer(Composition* cp, int layer_idx) {
   int htop = ctx_.layer_y1();
   int hbtm = ctx_.layer_y2();
 
+  int eye_w  = hbtm - htop; // 目アイコン用の正方形幅(行高さに合わせる)
+  int name_x = x + eye_w + 2;
+
   ImRect sidebar(ImVec2(x, htop), ImVec2(inside.left(), hbtm));
-  bool sidebar_hovered = ImGui::IsMouseHoveringRect(sidebar.Min, sidebar.Max);
+  ImRect eye_rect(ImVec2(x, htop), ImVec2(x + eye_w, hbtm));
+  bool eye_hovered     = ImGui::IsMouseHoveringRect(eye_rect.Min, eye_rect.Max);
+  bool sidebar_hovered = ImGui::IsMouseHoveringRect(sidebar.Min, sidebar.Max) && !eye_hovered;
+
+  if(!is_exporting() && eye_hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) layer->active = !layer->active;
+  if(eye_hovered) ImGui::SetTooltip(layer->active ? "レイヤーを非表示にする" : "レイヤーを表示する");
 
   bool editing = ctx_.editing_layer_idx == layer_idx;
   if(editing) {
-    ImGui::SetCursorScreenPos(ImVec2(x, htop));
+    ImGui::SetCursorScreenPos(ImVec2(name_x, htop));
     ImGui::PushID(layer_idx);
-    ImGui::SetNextItemWidth(inside.left() - x);
+    ImGui::SetNextItemWidth(inside.left() - name_x);
     bool done = ImGui::InputText("##layer_name_edit", ctx_.editing_layer_buf, sizeof(ctx_.editing_layer_buf), ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
     if(ImGui::IsWindowAppearing()) ImGui::SetKeyboardFocusHere(-1);
     if(done || ImGui::IsItemDeactivated()) {
@@ -369,8 +432,17 @@ bool BeginLayer(Composition* cp, int layer_idx) {
   bool line_hovered = ImGui::IsMouseHoveringRect(R.Min, R.Max);
   if(line_hovered) dl->AddRectFilled(R.Min, R.Max, IM_COL32(255, 255, 255, 20));
 
-  dl->AddRectFilled(sidebar.Min, sidebar.Max, IM_COL32(40, 40, 40, 255));
-  if(!editing) dl->AddText(ImVec2(x, htop), IM_COL32(255, 255, 255, 100), layer->name.c_str());
+  dl->AddRectFilled(sidebar.Min, sidebar.Max, layer->active ? IM_COL32(40, 40, 40, 255) : IM_COL32(20, 20, 20, 255));
+  if(!layer->active) dl->AddRectFilled(ImVec2(inside.left(), htop), ImVec2(inside.right(), hbtm), IM_COL32(0, 0, 0, 110)); // 非表示レイヤーはトラック部分も暗くする
+  dl->AddText(ImVec2(x + 2, htop + (eye_w - ImGui::GetTextLineHeight()) / 2), layer->active ? IM_COL32(255, 255, 255, 200) : IM_COL32(255, 255, 255, 80), layer->active ? ICON_FA_EYE : ICON_FA_EYE_SLASH);
+
+  if(!editing) {
+    const char* search = ctx_.layer_search_buf;
+    bool dim           = !layer->active || (search[0] != '\0' && !strstr(layer->name.c_str(), search));
+    auto tsz           = ImGui::CalcTextSize(layer->name.c_str());
+    float ty           = htop + ((hbtm - htop) - tsz.y) / 2.0f;
+    dl->AddText(ImVec2(name_x, ty), dim ? IM_COL32(255, 255, 255, 40) : IM_COL32(255, 255, 255, 100), layer->name.c_str());
+  }
 
   if(!is_exporting() && sidebar_hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) ImGui::OpenPopup(("layer_ctx_" + std::to_string(layer_idx)).c_str());
   if(ImGui::BeginPopup(("layer_ctx_" + std::to_string(layer_idx)).c_str())) {
@@ -462,29 +534,32 @@ bool BeginTrack(const Ref<Entity>& entity) {
 
   if(ctx_.dragging_entt == entity.get()) {
     if(!is_exporting() && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
-      std::lock_guard<std::mutex> lock(entity->mtx);
-      int delta_f  = ctx_.view2f((int)mouse_x) - ctx_.drag_start_frame;
-      auto nframes = (int)entity->get_info().nframes; // 素材の総フレーム数(動画/音声のみ>0)
-      if(ctx_.drag_mode == 1) {
-        *start = ctx_.drag_orig_fstart + delta_f;
-        *end   = ctx_.drag_orig_fend + delta_f;
-        for(auto& [other, ofs, ofe] : ctx_.drag_group_orig) {
-          other->trk.fstart = ofs + delta_f;
-          other->trk.fend   = ofe + delta_f;
+      // ワーカースレッドがrender中はentity->mtxを長時間保持するため、ここはブロックせずtry_lockする(取れなければ次フレームで再試行)
+      std::unique_lock<std::mutex> lock(entity->mtx, std::try_to_lock);
+      if(lock.owns_lock()) {
+        int delta_f  = ctx_.view2f((int)mouse_x) - ctx_.drag_start_frame;
+        auto nframes = (int)entity->get_info().nframes; // 素材の総フレーム数(動画/音声のみ>0)
+        if(ctx_.drag_mode == 1) {
+          *start = ctx_.drag_orig_fstart + delta_f;
+          *end   = ctx_.drag_orig_fend + delta_f;
+          for(auto& [other, ofs, ofe] : ctx_.drag_group_orig) {
+            other->trk.fstart = ofs + delta_f;
+            other->trk.fend   = ofe + delta_f;
+          }
+        } else if(ctx_.drag_mode == 2) {
+          int new_start = std::min(ctx_.drag_orig_fstart + delta_f, *end - 1);
+          // 素材内オフセット管理は未実装のため、尺が素材の総フレーム数を超えないようclampするに留める
+          if(nframes > 0 && (*end - new_start) > nframes) new_start = *end - nframes;
+          *start = new_start;
+        } else if(ctx_.drag_mode == 3) {
+          int new_end = std::max(ctx_.drag_orig_fend + delta_f, *start + 1);
+          if(nframes > 0 && (new_end - *start) > nframes) new_end = *start + nframes;
+          *end = new_end;
         }
-      } else if(ctx_.drag_mode == 2) {
-        int new_start = std::min(ctx_.drag_orig_fstart + delta_f, *end - 1);
-        // 素材内オフセット管理は未実装のため、尺が素材の総フレーム数を超えないようclampするに留める
-        if(nframes > 0 && (*end - new_start) > nframes) new_start = *end - nframes;
-        *start = new_start;
-      } else if(ctx_.drag_mode == 3) {
-        int new_end = std::max(ctx_.drag_orig_fend + delta_f, *start + 1);
-        if(nframes > 0 && (new_end - *start) > nframes) new_end = *start + nframes;
-        *end = new_end;
+        fs   = ctx_.f2view(*start);
+        fe   = ctx_.f2view(*end);
+        rect = ImRect(ImVec2(fs, htop), ImVec2(fe, htop + ctx_.height));
       }
-      fs   = ctx_.f2view(*start);
-      fe   = ctx_.f2view(*end);
-      rect = ImRect(ImVec2(fs, htop), ImVec2(fe, htop + ctx_.height));
     } else {
       if(auto* comp = entity->get_comp()) {
         int f0 = std::min({ctx_.drag_orig_fstart, ctx_.drag_orig_fend, *start, *end});
@@ -500,13 +575,24 @@ bool BeginTrack(const Ref<Entity>& entity) {
     ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
   }
 
-  auto col    = entity->trk.custom_color ? (ImU32)entity->trk.custom_color : get_entt_color(entity);
+  auto col = entity->trk.custom_color ? (ImU32)entity->trk.custom_color : get_entt_color(entity);
+  // 非アクティブなEntity/レイヤーはクリップを暗く表示する
+  bool dim_track = !entity->trk.active_ || !ctx_.cur_layer_active;
+  if(dim_track) {
+    ImVec4 c4 = ImGui::ColorConvertU32ToFloat4(col);
+    c4.w *= 0.35f;
+    col = ImGui::ColorConvertFloat4ToU32(c4);
+  }
   auto dl     = ImGui::GetWindowDrawList();
   auto inside = ctx_.tl_area(); // レイヤー名カラムへのはみ出し描画を防ぐためこの範囲でクリップする
   dl->PushClipRect(ImVec2(inside.left(), ctx_.all_area.top()), ImVec2(inside.right(), ctx_.all_area.bottom()), true);
   dl->AddRect(rect.Min, rect.Max, col_.border);
   dl->AddRectFilled(rect.Min, rect.Max, col);
-  dl->AddText(ImVec2(fs, htop), IM_COL32(255, 255, 255, 100), name);
+  {
+    auto tsz = ImGui::CalcTextSize(name);
+    float ty = htop + (ctx_.height - tsz.y) / 2.0f;
+    dl->AddText(ImVec2(fs + 2, ty), dim_track ? IM_COL32(255, 255, 255, 40) : IM_COL32(255, 255, 255, 100), name);
+  }
 
   if(entity->getType() == EntityType_Audio) {
     auto* audio    = static_cast<AudioEntt*>(entity.get());
@@ -537,6 +623,14 @@ void SetTimelineViewRange(FrameT start, FrameT end) {
   ctx_.vis_start = start;
   ctx_.vis_end   = end;
 }
+
+bool ConsumeTimelineFitRequest() {
+  bool v           = ctx_.pending_fit;
+  ctx_.pending_fit = false;
+  return v;
+}
+
+const char* GetTimelineLayerSearch() { return ctx_.layer_search_buf; }
 
 void ResetTimelineState() { ctx_ = TimelineContext(); }
 

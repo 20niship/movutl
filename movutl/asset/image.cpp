@@ -210,9 +210,20 @@ bool Image::render(Composition* cmp, Image* target, int frame) {
   int ch = cmp->size[1];
   if(cw <= 0 || ch <= 0) return false;
 
-  int base_x = this->width / 2 + trk.anchor[0] - cw / 2;
-  int base_y = this->height / 2 + trk.anchor[1] - ch / 2;
-  return this->copyto(target, Vec2d(base_x, base_y), this->scale.avg(), this->rotation, this->alpha, trk.blend_);
+  int base_x = (int)this->pos[0];
+  int base_y = (int)this->pos[1];
+
+  const Image* src = this;
+  if(!trk.filters.empty()) {
+    if(!filtered_) filtered_ = cutil::make_ref<Image>();
+    filtered_->resize(this->width, this->height);
+    filtered_->has_alpha = this->has_alpha;
+    filtered_->fmt       = this->fmt;
+    std::memcpy(filtered_->data(), this->data_.data(), this->size_in_bytes());
+    render_filters(cmp, filtered_.get(), frame);
+    src = filtered_.get();
+  }
+  return src->copyto(target, Vec2d(base_x, base_y), this->scale.avg(), this->rotation, this->alpha, trk.blend_);
 }
 
 bool Image::load_file(const char* path) {

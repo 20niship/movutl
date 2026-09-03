@@ -538,6 +538,21 @@ movutl.WorkspaceEntry.window_name = ""
 movutl.WorkspaceEntry.dir = ImGuiDir_None
 movutl.WorkspaceEntry.ratio = 0.5 f
 
+---@param entt Ref<Entity> 
+---@param filter_name string
+---@return boolean
+function movutl.add_filter_to_entity( entt, filter_name, )end
+
+---@param entt Ref<Image> 
+---@param filter_name string
+---@return boolean
+function movutl.add_filter_to_image( entt, filter_name, )end
+
+---@param entt Ref<ShapeEntt> 
+---@param filter_name string
+---@return boolean
+function movutl.add_filter_to_shape( entt, filter_name, )end
+
 ---@param name string
 ---@param path string
 ---@param start number
@@ -546,11 +561,24 @@ movutl.WorkspaceEntry.ratio = 0.5 f
 function movutl.add_new_audio_track( name, path, start, layer, )end
 
 ---@param name string
+---@param path string
+---@param start number
+---@param end number
+---@return Ref<Image>
+function movutl.add_new_image_track( name, path, start, end, )end
+
+---@param name string
 ---@param start number
 ---@param end number
 ---@param type ShapeType
 ---@return Ref<ShapeEntt>
 function movutl.add_new_shape_track( name, start, end, type, )end
+
+---@param name string
+---@param start number
+---@param end number
+---@return Ref<TextEntt>
+function movutl.add_new_text_track( name, start, end, )end
 
 ---@param name string
 ---@param type EntityType
@@ -584,6 +612,10 @@ function movutl.cv_waitkey( time, )end
 ---@param src Ref<Entity> 
 ---@return Ref<Entity>
 function movutl.duplicate_asset( src, )end
+
+---@param path string
+---@return boolean
+function movutl.export_current_frame_png( path, )end
 
 ---@param path string
 ---@param type EntityType
@@ -665,6 +697,20 @@ function movutl.select_entt( entt, )end
 ---@param entts table
 ---@return nil
 function movutl.select_entts( entts, )end
+
+---@param entt Ref<Image> 
+---@param filter_name string
+---@param param_name string
+---@param value number
+---@return boolean
+function movutl.set_image_filter_param( entt, filter_name, param_name, value, )end
+
+---@param entt Ref<ShapeEntt> 
+---@param filter_name string
+---@param param_name string
+---@param value number
+---@return boolean
+function movutl.set_shape_filter_param( entt, filter_name, param_name, value, )end
 
 ---@return boolean
 function movutl.should_terminate( )end

@@ -1,0 +1,3 @@
+add_executable(run_lua_headless main.cpp)
+target_link_libraries(run_lua_headless mucore)
+set_target_properties(run_lua_headless PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})

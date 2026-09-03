@@ -1,3 +1,4 @@
+#include <IconsFontAwesome6.h>
 #include <algorithm>
 #include <cmath>
 #include <imgui.h>
@@ -48,14 +49,20 @@ void ViewerWindow::Update() {
   // キャッシュ未ヒット時は直前のテクスチャをそのまま表示し続ける
   auto texture_id = tex.get_id();
 
-  constexpr float kFooterH = 60.0f;
-  ImVec2 full_avail        = ImGui::GetContentRegionAvail();
-  ImVec2 avail(full_avail.x, std::max(1.0f, full_avail.y - kFooterH));
+  constexpr float kWaveFooterH = 60.0f; // 波形+L/Rメーターの高さ
+  constexpr float kCtrlFooterH = 28.0f; // ズーム率/フィットボタンの高さ
+  constexpr float kFooterH     = kWaveFooterH + kCtrlFooterH;
+  ImVec2 avail                 = ImGui::GetContentRegionAvail();
+  avail.y                      = std::max(1.0f, avail.y - kFooterH);
   if(avail.x < 1 || avail.y < 1) {
     ImGui::End();
     return;
   }
-  ImVec2 origin = ImGui::GetCursorScreenPos();
+  ImVec2 origin   = ImGui::GetCursorScreenPos();
+  auto reset_view = [&]() {
+    zoom = 1.0f;
+    pan  = ImVec2(0, 0);
+  };
 
   float cmp_w      = std::max(1.0f, (float)comp->size[0]);
   float cmp_h      = std::max(1.0f, (float)comp->size[1]);
@@ -99,10 +106,7 @@ void ViewerWindow::Update() {
       zoom  = new_zoom;
     }
 
-    if(ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
-      zoom = 1.0f;
-      pan  = ImVec2(0, 0);
-    }
+    if(ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) reset_view();
   }
 
   if(Config::Get()->show_viewer_ruler) {
@@ -153,6 +157,7 @@ void ViewerWindow::Update() {
     }
   }
 
+  // フッター1段目: 波形+L/Rメーター(ミックス後音声)
   if(comp->audio_buf) {
     int64_t cur_sample = comp->frame_to_sample(comp->frame);
     int channels       = std::max(1, comp->audio_channels);
@@ -160,18 +165,18 @@ void ViewerWindow::Update() {
     std::vector<int16_t> pcm((size_t)kN * channels, 0);
     comp->audio_buf->snapshot(cur_sample, kN, pcm.data());
 
-    ImVec2 footer_min = ImGui::GetCursorScreenPos();
-    ImVec2 footer_size(full_avail.x, kFooterH);
+    ImVec2 footer_min = ImVec2(origin.x, origin.y + avail.y);
+    ImVec2 footer_size(avail.x, kWaveFooterH);
     dl->AddRectFilled(footer_min, ImVec2(footer_min.x + footer_size.x, footer_min.y + footer_size.y), IM_COL32(20, 20, 20, 255));
 
     float meter_w = 60.0f;
     float wave_w  = std::max(1.0f, footer_size.x - meter_w);
-    float mid_y   = footer_min.y + kFooterH / 2.0f;
+    float mid_y   = footer_min.y + kWaveFooterH / 2.0f;
     for(int x = 0; x < (int)wave_w; x++) {
       int i     = x * kN / (int)wave_w;
       int16_t l = pcm[(size_t)i * channels];
       float amp = l / 32768.0f;
-      dl->AddLine(ImVec2(footer_min.x + x, mid_y - amp * kFooterH / 2), ImVec2(footer_min.x + x, mid_y + amp * kFooterH / 2), IM_COL32(120, 220, 160, 220));
+      dl->AddLine(ImVec2(footer_min.x + x, mid_y - amp * kWaveFooterH / 2), ImVec2(footer_min.x + x, mid_y + amp * kWaveFooterH / 2), IM_COL32(120, 220, 160, 220));
     }
 
     double sum_l = 0, sum_r = 0;
@@ -184,15 +189,28 @@ void ViewerWindow::Update() {
     float rms_l     = (float)(std::sqrt(sum_l / kN) / 32768.0);
     float rms_r     = (float)(std::sqrt(sum_r / kN) / 32768.0);
     auto draw_meter = [&](float x0, float level) {
-      float h   = std::clamp(level, 0.0f, 1.0f) * kFooterH;
+      float h   = std::clamp(level, 0.0f, 1.0f) * kWaveFooterH;
       ImU32 col = level > 0.9f ? IM_COL32(220, 60, 60, 255) : level > 0.7f ? IM_COL32(220, 200, 60, 255) : IM_COL32(80, 200, 120, 255);
-      dl->AddRectFilled(ImVec2(x0, footer_min.y + kFooterH - h), ImVec2(x0 + meter_w / 2 - 2, footer_min.y + kFooterH), col);
+      dl->AddRectFilled(ImVec2(x0, footer_min.y + kWaveFooterH - h), ImVec2(x0 + meter_w / 2 - 2, footer_min.y + kWaveFooterH), col);
     };
     draw_meter(footer_min.x + wave_w, rms_l);
     draw_meter(footer_min.x + wave_w + meter_w / 2, rms_r);
-
-    ImGui::Dummy(footer_size);
   }
+
+  // フッター2段目(拡大率/フィット/実寸): AEのビューアフッターを参考
+  ImGui::SetCursorScreenPos(ImVec2(origin.x, origin.y + avail.y + kWaveFooterH));
+  ImGui::BeginChild("##viewer_footer", ImVec2(0, kCtrlFooterH), false);
+  float zoom_pct = zoom * 100.0f;
+  ImGui::SetNextItemWidth(80);
+  if(ImGui::DragFloat("##zoom_pct", &zoom_pct, 1.0f, 5.0f, 5000.0f, "%.0f%%")) zoom = zoom_pct / 100.0f;
+  ImGui::SameLine();
+  if(ImGui::Button(ICON_FA_EXPAND " フィット")) reset_view();
+  ImGui::SameLine();
+  if(ImGui::Button("100%") && base_scale > 0.0f) {
+    zoom = 1.0f / base_scale;
+    pan  = ImVec2(0, 0);
+  }
+  ImGui::EndChild();
 
   ImGui::End();
 }

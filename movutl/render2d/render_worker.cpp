@@ -36,6 +36,20 @@ void RenderWorkerPool::request(Composition* comp, int frame, bool urgent) {
 void RenderWorkerPool::tick(Composition* comp, bool playing) {
   if(!comp) return;
   int cur = comp->frame.load();
+
+  // 停止中に現在フレーム未描画なら、実行中でない他ジョブを捨て現在フレームだけに絞る(邪魔されないよう)
+  if(!playing && !comp->cache.is_cached(cur)) {
+    std::lock_guard<std::mutex> lock(qmtx_);
+    for(auto it = queue_.begin(); it != queue_.end();) {
+      if(it->comp == comp && it->frame != cur) {
+        pending_.erase(*it);
+        it = queue_.erase(it);
+      } else {
+        ++it;
+      }
+    }
+  }
+
   if(!comp->cache.is_cached(cur)) request(comp, cur, true);
 
   // 空きキャッシュ枠分だけ先読みする(停止中は再生中より控えめに)

@@ -42,29 +42,10 @@ void TimelineWindow::Update() {
   }
   MU_ASSERT(cp);
 
-  if(ImGui::Button("全体表示")) {
-    int mn = cp->fstart, mx = cp->fend;
-    bool any = false;
-    for(auto& layer : cp->layers) {
-      for(auto& e : layer.entts) {
-        if(!e) continue;
-        if(!any) {
-          mn  = e->trk.fstart;
-          mx  = e->trk.fend;
-          any = true;
-        } else {
-          mn = std::min(mn, e->trk.fstart);
-          mx = std::max(mx, e->trk.fend);
-        }
-      }
-    }
-    SetTimelineViewRange(mn, mx);
-  }
-
   bool playing        = false;
   FrameT frame_before = cp->frame.load();
   FrameT frame_lo     = frame_before;
-  if(!BeginTimeline(cp->name.c_str(), &frame_lo, &cp->fstart, &cp->fend, &playing)) {
+  if(!BeginTimeline(cp->name.c_str(), &frame_lo, &cp->fstart, &cp->fend, &playing, cp->framerate)) {
     if(frame_lo != frame_before)
       goto_frame(frame_lo); // タイムラインバーのドラッグ等による明示的なシーク。音声もここで追従させる
     else
@@ -95,6 +76,26 @@ void TimelineWindow::Update() {
     }
     EndLayer();
   }
+
+  if(ConsumeTimelineFitRequest()) {
+    int mn = cp->fstart, mx = cp->fend;
+    bool any = false;
+    for(auto& layer : cp->layers) {
+      for(auto& e : layer.entts) {
+        if(!e) continue;
+        if(!any) {
+          mn  = e->trk.fstart;
+          mx  = e->trk.fend;
+          any = true;
+        } else {
+          mn = std::min(mn, e->trk.fstart);
+          mx = std::max(mx, e->trk.fend);
+        }
+      }
+    }
+    SetTimelineViewRange(mn, mx);
+  }
+
   EndTimeline();
   if(frame_lo != frame_before)
     goto_frame(frame_lo); // タイムラインバーのドラッグ等による明示的なシーク。音声もここで追従させる
