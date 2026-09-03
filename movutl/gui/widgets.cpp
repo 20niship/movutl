@@ -1,5 +1,6 @@
 #include <IconsFontAwesome6.h>
 #include <algorithm>
+#include <filesystem>
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <movutl/asset/composition.hpp>
@@ -78,14 +79,9 @@ void wd_entt_props_editor(Entity* e) {
       strncpy(buf, s.c_str(), sizeof(buf) - 1);
       buf[sizeof(buf) - 1] = '\0';
       if(is_path_field) {
-        ImGui::SetNextItemWidth(-40);
-        if(ImGui::InputText(name_, buf, sizeof(buf))) {
-          newp.set<std::string>(f.name, std::string(buf));
-          changed = true;
-        }
-        ImGui::SameLine();
-        if(ImGui::Button(ICON_FA_FOLDER_OPEN "##"
-                                             "path_dialog")) {
+        std::string label = s.empty() ? "ファイルを選択" : std::filesystem::path(s).filename().string();
+        std::string btn   = std::string(ICON_FA_FOLDER_OPEN " ") + label;
+        if(ImGui::Button(btn.c_str(), ImVec2(-1, 0))) {
           std::string picked = select_file_dialog("ファイルを選択", {});
           if(!picked.empty()) {
             newp.set<std::string>(f.name, picked);
@@ -126,9 +122,14 @@ void wd_entt_props_editor(Entity* e) {
       {
         std::lock_guard<std::mutex> lock(e->mtx);
         e->setProps(newp);
-        if(is_path_field) e->reload_asset(); // パス変更時は新しいファイルを読み込み直す
+        if(is_path_field) {
+          e->reload_asset(); // パス変更時は新しいファイルを読み込み直す
+          auto new_path = newp.get<std::string>(f.name);
+          if(!new_path.empty()) e->name = std::filesystem::path(new_path).stem().string();
+        }
       }
-      if(auto* comp = e->get_comp()) comp->cache.invalidate_all();
+      // Compositionの全フレームではなく、このEntityが映る範囲だけを無効化する(Positionドラッグ等が重くなるのを防ぐ)
+      if(auto* comp = e->get_comp()) comp->cache.invalidate_range(e->trk.fstart, e->trk.fend);
     }
     ImGui::PopID();
   }

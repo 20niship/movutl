@@ -65,4 +65,6 @@ jobs:
             libgl1-mesa-dev libglu1-mesa-dev
 
       - name: just check
+        env:
+          BUILD_JOBS: 2 # OOM Kill回避のためCIでは並列数を制限
         run: just check

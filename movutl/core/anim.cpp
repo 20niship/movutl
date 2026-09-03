@@ -31,7 +31,8 @@ struct PropsSetVisitor {
   template <typename T> void operator()(const PAniClip<T>& clip) { props.set<T>(clip.keyname.c_str(), clip.get(frame)); }
 };
 
-cutil::Prop AnimProps::get(uint32_t frame) {
+cutil::Prop AnimProps::get(uint32_t frame) const {
+  MU_UNUSED(frame);
   cutil::Prop p;
   PropsSetVisitor visitor(p, frame);
   for(auto& prop : props) std::visit(visitor, prop);
