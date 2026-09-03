@@ -1,14 +1,17 @@
 #include <IconsFontAwesome6.h>
 #include <algorithm>
+#include <cmath>
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <movutl/app/app.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/config.hpp>
 #include <movutl/asset/image.hpp>
+#include <movutl/audio/audio_mixer.hpp>
 #include <movutl/core/profiler.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/gui/viewer.hpp>
+#include <vector>
 
 namespace mu {
 
@@ -46,9 +49,11 @@ void ViewerWindow::Update() {
   // キャッシュ未ヒット時は直前のテクスチャをそのまま表示し続ける
   auto texture_id = tex.get_id();
 
-  constexpr float kFooterH = 28.0f; // 下部フッター(ズーム率/フィットボタン)の高さ
-  ImVec2 avail             = ImGui::GetContentRegionAvail();
-  avail.y -= kFooterH;
+  const float kWaveFooterH     = Config::Get()->viewer_wave_footer_height; // 波形+L/Rメーターの高さ
+  constexpr float kCtrlFooterH = 28.0f;                                    // ズーム率/フィットボタンの高さ
+  const float kFooterH         = kWaveFooterH + kCtrlFooterH;
+  ImVec2 avail                 = ImGui::GetContentRegionAvail();
+  avail.y                      = std::max(1.0f, avail.y - kFooterH);
   if(avail.x < 1 || avail.y < 1) {
     ImGui::End();
     return;
@@ -152,9 +157,78 @@ void ViewerWindow::Update() {
     }
   }
 
-  // フッター(拡大率/フィット/実寸): AEのビューアフッターを参考
-  ImGui::SetCursorScreenPos(ImVec2(origin.x, origin.y + avail.y));
-  ImGui::BeginChild("##viewer_footer", ImVec2(0, kFooterH), false);
+  // フッター1段目: 波形+L/Rメーター(ミックス後音声)
+  if(comp->audio_buf) {
+    int64_t cur_sample = comp->frame_to_sample(comp->frame);
+    int channels       = std::max(1, comp->audio_channels);
+    constexpr int kN   = 1024;
+    std::vector<int16_t> pcm((size_t)kN * channels, 0);
+    comp->audio_buf->snapshot(cur_sample, kN, pcm.data());
+
+    ImVec2 footer_min = ImVec2(origin.x, origin.y + avail.y);
+    ImVec2 footer_size(avail.x, kWaveFooterH);
+    dl->AddRectFilled(footer_min, ImVec2(footer_min.x + footer_size.x, footer_min.y + footer_size.y), IM_COL32(20, 20, 20, 255));
+
+    float meter_w = 30.0f;
+    float wave_w  = std::max(1.0f, footer_size.x - meter_w);
+    float mid_y   = footer_min.y + kWaveFooterH / 2.0f;
+    for(int x = 0; x < (int)wave_w; x++) {
+      int i     = x * kN / (int)wave_w;
+      int16_t l = pcm[(size_t)i * channels];
+      float amp = l / 32768.0f;
+      dl->AddLine(ImVec2(footer_min.x + x, mid_y - amp * kWaveFooterH / 2), ImVec2(footer_min.x + x, mid_y + amp * kWaveFooterH / 2), IM_COL32(120, 220, 160, 220));
+    }
+
+    double sum_l = 0, sum_r = 0;
+    for(int i = 0; i < kN; i++) {
+      int16_t l = pcm[(size_t)i * channels];
+      int16_t r = channels > 1 ? pcm[(size_t)i * channels + 1] : l;
+      sum_l += (double)l * l;
+      sum_r += (double)r * r;
+    }
+    float rms_l = (float)(std::sqrt(sum_l / kN) / 32768.0);
+    float rms_r = (float)(std::sqrt(sum_r / kN) / 32768.0);
+
+    // dBスケールのL/Rレベルメーター。目盛り位置(dB)以下は明るいグラデーション、それ以上は暗いままにする(ミキサー風)
+    constexpr float kMinDb = -48.0f; // メーター下端に対応するdB
+    auto db_to_t           = [&](float db) { return std::clamp((db - kMinDb) / -kMinDb, 0.0f, 1.0f); };
+    auto color_for_db      = [&](float db) -> ImU32 {
+      if(db > -3.0f) return IM_COL32(230, 70, 70, 255);  // 0dB付近: 赤(クリップ警告)
+      if(db > -9.0f) return IM_COL32(230, 210, 70, 255); // 黄
+      return IM_COL32(70, 200, 110, 255);                // 緑
+    };
+    auto draw_meter = [&](float x0, float level) {
+      float mw       = meter_w / 2 - 2;
+      float level_db = 20.0f * std::log10(std::max(level, 1e-6f));
+      float level_t  = db_to_t(level_db);
+      for(int py = 0; py < (int)kWaveFooterH; py++) {
+        float t   = 1.0f - (float)py / kWaveFooterH; // 0(下端)-1(上端)
+        float db  = kMinDb + t * -kMinDb;
+        ImU32 col = color_for_db(db);
+        if(t > level_t) { // レベル未達部分は暗く沈める(目盛り帯として見える)
+          ImVec4 c4 = ImGui::ColorConvertU32ToFloat4(col);
+          col       = ImGui::ColorConvertFloat4ToU32(ImVec4(c4.x * 0.25f, c4.y * 0.25f, c4.z * 0.25f, 0.9f));
+        }
+        dl->AddRectFilled(ImVec2(x0, footer_min.y + py), ImVec2(x0 + mw, footer_min.y + py + 1), col);
+      }
+      // 主目盛り線(0, -3, -9, -20dB): バー幅いっぱい
+      for(float db : {0.0f, -3.0f, -9.0f, -20.0f}) {
+        float y = footer_min.y + kWaveFooterH * (1.0f - db_to_t(db));
+        dl->AddLine(ImVec2(x0, y), ImVec2(x0 + mw, y), IM_COL32(0, 0, 0, 180));
+      }
+      // 副目盛り線(6dB刻み): 短めにバー幅の半分だけ引く
+      for(float db = -6.0f; db > kMinDb; db -= 6.0f) {
+        float y = footer_min.y + kWaveFooterH * (1.0f - db_to_t(db));
+        dl->AddLine(ImVec2(x0, y), ImVec2(x0 + mw * 0.5f, y), IM_COL32(0, 0, 0, 130));
+      }
+    };
+    draw_meter(footer_min.x + wave_w, rms_l);
+    draw_meter(footer_min.x + wave_w + meter_w / 2, rms_r);
+  }
+
+  // フッター2段目(拡大率/フィット/実寸): AEのビューアフッターを参考
+  ImGui::SetCursorScreenPos(ImVec2(origin.x, origin.y + avail.y + kWaveFooterH));
+  ImGui::BeginChild("##viewer_footer", ImVec2(0, kCtrlFooterH), false);
   float zoom_pct = zoom * 100.0f;
   ImGui::SetNextItemWidth(80);
   if(ImGui::DragFloat("##zoom_pct", &zoom_pct, 1.0f, 5.0f, 5000.0f, "%.0f%%")) zoom = zoom_pct / 100.0f;

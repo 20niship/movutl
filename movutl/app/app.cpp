@@ -8,6 +8,7 @@
 #include <movutl/core/logger.hpp>
 #include <movutl/core/profiler.hpp>
 #include <movutl/core/time.hpp>
+#include <movutl/gui/gui.hpp>
 
 namespace mu {
 
@@ -154,12 +155,9 @@ bool add_filter_to_image(const Ref<Image>& entt, const char* filter_name) { retu
 bool set_shape_filter_param(const Ref<ShapeEntt>& entt, const char* filter_name, const char* param_name, float value) { return set_filter_param_impl(entt.get(), filter_name, param_name, value); }
 bool set_image_filter_param(const Ref<Image>& entt, const char* filter_name, const char* param_name, float value) { return set_filter_param_impl(entt.get(), filter_name, param_name, value); }
 
-bool export_current_frame_png(const char* path) {
-  auto cmp = Composition::GetActiveComp();
-  if(!cmp) return false;
-  auto img = cmp->render_current_frame_main_thread();
+namespace {
+bool save_image_png(const Ref<Image>& img, const char* path, float framerate) {
   if(!img) return false;
-
   OutputPluginTable* plg = nullptr;
   for(auto& p : detail::AppMain::Get()->output_plugins) {
     if(std::string(p.name) == "PNG Image/Sequence") {
@@ -168,11 +166,25 @@ bool export_current_frame_png(const char* path) {
     }
   }
   if(!plg || !plg->fn_init(&plg->props, &plg->defaults)) return false;
-  void* handle = plg->fn_open(path, img->width, img->height, cmp->framerate, 0, 0, plg->defaults);
+  void* handle = plg->fn_open(path, img->width, img->height, framerate, 0, 0, plg->defaults);
   if(!handle) return false;
   bool ok = plg->fn_write_frame(handle, img.get(), 0);
   ok      = plg->fn_close(handle) && ok;
   return ok;
+}
+} // namespace
+
+bool export_current_frame_png(const char* path) {
+  auto cmp = Composition::GetActiveComp();
+  if(!cmp) return false;
+  auto img = cmp->render_current_frame_main_thread();
+  return save_image_png(img, path, cmp->framerate);
+}
+
+// GLFWウィンドウの現在の画面(UI込み)をキャプチャしてPNGへ書き出す(GUIの動作確認用)
+bool export_screen_png(const char* path) {
+  auto img = capture_screen();
+  return save_image_png(img, path, 30.0f);
 }
 
 Ref<Entity> duplicate_asset(const Ref<Entity>& src) {

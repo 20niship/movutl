@@ -54,7 +54,13 @@ bool AudioEntt::load_file(const char* path) {
   float fps           = cmp ? cmp->framerate : 30.0f;
   double duration_sec = (double)info.audio_n / std::max(1, info.audio_sample_rate);
   this->trk.fend      = trk.fstart + (int)std::max(1.0, duration_sec * fps);
-  load_failed_        = false;
+
+  auto cache_path = waveform_cache_path(path_);
+  if(!load_waveform_cache(cache_path, &waveform_)) {
+    if(generate_waveform(in_plg_, in_handle_, info.audio_n, info.audio_sample_rate, info.audio_channels, fps, &waveform_)) save_waveform_cache(cache_path, waveform_);
+  }
+
+  load_failed_ = false;
   LOG_F(INFO, "Audio loaded: %s (%d samples, %d Hz, %d ch, plugin=%s)", path, info.audio_n, info.audio_sample_rate, info.audio_channels, p->name);
   return true;
 }

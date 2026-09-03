@@ -64,6 +64,9 @@ build*/
 *.lwi
 *.lwf
 
+# 音声波形キャッシュ(movutl/audio/waveform_cache.hpp)
+/cache/
+
 *.mp3
 *.mp4
 *.wav
