@@ -48,8 +48,8 @@ Ref<TextEntt> add_new_text_track(const char* name, int start, int end) {
   MU_ASSERT(name != nullptr);
   MU_ASSERT(start >= 0);
   MU_ASSERT(end >= start);
-  auto txt                = TextEntt::Create(name);
-  Composition* main_comp  = Composition::GetActiveComp();
+  auto txt               = TextEntt::Create(name);
+  Composition* main_comp = Composition::GetActiveComp();
   MU_ASSERT(main_comp);
   txt->trk.fstart = start;
   txt->trk.fend   = end;
