@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cstdlib>
+#include <filesystem>
 #include <fstream>
 #include <movutl/app/app.hpp>
 #include <movutl/app/app_impl.hpp>
@@ -189,7 +190,12 @@ bool load_aviutl_effect_script(const char* path) {
   ss << ifs.rdbuf();
   auto defs = detail::parse_aviutl_script(ss.str());
   if(defs.empty()) return false;
-  for(auto& def : defs) detail::register_aviutl_filter(std::move(def));
+  // `@名前`ブロックが無いファイルはファイル名(拡張子抜き)を効果名とする単一スクリプト扱いになる(AviUtl仕様)
+  std::string stem = std::filesystem::path(path).stem().string();
+  for(auto& def : defs) {
+    if(def.name.empty()) def.name = stem;
+    detail::register_aviutl_filter(std::move(def));
+  }
   return true;
 }
 

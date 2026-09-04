@@ -18,6 +18,7 @@ namespace {
 struct AviUtlFilterState {
   AviUtlScriptDef def;
   lua_State* L = nullptr;
+  std::unordered_map<std::string, Image> buffers; // obj.copybufferの退避先。フィルタインスタンス単位でフレームをまたいで保持する
   ~AviUtlFilterState() {
     if(L) lua_close(L);
   }
@@ -54,7 +55,7 @@ bool aviutl_fn_proc(void* fp, FilterInData* fpip, const cutil::Prop& p) {
     lua_setglobal(L, ("check" + std::to_string(i)).c_str());
   }
 
-  AviUtlObjContext ctx{fpip, fpip->reserve[0], &state->def};
+  AviUtlObjContext ctx{fpip, fpip->reserve[0], &state->def, false, &state->buffers};
   setup_obj_table(L, &ctx);
 
   if(luaL_loadstring(L, state->def.lua_body.c_str()) != 0) {
@@ -67,6 +68,8 @@ bool aviutl_fn_proc(void* fp, FilterInData* fpip, const cutil::Prop& p) {
     lua_pop(L, 1);
     return false;
   }
+  // AviUtl本体同様、明示的な描画操作が一度も無ければobjの現在値でdraw()相当を暗黙的に実行する
+  if(!ctx.drawn) perform_implicit_draw(L, &ctx);
   return true;
 }
 

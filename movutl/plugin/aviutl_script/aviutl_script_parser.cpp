@@ -39,11 +39,10 @@ std::vector<AviUtlScriptDef> parse_aviutl_script(const std::string& text) {
   std::vector<AviUtlTrackDef> pending_tracks;
   std::vector<AviUtlCheckDef> pending_checks;
   std::vector<std::string> body_lines;
-  std::string current_name;
-  bool in_block = false;
+  std::string current_name; // 空文字は「@未指定、ファイル全体が単一スクリプト」を意味する(AviUtl仕様)
+  bool seen_at = false;
 
-  auto flush = [&]() {
-    if(!in_block) return;
+  auto push_current_block = [&]() {
     AviUtlScriptDef def;
     def.name   = current_name;
     def.tracks = pending_tracks;
@@ -55,6 +54,14 @@ std::vector<AviUtlScriptDef> parse_aviutl_script(const std::string& text) {
     pending_tracks.clear();
     pending_checks.clear();
     body_lines.clear();
+  };
+
+  // `@`出現前のbody_linesは冒頭コメント/説明文でしかありえない(AviUtl仕様上コード扱いされない)ため破棄しtrack/checkのみ持ち越す
+  auto flush_on_at = [&]() {
+    if(seen_at)
+      push_current_block();
+    else
+      body_lines.clear();
   };
 
   std::istringstream stream(text);
@@ -85,17 +92,25 @@ std::vector<AviUtlScriptDef> parse_aviutl_script(const std::string& text) {
     if(line.rfind("--dialog:", 0) == 0) continue; // ダイアログUIは今回未対応
 
     if(std::regex_match(line, m, at_re)) {
-      flush();
+      flush_on_at();
       current_name = trim(m[1].str());
-      in_block     = true;
+      seen_at      = true;
       continue;
     }
 
-    if(in_block) body_lines.push_back(line);
+    body_lines.push_back(line);
   }
-  flush();
 
-  if(result.empty()) LOG_F(WARNING, "parse_aviutl_script: '@'ブロックが見つかりませんでした");
+  // ファイル末尾: 蓄積中のtrack/check/bodyを最後のブロックとして確定する(@が一度もなければファイル全体が単一スクリプトになる)
+  bool has_body = false;
+  for(auto& l : body_lines)
+    if(!trim(l).empty()) {
+      has_body = true;
+      break;
+    }
+  if(has_body || !pending_tracks.empty() || !pending_checks.empty()) push_current_block();
+
+  if(result.empty()) LOG_F(WARNING, "parse_aviutl_script: 有効なスクリプトブロックが見つかりませんでした");
   return result;
 }
 
