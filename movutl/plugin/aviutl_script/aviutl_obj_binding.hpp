@@ -26,4 +26,7 @@ void perform_implicit_draw(lua_State* L, AviUtlObjContext* ctx);
 // lua_State上にAviUtl互換の`obj`グローバルテーブルを構築する(track0-3/check0-3は事前にlua_setglobal済みの値をobjにも複製する)
 void setup_obj_table(lua_State* L, AviUtlObjContext* ctx);
 
+// AviUtlが提供するobj以外のグローバルヘルパー関数(RGB等)を登録する。lua_State生成直後に1回だけ呼べばよい
+void setup_global_functions(lua_State* L);
+
 } // namespace mu::detail

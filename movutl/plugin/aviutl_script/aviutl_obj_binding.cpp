@@ -220,7 +220,23 @@ int l_obj_setoption(lua_State* L) {
   return 0;
 }
 
+// obj.load(type, ...): "tempbuffer"/"obj"は現在のバッファをそのまま使うno-op、それ以外(画像/動画/図形/テキスト読み込み)は今回未対応で警告のみ
+int l_obj_load(lua_State* L) {
+  std::string type = lua_isstring(L, 1) ? lua_tostring(L, 1) : "";
+  if(type != "tempbuffer" && type != "obj") LOG_F(WARNING, "obj.load: 未対応の読み込み種別 '%s' をスキップしました", type.c_str());
+  return 0;
+}
+
 int l_obj_noop(lua_State*) { return 0; }
+
+// AviUtl組み込みグローバル関数RGB(color): 0xRRGGBBのパック整数を(r,g,b)の3値に分解する
+int l_global_RGB(lua_State* L) {
+  lua_Integer c = luaL_checkinteger(L, 1);
+  lua_pushinteger(L, (c >> 16) & 0xFF);
+  lua_pushinteger(L, (c >> 8) & 0xFF);
+  lua_pushinteger(L, c & 0xFF);
+  return 3;
+}
 
 } // namespace
 
@@ -252,6 +268,9 @@ void setup_obj_table(lua_State* L, AviUtlObjContext* ctx) {
   reg_fn("copybuffer", l_obj_copybuffer);
   reg_fn("setoption", l_obj_setoption);
   reg_fn("getoption", l_obj_noop);
+  reg_fn("setanchor", l_obj_noop); // アンカーポイント編集UIは今回未対応(no-op、呼び出し自体はエラーにしない)
+  reg_fn("setfont", l_obj_noop);   // テキスト描画のフォント設定は今回未対応(no-op)
+  reg_fn("load", l_obj_load);
 
   lua_pushnumber(L, 0);
   lua_setfield(L, -2, "ox");
@@ -286,6 +305,8 @@ void setup_obj_table(lua_State* L, AviUtlObjContext* ctx) {
   lua_setfield(L, -2, "time");
   lua_pushinteger(L, 0);
   lua_setfield(L, -2, "layer");
+  lua_pushnumber(L, ctx->fpip->compo ? ctx->fpip->compo->framerate : 30.0);
+  lua_setfield(L, -2, "framerate");
 
   for(int i = 0; i < 4; i++) {
     std::string tname = "track" + std::to_string(i);
@@ -297,6 +318,11 @@ void setup_obj_table(lua_State* L, AviUtlObjContext* ctx) {
   }
 
   lua_setglobal(L, "obj");
+}
+
+void setup_global_functions(lua_State* L) {
+  lua_pushcfunction(L, l_global_RGB);
+  lua_setglobal(L, "RGB");
 }
 
 } // namespace mu::detail

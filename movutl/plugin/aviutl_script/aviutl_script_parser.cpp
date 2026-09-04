@@ -38,21 +38,24 @@ std::vector<AviUtlScriptDef> parse_aviutl_script(const std::string& text) {
   std::vector<AviUtlScriptDef> result;
   std::vector<AviUtlTrackDef> pending_tracks;
   std::vector<AviUtlCheckDef> pending_checks;
+  std::string pending_dialog_code;
   std::vector<std::string> body_lines;
   std::string current_name; // 空文字は「@未指定、ファイル全体が単一スクリプト」を意味する(AviUtl仕様)
   bool seen_at = false;
 
   auto push_current_block = [&]() {
     AviUtlScriptDef def;
-    def.name   = current_name;
-    def.tracks = pending_tracks;
-    def.checks = pending_checks;
+    def.name        = current_name;
+    def.tracks      = pending_tracks;
+    def.checks      = pending_checks;
+    def.dialog_code = pending_dialog_code;
     std::ostringstream body;
     for(auto& l : body_lines) body << l << "\n";
     def.lua_body = body.str();
     result.push_back(std::move(def));
     pending_tracks.clear();
     pending_checks.clear();
+    pending_dialog_code.clear();
     body_lines.clear();
   };
 
@@ -89,7 +92,19 @@ std::vector<AviUtlScriptDef> parse_aviutl_script(const std::string& text) {
       pending_checks.push_back(c);
       continue;
     }
-    if(line.rfind("--dialog:", 0) == 0) continue; // ダイアログUIは今回未対応
+    if(line.rfind("--dialog:", 0) == 0) {
+      // UIウィジェット自体は非対応。各項目の「項目名,変数初期化コード」からコード片だけ抽出し、後でlua_bodyの前に結合して実行する
+      std::string rest = line.substr(9);
+      std::stringstream ss(rest);
+      std::string item;
+      while(std::getline(ss, item, ';')) {
+        size_t comma = item.find(',');
+        if(comma == std::string::npos) continue;
+        std::string code = trim(item.substr(comma + 1));
+        if(!code.empty()) pending_dialog_code += code + "\n";
+      }
+      continue;
+    }
 
     if(std::regex_match(line, m, at_re)) {
       flush_on_at();

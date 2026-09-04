@@ -41,6 +41,7 @@ bool aviutl_fn_proc(void* fp, FilterInData* fpip, const cutil::Prop& p) {
   if(!state->L) {
     state->L = luaL_newstate();
     luaL_openlibs(state->L);
+    setup_global_functions(state->L);
   }
   lua_State* L = state->L;
 
@@ -111,6 +112,7 @@ FilterPluginTable build_table(const AviUtlScriptDef& def) {
 } // namespace
 
 bool register_aviutl_filter(AviUtlScriptDef def) {
+  if(!def.dialog_code.empty()) def.lua_body = def.dialog_code + def.lua_body; // --dialog:の変数初期化コードを本体の前に結合しておく
   auto state              = std::make_unique<AviUtlFilterState>();
   FilterPluginTable table = build_table(def);
   state->def              = std::move(def);

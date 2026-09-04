@@ -23,6 +23,7 @@ struct AviUtlScriptDef {
   std::string name;
   std::vector<AviUtlTrackDef> tracks;
   std::vector<AviUtlCheckDef> checks;
+  std::string dialog_code; // `--dialog:`の各項目から抽出した変数初期化コード片(UIウィジェット自体は非対応、実行時にlua_bodyの前に結合される)
   std::string lua_body;
 };
 
