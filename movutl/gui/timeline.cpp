@@ -11,6 +11,7 @@
 #include <imgui_internal.h>
 #include <movutl/app/app.hpp>
 #include <movutl/app/export_state.hpp>
+#include <movutl/asset/audio.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/gui/timeline.hpp>
@@ -592,6 +593,26 @@ bool BeginTrack(const Ref<Entity>& entity) {
     float ty = htop + (ctx_.height - tsz.y) / 2.0f;
     dl->AddText(ImVec2(fs + 2, ty), dim_track ? IM_COL32(255, 255, 255, 40) : IM_COL32(255, 255, 255, 100), name);
   }
+
+  if(entity->getType() == EntityType_Audio) {
+    auto* audio    = static_cast<AudioEntt*>(entity.get());
+    const auto& wf = audio->waveform();
+    if(!wf.levels.empty()) {
+      auto* comp = entity->get_comp();
+      float fps  = comp ? comp->framerate : 30.0f;
+      int mid    = htop + ctx_.height / 2;
+      int half   = ctx_.height / 2 - 1;
+      for(int x = (int)rect.Min.x; x < (int)rect.Max.x; x++) {
+        int f = ctx_.view2f(x);
+        if(f < *start || f >= *end) continue;
+        int idx = wf.index_for_second((f - *start) / (double)fps);
+        if(idx < 0 || idx >= (int)wf.levels.size()) continue;
+        int len = (int)(half * (wf.levels[idx] / 255.0f));
+        if(len > 0) dl->AddLine(ImVec2((float)x, (float)(mid - len)), ImVec2((float)x, (float)(mid + len)), IM_COL32(255, 255, 255, 200)); // トラック背景(緑系)とのコントラストを確保するため白系にする
+      }
+    }
+  }
+
   dl->PopClipRect();
   return hovered;
 }

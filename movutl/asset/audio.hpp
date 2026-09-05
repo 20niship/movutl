@@ -1,11 +1,13 @@
 #pragma once
 #include <movutl/asset/entity.hpp>
+#include <movutl/audio/waveform_cache.hpp>
 
 namespace mu {
 
 class AudioEntt final : public Entity {
 private:
   bool load_failed_ = false; // ロード失敗時の警告スパム防止フラグ
+  WaveformData waveform_;    // タイムライン表示用の音量波形キャッシュ(内部状態、MPROPERTYにはしない)
 
 public:
   AudioEntt() = default;
@@ -26,6 +28,8 @@ public:
 
   // 絶対サンプル位置[start_sample, start_sample+n)のPCM16(interleaved)をoutへ加算合成する
   bool fetch_audio(Composition* cmp, int64_t start_sample, int n, int16_t* out);
+
+  const WaveformData& waveform() const { return waveform_; }
 
   virtual const cutil::PropInfo* getPropsInfo() const override; // MUFUNC_AUTOGEN
   virtual cutil::Prop getProps() const override;                // MUFUNC_AUTOGEN

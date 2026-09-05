@@ -110,6 +110,7 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("load_file", &AudioEntt::load_file)
     .addFunction("getType", &AudioEntt::getType)
     .addFunction("reload_asset", &AudioEntt::reload_asset)
+    .addFunction("waveform", &AudioEntt::waveform)
     .addVariable("offset_sec_", &AudioEntt::offset_sec_) // double
     .addVariable("speed", &AudioEntt::speed)             // float
     .addVariable("volume_", &AudioEntt::volume_)         // float
@@ -309,10 +310,12 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("add_new_video_track", static_cast<Ref<Entity> (*)(const char*, const char*, int, int)>(&add_new_video_track))
     .addFunction("apply_imgui_style", static_cast<void (*)(const char*)>(&apply_imgui_style))
     .addFunction("apply_workspace", static_cast<void (*)(const char*)>(&apply_workspace))
+    .addFunction("capture_screen", static_cast<Ref<Image> (*)()>(&capture_screen))
     .addFunction("clear_selected_entts", static_cast<void (*)()>(&clear_selected_entts))
     .addFunction("cv_waitkey", static_cast<void (*)(int)>(&cv_waitkey))
     .addFunction("duplicate_asset", static_cast<Ref<Entity> (*)(const Ref<Entity>&)>(&duplicate_asset))
     .addFunction("export_current_frame_png", static_cast<bool (*)(const char*)>(&export_current_frame_png))
+    .addFunction("export_screen_png", static_cast<bool (*)(const char*)>(&export_screen_png))
     .addFunction("get_compatible_plugin", static_cast<InputPluginTable* (*)(const char*, EntityType)>(&get_compatible_plugin))
     .addFunction("get_entt_color", static_cast<ImU32 (*)(const Ref<Entity>&)>(&get_entt_color))
     .addFunction("get_selected_entts", static_cast<std::vector<Ref<Entity> > (*)()>(&get_selected_entts))

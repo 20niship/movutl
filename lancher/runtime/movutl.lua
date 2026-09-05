@@ -118,6 +118,9 @@ function movutl.AudioEntt:getType( ) end
 ---@return nil
 function movutl.AudioEntt:reload_asset( ) end
 
+---@return WaveformData 
+function movutl.AudioEntt:waveform( ) end
+
 ---@class Composition
 ---@field guid number
 ---@field flag Flag
@@ -599,6 +602,9 @@ function movutl.apply_imgui_style( name, )end
 ---@return nil
 function movutl.apply_workspace( name, )end
 
+---@return Ref<Image>
+function movutl.capture_screen( )end
+
 ---@return nil
 function movutl.clear_selected_entts( )end
 
@@ -613,6 +619,10 @@ function movutl.duplicate_asset( src, )end
 ---@param path string
 ---@return boolean
 function movutl.export_current_frame_png( path, )end
+
+---@param path string
+---@return boolean
+function movutl.export_screen_png( path, )end
 
 ---@param path string
 ---@param type EntityType

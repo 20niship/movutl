@@ -56,6 +56,8 @@ bool set_shape_filter_param(const Ref<ShapeEntt>& entt, const char* filter_name,
 bool set_image_filter_param(const Ref<Image>& entt, const char* filter_name, const char* param_name, float value);
 // アクティブCompositionの現在フレームをレンダリングしPNGへ書き出す(headlessスクリプト用)
 bool export_current_frame_png(const char* path);
+// GLFWウィンドウの現在の画面(ImGui UI込み)をキャプチャしPNGへ書き出す(GUIの動作確認用)
+bool export_screen_png(const char* path);
 
 // AviUtlの拡張編集アニメーション効果スクリプト(.anm、`@名前`ブロック単位)を読み込み、名前で検索できるフィルタとして登録する
 bool load_aviutl_effect_script(const char* path);
