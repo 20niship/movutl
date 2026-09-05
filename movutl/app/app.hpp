@@ -59,6 +59,9 @@ bool export_current_frame_png(const char* path);
 // GLFWウィンドウの現在の画面(ImGui UI込み)をキャプチャしPNGへ書き出す(GUIの動作確認用)
 bool export_screen_png(const char* path);
 
+// AviUtlの拡張編集アニメーション効果スクリプト(.anm、`@名前`ブロック単位)を読み込み、名前で検索できるフィルタとして登録する
+bool load_aviutl_effect_script(const char* path);
+
 std::vector<Ref<Entity>> get_selected_entts();
 void clear_selected_entts();
 void select_entt(const Ref<Entity>& entt);

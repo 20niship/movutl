@@ -1,5 +1,7 @@
 #include <algorithm>
 #include <cstdlib>
+#include <filesystem>
+#include <fstream>
 #include <movutl/app/app.hpp>
 #include <movutl/app/app_impl.hpp>
 #include <movutl/asset/composition.hpp>
@@ -9,6 +11,9 @@
 #include <movutl/core/profiler.hpp>
 #include <movutl/core/time.hpp>
 #include <movutl/gui/gui.hpp>
+#include <movutl/plugin/aviutl_script/aviutl_filter_bridge.hpp>
+#include <movutl/plugin/aviutl_script/aviutl_script_parser.hpp>
+#include <sstream>
 
 namespace mu {
 
@@ -185,6 +190,25 @@ bool export_current_frame_png(const char* path) {
 bool export_screen_png(const char* path) {
   auto img = capture_screen();
   return save_image_png(img, path, 30.0f);
+}
+
+bool load_aviutl_effect_script(const char* path) {
+  std::ifstream ifs(path);
+  if(!ifs) {
+    LOG_F(ERROR, "load_aviutl_effect_script: ファイルを開けません: %s", path);
+    return false;
+  }
+  std::ostringstream ss;
+  ss << ifs.rdbuf();
+  auto defs = detail::parse_aviutl_script(ss.str());
+  if(defs.empty()) return false;
+  // `@名前`ブロックが無いファイルはファイル名(拡張子抜き)を効果名とする単一スクリプト扱いになる(AviUtl仕様)
+  std::string stem = std::filesystem::path(path).stem().string();
+  for(auto& def : defs) {
+    if(def.name.empty()) def.name = stem;
+    detail::register_aviutl_filter(std::move(def));
+  }
+  return true;
 }
 
 Ref<Entity> duplicate_asset(const Ref<Entity>& src) {

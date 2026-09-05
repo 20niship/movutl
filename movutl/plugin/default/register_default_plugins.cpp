@@ -23,6 +23,7 @@ void register_default_plugins() {
 
 void register_default_filters() {
   auto Main = AppMain::Get();
+  Main->filters.reserve(128); // 動的追加(AviUtl互換スクリプト等)でreallocしvector内アドレスが変わらないよう先に確保しておく
   Main->filters.push_back(f_color_correction);
   Main->filters.push_back(f_single_color);
   Main->filters.push_back(f_color_shift);

@@ -60,3 +60,32 @@ TEST_CASE("Image::copyto: scale/angle指定時は画像自身の中心を軸に�
   // dst全体の中心(10,10)は今回の配置(pmin=2,2)からは大きく外れるので白くならないはず
   CHECK(dst(10, 10)[0] == 0);
 }
+
+TEST_CASE("Image::drawpoly: 四隅を同一オフセットでずらすと単純平行移動と同じ結果になる") {
+  Image dst(10, 10);
+  for(size_t i = 0; i < dst.size(); i++) dst[i] = Vec4b(0, 0, 0, 255);
+
+  Image src(4, 4);
+  for(size_t i = 0; i < src.size(); i++) src[i] = Vec4b(255, 255, 255, 255);
+
+  Vec2d corners[4] = {Vec2d(2, 2), Vec2d(6, 2), Vec2d(2, 6), Vec2d(6, 6)};
+  src.drawpoly(&dst, corners);
+
+  CHECK(dst(3, 3)[0] == 255); // 平行移動後のsrc範囲内
+  CHECK(dst(8, 8)[0] == 0);   // src範囲外は元のまま
+}
+
+TEST_CASE("Image::drawpoly: 上辺を狭めると台形になり上端中央付近だけ残る") {
+  Image dst(20, 20);
+  for(size_t i = 0; i < dst.size(); i++) dst[i] = Vec4b(0, 0, 0, 255);
+
+  Image src(10, 10);
+  for(size_t i = 0; i < src.size(); i++) src[i] = Vec4b(255, 255, 255, 255);
+
+  // 左上,右上,左下,右下。上辺を(8,10)まで狭め、下辺は(0,20)のまま台形にする
+  Vec2d corners[4] = {Vec2d(8, 0), Vec2d(12, 0), Vec2d(0, 20), Vec2d(20, 20)};
+  src.drawpoly(&dst, corners);
+
+  CHECK(dst(10, 1)[0] == 255); // 上辺中央付近は狭い上辺内なので残る
+  CHECK(dst(1, 1)[0] == 0);    // 上辺左端付近は狭められた範囲外なので黒のまま
+}

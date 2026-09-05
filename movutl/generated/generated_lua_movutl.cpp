@@ -322,6 +322,7 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("goto_frame", static_cast<void (*)(int)>(&goto_frame))
     .addFunction("init", static_cast<void (*)()>(&init))
     .addFunction("is_playing", static_cast<bool (*)()>(&is_playing))
+    .addFunction("load_aviutl_effect_script", static_cast<bool (*)(const char*)>(&load_aviutl_effect_script))
     .addFunction("new_project", static_cast<void (*)()>(&new_project))
     .addFunction("open_project", static_cast<void (*)(const char*)>(&open_project))
     .addFunction("pause", static_cast<void (*)()>(&pause))
