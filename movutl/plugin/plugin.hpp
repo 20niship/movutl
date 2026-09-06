@@ -48,7 +48,7 @@ bool register_plugin(const std::string& filepath);
 namespace detail {
 void register_default_plugins();
 void register_default_filters();
-// Config::aviutl_script_pathsを再帰的に走査し、見つけた.anmファイルをすべてフィルタとして自動登録する
+// Config::lua_script_dirsを再帰的に走査し、見つけた.anmファイルをすべてフィルタとして自動登録する
 void register_aviutl_scripts();
 } // namespace detail
 } // namespace mu

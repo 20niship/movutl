@@ -164,7 +164,7 @@ void register_aviutl_scripts_from_file(const std::filesystem::path& path) {
 
 void register_aviutl_scripts() {
   namespace fs = std::filesystem;
-  for(const auto& dir : Config::Get()->aviutl_script_paths) {
+  for(const auto& dir : Config::Get()->lua_script_dirs) {
     if(!fs::exists(dir) || !fs::is_directory(dir)) continue;
     for(const auto& entry : fs::recursive_directory_iterator(dir)) {
       if(!entry.is_regular_file() || entry.path().extension() != ".anm") continue;

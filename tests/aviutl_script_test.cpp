@@ -85,10 +85,10 @@ FilterPluginTable* register_test_script(const std::string& text, const char* fil
   ofs << text;
   ofs.close();
 
-  auto saved                         = Config::Get()->aviutl_script_paths;
-  Config::Get()->aviutl_script_paths = {dir.string()};
+  auto saved                     = Config::Get()->lua_script_dirs;
+  Config::Get()->lua_script_dirs = {dir.string()};
   register_aviutl_scripts();
-  Config::Get()->aviutl_script_paths = saved;
+  Config::Get()->lua_script_dirs = saved;
 
   return find_filter(filter_name);
 }
