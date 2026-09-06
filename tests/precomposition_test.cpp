@@ -244,6 +244,94 @@ TEST_CASE("音声プリコンポジション: start_frame/speedを適用した�
   for(int i = 0; i < kN * kCh; i++) CHECK(std::abs((int)actual[i] - (int)expected[i]) <= 2); // 丸め誤差の許容
 }
 
+TEST_CASE("プリコンポジション合成: ネストされたComposition内の未描画領域は透明合成され不透明背景で覆われない") {
+  Project::New();
+
+  // Sub: Composition中央に小さな矩形のみ配置し、それ以外は何も描画しない
+  auto sub = make_compo("Sub", 601, 200, 200, 30);
+  sub->insert_entity(make_fill_rect("small", Vec2(50, 50), Vec4b(0, 255, 0, 255), 0, 29));
+  Project::Get()->compos_.push_back(sub);
+
+  // Main: 下レイヤーに全面塗りつぶしの背景、上レイヤーにCompoRefEnttを重ねる。修正前は背景が不透明黒で覆われて見えなくなる
+  auto main = make_compo("Main", 6, 200, 200, 30);
+  main->insert_entity(make_fill_rect("bg", Vec2(200, 200), Vec4b(0, 0, 255, 255), 0, 29)); // BGRA: 赤
+  auto ref              = cutil::make_ref<CompoRefEntt>();
+  ref->pos              = Vec3(0, 0, 0);
+  ref->target_comp_guid = 601;
+  ref->trk.fstart       = 0;
+  ref->trk.fend         = 29;
+  main->insert_entity(ref);
+
+  CPURenderer renderer;
+  Ref<Image> out;
+  REQUIRE(renderer.render_frame(main.get(), 0, out));
+
+  CHECK(out->rgba(150, 150) == Vec4b(0, 0, 255, 255)); // Subの矩形が無い領域はMainの背景(赤)が透けて見える
+  CHECK(out->rgba(25, 25) == Vec4b(0, 255, 0, 255));   // Subの矩形(0,0)-(50,50)の内側は緑
+}
+
+TEST_CASE("キャッシュ無効化伝播: 参照先変更後の再レンダリングで新しい参照先の内容に切り替わる") {
+  Project::New();
+
+  auto sub1 = make_compo("Sub1", 701, 100, 100, 30);
+  sub1->insert_entity(make_fill_rect("red", Vec2(100, 100), Vec4b(0, 0, 255, 255), 0, 29));
+  Project::Get()->compos_.push_back(sub1);
+
+  auto sub2 = make_compo("Sub2", 702, 100, 100, 30);
+  sub2->insert_entity(make_fill_rect("blue", Vec2(100, 100), Vec4b(255, 0, 0, 255), 0, 29));
+  Project::Get()->compos_.push_back(sub2);
+
+  auto main             = make_compo("Main", 7, 100, 100, 30);
+  auto ref              = cutil::make_ref<CompoRefEntt>();
+  ref->pos              = Vec3(0, 0, 0);
+  ref->target_comp_guid = 701;
+  ref->trk.fstart       = 0;
+  ref->trk.fend         = 29;
+  main->insert_entity(ref);
+
+  CPURenderer renderer;
+  Ref<Image> out1;
+  REQUIRE(renderer.render_frame(main.get(), 0, out1));
+  CHECK(out1->rgba(50, 50) == Vec4b(0, 0, 255, 255)); // Sub1=赤
+
+  // 参照先変更時はインスペクタと同様に呼び出し元がキャッシュ無効化する責務を持つ
+  ref->target_comp_guid = 702;
+  main->invalidate_cache_all();
+
+  Ref<Image> out2;
+  REQUIRE(renderer.render_frame(main.get(), 0, out2));
+  CHECK(out2->rgba(50, 50) == Vec4b(255, 0, 0, 255)); // Sub2=青に切り替わる
+}
+
+TEST_CASE("キャッシュ無効化伝播: 参照先Compositionの中身変更がMain側のキャッシュにも反映される") {
+  Project::New();
+
+  auto sub = make_compo("Sub", 801, 100, 100, 30);
+  sub->insert_entity(make_fill_rect("red", Vec2(100, 100), Vec4b(0, 0, 255, 255), 0, 29));
+  Project::Get()->compos_.push_back(sub);
+
+  auto main             = make_compo("Main", 8, 100, 100, 30);
+  auto ref              = cutil::make_ref<CompoRefEntt>();
+  ref->pos              = Vec3(0, 0, 0);
+  ref->target_comp_guid = 801;
+  ref->trk.fstart       = 0;
+  ref->trk.fend         = 29;
+  main->insert_entity(ref);
+
+  CPURenderer renderer;
+  Ref<Image> out1;
+  REQUIRE(renderer.render_frame(main.get(), 0, out1));
+  CHECK(out1->rgba(50, 50) == Vec4b(0, 0, 255, 255)); // 変更前は赤一色
+
+  // Sub側にEntityを追加(insert_entity内でMain側のキャッシュも伝播無効化されるはず)
+  sub->insert_entity(make_fill_rect("green", Vec2(30, 30), Vec4b(0, 255, 0, 255), 0, 29));
+
+  Ref<Image> out2;
+  REQUIRE(renderer.render_frame(main.get(), 0, out2));
+  CHECK(out2->rgba(15, 15) == Vec4b(0, 255, 0, 255));   // 新しく追加された緑が反映される
+  CHECK(out2->rgba(50, 50) == Vec4b(0, 0, 255, 255));   // 追加範囲外は変わらず赤
+}
+
 TEST_CASE("循環参照ガード: 自己参照するCompoRefEnttがあってもクラッシュ・無限ループせず完了する") {
   Project::New();
 

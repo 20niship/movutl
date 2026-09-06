@@ -48,7 +48,7 @@ void InspectorWindow::Update() {
     // アクティブ(目アイコン): このEntityの表示/非表示を切り替える(音声はミュートも兼ねる)
     if(ImGui::SmallButton(e->trk.active_ ? ICON_FA_EYE : ICON_FA_EYE_SLASH)) {
       e->trk.active_ = !e->trk.active_;
-      if(auto* comp = e->get_comp()) comp->cache.invalidate_range(e->trk.fstart, e->trk.fend);
+      if(auto* comp = e->get_comp()) comp->invalidate_cache_range(e->trk.fstart, e->trk.fend);
     }
     if(ImGui::IsItemHovered()) ImGui::SetTooltip(e->trk.active_ ? "非表示にする" : "表示する");
     ImGui::SameLine();
@@ -62,7 +62,7 @@ void InspectorWindow::Update() {
     ImGui::SetNextItemWidth(-1);
     if(ImGui::Combo("合成モード", &idx, kBlendNames, IM_ARRAYSIZE(kBlendNames))) {
       e->trk.blend_ = (BlendType)idx;
-      if(auto* comp = e->get_comp()) comp->cache.invalidate_range(e->trk.fstart, e->trk.fend);
+      if(auto* comp = e->get_comp()) comp->invalidate_cache_range(e->trk.fstart, e->trk.fend);
     }
   }
 
@@ -85,7 +85,10 @@ void InspectorWindow::Update() {
     if(ImGui::BeginCombo("参照コンポジション", cur_name.c_str())) {
       for(int i = 0; i < (int)candidates.size(); i++) {
         bool selected = i == cur_idx;
-        if(ImGui::Selectable(candidates[i]->name.c_str(), selected)) *target_guid = candidates[i]->guid;
+        if(ImGui::Selectable(candidates[i]->name.c_str(), selected)) {
+          *target_guid = candidates[i]->guid;
+          if(auto* self_comp2 = e->get_comp()) self_comp2->invalidate_cache_all();
+        }
       }
       ImGui::EndCombo();
     }
@@ -112,7 +115,7 @@ void InspectorWindow::Update() {
         ImGui::SetTooltip("エフェクト %s を有効/無効にします", f.plg_->name.c_str());
         if(ImGui::IsMouseClicked(0)) {
           f.enabled = !f.enabled;
-          if(auto* comp = e->get_comp()) comp->cache.invalidate_range(e->trk.fstart, e->trk.fend);
+          if(auto* comp = e->get_comp()) comp->invalidate_cache_range(e->trk.fstart, e->trk.fend);
         }
       }
       ImGui::Dummy(ImVec2(h + 4, h));
@@ -177,7 +180,7 @@ void InspectorWindow::Update() {
         ImGui::PopID();
       }
       if(props_changed) {
-        if(auto* comp = e->get_comp()) comp->cache.invalidate_range(e->trk.fstart, e->trk.fend);
+        if(auto* comp = e->get_comp()) comp->invalidate_cache_range(e->trk.fstart, e->trk.fend);
       }
       ImGui::TreePop();
     }

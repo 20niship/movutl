@@ -16,7 +16,9 @@ public:
 // 既存のopencv/CPUによる画像処理でレンダリングする実装
 class CPURenderer : public Renderer {
 public:
-  bool render_frame(Composition* comp, int frame, Ref<Image>& out) override;
+  bool render_frame(Composition* comp, int frame, Ref<Image>& out) override { return render_frame(comp, frame, out, false); }
+  // transparent_bg=trueはCompoRefEntt等のネスト参照時用で、comp->bg_colorを無視し完全透明で背景を敷く(直接表示/書き出し時の不透明背景と区別)
+  bool render_frame(Composition* comp, int frame, Ref<Image>& out, bool transparent_bg);
 };
 
 } // namespace mu

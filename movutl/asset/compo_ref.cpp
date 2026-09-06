@@ -19,7 +19,7 @@ bool CompoRefEntt::render(Composition* cmp, Image* target, int frame) {
   if(!dst_comp || dst_comp == cmp) return false;
 
   dst_comp->frame.store(start_frame + (int32_t)std::lround((frame - trk.fstart) * speed));
-  Ref<Image> src = dst_comp->render_current_frame_main_thread();
+  Ref<Image> src = dst_comp->render_current_frame_main_thread(true);
   if(!src) return false;
 
   int base_x = (int)pos[0];

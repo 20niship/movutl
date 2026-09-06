@@ -71,6 +71,8 @@ public:
   mutable std::mutex mtx;
   // フレーム単位のレンダリング結果キャッシュ(バックグラウンドレンダーワーカーが書き込む)
   FrameCache cache;
+  // ネスト時(CompoRefEntt経由)の透明背景版レンダリング結果キャッシュ。cacheとは背景が異なるだけで内容は同一Compositionなので別枠で保持する
+  FrameCache cache_transparent;
 
   void resize(int32_t w, int32_t h);
 
@@ -95,8 +97,12 @@ public:
   // アクティブなレイヤーに乗っている全Entityのスナップショットを返す(mtxを短時間だけlockする)
   std::vector<Ref<Entity>> get_all_entities() const;
 
-  // 現在フレームをバックグラウンドキューを使わずその場で同期レンダリングして取得する(キャッシュ済みならそれを返す)
-  Ref<Image> render_current_frame_main_thread();
+  // 現在フレームをバックグラウンドキューを使わずその場で同期レンダリングして取得する(キャッシュ済みならそれを返す)。transparent_bg=trueはネスト参照時の透明背景描画用
+  Ref<Image> render_current_frame_main_thread(bool transparent_bg = false);
+
+  // 自身とこのCompositionを参照しているCompoRefEntt/CompoAudioEntt側のキャッシュもまとめて無効化する
+  void invalidate_cache_all();
+  void invalidate_cache_range(int f0, int f1);
 
   // frameはstd::atomicのためLuaバインディング等から扱うにはこの2関数を使う
   int32_t get_frame() const { return frame.load(); }

@@ -1,6 +1,8 @@
 #define NOMINMAX
 
 #include <algorithm>
+#include <movutl/asset/compo_audio_ref.hpp>
+#include <movutl/asset/compo_ref.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/entity.hpp>
 #include <movutl/asset/project.hpp>
@@ -166,7 +168,7 @@ void Composition::insert_entity(Ref<Entity> entt, int layer) {
     MU_ASSERT(layer >= 0 && layer <= layers.size());
     this->layers[layer].entts.push_back(entt);
   }
-  cache.invalidate_all();
+  invalidate_cache_all();
 }
 
 std::vector<Ref<Entity>> Composition::get_all_entities() const {
@@ -180,15 +182,62 @@ std::vector<Ref<Entity>> Composition::get_all_entities() const {
   return out;
 }
 
-Ref<Image> Composition::render_current_frame_main_thread() {
+Ref<Image> Composition::render_current_frame_main_thread(bool transparent_bg) {
+  FrameCache& c = transparent_bg ? cache_transparent : cache;
   Ref<Image> out;
-  if(cache.get(frame, &out)) return out;
+  if(c.get(frame, &out)) return out;
   if(!PushRenderGuard(guid)) return nullptr;
   CPURenderer renderer;
-  renderer.render_frame(this, frame, out);
-  cache.insert(frame, out, frame);
+  renderer.render_frame(this, frame, out, transparent_bg);
+  c.insert(frame, out, frame);
   PopRenderGuard(guid);
   return out;
+}
+
+void Composition::invalidate_cache_all() {
+  cache.invalidate_all();
+  cache_transparent.invalidate_all();
+  // ponytail: Composition数が多くなると毎回全探索は重くなる。逆参照インデックスを持つ設計に変える余地あり
+  for(auto& c : Project::Get()->compos_) {
+    if(c->guid == guid) continue;
+    for(auto& e : c->get_all_entities()) {
+      uint32_t target = 0;
+      if(e->getType() == EntityType_Scene)
+        target = static_cast<CompoRefEntt*>(e.get())->target_comp_guid;
+      else if(e->getType() == EntityType_SceneAudio)
+        target = static_cast<CompoAudioEntt*>(e.get())->target_comp_guid;
+      else
+        continue;
+      if(target == guid) {
+        c->cache.invalidate_all();
+        c->cache_transparent.invalidate_all();
+        break;
+      }
+    }
+  }
+}
+
+void Composition::invalidate_cache_range(int f0, int f1) {
+  cache.invalidate_range(f0, f1);
+  cache_transparent.invalidate_range(f0, f1);
+  // ponytail: 伝播先での正確な範囲変換(速度/開始フレームずれ)が煩雑なため安全側で全体無効化する
+  for(auto& c : Project::Get()->compos_) {
+    if(c->guid == guid) continue;
+    for(auto& e : c->get_all_entities()) {
+      uint32_t target = 0;
+      if(e->getType() == EntityType_Scene)
+        target = static_cast<CompoRefEntt*>(e.get())->target_comp_guid;
+      else if(e->getType() == EntityType_SceneAudio)
+        target = static_cast<CompoAudioEntt*>(e.get())->target_comp_guid;
+      else
+        continue;
+      if(target == guid) {
+        c->cache.invalidate_all();
+        c->cache_transparent.invalidate_all();
+        break;
+      }
+    }
+  }
 }
 
 } // namespace mu
