@@ -13,7 +13,8 @@ namespace mu {
 
 namespace {
 thread_local std::vector<uint32_t> g_render_stack;
-}
+std::atomic<uint32_t> g_next_compo_guid{1}; // 0はtarget_comp_guid未設定を表す予約値
+} // namespace
 
 bool Composition::PushRenderGuard(uint32_t guid) {
   if(std::find(g_render_stack.begin(), g_render_stack.end(), guid) != g_render_stack.end()) {
@@ -72,9 +73,13 @@ void Composition::resize(int32_t w, int32_t h) {
   size[1] = h;
 }
 
-Composition::Composition() { audio_buf = cutil::make_ref<AudioRingBuffer>(audio_sample_rate, audio_channels); }
+Composition::Composition() {
+  guid      = g_next_compo_guid++;
+  audio_buf = cutil::make_ref<AudioRingBuffer>(audio_sample_rate, audio_channels);
+}
 
 Composition::Composition(const char* name, int32_t w, int32_t h, int32_t fps) {
+  guid            = g_next_compo_guid++;
   this->size[0]   = w;
   this->size[1]   = h;
   this->framerate = (float)fps;
@@ -113,6 +118,7 @@ const cutil::PropInfo* Composition::getPropsInfo() const { return nullptr; } // 
 
 cutil::Prop Composition::getProps() const {
   cutil::Prop p;
+  p.set<int32_t>("guid", (int32_t)guid);
   p.set<std::string>("name", name.c_str());
   p.set<Vec2>("size", Vec2(size));
   p.set<float>("framerate", framerate);
@@ -126,6 +132,9 @@ cutil::Prop Composition::getProps() const {
 }
 
 void Composition::setProps(const cutil::Prop& p) {
+  // ロードしたguidがCompoRefEntt/CompoAudioEntt::target_comp_guidの参照先解決に必要なため復元し、以後の新規Compositionと衝突しないようカウンタを追い越す
+  guid = (uint32_t)cutil::get_or<int32_t>(p, "guid", (int32_t)guid);
+  if(guid >= g_next_compo_guid) g_next_compo_guid = guid + 1;
   name      = cutil::get_or<std::string>(p, "name", name.c_str());
   size      = Vec2d(cutil::get_or<Vec2>(p, "size", Vec2(size)));
   framerate = cutil::get_or<float>(p, "framerate", framerate);
