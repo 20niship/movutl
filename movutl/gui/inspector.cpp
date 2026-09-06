@@ -5,12 +5,18 @@
 #include <imgui_internal.h>
 #include <movutl/app/app.hpp>
 #include <movutl/app/app_impl.hpp>
+#include <movutl/asset/compo_audio_ref.hpp>
+#include <movutl/asset/compo_ref.hpp>
+#include <movutl/asset/composition.hpp>
 #include <movutl/asset/entity.hpp>
+#include <movutl/asset/project.hpp>
 #include <movutl/core/logger.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/gui/inspector.hpp>
 #include <movutl/gui/widgets.hpp>
 #include <movutl/plugin/plugin.hpp>
+#include <string>
+#include <vector>
 
 namespace mu {
 
@@ -57,6 +63,31 @@ void InspectorWindow::Update() {
     if(ImGui::Combo("合成モード", &idx, kBlendNames, IM_ARRAYSIZE(kBlendNames))) {
       e->trk.blend_ = (BlendType)idx;
       if(auto* comp = e->get_comp()) comp->cache.invalidate_range(e->trk.fstart, e->trk.fend);
+    }
+  }
+
+  if(e->getType() == EntityType_Scene || e->getType() == EntityType_SceneAudio) {
+    auto pj           = Project::Get();
+    uint32_t* target_guid = (e->getType() == EntityType_Scene) ? &static_cast<CompoRefEntt*>(e.get())->target_comp_guid : &static_cast<CompoAudioEntt*>(e.get())->target_comp_guid;
+    Composition* self_comp = e->get_comp();
+    std::vector<Composition*> candidates;
+    int cur_idx        = -1;
+    std::string cur_name = "(未選択)";
+    for(auto& c : pj->compos_) {
+      if(self_comp && c->guid == self_comp->guid) continue; // 自己参照防止(間接循環はPushRenderGuardで防ぐ)
+      if(*target_guid == c->guid) {
+        cur_idx  = (int)candidates.size();
+        cur_name = c->name.c_str();
+      }
+      candidates.push_back(c.get());
+    }
+    ImGui::SetNextItemWidth(-1);
+    if(ImGui::BeginCombo("参照コンポジション", cur_name.c_str())) {
+      for(int i = 0; i < (int)candidates.size(); i++) {
+        bool selected = i == cur_idx;
+        if(ImGui::Selectable(candidates[i]->name.c_str(), selected)) *target_guid = candidates[i]->guid;
+      }
+      ImGui::EndCombo();
     }
   }
 

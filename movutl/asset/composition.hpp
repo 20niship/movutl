@@ -81,6 +81,10 @@ public:
 
   static Composition* GetActiveComp();
 
+  // 循環参照防止(A->B->A等)。レンダリング中のguidスタックに既にあればfalseを返す
+  static bool PushRenderGuard(uint32_t guid);
+  static void PopRenderGuard(uint32_t guid);
+
   const cutil::PropInfo* getPropsInfo() const;
   cutil::Prop getProps() const;
   void setProps(const cutil::Prop& props);

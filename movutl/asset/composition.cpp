@@ -1,13 +1,33 @@
 #define NOMINMAX
 
+#include <algorithm>
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/entity.hpp>
 #include <movutl/asset/project.hpp>
 #include <movutl/audio/audio_mixer.hpp>
+#include <movutl/core/logger.hpp>
 #include <movutl/core/prop_types.hpp>
 #include <movutl/render2d/renderer.hpp>
 
 namespace mu {
+
+namespace {
+thread_local std::vector<uint32_t> g_render_stack;
+}
+
+bool Composition::PushRenderGuard(uint32_t guid) {
+  if(std::find(g_render_stack.begin(), g_render_stack.end(), guid) != g_render_stack.end()) {
+    LOG_F(WARNING, "Composition: circular reference detected (guid=%u), skipping", guid);
+    return false;
+  }
+  g_render_stack.push_back(guid);
+  return true;
+}
+
+void Composition::PopRenderGuard(uint32_t guid) {
+  MU_ASSERT(!g_render_stack.empty() && g_render_stack.back() == guid);
+  g_render_stack.pop_back();
+}
 
 Ref<Entity> TrackLayer::find_entt(uint32_t frame) const {
   for(auto& e : entts)
@@ -154,9 +174,11 @@ std::vector<Ref<Entity>> Composition::get_all_entities() const {
 Ref<Image> Composition::render_current_frame_main_thread() {
   Ref<Image> out;
   if(cache.get(frame, &out)) return out;
+  if(!PushRenderGuard(guid)) return nullptr;
   CPURenderer renderer;
   renderer.render_frame(this, frame, out);
   cache.insert(frame, out, frame);
+  PopRenderGuard(guid);
   return out;
 }
 

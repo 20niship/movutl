@@ -27,7 +27,7 @@ public:
   virtual void reload_asset() override { load_file(path_.c_str()); }
 
   // 絶対サンプル位置[start_sample, start_sample+n)のPCM16(interleaved)をoutへ加算合成する
-  bool fetch_audio(Composition* cmp, int64_t start_sample, int n, int16_t* out);
+  virtual bool fetch_audio(Composition* cmp, int64_t start_sample, int n, int16_t* out) override;
 
   const WaveformData& waveform() const { return waveform_; }
 
