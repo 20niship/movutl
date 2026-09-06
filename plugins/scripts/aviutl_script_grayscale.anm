@@ -1,0 +1,12 @@
+@AviUtlグレースケール
+local w = obj.getinfo("image_w")
+local h = obj.getinfo("image_h")
+local px = obj.getpixeldata()
+local buf = {}
+for i = 1, w * h do
+  local o = (i - 1) * 4
+  local r, g, b, a = string.byte(px, o + 1, o + 4)
+  local v = math.floor((r + g + b) / 3)
+  buf[i] = string.char(v, v, v, a)
+end
+obj.putpixeldata(table.concat(buf))

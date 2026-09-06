@@ -1,0 +1,16 @@
+--[[
+	円運動オブジェクト.anm
+	AviUtl入門記事で広く紹介される定番パターン(obj.ox/oyへ代入するだけでobj.draw()を明示的に呼ばない)を参考にした自作スクリプト。
+	obj.draw()を呼ばなくても暗黙的に描画が反映されるAviUtl本体の実仕様の検証を兼ねる。
+]]
+
+--track0:半径,0,500,100
+--track1:速度,0,10,2,0.1
+@円運動
+local radius = obj.track0
+local speed = obj.track1
+local deg = obj.frame * speed
+local rad = math.rad(deg)
+
+obj.ox = radius * math.sin(rad)
+obj.oy = -radius * math.cos(rad)

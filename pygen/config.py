@@ -5,6 +5,7 @@ abi_exclude_symbols = {
     "activate_all_plugins",
     "register_default_plugins",
     "register_default_filters",
+    "register_aviutl_scripts",
 }
 
 ignore_symbols = [  #

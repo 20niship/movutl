@@ -25,6 +25,7 @@ int main(int argc, char** argv) {
   detail::register_default_plugins();
   detail::register_default_filters();
   detail::init_external_plugins();
+  detail::register_aviutl_scripts();
   detail::activate_all_plugins();
 
   lua_State* L = luaL_newstate();

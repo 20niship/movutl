@@ -1,0 +1,10 @@
+--track0:上辺の幅,-100,100,0,1
+--track1:下辺の幅,-100,100,0,1
+@あおり変形
+local w, h = obj.getinfo("image_w"), obj.getinfo("image_h")
+obj.drawpoly(
+  -w / 2 + track0, -h / 2, 0,
+   w / 2 - track0, -h / 2, 0,
+  -w / 2 - track1,  h / 2, 0,
+   w / 2 + track1,  h / 2, 0
+)
