@@ -6,10 +6,10 @@ namespace mu {
 
 class CompoAudioEntt final : public Entity {
 public:
-  int start_frame           = 0;    // MPROPERTY(name="開始フレーム")
-  float speed               = 1.0f; // MPROPERTY(name="再生速度", min=0.0, max=10.0, step=0.1)
+  int start_frame           = 0;      // MPROPERTY(name="開始フレーム")
+  float speed               = 1.0f;   // MPROPERTY(name="再生速度", min=0.0, max=10.0, step=0.1)
   float volume_             = 100.0f; // MPROPERTY(name="音量", min=0.0, max=200.0)
-  uint32_t target_comp_guid = 0;    // MPROPERTY(name="参照コンポジション", hidden_inspector=true)
+  uint32_t target_comp_guid = 0;      // MPROPERTY(name="参照コンポジション", hidden_inspector=true)
 
   virtual EntityType getType() const override { return EntityType_SceneAudio; }
   virtual bool render(Composition* cmp, Image* target, int frame) override;

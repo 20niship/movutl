@@ -44,8 +44,10 @@ void Project::RemoveComposition(uint32_t guid) {
   }
   for(int i = 0; i < (int)pj->compos_.size(); i++) {
     if(pj->compos_[i]->guid != guid) continue;
-    if(i < pj->main_comp_idx) pj->main_comp_idx--;
-    else if(i == pj->main_comp_idx) pj->main_comp_idx = 0;
+    if(i < pj->main_comp_idx)
+      pj->main_comp_idx--;
+    else if(i == pj->main_comp_idx)
+      pj->main_comp_idx = 0;
     pj->compos_.erase(pj->compos_.begin() + i);
     return;
   }

@@ -67,11 +67,11 @@ void InspectorWindow::Update() {
   }
 
   if(e->getType() == EntityType_Scene || e->getType() == EntityType_SceneAudio) {
-    auto pj           = Project::Get();
-    uint32_t* target_guid = (e->getType() == EntityType_Scene) ? &static_cast<CompoRefEntt*>(e.get())->target_comp_guid : &static_cast<CompoAudioEntt*>(e.get())->target_comp_guid;
+    auto pj                = Project::Get();
+    uint32_t* target_guid  = (e->getType() == EntityType_Scene) ? &static_cast<CompoRefEntt*>(e.get())->target_comp_guid : &static_cast<CompoAudioEntt*>(e.get())->target_comp_guid;
     Composition* self_comp = e->get_comp();
     std::vector<Composition*> candidates;
-    int cur_idx        = -1;
+    int cur_idx          = -1;
     std::string cur_name = "(未選択)";
     for(auto& c : pj->compos_) {
       if(self_comp && c->guid == self_comp->guid) continue; // 自己参照防止(間接循環はPushRenderGuardで防ぐ)

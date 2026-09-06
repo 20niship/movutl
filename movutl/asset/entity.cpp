@@ -8,9 +8,9 @@
 //
 #include <movutl/asset/audio.hpp>
 #include <movutl/asset/camera.hpp>
-#include <movutl/asset/composition.hpp>
 #include <movutl/asset/compo_audio_ref.hpp>
 #include <movutl/asset/compo_ref.hpp>
+#include <movutl/asset/composition.hpp>
 #include <movutl/asset/framebuffer.hpp>
 #include <movutl/asset/image.hpp>
 #include <movutl/asset/movie.hpp>
