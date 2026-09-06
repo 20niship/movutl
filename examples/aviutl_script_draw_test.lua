@@ -1,9 +1,6 @@
--- obj.draw/obj.drawpoly(座標変換系)のAviUtl互換スクリプトを画像に適用して動作確認する
+-- obj.draw/obj.drawpoly(座標変換系)のAviUtl互換スクリプト(plugins/scripts/*.anm、起動時に自動登録される)を画像に適用して動作確認する
 local W, H = 300, 150
 movutl.Project.New(W, H, 30)
-
-print("load perspective:", movutl.load_aviutl_effect_script("../examples/aviutl_script_perspective.anm"))
-print("load shake:", movutl.load_aviutl_effect_script("../examples/aviutl_script_shake.anm"))
 
 local img1 = movutl.add_new_image_track("tile1", "../assets/textures/tile.jpg", 0, 10)
 img1.scale = movutl.Vec2(100 / img1.width, 100 / img1.height)

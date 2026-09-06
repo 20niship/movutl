@@ -1,8 +1,11 @@
 #include <doctest/doctest.h>
+#include <filesystem>
+#include <fstream>
 #include <movutl/app/app_impl.hpp>
+#include <movutl/asset/config.hpp>
 #include <movutl/asset/image.hpp>
-#include <movutl/plugin/aviutl_script/aviutl_filter_bridge.hpp>
 #include <movutl/plugin/aviutl_script/aviutl_script_parser.hpp>
+#include <movutl/plugin/plugin.hpp>
 
 using namespace mu;
 using namespace mu::detail;
@@ -35,7 +38,7 @@ TEST_CASE("aviutl_script_parser: '@'ブロックが無いファイルはファ�
 
   auto defs = parse_aviutl_script(text);
   REQUIRE(defs.size() == 1);
-  CHECK(defs[0].name.empty()); // 呼び出し側(load_aviutl_effect_script)がファイル名で補完する
+  CHECK(defs[0].name.empty()); // 呼び出し側(register_aviutl_scripts)がファイル名で補完する
   REQUIRE(defs[0].tracks.size() == 1);
   CHECK(defs[0].tracks[0].name == "半径");
   CHECK(defs[0].lua_body.find("obj.draw") != std::string::npos);
@@ -53,15 +56,45 @@ TEST_CASE("aviutl_script_parser: 複数の@ブロックを個別に分離でき�
   CHECK(defs[1].name == "効果B");
 }
 
+TEST_CASE("aviutl_script_parser: --trackN/--checkNの番号が飛んでいても正しい位置に登録される") {
+  std::string text = "--track2:三番目,0,10,5\n"
+                     "@番号テスト\n"
+                     "obj.draw()\n";
+
+  auto defs = parse_aviutl_script(text);
+  REQUIRE(defs.size() == 1);
+  REQUIRE(defs[0].tracks.size() == 3);
+  CHECK(defs[0].tracks[0].name.empty()); // track0/1は未定義のまま
+  CHECK(defs[0].tracks[1].name.empty());
+  CHECK(defs[0].tracks[2].name == "三番目");
+}
+
 namespace {
 FilterPluginTable* find_filter(const char* name) {
   for(auto& f : AppMain::Get()->filters)
     if(std::string(f.name.c_str()) == name) return &f;
   return nullptr;
 }
+
+// テスト用の一時フォルダへ.anmファイルを書き出し、register_aviutl_scripts()経由(実際のフォルダ自動スキャン)で登録する
+FilterPluginTable* register_test_script(const std::string& text, const char* filter_name) {
+  static int counter = 0;
+  auto dir           = std::filesystem::temp_directory_path() / ("movutl_aviutl_test_" + std::to_string(counter++));
+  std::filesystem::create_directories(dir);
+  std::ofstream ofs(dir / "test.anm");
+  ofs << text;
+  ofs.close();
+
+  auto saved                         = Config::Get()->aviutl_script_paths;
+  Config::Get()->aviutl_script_paths = {dir.string()};
+  register_aviutl_scripts();
+  Config::Get()->aviutl_script_paths = saved;
+
+  return find_filter(filter_name);
+}
 } // namespace
 
-TEST_CASE("register_aviutl_filter: 2値化スクリプトをフィルタとして登録・実行できる") {
+TEST_CASE("register_aviutl_scripts: 2値化スクリプトをフォルダスキャン経由でフィルタとして登録・実行できる") {
   std::string text = "--track0:しきい値,0,255,128,1\n"
                      "@AviUtlテスト2値化\n"
                      "local unpack = table.unpack or unpack\n"
@@ -77,15 +110,12 @@ TEST_CASE("register_aviutl_filter: 2値化スクリプトをフィルタとし�
                      "end\n"
                      "obj.putpixeldata(string.char(unpack(buf)))\n";
 
-  auto defs = parse_aviutl_script(text);
-  REQUIRE(defs.size() == 1);
-  REQUIRE(register_aviutl_filter(defs[0]));
-
-  FilterPluginTable* plg = find_filter("AviUtlテスト2値化");
+  FilterPluginTable* plg = register_test_script(text, "AviUtlテスト2値化");
   REQUIRE(plg != nullptr);
   REQUIRE(plg->fn_proc != nullptr);
   REQUIRE(plg->props.fields.size() == 1);
   CHECK(std::string(plg->props.fields[0].name) == "しきい値");
+  CHECK(plg->guid != 0); // 安定したguidが振られていること
 
   Image img(2, 2);
   for(size_t i = 0; i < img.size(); i++) img[i] = Vec4b(200, 200, 200, 255); // 平均200
@@ -104,15 +134,12 @@ TEST_CASE("register_aviutl_filter: 2値化スクリプトをフィルタとし�
   CHECK(img[0][0] == 0); // 200 < 250 なので黒
 }
 
-TEST_CASE("register_aviutl_filter: obj.drawpolyで台形変形を実行できる") {
+TEST_CASE("register_aviutl_scripts: obj.drawpolyで台形変形を実行できる") {
   std::string text = "@あおりテスト\n"
                      "local w, h = obj.getinfo(\"image_w\"), obj.getinfo(\"image_h\")\n"
                      "obj.drawpoly(-2, -h / 2, 0, 2, -h / 2, 0, -w / 2, h / 2, 0, w / 2, h / 2, 0)\n";
 
-  auto defs = parse_aviutl_script(text);
-  REQUIRE(defs.size() == 1);
-  REQUIRE(register_aviutl_filter(defs[0]));
-  FilterPluginTable* plg = find_filter("あおりテスト");
+  FilterPluginTable* plg = register_test_script(text, "あおりテスト");
   REQUIRE(plg != nullptr);
 
   Image img(10, 10);
@@ -125,16 +152,13 @@ TEST_CASE("register_aviutl_filter: obj.drawpolyで台形変形を実行できる
   CHECK(img(0, 0)[3] == 0); // 上辺左端は狭められた範囲外で透明になる
 }
 
-TEST_CASE("register_aviutl_filter: obj.drawで移動・拡大縮小を実行できる") {
+TEST_CASE("register_aviutl_scripts: obj.drawで移動・拡大縮小を実行できる") {
   std::string text = "@移動テスト\n"
                      "obj.ox = 3\n"
                      "obj.zoom = 1\n"
                      "obj.draw()\n";
 
-  auto defs = parse_aviutl_script(text);
-  REQUIRE(defs.size() == 1);
-  REQUIRE(register_aviutl_filter(defs[0]));
-  FilterPluginTable* plg = find_filter("移動テスト");
+  FilterPluginTable* plg = register_test_script(text, "移動テスト");
   REQUIRE(plg != nullptr);
 
   Image img(10, 10);
@@ -148,14 +172,11 @@ TEST_CASE("register_aviutl_filter: obj.drawで移動・拡大縮小を実行で�
   CHECK(img(2, 5)[3] == 0);   // 元の位置は透明にクリアされている
 }
 
-TEST_CASE("register_aviutl_filter: obj.draw()を明示的に呼ばなくてもobj.ox等の設定だけで暗黙的に移動が反映される(AviUtl本体の実仕様)") {
+TEST_CASE("register_aviutl_scripts: obj.draw()を明示的に呼ばなくてもobj.ox等の設定だけで暗黙的に移動が反映される(AviUtl本体の実仕様)") {
   std::string text = "@暗黙drawテスト\n"
                      "obj.ox = 3\n"; // obj.draw()を一切呼ばない典型的なAviUtlスクリプトパターン(例: 実際に配布されているAutoCircle.anm)
 
-  auto defs = parse_aviutl_script(text);
-  REQUIRE(defs.size() == 1);
-  REQUIRE(register_aviutl_filter(defs[0]));
-  FilterPluginTable* plg = find_filter("暗黙drawテスト");
+  FilterPluginTable* plg = register_test_script(text, "暗黙drawテスト");
   REQUIRE(plg != nullptr);
 
   Image img(10, 10);
@@ -168,17 +189,14 @@ TEST_CASE("register_aviutl_filter: obj.draw()を明示的に呼ばなくてもob
   CHECK(img(5, 5)[0] == 255); // obj.draw()の呼び出しが無くてもox=3の移動が反映される
 }
 
-TEST_CASE("register_aviutl_filter: obj.copybufferで画像バッファを退避・復元できる") {
+TEST_CASE("register_aviutl_scripts: obj.copybufferで画像バッファを退避・復元できる") {
   std::string text = "@バッファテスト\n"
                      "obj.copybuffer(\"cache:saved\", \"obj\")\n"
                      "local px = obj.getpixeldata()\n"
                      "obj.putpixeldata(string.rep(string.char(0,0,0,0), #px / 4))\n" // いったん全消去
                      "obj.copybuffer(\"obj\", \"cache:saved\")\n";                   // 退避しておいた内容を復元
 
-  auto defs = parse_aviutl_script(text);
-  REQUIRE(defs.size() == 1);
-  REQUIRE(register_aviutl_filter(defs[0]));
-  FilterPluginTable* plg = find_filter("バッファテスト");
+  FilterPluginTable* plg = register_test_script(text, "バッファテスト");
   REQUIRE(plg != nullptr);
 
   Image img(2, 2);
@@ -190,16 +208,30 @@ TEST_CASE("register_aviutl_filter: obj.copybufferで画像バッファを退避�
   CHECK(img[0] == Vec4b(200, 100, 50, 255)); // 退避->復元で元の内容が戻る
 }
 
-TEST_CASE("register_aviutl_filter: obj.setoption(drawtarget,tempbuffer)でバッファを拡張できる") {
+TEST_CASE("register_aviutl_scripts: obj.copybuffer(obj,tmp)がフレーム開始時点のバッファを暗黙的に復元する") {
+  std::string text = "@tmp復元テスト\n"
+                     "obj.putpixeldata(string.rep(string.char(0,0,0,0), 4))\n" // まず全消去
+                     "obj.copybuffer(\"obj\", \"tmp\")\n";                     // フレーム開始時点(元の内容)へ戻す
+
+  FilterPluginTable* plg = register_test_script(text, "tmp復元テスト");
+  REQUIRE(plg != nullptr);
+
+  Image img(2, 2);
+  for(size_t i = 0; i < img.size(); i++) img[i] = Vec4b(200, 100, 50, 255);
+  FilterInData fin;
+  fin.img = &img;
+  CHECK(plg->fn_proc(plg, &fin, cutil::Prop{}));
+
+  CHECK(img[0] == Vec4b(200, 100, 50, 255)); // "tmp"は明示的にcopybufferしなくてもフレーム開始時点の内容を持つ
+}
+
+TEST_CASE("register_aviutl_scripts: obj.setoption(drawtarget,tempbuffer)でバッファを拡張できる") {
   std::string text = "@拡張テスト\n"
                      "obj.setoption(\"drawtarget\", \"tempbuffer\", 20, 20)\n"
                      "local w, h = obj.getpixel()\n"
                      "obj.putpixeldata(string.rep(string.char(255,255,255,255), w * h))\n";
 
-  auto defs = parse_aviutl_script(text);
-  REQUIRE(defs.size() == 1);
-  REQUIRE(register_aviutl_filter(defs[0]));
-  FilterPluginTable* plg = find_filter("拡張テスト");
+  FilterPluginTable* plg = register_test_script(text, "拡張テスト");
   REQUIRE(plg != nullptr);
 
   Image img(10, 10);

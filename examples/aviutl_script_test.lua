@@ -1,9 +1,6 @@
--- AviUtl互換アニメーション効果スクリプト(.anm)を読み込み、画像に適用してPNG書き出しする動作確認用スクリプト
+-- AviUtl互換アニメーション効果スクリプト(plugins/scripts/*.anm、起動時に自動登録される)を画像に適用してPNG書き出しする動作確認用スクリプト
 local W, H = 64, 64
 movutl.Project.New(W, H, 30)
-
-local ok = movutl.load_aviutl_effect_script("../examples/aviutl_script_grayscale.anm")
-print("load_aviutl_effect_script:", ok)
 
 local img = movutl.add_new_image_track("photo", "../assets/textures/warning.jpeg", 0, 10)
 img.scale = movutl.Vec2(W / img.width, H / img.height)

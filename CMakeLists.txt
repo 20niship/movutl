@@ -19,6 +19,9 @@ if(MOVUTL_BUILD_PLUGINS)
   add_subdirectory(plugins)
 endif()
 
+# AviUtl互換.anmスクリプト(Config::aviutl_script_pathsのデフォルト値"plugins/scripts"が実行時cwd相対で参照する)をビルドディレクトリへコピーする
+file(COPY ${MOVUTL_ROOT_DIR}/plugins/scripts DESTINATION ${CMAKE_BINARY_DIR}/plugins)
+
 include_directories(${MOVUTL_INCLUDES} ${MOVUTL_ROOT_DIR}/ext/doctest)
 add_subdirectory(tests)
 add_subdirectory(examples)

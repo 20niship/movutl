@@ -1,10 +1,15 @@
 #include <cstring>
+#include <filesystem>
+#include <fstream>
 #include <functional>
 #include <memory>
 #include <movutl/app/app_impl.hpp>
+#include <movutl/asset/config.hpp>
 #include <movutl/core/logger.hpp>
-#include <movutl/plugin/aviutl_script/aviutl_filter_bridge.hpp>
 #include <movutl/plugin/aviutl_script/aviutl_obj_binding.hpp>
+#include <movutl/plugin/aviutl_script/aviutl_script_parser.hpp>
+#include <movutl/plugin/plugin.hpp>
+#include <sstream>
 #include <unordered_map>
 
 extern "C" {
@@ -125,8 +130,6 @@ FilterPluginTable build_table(const AviUtlScriptDef& def) {
   return t;
 }
 
-} // namespace
-
 bool register_aviutl_filter(AviUtlScriptDef def) {
   if(!def.dialog_code.empty()) def.lua_body = def.dialog_code + def.lua_body; // --dialog:の変数初期化コードを本体の前に結合しておく
   auto state              = std::make_unique<AviUtlFilterState>();
@@ -138,6 +141,37 @@ bool register_aviutl_filter(AviUtlScriptDef def) {
   FilterPluginTable* stored = &filters.back();
   state_registry()[stored]  = std::move(state);
   return true;
+}
+
+void register_aviutl_scripts_from_file(const std::filesystem::path& path) {
+  std::ifstream ifs(path);
+  if(!ifs) {
+    LOG_F(ERROR, "register_aviutl_scripts: ファイルを開けません: %s", path.string().c_str());
+    return;
+  }
+  std::ostringstream ss;
+  ss << ifs.rdbuf();
+  auto defs = parse_aviutl_script(ss.str());
+  if(defs.empty()) return;
+  std::string stem = path.stem().string();
+  for(auto& def : defs) {
+    if(def.name.empty()) def.name = stem; // `@名前`ブロックが無いファイルはファイル名を効果名とする単一スクリプト扱いになる(AviUtl仕様)
+    register_aviutl_filter(std::move(def));
+  }
+}
+
+} // namespace
+
+void register_aviutl_scripts() {
+  namespace fs = std::filesystem;
+  for(const auto& dir : Config::Get()->aviutl_script_paths) {
+    if(!fs::exists(dir) || !fs::is_directory(dir)) continue;
+    for(const auto& entry : fs::recursive_directory_iterator(dir)) {
+      if(!entry.is_regular_file() || entry.path().extension() != ".anm") continue;
+      LOG_F(1, "Loading AviUtl script: %s", entry.path().string().c_str());
+      register_aviutl_scripts_from_file(entry.path());
+    }
+  }
 }
 
 } // namespace mu::detail
