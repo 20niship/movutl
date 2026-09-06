@@ -343,6 +343,8 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("get_entt_color", static_cast<ImU32 (*)(const Ref<Entity>&)>(&get_entt_color))
     .addFunction("get_selected_entts", static_cast<std::vector<Ref<Entity> > (*)()>(&get_selected_entts))
     .addFunction("goto_frame", static_cast<void (*)(int)>(&goto_frame))
+    .addFunction("has_project_path", static_cast<bool (*)()>(&has_project_path))
+    .addFunction("import_media_file", static_cast<Ref<Entity> (*)(const char*)>(&import_media_file))
     .addFunction("init", static_cast<void (*)()>(&init))
     .addFunction("is_playing", static_cast<bool (*)()>(&is_playing))
     .addFunction("new_project", static_cast<void (*)()>(&new_project))

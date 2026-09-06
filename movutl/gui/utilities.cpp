@@ -56,6 +56,12 @@ void UtilityWindow ::Update() {
   ImGui::Begin("ツール");
   add_entities_ui();
   ImGui::End();
+
+  // Shift+Aショートカット(add_object_menuコマンド)からOpenPopupされる
+  if(ImGui::BeginPopup("##add_object_shortcut_menu")) {
+    add_entities_ui();
+    ImGui::EndPopup();
+  }
 }
 
 } // namespace mu

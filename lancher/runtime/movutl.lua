@@ -674,6 +674,13 @@ function movutl.get_selected_entts( )end
 ---@return nil
 function movutl.goto_frame( frame, )end
 
+---@return boolean
+function movutl.has_project_path( )end
+
+---@param path string
+---@return Ref<Entity>
+function movutl.import_media_file( path, )end
+
 ---@return nil
 function movutl.init( )end
 

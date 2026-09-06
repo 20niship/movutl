@@ -1,8 +1,10 @@
+#include <filesystem>
 #include <movutl/app/app.hpp>
 #include <movutl/asset/audio.hpp>
 #include <movutl/asset/compo_audio_ref.hpp>
 #include <movutl/asset/compo_ref.hpp>
 #include <movutl/asset/composition.hpp>
+#include <movutl/asset/config.hpp>
 #include <movutl/asset/custom_object.hpp>
 #include <movutl/asset/entity.hpp>
 #include <movutl/asset/framebuffer.hpp>
@@ -16,6 +18,20 @@
 #include <movutl/plugin/plugin.hpp>
 
 namespace mu {
+
+namespace {
+// EntityType_Movie対応プラグインは拡張子だけで判定するため音声専用ファイルも「対応」を返す。開いて実際に確認する
+bool has_video_stream_impl(const char* path) {
+  auto* plg = get_compatible_plugin(path, EntityType_Movie);
+  if(!plg) return false;
+  InputHandle h = plg->fn_open(path);
+  if(!h) return false;
+  EntityInfo info;
+  bool ok = plg->fn_info_get && plg->fn_info_get(h, &info) && info.width > 0 && info.height > 0 && info.nframes > 0;
+  plg->fn_close(h);
+  return ok;
+}
+} // namespace
 
 Ref<ShapeEntt> add_new_shape_track(const char* name, int start, int end, ShapeType type) {
   MU_ASSERT(name != nullptr);
@@ -203,6 +219,29 @@ bool add_new_track(const char* name, EntityType type, int start, int end) {
     default: MU_FAIL("Not implemented yet"); break;
   }
   return true;
+}
+
+Ref<Entity> import_media_file(const char* path) {
+  MU_ASSERT(path != nullptr);
+  Composition* main_comp = Composition::GetActiveComp();
+  if(!main_comp) {
+    Project::New();
+    main_comp = Composition::GetActiveComp();
+  }
+  MU_ASSERT(main_comp);
+  int start        = main_comp->frame;
+  std::string base = std::filesystem::path(path).stem().string();
+  // insertable_layer_index()は空きレイヤーが無いと-1を返すため、add_new_video/audio_trackのlayer>=0制約に合わせて末尾に追加する
+  int layer = main_comp->insertable_layer_index();
+  if(layer < 0) layer = (int)main_comp->layers.size();
+  if(has_video_stream_impl(path)) return add_new_video_track(base.c_str(), path, start, layer);
+  if(get_compatible_plugin(path, EntityType_Audio)) {
+    if(!add_new_audio_track(base.c_str(), path, start, layer)) return nullptr;
+    return Entity::Find(base.c_str());
+  }
+  if(get_compatible_plugin(path, EntityType_Image)) return add_new_image_track(base.c_str(), path, start, start + Config::Get()->default_image_frames);
+  LOG_F(ERROR, "import_media_file: No compatible plugin found for file: %s", path);
+  return nullptr;
 }
 
 } // namespace mu

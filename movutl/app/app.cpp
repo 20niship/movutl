@@ -122,6 +122,9 @@ void save_project_as(const char* path) { Project::Save(path); }
 
 void open_project(const char* path) { Project::Load(path); }
 
+// Projectはpygen上シングルトンインスタンスをLuaへ公開していない(beginClassはインスタンス変数アクセサのみ)ため、保存先の有無をLuaから判定するためのヘルパー
+bool has_project_path() { return !Project::Get()->path.empty(); }
+
 namespace {
 bool add_filter_impl(Entity* e, const char* filter_name) {
   if(!e || !filter_name) return false;

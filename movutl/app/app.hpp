@@ -28,6 +28,7 @@ void new_project();
 void save_project();
 void save_project_as(const char* path);
 void open_project(const char* path);
+bool has_project_path(); // 保存先パスが決まっているか(Ctrl+Sで上書き保存かダイアログを出すか判定用)
 
 // srcを複製した新規Entityを返す(全EntityType対応、未対応の型/nullptrはnullptrを返す)
 Ref<Entity> duplicate_asset(const Ref<Entity>& src);
@@ -47,6 +48,9 @@ Ref<ShapeEntt> add_new_shape_track(const char* name, int start, int end, ShapeTy
 Ref<TextEntt> add_new_text_track(const char* name, int start, int end);
 Ref<Image> add_new_image_track(const char* name, const char* path, int start, int end);
 Ref<Entity> add_new_custom_object_track(const std::string& script_name, int start, int end);
+
+// 動画/音声/画像を内容から自動判別してEntityを追加する(open_media_fileと違いProject::New()は呼ばない)
+Ref<Entity> import_media_file(const char* path);
 
 // 登録済みフィルタ(AppMain::filters)を名前で検索しentt->filters_へ追加する(見つからなければfalse)
 bool add_filter_to_entity(const Ref<Entity>& entt, const char* filter_name);
