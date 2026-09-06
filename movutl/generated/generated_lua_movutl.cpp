@@ -148,6 +148,8 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("insert_entity", &Composition::insert_entity)
     .addFunction("get_all_entities", &Composition::get_all_entities)
     .addFunction("render_current_frame_main_thread", &Composition::render_current_frame_main_thread)
+    .addFunction("invalidate_cache_all", &Composition::invalidate_cache_all)
+    .addFunction("invalidate_cache_range", &Composition::invalidate_cache_range)
     .addFunction("get_frame", &Composition::get_frame)
     .addFunction("set_frame", &Composition::set_frame)
     .addVariable("guid", &Composition::guid)                           // uint32_t

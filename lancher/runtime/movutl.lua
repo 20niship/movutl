@@ -215,8 +215,17 @@ function movutl.Composition:insert_entity( entt, layer, ) end
 ---@return table
 function movutl.Composition:get_all_entities( ) end
 
+---@param transparent_bg boolean
 ---@return Ref<Image>
-function movutl.Composition:render_current_frame_main_thread( ) end
+function movutl.Composition:render_current_frame_main_thread( transparent_bg, ) end
+
+---@return nil
+function movutl.Composition:invalidate_cache_all( ) end
+
+---@param f0 number
+---@param f1 number
+---@return nil
+function movutl.Composition:invalidate_cache_range( f0, f1, ) end
 
 ---@return number
 function movutl.Composition:get_frame( ) end
