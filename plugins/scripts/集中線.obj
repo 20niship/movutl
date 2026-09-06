@@ -1,0 +1,29 @@
+--[[
+	集中線.obj
+	AviUtl本体の標準カスタムオブジェクト「集中線」を参考にした自作の再現スクリプト(元ソースは非公開のため完全な移植ではなく、パラメータ構成含め見た目を近づけたベストエフォート実装)。
+	画像中心から外周へ向けて放射状に直線を描く。太さのある直線描画にはobj.line(独自拡張)を使う。
+]]
+
+--track0:本数,1,500,100,1
+--track1:太さ,1,50,3,1
+--track2:抜き,0,100,0,1
+--check0:ランダム,0
+@集中線
+local count     = math.floor(obj.track0)
+local thickness = obj.track1
+local gap_pct   = obj.track2
+local random    = obj.check0
+
+local w = obj.getinfo("image_w")
+local h = obj.getinfo("image_h")
+local max_radius = math.sqrt(w * w + h * h) / 2
+local inner      = max_radius * (gap_pct / 100)
+
+for i = 0, count - 1 do
+	local angle = (2 * math.pi * i / count)
+	if random then angle = angle + (math.random() - 0.5) * (2 * math.pi / count) end
+	local dx, dy = math.cos(angle), math.sin(angle)
+	local x0, y0 = dx * inner, dy * inner
+	local x1, y1 = dx * max_radius, dy * max_radius
+	obj.line(x0, y0, x1, y1, 255, 255, 255, 255, thickness)
+end
