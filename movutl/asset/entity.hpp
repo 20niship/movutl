@@ -33,6 +33,7 @@ enum EntityType {
   EntityType_3DModel     = 1 << 13,
   EntityType_Camera      = 1 << 14,
   EntityType_Effect      = 1 << 15,
+  EntityType_Midi        = 1 << 16, // VST音源で再生するMIDIノート列(MidiEntt)
 };
 MOVUTL_DEFINE_ENUM_ATTR_BITFLAGS(EntityType);
 

@@ -14,7 +14,9 @@
 #include <movutl/gui/gui.hpp>
 #include <movutl/gui/inspector.hpp>
 #include <movutl/gui/widgets.hpp>
+#include <movutl/gui/vst_edit_ui.hpp>
 #include <movutl/plugin/plugin.hpp>
+#include <movutl/plugin/vst/vst_filter_bridge.hpp>
 #include <string>
 #include <vector>
 
@@ -121,11 +123,16 @@ void InspectorWindow::Update() {
       ImGui::Dummy(ImVec2(h + 4, h));
       ImGui::SameLine();
     }
+    if(detail::is_vst_filter_guid(f.plg_->guid)) {
+      ImGui::SameLine();
+      draw_vst_edit_button("vst_fx_edit", detail::vst_filter_instance(f.instance_state));
+    }
     if(ImGui::TreeNode(str.c_str())) {
       bool props_changed = false;
       int size_          = std::min<int>(f.props.size(), (int)e->trk.filters[i].plg_->props.fields.size());
       for(int k = 0; k < size_; k++) {
         const auto& info = f.plg_->props.fields[k];
+        if(cutil::has_flag(info.flags, cutil::PropFlags::Hidden)) continue;
         ImGui::PushID(k);
         { // animation props editor
           const char* label = info.label[0] ? info.label : info.name;

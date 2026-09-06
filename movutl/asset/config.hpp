@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdlib>
 #include <vector>
 //
 #include <cutil/string.hpp>
@@ -22,6 +23,13 @@ public:
   int cache_frames                         = 1024;
   std::vector<std::string> plugin_paths    = {"plugins"};
   std::vector<std::string> lua_script_dirs = {"plugins/scripts"}; // AviUtl互換.anmスクリプトを再帰的に探索するフォルダ
+#if defined(_WIN32)
+  std::vector<std::string> vst_plugin_dirs = {"C:\\Program Files\\Common Files\\VST3"}; // VST3プラグインを再帰的に探索するフォルダ
+#elif defined(__APPLE__)
+  std::vector<std::string> vst_plugin_dirs = {std::string(getenv("HOME") ? getenv("HOME") : "") + "/Library/Audio/Plug-Ins/VST3"};
+#else
+  std::vector<std::string> vst_plugin_dirs = {std::string(getenv("HOME") ? getenv("HOME") : "") + "/.vst3"};
+#endif
   bool log_to_file                         = false;
   std::string log_filename                 = "log.txt";
   LogLevel log_level                       = LogLevel::DEBUG;

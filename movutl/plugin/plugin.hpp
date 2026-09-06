@@ -50,5 +50,7 @@ void register_default_plugins();
 void register_default_filters();
 // Config::lua_script_dirsを再帰的に走査し、見つけた.anmファイルをすべてフィルタとして自動登録する
 void register_aviutl_scripts();
+// vst_host::plugin_list()のVST3プラグインをそれぞれFilterAudioOnlyのFilterPluginTableとして登録する
+void register_vst_filters();
 } // namespace detail
 } // namespace mu
