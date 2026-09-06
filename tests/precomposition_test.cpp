@@ -328,8 +328,8 @@ TEST_CASE("キャッシュ無効化伝播: 参照先Compositionの中身変更�
 
   Ref<Image> out2;
   REQUIRE(renderer.render_frame(main.get(), 0, out2));
-  CHECK(out2->rgba(15, 15) == Vec4b(0, 255, 0, 255));   // 新しく追加された緑が反映される
-  CHECK(out2->rgba(50, 50) == Vec4b(0, 0, 255, 255));   // 追加範囲外は変わらず赤
+  CHECK(out2->rgba(15, 15) == Vec4b(0, 255, 0, 255)); // 新しく追加された緑が反映される
+  CHECK(out2->rgba(50, 50) == Vec4b(0, 0, 255, 255)); // 追加範囲外は変わらず赤
 }
 
 TEST_CASE("循環参照ガード: 自己参照するCompoRefEnttがあってもクラッシュ・無限ループせず完了する") {
