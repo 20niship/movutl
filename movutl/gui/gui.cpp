@@ -13,6 +13,7 @@
 #include <movutl/gui/fft_window.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/gui/inspector.hpp>
+#include <movutl/gui/piano_roll.hpp>
 #include <movutl/gui/timeline.hpp>
 #include <movutl/gui/timeline_window.hpp>
 #include <movutl/gui/utilities.hpp>
@@ -24,7 +25,8 @@ namespace detail {
 void init_gui_panels() {
   auto g    = GUIManager::Get();
   g->panels = {
-    cutil::make_ref<InspectorWindow>(), cutil::make_ref<TimelineWindow>(), cutil::make_ref<ViewerWindow>(), cutil::make_ref<UtilityWindow>(), cutil::make_ref<CompositionSettingsWindow>(), cutil::make_ref<DeveloperWindow>(), cutil::make_ref<ExportWindow>(), cutil::make_ref<FFTWindow>(),
+    cutil::make_ref<InspectorWindow>(), cutil::make_ref<TimelineWindow>(), cutil::make_ref<ViewerWindow>(), cutil::make_ref<UtilityWindow>(),   cutil::make_ref<CompositionSettingsWindow>(),
+    cutil::make_ref<DeveloperWindow>(), cutil::make_ref<ExportWindow>(),   cutil::make_ref<FFTWindow>(),    cutil::make_ref<PianoRollWindow>(),
   };
 
   // デフォルトワークスペース(初回起動時に適用される)
@@ -34,6 +36,7 @@ void init_gui_panels() {
   default_workspace.add_entry("ツール", ImGuiDir_Left, 0.2f);
   default_workspace.add_entry(ICON_FA_PLUG " エフェクト制御", ImGuiDir_Right, 0.25f);
   default_workspace.add_entry("FFT", ImGuiDir_Right, 0.3f);
+  default_workspace.add_entry(ICON_FA_KEYBOARD " ピアノロール", ImGuiDir_Down, 0.5f);
   default_workspace.add_entry("Viewer", ImGuiDir_None, 1.0f);
   register_workspace("Default", default_workspace);
 }

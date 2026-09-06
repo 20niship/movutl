@@ -40,8 +40,8 @@ bool MidiEntt::assign_instrument(const std::string& pluginId) {
     instrument_instance_id_ = -1;
     proc_.reset(); // サンプルレート/バス構成が新しいインスタンスと食い違わないよう作り直す
   }
-  auto* cmp   = Composition::GetActiveComp();
-  uint32_t sr = cmp ? (uint32_t)cmp->audio_sample_rate : 48000u;
+  auto* cmp               = Composition::GetActiveComp();
+  uint32_t sr             = cmp ? (uint32_t)cmp->audio_sample_rate : 48000u;
   instrument_instance_id_ = vst_host::create_instance(pluginId, sr, 1024);
   if(instrument_instance_id_ < 0) {
     LOG_F(ERROR, "MidiEntt::assign_instrument: プラグインのインスタンス化に失敗: %s", pluginId.c_str());
@@ -66,7 +66,7 @@ bool MidiEntt::fetch_audio(Composition* cmp, int64_t start_sample, int n, int16_
   if(inst == nullptr) return false;
 
   int64_t track_start = cmp->frame_to_sample(trk.fstart);
-  int64_t track_end    = cmp->frame_to_sample(trk.fend);
+  int64_t track_end   = cmp->frame_to_sample(trk.fend);
   if(track_end <= track_start) return false;
   if(start_sample + n <= track_start || start_sample >= track_end) return false; // このチャンクはトラック範囲外
 
@@ -93,12 +93,10 @@ bool MidiEntt::fetch_audio(Composition* cmp, int64_t start_sample, int n, int16_
   };
   // MIDI 1.0 Channel Voice UMP(32bit, group/channel = 0固定): [0x2<<28 | group<<24 | (status<<4|ch)<<16 | data1<<8 | data2]
   constexpr uint8_t kGroup = 0, kChannel = 0, kNoteOn = 0x9, kNoteOff = 0x8;
-  auto make_midi1 = [](uint8_t status, uint8_t data1, uint8_t data2) -> uint32_t {
-    return (uint32_t(0x2) << 28) | (uint32_t(kGroup) << 24) | (uint32_t((status << 4) | kChannel) << 16) | (uint32_t(data1) << 8) | uint32_t(data2);
-  };
+  auto make_midi1 = [](uint8_t status, uint8_t data1, uint8_t data2) -> uint32_t { return (uint32_t(0x2) << 28) | (uint32_t(kGroup) << 24) | (uint32_t((status << 4) | kChannel) << 16) | (uint32_t(data1) << 8) | uint32_t(data2); };
   for(const auto& note : notes_) {
     int64_t abs_start = track_start + note.start_sample;
-    int64_t abs_end    = abs_start + std::max<int64_t>(0, note.dur_samples);
+    int64_t abs_end   = abs_start + std::max<int64_t>(0, note.dur_samples);
     if(abs_start >= start_sample && abs_start < start_sample + n) push_ump(make_midi1(kNoteOn, note.pitch & 0x7F, note.velocity & 0x7F));
     if(abs_end >= start_sample && abs_end < start_sample + n) push_ump(make_midi1(kNoteOff, note.pitch & 0x7F, 0));
   }
@@ -113,8 +111,8 @@ bool MidiEntt::fetch_audio(Composition* cmp, int64_t start_sample, int n, int16_
     float* buf = proc_->ctx->getFloatOutBuffer(0, (uint32_t)c);
     if(buf == nullptr) continue;
     for(int i = 0; i < n; i++) {
-      int32_t v            = (int32_t)out[i * ch + c] + (int32_t)std::lround(buf[i] * 32768.0f);
-      out[i * ch + c]      = (int16_t)std::clamp(v, -32768, 32767);
+      int32_t v       = (int32_t)out[i * ch + c] + (int32_t)std::lround(buf[i] * 32768.0f);
+      out[i * ch + c] = (int16_t)std::clamp(v, -32768, 32767);
     }
   }
   return true;

@@ -9,14 +9,16 @@
 #include <movutl/asset/compo_ref.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/entity.hpp>
+#include <movutl/asset/midi.hpp>
 #include <movutl/asset/project.hpp>
 #include <movutl/core/logger.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/gui/inspector.hpp>
-#include <movutl/gui/widgets.hpp>
 #include <movutl/gui/vst_edit_ui.hpp>
+#include <movutl/gui/widgets.hpp>
 #include <movutl/plugin/plugin.hpp>
 #include <movutl/plugin/vst/vst_filter_bridge.hpp>
+#include <movutl/plugin/vst/vst_host.hpp>
 #include <string>
 #include <vector>
 
@@ -94,6 +96,23 @@ void InspectorWindow::Update() {
       }
       ImGui::EndCombo();
     }
+  }
+
+  if(e->getType() == EntityType_Midi) { // 音源選択(vst_host::plugin_list())+ Edit導線(vst_edit_ui)
+    auto* midi            = static_cast<MidiEntt*>(e.get());
+    auto plugins          = vst_host::plugin_list();
+    std::string cur_label = midi->instrument_plugin_id_.empty() ? "(未選択)" : midi->instrument_plugin_id_;
+    for(auto& p : plugins) {
+      if(p.id == midi->instrument_plugin_id_) cur_label = p.name;
+    }
+    ImGui::SetNextItemWidth(-1);
+    if(ImGui::BeginCombo("音源プラグイン", cur_label.c_str())) {
+      for(auto& p : plugins) {
+        if(ImGui::Selectable(p.name.c_str(), p.id == midi->instrument_plugin_id_)) midi->assign_instrument(p.id);
+      }
+      ImGui::EndCombo();
+    }
+    draw_vst_edit_button("midi_instrument_edit", vst_host::get_instance(midi->instrument_instance_id()));
   }
 
   wd_entt_props_editor(e.get());
