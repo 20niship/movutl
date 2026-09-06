@@ -1,6 +1,10 @@
 from pygen_types import MFunction, MEnum, MClass, MArgument, ArgumentType
 from typing import List
+import re
 from utils import logger, write_if_different
+
+# 1クラスに複数のprops三つ組(例: EntityのgetPropsInfoとgetTrackPropsInfo)を持たせるため、"get<Prefix>PropsInfo"からPrefixを抽出する(対象フィールドはMPROPERTY(... group="track")側で指定)
+PROPS_INFO_NAME_RE = re.compile(r"^get(\w*)PropsInfo$")
 
 # cutil::prop_info_of<T>()特殊化が存在する型のみ対応(cutil組み込み+movutl/core/prop_types.hppのアダプタ)。
 SUPPORTED_CTYPES = {
@@ -64,20 +68,25 @@ class PropsWriter:
         return False
 
     def register_class(self, cls: MClass):
-        if self._should_write(cls, "getPropsInfo"):
-            self._write_getPropsInfo_fn(cls)
-        if self._should_write(cls, "getProps"):
-            self._write_getProps(cls)
-        if self._should_write(cls, "setProps"):
-            self._write_setProps(cls)
+        prefixes = {m.group(1) for f in cls.funcs if (m := PROPS_INFO_NAME_RE.match(f.name))}
+        for prefix in prefixes:
+            if self._should_write(cls, f"get{prefix}PropsInfo"):
+                self._write_getPropsInfo_fn(cls, prefix)
+            if self._should_write(cls, f"get{prefix}Props"):
+                self._write_getProps(cls, prefix)
+            if self._should_write(cls, f"set{prefix}Props"):
+                self._write_setProps(cls, prefix)
 
-    def _write_getPropsInfo_fn(self, cls: MClass):
+    def _write_getPropsInfo_fn(self, cls: MClass, prefix: str = ""):
+        group = prefix.lower()
         self.autogen_text += (
-            f"const cutil::PropInfo* {cls.name}::getPropsInfo() const {{\n"
+            f"const cutil::PropInfo* {cls.name}::get{prefix}PropsInfo() const {{\n"
             f"  static const cutil::PropInfo info = [] {{\n"
             f"    cutil::PropInfo p;\n"
         )
         for prop in cls.props:
+            if prop.group != group:
+                continue
             if prop.c_type not in SUPPORTED_CTYPES:
                 self.autogen_text += f"    // {prop.name} has an unsupported type ({prop.c_type})\n"
                 continue
@@ -99,16 +108,16 @@ class PropsWriter:
                 self.autogen_text += "    p.fields.back().flags = p.fields.back().flags | cutil::PropFlags::ReadOnly;\n"
         self.autogen_text += "    return p;\n  }();\n  return &info;\n}\n"
 
-    def _write_getProps(self, cls: MClass):
+    def _write_getProps(self, cls: MClass, prefix: str = ""):
         self.autogen_text += (
-            f"cutil::Prop {cls.name}::getProps() const {{\n"
+            f"cutil::Prop {cls.name}::get{prefix}Props() const {{\n"
             f"  cutil::Prop p;\n"
-            f"  p.dump(this, getPropsInfo());\n"
+            f"  p.dump(this, get{prefix}PropsInfo());\n"
             f"  return p;\n}}\n"
         )
 
-    def _write_setProps(self, cls: MClass):
+    def _write_setProps(self, cls: MClass, prefix: str = ""):
         self.autogen_text += (
-            f"void {cls.name}::setProps(const cutil::Prop& p) {{\n"
-            f"  (void)p.load_to(this, getPropsInfo());\n}}\n"
+            f"void {cls.name}::set{prefix}Props(const cutil::Prop& p) {{\n"
+            f"  (void)p.load_to(this, get{prefix}PropsInfo());\n}}\n"
         )

@@ -34,6 +34,7 @@ class MArgument:
     maxvalue: str = ""
     namespace :str = ""
     step: str = ""
+    group: str = ""
 
     def valid(self) -> bool:
         if self.c_type in ["void", "void *"]:
