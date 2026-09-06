@@ -8,8 +8,15 @@ build build_dir="build":
     cmake --build {{build_dir}} -j${BUILD_JOBS:-$(nproc 2>/dev/null || sysctl -n hw.ncpu)}
 
 # ビルドしてmovutl_mainを実行する(例: just run ./examples/foobar.lua)
+# movutl_mainは../assets等相対パスでリソースを解決するためbuild/から実行する必要がある
 run *args: build
-    ./build/movutl_main {{args}}
+    #!/usr/bin/env bash
+    set -euo pipefail
+    args=({{args}})
+    if [ ${#args[@]} -gt 0 ]; then
+      args[0]="$(cd "$(dirname "${args[0]}")" && pwd)/$(basename "${args[0]}")"
+    fi
+    cd build && exec ./movutl_main "${args[@]+"${args[@]}"}"
 
 # ビルドしてテストを実行する
 test: build

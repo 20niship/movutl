@@ -5,23 +5,27 @@ extern "C" {
 #include "lualib.h"
 }
 #include <LuaIntf/LuaIntf.h>
+#include <cstdio>
 #include <doctest/doctest.h>
 #include <movutl/app/app.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/entity.hpp>
 #include <movutl/asset/project.hpp>
 #include <movutl/asset/shape.hpp>
+#include <movutl/binding/binding.hpp>
 #include <movutl/binding/lua_command.hpp>
 #include <movutl/core/command.hpp>
+#include <movutl/core/filesystem.hpp>
 #include <unordered_map>
 
 using namespace mu;
 
 namespace {
-// movutl.register_command/select_file_dialog等だけを持つ最小限のlua_State(GUI/imgui不要)
+// CommandManagerがLuaRefを無期限保持するため、close後に同名コマンド再登録でuse-after-freeになる。テストではlua_close()しない(意図的リーク)
 lua_State* make_test_lua() {
   lua_State* L = luaL_newstate();
   luaL_openlibs(L);
+  detail::generated_lua_binding_movutl(L); // save_project/open_project/has_project_path等はpygen生成側のバインディング
   detail::bind_lua_command_api(L);
   return L;
 }
@@ -44,8 +48,6 @@ TEST_CASE("shortcuts.lua: 5つのショートカットコマンドが登録さ�
   CHECK(shortcuts["save_project_as_cmd"] == "ctrl+shift+s");
   CHECK(shortcuts["open_project_cmd"] == "ctrl+o");
   CHECK(shortcuts["import_media_cmd"] == "ctrl+i");
-
-  lua_close(L);
 }
 
 TEST_CASE("LuaCommand: on_startの戻り値がCommandStatusへ正しく変換される") {
@@ -89,8 +91,6 @@ TEST_CASE("LuaCommand: on_startの戻り値がCommandStatusへ正しく変換さ
   lua_getglobal(L, "lua_cmd_running_ticks");
   CHECK(lua_tointeger(L, -1) == 2);
   lua_pop(L, 1);
-
-  lua_close(L);
 }
 
 TEST_CASE("import_media_file: 動画/音声/画像を内容から自動判別してEntityを追加し、既存プロジェクトを消さない") {
@@ -120,4 +120,92 @@ TEST_CASE("import_media_file: 動画/音声/画像を内容から自動判別し
   for(const auto& e : main_comp->get_all_entities())
     if(e->guid_ == pre_existing_guid) found = true;
   CHECK(found);
+}
+
+TEST_CASE("統合テスト: save_project_cmdをrun_command()で呼び出すと保存先が既にある場合は上書き保存される") {
+  fs_create_directory("/tmp/opencode");
+  const std::string path = "/tmp/opencode/lua_cmd_save_existing.json";
+  std::remove(path.c_str());
+
+  Project::New();
+  Project::Get()->path = path;
+  REQUIRE_FALSE(fs_exists(path)); // まだ保存はされていない(pathフィールドを設定しただけ)
+
+  lua_State* L = make_test_lua();
+  REQUIRE(luaL_dofile(L, "../lancher/runtime/shortcuts.lua") == 0);
+
+  CHECK(run_command("save_project_cmd")); // has_project_path()==trueなのでダイアログを開かずsave_project()される
+  CHECK(fs_exists(path));
+
+  std::remove(path.c_str());
+}
+
+TEST_CASE("統合テスト: save_project_cmdをrun_command()で呼び出すと保存先未設定ならダイアログ経由で保存される") {
+  fs_create_directory("/tmp/opencode");
+  const std::string path = "/tmp/opencode/lua_cmd_save_via_dialog.json";
+  std::remove(path.c_str());
+
+  Project::New();
+  Project::Get()->path.clear(); // Project::New()はpathをクリアしないため、他テストの状態が残らないよう明示的に空にする
+  REQUIRE(Project::Get()->path.empty());
+
+  lua_State* L = make_test_lua();
+  REQUIRE(luaL_dofile(L, "../lancher/runtime/shortcuts.lua") == 0);
+  // ネイティブダイアログは自動テストで開けないため、select_save_file_dialogをスタブに差し替える
+  std::string stub = "movutl.select_save_file_dialog = function(title, default_name, exts) return \"" + path + "\" end";
+  REQUIRE(luaL_dostring(L, stub.c_str()) == 0);
+
+  CHECK(run_command("save_project_cmd"));
+  CHECK(fs_exists(path));
+  CHECK(Project::Get()->path == path);
+
+  std::remove(path.c_str());
+}
+
+TEST_CASE("統合テスト: save_project_as_cmdをrun_command()で呼び出すと指定パスに保存される") {
+  fs_create_directory("/tmp/opencode");
+  const std::string path = "/tmp/opencode/lua_cmd_save_as.json";
+  std::remove(path.c_str());
+
+  Project::New();
+
+  lua_State* L = make_test_lua();
+  REQUIRE(luaL_dofile(L, "../lancher/runtime/shortcuts.lua") == 0);
+  std::string stub = "movutl.select_save_file_dialog = function(title, default_name, exts) return \"" + path + "\" end";
+  REQUIRE(luaL_dostring(L, stub.c_str()) == 0);
+
+  CHECK(run_command("save_project_as_cmd"));
+  CHECK(fs_exists(path));
+  CHECK(Project::Get()->path == path);
+
+  std::remove(path.c_str());
+}
+
+TEST_CASE("統合テスト: open_project_cmdをrun_command()で呼び出すと保存済みプロジェクトが復元される") {
+  fs_create_directory("/tmp/opencode");
+  const std::string path = "/tmp/opencode/lua_cmd_open.json";
+  std::remove(path.c_str());
+
+  // 復元対象: Entityを1つ持つプロジェクトをあらかじめファイルへ保存しておく(ShapeEnttはProject::entities未登録で保存/復元対象外のためImageを使う)
+  Project::New();
+  auto marker = import_media_file("../assets/images/blender_png.png");
+  REQUIRE(marker);
+  marker->name = "open_test_marker";
+  Project::Save(path.c_str());
+  REQUIRE(fs_exists(path));
+
+  // 別のプロジェクト状態にしてから、open_project_cmd経由で上のファイルを読み直す
+  Project::New();
+  REQUIRE(Entity::Find("open_test_marker") == nullptr);
+
+  lua_State* L = make_test_lua();
+  REQUIRE(luaL_dofile(L, "../lancher/runtime/shortcuts.lua") == 0);
+  std::string stub = "movutl.select_file_dialog = function(title, exts) return \"" + path + "\" end";
+  REQUIRE(luaL_dostring(L, stub.c_str()) == 0);
+
+  CHECK(run_command("open_project_cmd"));
+  CHECK(Project::Get()->path == path);
+  CHECK(Entity::Find("open_test_marker") != nullptr); // 保存しておいたEntityが復元されている
+
+  std::remove(path.c_str());
 }

@@ -51,10 +51,23 @@ void lua_register_command(const std::string& id, const std::string& name, const 
   register_command(CommandInfo{id, name, description, shortcut}, [def]() -> Ref<mCommand> { return cutil::make_ref<LuaCommand>(def); });
 }
 
+// LuaIntfはstd::vector<std::string>を自動変換できない(userdata扱いになる)ため、Luaの配列テーブルを手動で変換する
+std::vector<std::string> lua_table_to_strings(const LuaIntf::LuaRef& t) {
+  std::vector<std::string> out;
+  if(!t.isTable()) return out;
+  int n = t.len();
+  for(int i = 1; i <= n; i++) out.push_back(t.get<std::string>(i));
+  return out;
+}
+
+std::string lua_select_file_dialog(const std::string& title, const LuaIntf::LuaRef& extensions) { return select_file_dialog(title, lua_table_to_strings(extensions)); }
+
+std::string lua_select_save_file_dialog(const std::string& title, const std::string& default_name, const LuaIntf::LuaRef& extensions) { return select_save_file_dialog(title, default_name, lua_table_to_strings(extensions)); }
+
 } // namespace
 
 namespace detail {
-void bind_lua_command_api(lua_State* L) { LuaIntf::LuaBinding(L).beginModule("movutl").addFunction("register_command", &lua_register_command).addFunction("select_file_dialog", &select_file_dialog).addFunction("select_save_file_dialog", &select_save_file_dialog).endModule(); }
+void bind_lua_command_api(lua_State* L) { LuaIntf::LuaBinding(L).beginModule("movutl").addFunction("register_command", &lua_register_command).addFunction("select_file_dialog", &lua_select_file_dialog).addFunction("select_save_file_dialog", &lua_select_save_file_dialog).endModule(); }
 } // namespace detail
 
 } // namespace mu
