@@ -359,7 +359,7 @@ int EndTimeline() {
         changed                 = true;
       }
     }
-    if(changed) cp->cache.invalidate_all();
+    if(changed) cp->invalidate_cache_all();
   }
 
   if(ctx_.cur_frame && ctx_.vis_start && ctx_.vis_end) {
@@ -564,7 +564,7 @@ bool BeginTrack(const Ref<Entity>& entity) {
       if(auto* comp = entity->get_comp()) {
         int f0 = std::min({ctx_.drag_orig_fstart, ctx_.drag_orig_fend, *start, *end});
         int f1 = std::max({ctx_.drag_orig_fstart, ctx_.drag_orig_fend, *start, *end});
-        comp->cache.invalidate_range(f0, f1);
+        comp->invalidate_cache_range(f0, f1);
       }
       ctx_.dragging_entt = nullptr;
       ctx_.drag_mode     = 0;

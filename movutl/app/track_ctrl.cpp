@@ -1,5 +1,7 @@
 #include <movutl/app/app.hpp>
 #include <movutl/asset/audio.hpp>
+#include <movutl/asset/compo_audio_ref.hpp>
+#include <movutl/asset/compo_ref.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/custom_object.hpp>
 #include <movutl/asset/entity.hpp>
@@ -176,6 +178,26 @@ bool add_new_track(const char* name, EntityType type, int start, int end) {
       fb->fstart_ = start;
       fb->fend_   = end;
       main_comp->insert_entity(fb);
+      break;
+    }
+    case EntityType_Scene: {
+      auto e                 = cutil::make_ref<CompoRefEntt>();
+      e->name                = name;
+      Composition* main_comp = Composition::GetActiveComp();
+      MU_ASSERT(main_comp);
+      e->fstart_ = start;
+      e->fend_   = end;
+      main_comp->insert_entity(e);
+      break;
+    }
+    case EntityType_SceneAudio: {
+      auto e                 = cutil::make_ref<CompoAudioEntt>();
+      e->name                = name;
+      Composition* main_comp = Composition::GetActiveComp();
+      MU_ASSERT(main_comp);
+      e->fstart_ = start;
+      e->fend_   = end;
+      main_comp->insert_entity(e);
       break;
     }
     default: MU_FAIL("Not implemented yet"); break;

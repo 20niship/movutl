@@ -11,9 +11,11 @@ void CompositionSettingsWindow::Update() {
     auto& cmp = *cmp_ref;
     if(!(cmp.flag & Composition::setting_dialog)) continue;
 
-    bool open = true;
+    bool open             = true;
+    bool delete_requested = false;
+    uint32_t guid         = cmp.guid; // erase後は cmp/cmp_ref が dangling になるため先に値でコピーしておく
     char title[128];
-    std::snprintf(title, sizeof(title), "Composition Settings##%u", cmp.guid);
+    std::snprintf(title, sizeof(title), "Composition Settings##%u", guid);
     if(ImGui::Begin(title, &open)) {
       char name_buf[128];
       std::snprintf(name_buf, sizeof(name_buf), "%s", cmp.name.c_str());
@@ -25,9 +27,16 @@ void CompositionSettingsWindow::Update() {
       ImGui::DragFloat("フレームレート", &cmp.framerate, 0.1f, 1.0f, 1000.0f);
       ImGui::DragInt("開始フレーム", &cmp.fstart);
       ImGui::DragInt("終了フレーム", &cmp.fend);
+
+      ImGui::Separator();
+      if(ImGui::Button("このコンポジションを削除")) delete_requested = true;
     }
     ImGui::End();
 
+    if(delete_requested) {
+      Project::RemoveComposition(guid); // compos_の要素を破棄するのでこのフレームのイテレートはここで打ち切る
+      break;
+    }
     if(!open) cmp.flag = (Composition::Flag)(cmp.flag & ~Composition::setting_dialog);
   }
 }

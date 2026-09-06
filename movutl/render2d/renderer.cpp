@@ -5,7 +5,7 @@
 
 namespace mu {
 
-bool CPURenderer::render_frame(Composition* comp, int frame, Ref<Image>& out) {
+bool CPURenderer::render_frame(Composition* comp, int frame, Ref<Image>& out, bool transparent_bg) {
   MOVUTL_ZONE_SCOPED_N("CPURenderer::render_frame");
   MU_ASSERT(comp != nullptr);
 
@@ -17,9 +17,14 @@ bool CPURenderer::render_frame(Composition* comp, int frame, Ref<Image>& out) {
   }
 
   {
-    uint32_t bg = (uint32_t)comp->bg_color;
     MOVUTL_ZONE_SCOPED_N("CPURenderer::resize");
-    out->fill_rgba(Vec4b{(unsigned char)(bg & 0xFF), (unsigned char)((bg >> 8) & 0xFF), (unsigned char)((bg >> 16) & 0xFF), (unsigned char)((bg >> 24) & 0xFF)});
+    if(transparent_bg) {
+      // ネストされたCompositionはAfter Effectsのプリコンポジション同様、常に透明背景で合成する
+      out->fill_rgba(Vec4b(0, 0, 0, 0));
+    } else {
+      uint32_t bg = (uint32_t)comp->bg_color;
+      out->fill_rgba(Vec4b{(unsigned char)(bg & 0xFF), (unsigned char)((bg >> 8) & 0xFF), (unsigned char)((bg >> 16) & 0xFF), (unsigned char)((bg >> 24) & 0xFF)});
+    }
   }
 
   // comp->mtxはget_all_entities()内で短時間lockするのみ。Entity個々のレンダリング中はe->mtxだけをlockする

@@ -44,6 +44,10 @@ void add_entities_ui() {
     ImGui::EndPopup();
   }
   ImGui::NextColumn();
+  if(ImGui::Button(ICON_FA_CLONE " コンポ参照")) add_new_track("compo ref", EntityType_Scene, 0, 100);
+  ImGui::NextColumn();
+  if(ImGui::Button(ICON_FA_CLONE " コンポ音声参照")) add_new_track("compo audio ref", EntityType_SceneAudio, 0, 100);
+  ImGui::NextColumn();
   ImGui::Columns(1);
   ImGui::EndGroup();
 }

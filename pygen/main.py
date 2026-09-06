@@ -264,6 +264,8 @@ def run():
         root / "movutl/asset/image.hpp",
         root / "movutl/asset/shape.hpp",
         root / "movutl/asset/framebuffer.hpp",
+        root / "movutl/asset/compo_ref.hpp",
+        root / "movutl/asset/compo_audio_ref.hpp",
         root / "movutl/asset/composition.hpp",
         root / "movutl/asset/project.hpp",
         root / "movutl/core/anim.hpp",

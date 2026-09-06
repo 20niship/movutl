@@ -121,6 +121,40 @@ function movutl.AudioEntt:reload_asset( ) end
 ---@return WaveformData 
 function movutl.AudioEntt:waveform( ) end
 
+---@class CompoAudioEntt
+---@field start_frame number
+---@field speed number
+---@field volume_ number
+---@field target_comp_guid number
+movutl.CompoAudioEntt = {}
+movutl.CompoAudioEntt.start_frame = 0
+movutl.CompoAudioEntt.speed = 1.0 f
+movutl.CompoAudioEntt.volume_ = 100.0 f
+movutl.CompoAudioEntt.target_comp_guid = 0
+
+---@return EntityType
+function movutl.CompoAudioEntt:getType( ) end
+
+---@class CompoRefEntt
+---@field pos Vec3
+---@field scale Vec2
+---@field rotation number
+---@field alpha number
+---@field start_frame number
+---@field speed number
+---@field target_comp_guid number
+movutl.CompoRefEntt = {}
+movutl.CompoRefEntt.pos = Vec3()
+movutl.CompoRefEntt.scale = Vec2 ( 1.0 , 1.0 )
+movutl.CompoRefEntt.rotation = 0.0
+movutl.CompoRefEntt.alpha = 1.0
+movutl.CompoRefEntt.start_frame = 0
+movutl.CompoRefEntt.speed = 1.0 f
+movutl.CompoRefEntt.target_comp_guid = 0
+
+---@return EntityType
+function movutl.CompoRefEntt:getType( ) end
+
 ---@class Composition
 ---@field guid number
 ---@field flag Flag
@@ -162,6 +196,14 @@ function movutl.Composition:summary( ) end
 ---@return Composition 
 function movutl.Composition:GetActiveComp( ) end
 
+---@param guid number
+---@return boolean
+function movutl.Composition:PushRenderGuard( guid, ) end
+
+---@param guid number
+---@return nil
+function movutl.Composition:PopRenderGuard( guid, ) end
+
 ---@return number
 function movutl.Composition:insertable_layer_index( ) end
 
@@ -173,8 +215,17 @@ function movutl.Composition:insert_entity( entt, layer, ) end
 ---@return table
 function movutl.Composition:get_all_entities( ) end
 
+---@param transparent_bg boolean
 ---@return Ref<Image>
-function movutl.Composition:render_current_frame_main_thread( ) end
+function movutl.Composition:render_current_frame_main_thread( transparent_bg, ) end
+
+---@return nil
+function movutl.Composition:invalidate_cache_all( ) end
+
+---@param f0 number
+---@param f1 number
+---@return nil
+function movutl.Composition:invalidate_cache_range( f0, f1, ) end
 
 ---@return number
 function movutl.Composition:get_frame( ) end
@@ -402,6 +453,10 @@ function movutl.Project:GetActiveCompo( ) end
 ---@param idx number
 ---@return nil
 function movutl.Project:SetActiveCompo( idx, ) end
+
+---@param guid number
+---@return nil
+function movutl.Project:RemoveComposition( guid, ) end
 
 ---@class ShapeEntt
 ---@field pos_ Vec3

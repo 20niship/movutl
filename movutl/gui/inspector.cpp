@@ -5,13 +5,19 @@
 #include <imgui_internal.h>
 #include <movutl/app/app.hpp>
 #include <movutl/app/app_impl.hpp>
+#include <movutl/asset/compo_audio_ref.hpp>
+#include <movutl/asset/compo_ref.hpp>
+#include <movutl/asset/composition.hpp>
 #include <movutl/asset/custom_object.hpp>
 #include <movutl/asset/entity.hpp>
+#include <movutl/asset/project.hpp>
 #include <movutl/core/logger.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/gui/inspector.hpp>
 #include <movutl/gui/widgets.hpp>
 #include <movutl/plugin/plugin.hpp>
+#include <string>
+#include <vector>
 
 namespace mu {
 
@@ -43,7 +49,7 @@ void InspectorWindow::Update() {
     // アクティブ(目アイコン): このEntityの表示/非表示を切り替える(音声はミュートも兼ねる)
     if(ImGui::SmallButton(e->active_ ? ICON_FA_EYE : ICON_FA_EYE_SLASH)) {
       e->active_ = !e->active_;
-      if(auto* comp = e->get_comp()) comp->cache.invalidate_range(e->fstart_, e->fend_);
+      if(auto* comp = e->get_comp()) comp->invalidate_cache_range(e->fstart_, e->fend_);
     }
     if(ImGui::IsItemHovered()) ImGui::SetTooltip(e->active_ ? "非表示にする" : "表示する");
     ImGui::SameLine();
@@ -57,7 +63,35 @@ void InspectorWindow::Update() {
     ImGui::SetNextItemWidth(-1);
     if(ImGui::Combo("合成モード", &idx, kBlendNames, IM_ARRAYSIZE(kBlendNames))) {
       e->blend_ = (BlendType)idx;
-      if(auto* comp = e->get_comp()) comp->cache.invalidate_range(e->fstart_, e->fend_);
+      if(auto* comp = e->get_comp()) comp->invalidate_cache_range(e->fstart_, e->fend_);
+    }
+  }
+
+  if(e->getType() == EntityType_Scene || e->getType() == EntityType_SceneAudio) {
+    auto pj                = Project::Get();
+    uint32_t* target_guid  = (e->getType() == EntityType_Scene) ? &static_cast<CompoRefEntt*>(e.get())->target_comp_guid : &static_cast<CompoAudioEntt*>(e.get())->target_comp_guid;
+    Composition* self_comp = e->get_comp();
+    std::vector<Composition*> candidates;
+    int cur_idx          = -1;
+    std::string cur_name = "(未選択)";
+    for(auto& c : pj->compos_) {
+      if(self_comp && c->guid == self_comp->guid) continue; // 自己参照防止(間接循環はPushRenderGuardで防ぐ)
+      if(*target_guid == c->guid) {
+        cur_idx  = (int)candidates.size();
+        cur_name = c->name.c_str();
+      }
+      candidates.push_back(c.get());
+    }
+    ImGui::SetNextItemWidth(-1);
+    if(ImGui::BeginCombo("参照コンポジション", cur_name.c_str())) {
+      for(int i = 0; i < (int)candidates.size(); i++) {
+        bool selected = i == cur_idx;
+        if(ImGui::Selectable(candidates[i]->name.c_str(), selected)) {
+          *target_guid = candidates[i]->guid;
+          if(auto* self_comp2 = e->get_comp()) self_comp2->invalidate_cache_all();
+        }
+      }
+      ImGui::EndCombo();
     }
   }
 
@@ -82,7 +116,7 @@ void InspectorWindow::Update() {
         }
       }
       if(params_changed) {
-        if(auto* comp = e->get_comp()) comp->cache.invalidate_range(e->fstart_, e->fend_);
+        if(auto* comp = e->get_comp()) comp->invalidate_cache_range(e->fstart_, e->fend_);
       }
     } else {
       ImGui::TextDisabled("スクリプト '%s' が見つかりません", custom->script_name_.c_str());
@@ -108,7 +142,7 @@ void InspectorWindow::Update() {
         ImGui::SetTooltip("エフェクト %s を有効/無効にします", f.plg_->name.c_str());
         if(ImGui::IsMouseClicked(0)) {
           f.enabled = !f.enabled;
-          if(auto* comp = e->get_comp()) comp->cache.invalidate_range(e->fstart_, e->fend_);
+          if(auto* comp = e->get_comp()) comp->invalidate_cache_range(e->fstart_, e->fend_);
         }
       }
       ImGui::Dummy(ImVec2(h + 4, h));
@@ -173,7 +207,7 @@ void InspectorWindow::Update() {
         ImGui::PopID();
       }
       if(props_changed) {
-        if(auto* comp = e->get_comp()) comp->cache.invalidate_range(e->fstart_, e->fend_);
+        if(auto* comp = e->get_comp()) comp->invalidate_cache_range(e->fstart_, e->fend_);
       }
       ImGui::TreePop();
     }

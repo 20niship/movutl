@@ -86,22 +86,21 @@ void mix_audio_range(Composition* comp, int64_t start_sample, int n, int16_t* ou
   auto entities = comp->get_all_entities();
   bool any_solo = false;
   for(auto& e : entities) {
-    if(e->getType() == EntityType_Audio && e->visible(frame) && e->solo_) {
+    if((e->getType() == EntityType_Audio || e->getType() == EntityType_SceneAudio) && e->visible(frame) && e->solo_) {
       any_solo = true;
       break;
     }
   }
 
   for(auto& e : entities) {
-    if(e->getType() != EntityType_Audio) continue;
-    auto* a = static_cast<AudioEntt*>(e.get());
-    if(!a->visible(frame)) continue;
-    if(any_solo && !a->solo_) continue; // ソロ中のトラックが1つでもあれば、ソロでないトラックはミュートする
+    if(e->getType() != EntityType_Audio && e->getType() != EntityType_SceneAudio) continue;
+    if(!e->visible(frame)) continue;
+    if(any_solo && !e->solo_) continue; // ソロ中のトラックが1つでもあれば、ソロでないトラックはミュートする
 
     std::fill(track_buf.begin(), track_buf.end(), (int16_t)0);
-    if(!a->fetch_audio(comp, start_sample, n, track_buf.data())) continue;
+    if(!e->fetch_audio(comp, start_sample, n, track_buf.data())) continue;
 
-    for(auto& f : a->filters_) {
+    for(auto& f : e->filters_) {
       if(!f.enabled || f.plg_ == nullptr || f.plg_->fn_proc == nullptr) continue;
       MOVUTL_ZONE_SCOPED;
       MOVUTL_ZONE_NAME(f.plg_->name.c_str(), f.plg_->name.size());
@@ -110,7 +109,7 @@ void mix_audio_range(Composition* comp, int64_t start_sample, int n, int16_t* ou
       fin.audio_n  = n;
       fin.audio_ch = ch;
       fin.compo    = comp;
-      fin.entt     = a;
+      fin.entt     = e.get();
       f.plg_->fn_proc(&f.instance_state, &fin, f.props.get(frame));
     }
 

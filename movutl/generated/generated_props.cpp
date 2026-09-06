@@ -2,6 +2,8 @@
 #include <cutil/prop.hpp>
 #include <movutl/app/app.hpp>
 #include <movutl/asset/audio.hpp>
+#include <movutl/asset/compo_audio_ref.hpp>
+#include <movutl/asset/compo_ref.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/entity.hpp>
 #include <movutl/asset/framebuffer.hpp>
@@ -38,6 +40,63 @@ cutil::Prop AudioEntt::getProps() const {
   return p;
 }
 void AudioEntt::setProps(const cutil::Prop& p) { (void)p.load_to(this, getPropsInfo()); }
+const cutil::PropInfo* CompoAudioEntt::getPropsInfo() const {
+  static const cutil::PropInfo info = [] {
+    cutil::PropInfo p;
+    p.fields.push_back(cutil::PropInfo::Field("start_frame", offsetof(CompoAudioEntt, start_frame), cutil::prop_info_of<int>()));
+    p.fields.back().set_label("開始フレーム");
+    p.fields.push_back(cutil::PropInfo::Field("speed", offsetof(CompoAudioEntt, speed), cutil::prop_info_of<float>()));
+    p.fields.back().set_label("再生速度");
+    p.fields.back().min_value  = 0.0;
+    p.fields.back().max_value  = 10.0;
+    p.fields.back().drag_speed = 0.1;
+    p.fields.push_back(cutil::PropInfo::Field("volume_", offsetof(CompoAudioEntt, volume_), cutil::prop_info_of<float>()));
+    p.fields.back().set_label("音量");
+    p.fields.back().min_value = 0.0;
+    p.fields.back().max_value = 200.0;
+    p.fields.push_back(cutil::PropInfo::Field("target_comp_guid", offsetof(CompoAudioEntt, target_comp_guid), cutil::prop_info_of<uint32_t>()));
+    p.fields.back().set_label("参照コンポジション");
+    return p;
+  }();
+  return &info;
+}
+cutil::Prop CompoAudioEntt::getProps() const {
+  cutil::Prop p;
+  p.dump(this, getPropsInfo());
+  return p;
+}
+void CompoAudioEntt::setProps(const cutil::Prop& p) { (void)p.load_to(this, getPropsInfo()); }
+const cutil::PropInfo* CompoRefEntt::getPropsInfo() const {
+  static const cutil::PropInfo info = [] {
+    cutil::PropInfo p;
+    p.fields.push_back(cutil::PropInfo::Field("pos", offsetof(CompoRefEntt, pos), cutil::prop_info_of<Vec3>()));
+    p.fields.back().set_label("位置");
+    p.fields.push_back(cutil::PropInfo::Field("scale", offsetof(CompoRefEntt, scale), cutil::prop_info_of<Vec2>()));
+    p.fields.back().set_label("拡大率");
+    p.fields.push_back(cutil::PropInfo::Field("rotation", offsetof(CompoRefEntt, rotation), cutil::prop_info_of<float>()));
+    p.fields.back().set_label("回転");
+    p.fields.push_back(cutil::PropInfo::Field("alpha", offsetof(CompoRefEntt, alpha), cutil::prop_info_of<float>()));
+    p.fields.back().set_label("透明度");
+    p.fields.push_back(cutil::PropInfo::Field("start_frame", offsetof(CompoRefEntt, start_frame), cutil::prop_info_of<int>()));
+    p.fields.back().set_label("開始フレーム");
+    p.fields.back().set_desc("参照先コンポジションの再生開始フレーム位置");
+    p.fields.push_back(cutil::PropInfo::Field("speed", offsetof(CompoRefEntt, speed), cutil::prop_info_of<float>()));
+    p.fields.back().set_label("再生速度");
+    p.fields.back().min_value  = 0.0;
+    p.fields.back().max_value  = 10.0;
+    p.fields.back().drag_speed = 0.1;
+    p.fields.push_back(cutil::PropInfo::Field("target_comp_guid", offsetof(CompoRefEntt, target_comp_guid), cutil::prop_info_of<uint32_t>()));
+    p.fields.back().set_label("参照コンポジション");
+    return p;
+  }();
+  return &info;
+}
+cutil::Prop CompoRefEntt::getProps() const {
+  cutil::Prop p;
+  p.dump(this, getPropsInfo());
+  return p;
+}
+void CompoRefEntt::setProps(const cutil::Prop& p) { (void)p.load_to(this, getPropsInfo()); }
 const cutil::PropInfo* Entity::getTrackPropsInfo() const {
   static const cutil::PropInfo info = [] {
     cutil::PropInfo p;

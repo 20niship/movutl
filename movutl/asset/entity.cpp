@@ -8,6 +8,8 @@
 //
 #include <movutl/asset/audio.hpp>
 #include <movutl/asset/camera.hpp>
+#include <movutl/asset/compo_audio_ref.hpp>
+#include <movutl/asset/compo_ref.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/custom_object.hpp>
 #include <movutl/asset/framebuffer.hpp>
@@ -31,6 +33,8 @@ Ref<Entity> Entity::CreateEntity(const char* name, EntityType type) {
     case EntityType_Camera: e = cutil::make_ref<Camera3D>(); break;
     // 1個のフラグで複数のLuaスクリプトを表すため、実体はsetProps()内でscript_name経由でdef_を再解決する(ここではdef_未設定のまま生成するだけでよい)
     case EntityType_Custom: e = cutil::make_ref<CustomObjectEntt>(); break;
+    case EntityType_Scene: e = cutil::make_ref<CompoRefEntt>(); break;
+    case EntityType_SceneAudio: e = cutil::make_ref<CompoAudioEntt>(); break;
     default: break;
   }
   if(!e) {
