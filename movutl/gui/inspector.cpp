@@ -40,30 +40,30 @@ void InspectorWindow::Update() {
 
   {
     // アクティブ(目アイコン): このEntityの表示/非表示を切り替える(音声はミュートも兼ねる)
-    if(ImGui::SmallButton(e->trk.active_ ? ICON_FA_EYE : ICON_FA_EYE_SLASH)) {
-      e->trk.active_ = !e->trk.active_;
-      if(auto* comp = e->get_comp()) comp->cache.invalidate_range(e->trk.fstart, e->trk.fend);
+    if(ImGui::SmallButton(e->active_ ? ICON_FA_EYE : ICON_FA_EYE_SLASH)) {
+      e->active_ = !e->active_;
+      if(auto* comp = e->get_comp()) comp->cache.invalidate_range(e->fstart_, e->fend_);
     }
-    if(ImGui::IsItemHovered()) ImGui::SetTooltip(e->trk.active_ ? "非表示にする" : "表示する");
+    if(ImGui::IsItemHovered()) ImGui::SetTooltip(e->active_ ? "非表示にする" : "表示する");
     ImGui::SameLine();
     const std::string str = get_entt_icon(e) + std::string(" ") + e->name.c_str();
     ImGui::SmallButton(str.c_str());
   }
 
-  { // 合成モード(BlendType): TrackObject側のプロパティのため専用UIとして扱う
+  { // 合成モード(BlendType): Entityのトラック共通属性のため専用UIとして扱う
     static const char* kBlendNames[] = {"通常", "加算", "減算", "乗算", "除算", "スクリーン", "オーバーレイ", "比較(暗)", "比較(明)", "ハードライト"};
-    int idx                          = std::clamp((int)e->trk.blend_, 0, (int)IM_ARRAYSIZE(kBlendNames) - 1);
+    int idx                          = std::clamp((int)e->blend_, 0, (int)IM_ARRAYSIZE(kBlendNames) - 1);
     ImGui::SetNextItemWidth(-1);
     if(ImGui::Combo("合成モード", &idx, kBlendNames, IM_ARRAYSIZE(kBlendNames))) {
-      e->trk.blend_ = (BlendType)idx;
-      if(auto* comp = e->get_comp()) comp->cache.invalidate_range(e->trk.fstart, e->trk.fend);
+      e->blend_ = (BlendType)idx;
+      if(auto* comp = e->get_comp()) comp->cache.invalidate_range(e->fstart_, e->fend_);
     }
   }
 
   wd_entt_props_editor(e.get());
 
-  for(int i = 0; i < e->trk.filters.size(); i++) {
-    auto& f = e->trk.filters[i];
+  for(int i = 0; i < e->filters_.size(); i++) {
+    auto& f = e->filters_[i];
     MU_ASSERT(f.plg_ != nullptr);
     ImGui::PushID(i);
     std::string FX_ICON = ICON_FA_PLUG " ";
@@ -81,7 +81,7 @@ void InspectorWindow::Update() {
         ImGui::SetTooltip("エフェクト %s を有効/無効にします", f.plg_->name.c_str());
         if(ImGui::IsMouseClicked(0)) {
           f.enabled = !f.enabled;
-          if(auto* comp = e->get_comp()) comp->cache.invalidate_range(e->trk.fstart, e->trk.fend);
+          if(auto* comp = e->get_comp()) comp->cache.invalidate_range(e->fstart_, e->fend_);
         }
       }
       ImGui::Dummy(ImVec2(h + 4, h));
@@ -89,7 +89,7 @@ void InspectorWindow::Update() {
     }
     if(ImGui::TreeNode(str.c_str())) {
       bool props_changed = false;
-      int size_          = std::min<int>(f.props.size(), (int)e->trk.filters[i].plg_->props.fields.size());
+      int size_          = std::min<int>(f.props.size(), (int)e->filters_[i].plg_->props.fields.size());
       for(int k = 0; k < size_; k++) {
         const auto& info = f.plg_->props.fields[k];
         ImGui::PushID(k);
@@ -146,7 +146,7 @@ void InspectorWindow::Update() {
         ImGui::PopID();
       }
       if(props_changed) {
-        if(auto* comp = e->get_comp()) comp->cache.invalidate_range(e->trk.fstart, e->trk.fend);
+        if(auto* comp = e->get_comp()) comp->cache.invalidate_range(e->fstart_, e->fend_);
       }
       ImGui::TreePop();
     }
@@ -181,11 +181,11 @@ void InspectorWindow::Update() {
         const char* name = (*filters)[i].name.c_str();
         if(!fuzzy_match(name, search_buffer)) continue;
         if(ImGui::Selectable(name)) {
-          TrackObject::FilterParam fp;
+          FilterParam fp;
           fp.plg_ = &(*filters)[i];
           fp.props.add_props((*filters)[i].defaults);
           fp.enabled = true;
-          e->trk.filters.push_back(fp);
+          e->filters_.push_back(fp);
         }
       }
       ImGui::EndPopup();

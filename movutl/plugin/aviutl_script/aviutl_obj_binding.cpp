@@ -294,7 +294,7 @@ void setup_obj_table(lua_State* L, AviUtlObjContext* ctx) {
   lua_setfield(L, -2, "cy");
 
   int total = 0;
-  if(ctx->fpip->entt) total = ctx->fpip->entt->trk.fend - ctx->fpip->entt->trk.fstart;
+  if(ctx->fpip->entt) total = ctx->fpip->entt->fend_ - ctx->fpip->entt->fstart_;
   double time_sec = 0.0;
   if(ctx->fpip->compo && ctx->fpip->compo->framerate > 0) time_sec = ctx->frame / (double)ctx->fpip->compo->framerate;
   lua_pushinteger(L, ctx->frame);

@@ -42,7 +42,7 @@ public:
   float rotate_speed = 0.1f;
 
   virtual EntityType getType() const override { return EntityType_Camera; }
-  // ponytail: CPURendererは2D合成のみでカメラ変換パスが無いため、自身は何も描画しない(trk.camera_ctrlで参照される側)
+  // ponytail: CPURendererは2D合成のみでカメラ変換パスが無いため、自身は何も描画しない(camera_ctrl_で参照される側)
   virtual bool render(Composition* cmp, Image* target, int frame) override {
     MU_UNUSED(cmp);
     MU_UNUSED(target);

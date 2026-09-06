@@ -29,12 +29,12 @@ TEST_CASE("Entity::getSaveProps/fromSaveProps: フィルタ(enabled/パラメー
     if(std::string(f.name.c_str()) == "色調補正") color_correction = &f;
   REQUIRE(color_correction != nullptr);
 
-  TrackObject::FilterParam fp;
+  FilterParam fp;
   fp.plg_ = color_correction;
   fp.props.add_props(color_correction->defaults);
   fp.props.set_value<float>(0, 0, 42.0f); // hue(先頭フィールド)を非デフォルト値に変更
   fp.enabled = false;
-  img->trk.filters.push_back(fp);
+  img->filters_.push_back(fp);
 
   auto saved = img->getSaveProps();
   REQUIRE(saved.contains("filters"));
@@ -49,11 +49,11 @@ TEST_CASE("Entity::getSaveProps/fromSaveProps: フィルタ(enabled/パラメー
   auto loaded = Entity::fromSaveProps(saved);
   REQUIRE(loaded != nullptr);
 
-  CHECK(loaded->trk.filters.size() == 1);
-  REQUIRE(loaded->trk.filters.size() == 1);
-  CHECK(loaded->trk.filters[0].plg_ == color_correction);
-  CHECK(loaded->trk.filters[0].enabled == false);
-  CHECK(loaded->trk.filters[0].props.get<float>(0) == doctest::Approx(42.0f));
+  CHECK(loaded->filters_.size() == 1);
+  REQUIRE(loaded->filters_.size() == 1);
+  CHECK(loaded->filters_[0].plg_ == color_correction);
+  CHECK(loaded->filters_[0].enabled == false);
+  CHECK(loaded->filters_[0].props.get<float>(0) == doctest::Approx(42.0f));
 }
 
 TEST_CASE("Entity::getSaveProps/fromSaveProps: フィルタが無ければ空のまま復元される") {
@@ -66,5 +66,5 @@ TEST_CASE("Entity::getSaveProps/fromSaveProps: フィルタが無ければ空の
   auto saved  = img->getSaveProps();
   auto loaded = Entity::fromSaveProps(saved);
   REQUIRE(loaded != nullptr);
-  CHECK(loaded->trk.filters.empty());
+  CHECK(loaded->filters_.empty());
 }

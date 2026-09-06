@@ -53,13 +53,13 @@ cutil::Prop Entity::getSaveProps() const {
   p.set<std::string>("name", name.c_str());
   p.set<int32_t>("guid", (int32_t)guid_);
   p.set_child("props", getProps());
-  p.set_child("trk", trk.getProps());
+  p.set_child("trk", getTrackProps());
 
-  // trk.filtersはTrackObject::getPropsInfo()の自動生成対象外(std::vector<FilterParam>)のため個別にシリアライズする
+  // filters_はgetTrackPropsInfo()の自動生成対象外(std::vector<FilterParam>)のため個別にシリアライズする
   cutil::Prop filters_p;
-  filters_p.set<int32_t>("count", (int32_t)trk.filters.size());
-  for(size_t i = 0; i < trk.filters.size(); i++) {
-    const auto& f = trk.filters[i];
+  filters_p.set<int32_t>("count", (int32_t)filters_.size());
+  for(size_t i = 0; i < filters_.size(); i++) {
+    const auto& f = filters_[i];
     cutil::Prop fp;
     fp.set<int32_t>("plugin_guid", (int32_t)(f.plg_ ? f.plg_->guid : 0));
     fp.set<bool>("enabled", f.enabled);
@@ -77,7 +77,7 @@ Ref<Entity> Entity::fromSaveProps(const cutil::Prop& p) {
   if(!e) return nullptr;
   e->guid_ = (uint64_t)cutil::get_or<int32_t>(p, "guid", (int32_t)e->guid_);
   if(p.contains("props")) e->setProps(p.get_child("props"));
-  if(p.contains("trk")) e->trk.setProps(p.get_child("trk"));
+  if(p.contains("trk")) e->setTrackProps(p.get_child("trk"));
 
   if(p.contains("filters")) {
     const auto& filters_p = p.get_child("filters");
@@ -86,7 +86,7 @@ Ref<Entity> Entity::fromSaveProps(const cutil::Prop& p) {
     for(int32_t i = 0; i < count; i++) {
       const auto& fp = filters_p.get_child(("filter_" + std::to_string(i)).c_str());
       int32_t guid   = cutil::get_or<int32_t>(fp, "plugin_guid", 0);
-      TrackObject::FilterParam f;
+      FilterParam f;
       for(auto& plg : main->filters) {
         if((int32_t)plg.guid == guid) {
           f.plg_ = &plg;
@@ -99,7 +99,7 @@ Ref<Entity> Entity::fromSaveProps(const cutil::Prop& p) {
       }
       f.enabled = cutil::get_or<bool>(fp, "enabled", true);
       if(fp.contains("params")) f.props.add_props(fp.get_child("params"));
-      e->trk.filters.push_back(f);
+      e->filters_.push_back(f);
     }
   }
 
@@ -132,8 +132,8 @@ std::string EntityInfo::str() const {
 bool Entity::render_filters(Composition* cmp, Image* img, int frame) {
   MU_ASSERT(cmp != nullptr);
   MOVUTL_ZONE_SCOPED_N("Entity::render_filters");
-  for(int i = 0; i < trk.filters.size(); i++) {
-    auto& f = trk.filters[i];
+  for(int i = 0; i < filters_.size(); i++) {
+    auto& f = filters_[i];
     if(!f.enabled) continue;
     MU_ASSERT(f.plg_ != nullptr);
     if(!f.plg_->fn_proc) {

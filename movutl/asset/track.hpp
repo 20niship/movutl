@@ -28,43 +28,17 @@ enum BlendType { // MPROPERTY(name="合成モード")
 
 struct FilterPluginTable;
 
-/**
- * あるレイヤ上に存在する一つのオブジェクト
- * これはEntityのデータの中に含まれる
- */
-struct TrackObject {
-public:
-  uint32_t guid;
-
-  int fstart = -1;                    // MPROPERTY(name="開始位置(frame)" hidden_inspector=true)
-  int fend   = -1;                    // MPROPERTY(name="終了位置(frame)" hidden_inspector=true)
-  Vec2 anchor;                        // MPROPERTY(name="アンカー", viewer_anchor=true, position=true)
-  BlendType blend_     = Blend_Alpha; // MPROPERTY(name="合成モード")
-  uint32_t group_guid  = 0;           // MPROPERTY(name="グループID", desc="グループ化されている時のグループID", hidden_inspector=true)
-  bool active_         = true;        // MPROPERTY(name="アクティブ", desc="オブジェクトが有効かどうか")
-  bool solo_           = false;       // MPROPERTY(name="ソロモード", desc="(音声のみ)他のレイヤを非表示にする")
-  bool clipping_up     = false;       // MPROPERTY(name="上レイヤでクリッピング",  hidden_inspector=true)
-  bool camera_ctrl     = false;       // MPROPERTY(name="カメラ制御", desc="カメラ制御の対象", hidden_inspector=true)
-  int32_t custom_color = 0;           // MPROPERTY(name="カスタム色", desc="0の場合メディア種別ごとの既定色を使う")
-
-  struct FilterParam {
-    FilterPluginTable* plg_ = nullptr;
-    uint32_t guid           = 0; // フィルタID
-    AnimProps props;             // フィルタプロパティ
-    bool enabled = true;
-    // 音声フィルタ用のトラックオブジェクト固有DSP状態(ディレイライン等)。fn_proc(&instance_state, ...)としてfp引数に渡される
-    void* instance_state = nullptr;
-    FilterParam()        = default;
-    FilterParam(FilterPluginTable* plg, uint32_t guid) : plg_(plg), guid(guid) {}
-    ~FilterParam() = default;
-  };
-  std::vector<FilterParam> filters;
-
-  bool visible(int frame) const { return fstart <= frame && frame <= fend && active_; }
-
-  const cutil::PropInfo* getPropsInfo() const; // MUFUNC_AUTOGEN
-  cutil::Prop getProps() const;                // MUFUNC_AUTOGEN
-  void setProps(const cutil::Prop& props);     // MUFUNC_AUTOGEN
+// 一つのEntity(トラック上のオブジェクト)に適用されているフィルタ1個分のパラメータ
+struct FilterParam {
+  FilterPluginTable* plg_ = nullptr;
+  uint32_t guid           = 0; // フィルタID
+  AnimProps props;             // フィルタプロパティ
+  bool enabled = true;
+  // 音声フィルタ用のトラックオブジェクト固有DSP状態(ディレイライン等)。fn_proc(&instance_state, ...)としてfp引数に渡される
+  void* instance_state = nullptr;
+  FilterParam()        = default;
+  FilterParam(FilterPluginTable* plg, uint32_t guid) : plg_(plg), guid(guid) {}
+  ~FilterParam() = default;
 };
 
 } // namespace mu

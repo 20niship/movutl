@@ -73,12 +73,12 @@ TEST_CASE("ShapeEntt::render カスタムパスは点群のbboxに合わせて�
 }
 
 TEST_CASE("ShapeEntt: getSaveProps/fromSavePropsの往復でEntity::CreateEntityがEntityType_Polygonを復元できる(#34)") {
-  auto shp        = ShapeEntt::Create("rect", ShapeType_Rect);
-  shp->pos_       = Vec3(5, 6, 0);
-  shp->size_      = Vec2(30, 20);
-  shp->color_     = Vec4b(10, 20, 30, 255);
-  shp->trk.fstart = 3;
-  shp->trk.fend   = 33;
+  auto shp     = ShapeEntt::Create("rect", ShapeType_Rect);
+  shp->pos_    = Vec3(5, 6, 0);
+  shp->size_   = Vec2(30, 20);
+  shp->color_  = Vec4b(10, 20, 30, 255);
+  shp->fstart_ = 3;
+  shp->fend_   = 33;
 
   auto saved    = shp->getSaveProps();
   auto restored = Entity::fromSaveProps(saved);
@@ -89,6 +89,6 @@ TEST_CASE("ShapeEntt: getSaveProps/fromSavePropsの往復でEntity::CreateEntity
   CHECK(restored_shape->pos_ == shp->pos_);
   CHECK(restored_shape->size_[0] == doctest::Approx(shp->size_[0]));
   CHECK(restored_shape->color_ == shp->color_);
-  CHECK(restored->trk.fstart == 3);
-  CHECK(restored->trk.fend == 33);
+  CHECK(restored->fstart_ == 3);
+  CHECK(restored->fend_ == 33);
 }

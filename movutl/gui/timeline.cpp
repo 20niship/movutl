@@ -480,8 +480,8 @@ bool IsTimelineClickedLeftButton() { return ctx_.last_entt_hov; }
 bool BeginTrack(const Ref<Entity>& entity) {
   MU_ASSERT(entity);
   const char* name = entity->name.c_str();
-  int* start       = &entity->trk.fstart;
-  int* end         = &entity->trk.fend;
+  int* start       = &entity->fstart_;
+  int* end         = &entity->fend_;
   int htop         = ctx_.layer_y1();
 
   constexpr int kEdgeW = 5; // 左右端のドラッグ判定幅(px)
@@ -521,11 +521,11 @@ bool BeginTrack(const Ref<Entity>& entity) {
       ctx_.drag_start_frame = ctx_.view2f((int)mouse_x);
 
       ctx_.drag_group_orig.clear();
-      if(ctx_.drag_mode == 1 && entity->trk.group_guid != 0) {
+      if(ctx_.drag_mode == 1 && entity->group_guid_ != 0) {
         if(auto* comp = entity->get_comp()) {
           for(auto& other : comp->get_all_entities()) {
-            if(other.get() == entity.get() || other->trk.group_guid != entity->trk.group_guid) continue;
-            ctx_.drag_group_orig.push_back({other.get(), other->trk.fstart, other->trk.fend});
+            if(other.get() == entity.get() || other->group_guid_ != entity->group_guid_) continue;
+            ctx_.drag_group_orig.push_back({other.get(), other->fstart_, other->fend_});
           }
         }
       }
@@ -543,8 +543,8 @@ bool BeginTrack(const Ref<Entity>& entity) {
           *start = ctx_.drag_orig_fstart + delta_f;
           *end   = ctx_.drag_orig_fend + delta_f;
           for(auto& [other, ofs, ofe] : ctx_.drag_group_orig) {
-            other->trk.fstart = ofs + delta_f;
-            other->trk.fend   = ofe + delta_f;
+            other->fstart_ = ofs + delta_f;
+            other->fend_   = ofe + delta_f;
           }
         } else if(ctx_.drag_mode == 2) {
           int new_start = std::min(ctx_.drag_orig_fstart + delta_f, *end - 1);
@@ -575,9 +575,9 @@ bool BeginTrack(const Ref<Entity>& entity) {
     ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
   }
 
-  auto col = entity->trk.custom_color ? (ImU32)entity->trk.custom_color : get_entt_color(entity);
+  auto col = entity->custom_color_ ? (ImU32)entity->custom_color_ : get_entt_color(entity);
   // 非アクティブなEntity/レイヤーはクリップを暗く表示する
-  bool dim_track = !entity->trk.active_ || !ctx_.cur_layer_active;
+  bool dim_track = !entity->active_ || !ctx_.cur_layer_active;
   if(dim_track) {
     ImVec4 c4 = ImGui::ColorConvertU32ToFloat4(col);
     c4.w *= 0.35f;
