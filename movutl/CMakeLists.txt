@@ -195,6 +195,40 @@ set(MOVUTL_INCLUDES
   ${MOVUTL_ROOT_DIR}/ext/uapmd/source/remidy/include
 )
 set(MOVUTL_LIBRARIES ${MOVUTL_LIBRARIES} uapmd::uapmd-plugin-hosting remidy::remidy)
+# vst_host.cppがcpplocate::localDir()でremidy-toolingキャッシュディレクトリを求めるため、mucoreにも公開でリンクする。
+set(MOVUTL_LIBRARIES ${MOVUTL_LIBRARIES} ${cpplocate_LIBRARIES})
+
+# --------------------------------------------------------------
+# ------  動作確認用: mda-vst3サンプルVST3プラグインのビルド  --------
+# --------------------------------------------------------------
+# remidyはvst3sdkをDOWNLOAD_ONLYで取得するのみでadd_subdirectoryしないため、
+# vst3sdk_SOURCE_DIRはremidyのCMakeLists.txtのローカルスコープにしか存在しない。
+# 同じNAME/GIT_TAGでCPMAddPackageを呼び直すと、CPM既存キャッシュを再利用したまま
+# このスコープでもvst3sdk_SOURCE_DIRを得られる(再ダウンロードは発生しない)。
+CPMAddPackage(
+  NAME            vst3sdk
+  GIT_REPOSITORY  https://github.com/steinbergmedia/vst3sdk
+  GIT_TAG         v3.8.0_build_66
+  DOWNLOAD_ONLY   YES
+)
+if(vst3sdk_SOURCE_DIR)
+  set(SMTG_ENABLE_VST3_PLUGIN_EXAMPLES ON)
+  set(SMTG_ENABLE_VST3_HOSTING_EXAMPLES OFF)
+  set(SMTG_ENABLE_VSTGUI_SUPPORT OFF)
+  # OS標準VST3フォルダへのシンボリックリンク作成を抑止する(movutl独自ディレクトリのみで完結させる)
+  set(SMTG_CREATE_PLUGIN_LINK OFF)
+  # ビルド後のvalidator自動実行はこの環境では引数指定が合わず失敗し生成物を削除してしまうため無効化する
+  set(SMTG_RUN_VST_VALIDATOR OFF)
+  # movutl本体はCMAKE_BUILD_TYPEを設定しないため、vst3sdk側が要求するRELEASE/DEVELOPMENT/NDEBUG/_DEBUGの
+  # いずれも定義されずfdebug.hの#errorで止まる。add_subdirectory直前だけCMAKE_CXX_FLAGSにRELEASEを足して戻す
+  # (mucore等movutl本体のターゲットへは影響させない)。
+  set(_MOVUTL_OLD_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DRELEASE")
+  # EXCLUDE_FROM_ALLなので、明示的に`mda-vst3`ターゲットを指定しない限り他のサンプル群はビルドされない
+  # (`cmake --build build --target mda-vst3`)。動作確認用のサンプルVST3プラグインで、通常ビルドには含まれない。
+  add_subdirectory(${vst3sdk_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}/vst3sdk_examples EXCLUDE_FROM_ALL)
+  set(CMAKE_CXX_FLAGS "${_MOVUTL_OLD_CXX_FLAGS}")
+endif()
 
 file(GLOB DATA_FILES ${CMAKE_CURRENT_SOURCE_DIR}/data/*)
 file(COPY ${DATA_FILES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
