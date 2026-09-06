@@ -3,7 +3,6 @@
 #include <cutil/ref.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/entity.hpp>
-#include <movutl/asset/track.hpp>
 #include <movutl/core/defines.hpp>
 #include <movutl/core/vector.hpp>
 #include <string>

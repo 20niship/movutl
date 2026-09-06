@@ -37,7 +37,6 @@ class SolWriter:
             "#include <movutl/asset/project.hpp>\n"
             "#include <movutl/asset/movie.hpp>\n"
             "#include <movutl/core/anim.hpp>\n"
-            "#include <movutl/asset/track.hpp>\n"
             "#include <movutl/asset/entity.hpp>\n"
             "#include <movutl/asset/composition.hpp>\n"
             "namespace mu::detail { \n"

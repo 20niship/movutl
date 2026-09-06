@@ -43,7 +43,6 @@ class LuaIntfWriter:
             "#include <movutl/core/anim.hpp>\n"
             "#include <movutl/gui/gui.hpp>\n"
             "#include <movutl/binding/imgui_binding.hpp>\n"
-            "#include <movutl/asset/track.hpp>\n"
             "#include <movutl/asset/entity.hpp>\n"
             "#include <movutl/binding/imgui_binding.hpp>\n"
             "#include <movutl/asset/composition.hpp>\n"
