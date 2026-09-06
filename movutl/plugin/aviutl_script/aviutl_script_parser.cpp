@@ -74,6 +74,7 @@ std::vector<AviUtlScriptDef> parse_aviutl_script(const std::string& text) {
     if(!line.empty() && line.back() == '\r') line.pop_back();
 
     if(std::regex_match(line, m, track_re)) {
+      int idx    = std::stoi(m[1].str()); // trackN のNをそのままインデックスとして使う(N番目未定義の飛び番があっても正しい位置に入れるため)
       auto parts = split_csv(m[2].str());
       AviUtlTrackDef t;
       if(parts.size() > 0) t.name = parts[0];
@@ -81,15 +82,18 @@ std::vector<AviUtlScriptDef> parse_aviutl_script(const std::string& text) {
       if(parts.size() > 2) t.max_value = parse_float_or(parts[2], 100.0f);
       if(parts.size() > 3) t.default_value = parse_float_or(parts[3], 0.0f);
       if(parts.size() > 4) t.step = parse_float_or(parts[4], 1.0f);
-      pending_tracks.push_back(t);
+      if((int)pending_tracks.size() <= idx) pending_tracks.resize(idx + 1);
+      pending_tracks[idx] = t;
       continue;
     }
     if(std::regex_match(line, m, check_re)) {
+      int idx    = std::stoi(m[1].str());
       auto parts = split_csv(m[2].str());
       AviUtlCheckDef c;
       if(parts.size() > 0) c.name = parts[0];
       if(parts.size() > 1) c.default_value = parse_float_or(parts[1], 0.0f) != 0.0f;
-      pending_checks.push_back(c);
+      if((int)pending_checks.size() <= idx) pending_checks.resize(idx + 1);
+      pending_checks[idx] = c;
       continue;
     }
     if(line.rfind("--dialog:", 0) == 0) {

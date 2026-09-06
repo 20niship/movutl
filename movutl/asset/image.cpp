@@ -183,8 +183,8 @@ bool Image::drawpoly(Image* dst, const Vec2d corners[4], float alpha_mul, BlendT
   MU_ASSERT(dst);
   if(this->width <= 0 || this->height <= 0 || dst->width <= 0 || dst->height <= 0) return false;
 
-  // corners順は左上,右上,左下,右下(AviUtl obj.drawpolyの引数順に合わせる)
-  cv::Point2f src_pts[4] = {{0, 0}, {(float)width, 0}, {0, (float)height}, {(float)width, (float)height}};
+  // corners順は左上,右上,左下,右下(AviUtl obj.drawpolyの引数順に合わせる)。端点はcopyto(center,scale,angle)と同様ピクセル座標の右端/下端(width-1,height-1)を使う
+  cv::Point2f src_pts[4] = {{0, 0}, {(float)width - 1, 0}, {0, (float)height - 1}, {(float)width - 1, (float)height - 1}};
   cv::Point2f dst_pts[4];
   float min_x = std::numeric_limits<float>::max(), max_x = std::numeric_limits<float>::lowest();
   float min_y = std::numeric_limits<float>::max(), max_y = std::numeric_limits<float>::lowest();
@@ -197,7 +197,7 @@ bool Image::drawpoly(Image* dst, const Vec2d corners[4], float alpha_mul, BlendT
   }
   cv::Mat fwd = cv::getPerspectiveTransform(src_pts, dst_pts);
   cv::Mat inv;
-  cv::invert(fwd, inv);
+  if(!cv::invert(fwd, inv)) return false; // 四隅が退化した四角形(3点以上が同一直線上等)で変換行列が特異な場合は合成をスキップする
 
   int bbox_x0 = std::max(0, (int)std::floor(min_x));
   int bbox_x1 = std::min((int)dst->width, (int)std::ceil(max_x));

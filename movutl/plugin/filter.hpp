@@ -23,7 +23,8 @@ public:
                                 //	オーディオ形式はPCM16bitです ( 1サンプルは mono = 2byte , stereo = 4byte )
   int audio_n  = 0;             //	オーディオサンプルの総数
   int audio_ch = 0;             //	オーディオチャンネル数
-  int reserve[8];               //	拡張用に予約されてます
+  int frame    = 0;             //	現在の編集フレーム番号
+  int reserve[7];               //	拡張用に予約されてます
 };
 
 enum FilterInfoType {

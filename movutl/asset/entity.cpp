@@ -147,7 +147,7 @@ bool Entity::render_filters(Composition* cmp, Image* img, int frame) {
     in.img            = img;
     in.compo          = cmp;
     in.entt           = this;
-    in.reserve[0]     = frame; // AviUtl互換ブリッジ(obj.frame等)がフレーム番号を参照するために使う
+    in.frame          = frame;
     cutil::Prop props = f.props.get(frame);
     if(!f.plg_->fn_proc(fp, &in, f.props.get(frame))) {
       LOG_F(ERROR, "Plugin %s render failed", f.plg_->name.c_str());
