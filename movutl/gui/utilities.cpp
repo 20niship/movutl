@@ -1,6 +1,7 @@
 #include <IconsFontAwesome6.h>
 #include <imgui.h>
 #include <movutl/app/app.hpp>
+#include <movutl/asset/custom_object.hpp>
 #include <movutl/asset/entity.hpp>
 #include <movutl/gui/utilities.hpp>
 
@@ -30,6 +31,18 @@ void add_entities_ui() {
   }
   ImGui::NextColumn();
   if(ImGui::Button(ICON_FA_TV " フレームバッファ")) add_new_track("framebuffer", EntityType_Framebuffer, 0, 100);
+  ImGui::NextColumn();
+  if(ImGui::Button(ICON_FA_MAGNIFYING_GLASS " カスタムオブジェクト")) ImGui::OpenPopup("##ADD_CUSTOM_OBJECT_POPUP");
+  if(ImGui::BeginPopup("##ADD_CUSTOM_OBJECT_POPUP")) {
+    static char filter_buf[128] = "";
+    ImGui::InputTextWithHint("##custom_obj_filter", "検索...", filter_buf, sizeof(filter_buf));
+    std::string filter(filter_buf);
+    for(const auto& entry : CustomObjectRegistry::Get()->list()) {
+      if(!filter.empty() && entry.name.find(filter) == std::string::npos) continue;
+      if(ImGui::Selectable(entry.name.c_str())) add_new_custom_object_track(entry.name, 0, 100);
+    }
+    ImGui::EndPopup();
+  }
   ImGui::NextColumn();
   ImGui::Columns(1);
   ImGui::EndGroup();

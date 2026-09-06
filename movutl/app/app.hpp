@@ -3,6 +3,7 @@
 #include <movutl/asset/image.hpp>
 #include <movutl/asset/shape.hpp>
 #include <movutl/asset/text.hpp>
+#include <string>
 #include <vector>
 
 namespace mu {
@@ -45,6 +46,7 @@ bool add_new_audio_track(const char* name, const char* path, int start, int laye
 Ref<ShapeEntt> add_new_shape_track(const char* name, int start, int end, ShapeType type);
 Ref<TextEntt> add_new_text_track(const char* name, int start, int end);
 Ref<Image> add_new_image_track(const char* name, const char* path, int start, int end);
+Ref<Entity> add_new_custom_object_track(const std::string& script_name, int start, int end);
 
 // 登録済みフィルタ(AppMain::filters)を名前で検索しentt->filters_へ追加する(見つからなければfalse)
 bool add_filter_to_entity(const Ref<Entity>& entt, const char* filter_name);

@@ -1,6 +1,7 @@
 #include <movutl/app/app.hpp>
 #include <movutl/asset/audio.hpp>
 #include <movutl/asset/composition.hpp>
+#include <movutl/asset/custom_object.hpp>
 #include <movutl/asset/entity.hpp>
 #include <movutl/asset/framebuffer.hpp>
 #include <movutl/asset/image.hpp>
@@ -55,6 +56,17 @@ Ref<TextEntt> add_new_text_track(const char* name, int start, int end) {
   txt->fend_   = end;
   main_comp->insert_entity(txt);
   return txt;
+}
+
+Ref<Entity> add_new_custom_object_track(const std::string& script_name, int start, int end) {
+  auto e = CustomObjectEntt::Create(script_name.c_str(), script_name); // nameとscript_nameは同じでよい(ユーザーは後でEntity::nameを改名できる)
+  if(!e) return nullptr;
+  Composition* main_comp = Composition::GetActiveComp();
+  MU_ASSERT(main_comp);
+  e->fstart_ = start;
+  e->fend_   = end;
+  main_comp->insert_entity(e);
+  return e;
 }
 
 Ref<Entity> add_new_video_track(const char* name, const char* path, int start, int layer) {
