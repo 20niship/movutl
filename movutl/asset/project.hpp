@@ -26,6 +26,9 @@ public:
   static void Save(const char* path = nullptr);
   static void Load(const char* path);
 
+  // New/Loadでcompos_.clear()する直前に呼ばれるフック(asset層はapp層のワーカーに依存できないため間接呼び出し)
+  static void SetWorkerQuiesceHook(void (*fn)());
+
   // Compositionを新規追加し、設定ウィンドウを自動で開いた状態で返す(戻り値は非所有ポインタ、所有権はcompos_が持つ)
   static Composition* AddComposition(const char* name, int width = 1920, int height = 1080, int fps = 30);
 
@@ -40,6 +43,9 @@ public:
   static Composition* GetActiveCompo();
   static void SetActiveCompo(int idx);
   static void RemoveComposition(uint32_t guid);
+
+private:
+  static void (*quiesce_hook_)();
 };
 
 } // namespace mu

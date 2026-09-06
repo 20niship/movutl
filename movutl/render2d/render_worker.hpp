@@ -26,6 +26,9 @@ public:
 
   void request(Composition* comp, int frame, bool urgent);
 
+  // 未着手ジョブを破棄し実行中ジョブの完了を待つ(Project::New/Loadでのdangling Composition*破棄を防ぐ)
+  void flush();
+
   void stop();
 
   static size_t default_worker_count();
@@ -54,6 +57,8 @@ private:
   std::set<Job> pending_; // キュー投入済み〜レンダリング完了(cache挿入)までを表す。二重発注防止用
   mutable std::mutex qmtx_;
   std::condition_variable cv_;
+  std::condition_variable idle_cv_; // busy_count_が0に戻った時にflush()を起こす
+  size_t busy_count_ = 0;           // qmtx_で保護。現在レンダリング中(pop済み〜cache挿入済み)のジョブ数
   std::atomic<bool> stop_{false};
 
   std::unique_ptr<std::atomic<int>[]> worker_frame_;

@@ -8,7 +8,12 @@
 
 namespace mu {
 
+void (*Project::quiesce_hook_)() = nullptr;
+
+void Project::SetWorkerQuiesceHook(void (*fn)()) { quiesce_hook_ = fn; }
+
 void Project::New(int width, int height, int fps) {
+  if(quiesce_hook_) quiesce_hook_();
   auto pj = Project::Get();
   pj->compos_.clear();
   pj->entities.clear();
@@ -92,6 +97,7 @@ void Project::Save(const char* path) {
 
 void Project::Load(const char* path) {
   MU_ASSERT(path != nullptr);
+  if(quiesce_hook_) quiesce_hook_();
   auto pj = Project::Get();
   pj->compos_.clear();
   pj->entities.clear();
