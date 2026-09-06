@@ -533,6 +533,12 @@ function movutl.add_filter_to_shape( entt, filter_name, )end
 ---@return boolean
 function movutl.add_new_audio_track( name, path, start, layer, )end
 
+---@param script_name std::string 
+---@param start number
+---@param end number
+---@return Ref<Entity>
+function movutl.add_new_custom_object_track( script_name, start, end, )end
+
 ---@param name string
 ---@param path string
 ---@param start number
