@@ -1,3 +1,4 @@
+#include <cmath>
 #include <cstring>
 #include <movutl/app/app_impl.hpp>
 #include <movutl/asset/composition.hpp>
@@ -171,6 +172,50 @@ int l_obj_drawpoly(lua_State* L) {
   return 0;
 }
 
+// obj.line(x0,y0,x1,y1,r,g,b,a,width): AviUtl非標準の独自拡張。集中線等の放射状線画をピクセル直操作より高速に描くために追加(ponytail: 各ステップ正方形スタンプの素朴実装、アンチエイリアス無し)
+int l_obj_line(lua_State* L) {
+  auto* ctx  = get_ctx(L);
+  Image* img = ctx->fpip->img;
+  if(!img || img->empty()) return 0;
+
+  double x0 = luaL_checknumber(L, 1) + img->width / 2.0;
+  double y0 = luaL_checknumber(L, 2) + img->height / 2.0;
+  double x1 = luaL_checknumber(L, 3) + img->width / 2.0;
+  double y1 = luaL_checknumber(L, 4) + img->height / 2.0;
+  int r     = (int)luaL_checknumber(L, 5);
+  int g     = (int)luaL_checknumber(L, 6);
+  int b     = (int)luaL_checknumber(L, 7);
+  int a     = (int)luaL_checknumber(L, 8);
+  int width = (int)luaL_optnumber(L, 9, 1);
+  if(width < 1) width = 1;
+
+  double dx     = x1 - x0;
+  double dy     = y1 - y0;
+  double length = std::sqrt(dx * dx + dy * dy);
+  int steps     = (int)std::ceil(length) + 1;
+  int half      = width / 2;
+
+  auto blend_px = [&](int px, int py) {
+    if(px < 0 || py < 0 || px >= (int)img->width || py >= (int)img->height) return;
+    Vec4b& dst = (*img)(px, py);
+    float sa   = a / 255.0f;
+    dst[0]     = (uint8_t)(r * sa + dst[0] * (1.0f - sa));
+    dst[1]     = (uint8_t)(g * sa + dst[1] * (1.0f - sa));
+    dst[2]     = (uint8_t)(b * sa + dst[2] * (1.0f - sa));
+    dst[3]     = (uint8_t)std::min(255.0f, a + dst[3] * (1.0f - sa));
+  };
+
+  for(int s = 0; s <= steps; s++) {
+    double t = steps == 0 ? 0.0 : (double)s / steps;
+    int cx   = (int)std::round(x0 + dx * t);
+    int cy   = (int)std::round(y0 + dy * t);
+    for(int oy = -half; oy <= half; oy++)
+      for(int ox = -half; ox <= half; ox++) blend_px(cx + ox, cy + oy);
+  }
+  ctx->drawn = true;
+  return 0;
+}
+
 // obj.copybuffer(dst,src): "obj"⇔"tmp"/"cache:xxx"間で現在の画像バッファを退避・復元する(フィルタインスタンス単位で永続)
 int l_obj_copybuffer(lua_State* L) {
   auto* ctx  = get_ctx(L);
@@ -265,6 +310,7 @@ void setup_obj_table(lua_State* L, AviUtlObjContext* ctx) {
   reg_fn("effect", l_obj_effect);
   reg_fn("draw", l_obj_draw);
   reg_fn("drawpoly", l_obj_drawpoly);
+  reg_fn("line", l_obj_line);
   reg_fn("copybuffer", l_obj_copybuffer);
   reg_fn("setoption", l_obj_setoption);
   reg_fn("getoption", l_obj_noop);
@@ -294,7 +340,7 @@ void setup_obj_table(lua_State* L, AviUtlObjContext* ctx) {
   lua_setfield(L, -2, "cy");
 
   int total = 0;
-  if(ctx->fpip->entt) total = ctx->fpip->entt->trk.fend - ctx->fpip->entt->trk.fstart;
+  if(ctx->fpip->entt) total = ctx->fpip->entt->fend_ - ctx->fpip->entt->fstart_;
   double time_sec = 0.0;
   if(ctx->fpip->compo && ctx->fpip->compo->framerate > 0) time_sec = ctx->frame / (double)ctx->fpip->compo->framerate;
   lua_pushinteger(L, ctx->frame);

@@ -16,7 +16,6 @@
 #include <movutl/asset/project.hpp>
 #include <movutl/asset/shape.hpp>
 #include <movutl/asset/text.hpp>
-#include <movutl/asset/track.hpp>
 #include <movutl/binding/imgui_binding.hpp>
 #include <movutl/core/anim.hpp>
 #include <movutl/gui/gui.hpp>
@@ -175,9 +174,21 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("get_info", &Entity::get_info)
     .addFunction("reload_asset", &Entity::reload_asset)
     .addFunction("visible", &Entity::visible)
-    .addVariable("name", &Entity::name)   // cutil::Str
-    .addVariable("guid_", &Entity::guid_) // uint64_t
-    .addVariable("trk", &Entity::trk)     // TrackObject
+    .addFunction("getTrackPropsInfo", &Entity::getTrackPropsInfo)
+    .addFunction("getTrackProps", &Entity::getTrackProps)
+    .addFunction("setTrackProps", &Entity::setTrackProps)
+    .addVariable("name", &Entity::name)                   // cutil::Str
+    .addVariable("guid_", &Entity::guid_)                 // uint64_t
+    .addVariable("fstart_", &Entity::fstart_)             // int
+    .addVariable("fend_", &Entity::fend_)                 // int
+    .addVariable("anchor_", &Entity::anchor_)             // Vec2
+    .addVariable("blend_", &Entity::blend_)               // BlendType
+    .addVariable("group_guid_", &Entity::group_guid_)     // uint32_t
+    .addVariable("active_", &Entity::active_)             // bool
+    .addVariable("solo_", &Entity::solo_)                 // bool
+    .addVariable("clipping_up_", &Entity::clipping_up_)   // bool
+    .addVariable("camera_ctrl_", &Entity::camera_ctrl_)   // bool
+    .addVariable("custom_color_", &Entity::custom_color_) // int32_t
     .endClass()
     .beginClass<EntityInfo>("EntityInfo")
     .addFunction("str", &EntityInfo::str)
@@ -299,19 +310,6 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addVariable("active", &TrackLayer::active) // bool
     .addVariable("entts", &TrackLayer::entts)   // std::vector<Ref<Entity> >
     .endClass()
-    .beginClass<TrackObject>("TrackObject")
-    .addFunction("visible", &TrackObject::visible)
-    .addVariable("fstart", &TrackObject::fstart)             // int
-    .addVariable("fend", &TrackObject::fend)                 // int
-    .addVariable("anchor", &TrackObject::anchor)             // Vec2
-    .addVariable("blend_", &TrackObject::blend_)             // BlendType
-    .addVariable("group_guid", &TrackObject::group_guid)     // uint32_t
-    .addVariable("active_", &TrackObject::active_)           // bool
-    .addVariable("solo_", &TrackObject::solo_)               // bool
-    .addVariable("clipping_up", &TrackObject::clipping_up)   // bool
-    .addVariable("camera_ctrl", &TrackObject::camera_ctrl)   // bool
-    .addVariable("custom_color", &TrackObject::custom_color) // int32_t
-    .endClass()
     .beginClass<Workspace>("Workspace")
     .addFunction("add_entry", &Workspace::add_entry)
     .addFunction("clear_entries", &Workspace::clear_entries)
@@ -327,6 +325,7 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("add_filter_to_image", static_cast<bool (*)(const Ref<Image>&, const char*)>(&add_filter_to_image))
     .addFunction("add_filter_to_shape", static_cast<bool (*)(const Ref<ShapeEntt>&, const char*)>(&add_filter_to_shape))
     .addFunction("add_new_audio_track", static_cast<bool (*)(const char*, const char*, int, int)>(&add_new_audio_track))
+    .addFunction("add_new_custom_object_track", static_cast<Ref<Entity> (*)(const std::string&, int, int)>(&add_new_custom_object_track))
     .addFunction("add_new_image_track", static_cast<Ref<Image> (*)(const char*, const char*, int, int)>(&add_new_image_track))
     .addFunction("add_new_shape_track", static_cast<Ref<ShapeEntt> (*)(const char*, int, int, ShapeType)>(&add_new_shape_track))
     .addFunction("add_new_text_track", static_cast<Ref<TextEntt> (*)(const char*, int, int)>(&add_new_text_track))

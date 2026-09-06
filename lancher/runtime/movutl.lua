@@ -541,33 +541,6 @@ function movutl.TrackLayer:str( ) end
 ---@return string
 function movutl.TrackLayer:summary( ) end
 
----@class TrackObject
----@field fstart number
----@field fend number
----@field anchor Vec2
----@field blend_ BlendType
----@field group_guid number
----@field active_ boolean
----@field solo_ boolean
----@field clipping_up boolean
----@field camera_ctrl boolean
----@field custom_color number
-movutl.TrackObject = {}
-movutl.TrackObject.fstart = - 1
-movutl.TrackObject.fend = - 1
-movutl.TrackObject.anchor = Vec2()
-movutl.TrackObject.blend_ = Blend_Alpha
-movutl.TrackObject.group_guid = 0
-movutl.TrackObject.active_ = true
-movutl.TrackObject.solo_ = false
-movutl.TrackObject.clipping_up = false
-movutl.TrackObject.camera_ctrl = false
-movutl.TrackObject.custom_color = 0
-
----@param frame number
----@return boolean
-function movutl.TrackObject:visible( frame, ) end
-
 ---@class Workspace
 ---@field name string
 ---@field entries table
@@ -614,6 +587,12 @@ function movutl.add_filter_to_shape( entt, filter_name, )end
 ---@param layer number
 ---@return boolean
 function movutl.add_new_audio_track( name, path, start, layer, )end
+
+---@param script_name std::string 
+---@param start number
+---@param end number
+---@return Ref<Entity>
+function movutl.add_new_custom_object_track( script_name, start, end, )end
 
 ---@param name string
 ---@param path string

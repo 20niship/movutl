@@ -6,6 +6,7 @@ abi_exclude_symbols = {
     "register_default_plugins",
     "register_default_filters",
     "register_aviutl_scripts",
+    "register_custom_objects",
 }
 
 ignore_symbols = [  #
@@ -147,8 +148,7 @@ ignore_symbols = [  #
     ("", "TextColoredV"),
     ("", "TextDisabled"),
     ("FilterParam", ""),
-    ("TrackObject", "filters"),
-    ("TrackObject", "guid"),
+    ("Entity", "filters_"),
     # ----
     ("ImGuiIO", "MousDown"),
     ("ImGuiIO", "keysData"),

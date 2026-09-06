@@ -17,6 +17,7 @@ void init() {
   detail::register_default_commands();
   detail::init_external_plugins();
   detail::register_aviutl_scripts();
+  detail::register_custom_objects();
   LOG_F(1, "Loading plugins...");
   detail::activate_all_plugins();
   Config::Load();

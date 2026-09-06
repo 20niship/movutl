@@ -23,12 +23,12 @@ Ref<Composition> make_compo(const char* name, uint32_t guid, int w = 400, int h 
 }
 
 Ref<ShapeEntt> make_fill_rect(const char* name, Vec2 comp_size, const Vec4b& color, int fstart, int fend) {
-  auto shp        = ShapeEntt::Create(name, ShapeType_Rect);
-  shp->pos_       = Vec3(0, 0, 0);
-  shp->size_      = comp_size;
-  shp->color_     = color;
-  shp->trk.fstart = fstart;
-  shp->trk.fend   = fend;
+  auto shp     = ShapeEntt::Create(name, ShapeType_Rect);
+  shp->pos_    = Vec3(0, 0, 0);
+  shp->size_   = comp_size;
+  shp->color_  = color;
+  shp->fstart_ = fstart;
+  shp->fend_   = fend;
   return shp;
 }
 
@@ -38,10 +38,10 @@ TEST_CASE("映像プリコンポジション: 左右にCompoRefEnttを配置し�
   Project::New();
 
   // Precomp1: 実動画ファイルを配置(内容は予測しないが、Main経由の結果とPrecomp1単体の結果が一致するかを見る)
-  auto precomp1     = make_compo("Precomp1", 101, 400, 400, 30);
-  auto movie        = Movie::Create("mov", "../assets/movies/sample-5s.mp4");
-  movie->trk.fstart = 0;
-  movie->trk.fend   = 29;
+  auto precomp1  = make_compo("Precomp1", 101, 400, 400, 30);
+  auto movie     = Movie::Create("mov", "../assets/movies/sample-5s.mp4");
+  movie->fstart_ = 0;
+  movie->fend_   = 29;
   precomp1->insert_entity(movie);
   Project::Get()->compos_.push_back(precomp1);
 
@@ -57,15 +57,15 @@ TEST_CASE("映像プリコンポジション: 左右にCompoRefEnttを配置し�
   auto ref1              = cutil::make_ref<CompoRefEntt>();
   ref1->pos              = Vec3(0, 0, 0); // 左半分
   ref1->target_comp_guid = 101;
-  ref1->trk.fstart       = 0;
-  ref1->trk.fend         = 29;
+  ref1->fstart_          = 0;
+  ref1->fend_            = 29;
   main->insert_entity(ref1);
 
   auto ref2              = cutil::make_ref<CompoRefEntt>();
   ref2->pos              = Vec3(400, 0, 0); // 右半分
   ref2->target_comp_guid = 102;
-  ref2->trk.fstart       = 0;
-  ref2->trk.fend         = 29;
+  ref2->fstart_          = 0;
+  ref2->fend_            = 29;
   main->insert_entity(ref2);
 
   CPURenderer renderer;
@@ -99,8 +99,8 @@ TEST_CASE("映像プリコンポジション: start_frame/speedオフセット�
   ref->target_comp_guid = 201;
   ref->start_frame      = 10; // オフセット
   ref->speed            = 1.0f;
-  ref->trk.fstart       = 0; // 計算式の基準(main_frame - trk.fstart)
-  ref->trk.fend         = 29;
+  ref->fstart_          = 0; // 計算式の基準(main_frame - fstart_)
+  ref->fend_            = 29;
   main->insert_entity(ref);
 
   CPURenderer renderer;
@@ -136,8 +136,8 @@ TEST_CASE("映像プリコンポジション: start_frame/speedオフセット�
   ref->target_comp_guid = 202;
   ref->start_frame      = 10;
   ref->speed            = 0.5f;
-  ref->trk.fstart       = 0;
-  ref->trk.fend         = 29;
+  ref->fstart_          = 0;
+  ref->fend_            = 29;
   main->insert_entity(ref);
 
   CPURenderer renderer;
@@ -163,18 +163,18 @@ TEST_CASE("音声プリコンポジション: 2つのPrecompの音声を合成�
   constexpr int kN  = 200;
   constexpr int kCh = 2;
 
-  auto precomp1      = make_compo("Precomp1", 301, 100, 100, 30);
-  auto audio1        = AudioEntt::Create("a1", "../assets/audio/file_example_WAV_1MG.wav");
-  audio1->trk.fstart = 0;
-  audio1->trk.fend   = 150;
+  auto precomp1   = make_compo("Precomp1", 301, 100, 100, 30);
+  auto audio1     = AudioEntt::Create("a1", "../assets/audio/file_example_WAV_1MG.wav");
+  audio1->fstart_ = 0;
+  audio1->fend_   = 150;
   precomp1->insert_entity(audio1);
   Project::Get()->compos_.push_back(precomp1);
 
-  auto precomp2      = make_compo("Precomp2", 302, 100, 100, 30);
-  auto audio2        = AudioEntt::Create("a2", "../assets/audio/file_example_WAV_1MG.wav");
-  audio2->trk.fstart = 0;
-  audio2->trk.fend   = 150;
-  audio2->volume_    = 50.0f; // Precomp1と区別できるよう音量を変える
+  auto precomp2   = make_compo("Precomp2", 302, 100, 100, 30);
+  auto audio2     = AudioEntt::Create("a2", "../assets/audio/file_example_WAV_1MG.wav");
+  audio2->fstart_ = 0;
+  audio2->fend_   = 150;
+  audio2->volume_ = 50.0f; // Precomp1と区別できるよう音量を変える
   precomp2->insert_entity(audio2);
   Project::Get()->compos_.push_back(precomp2);
 
@@ -182,14 +182,14 @@ TEST_CASE("音声プリコンポジション: 2つのPrecompの音声を合成�
 
   auto cref1              = cutil::make_ref<CompoAudioEntt>();
   cref1->target_comp_guid = 301;
-  cref1->trk.fstart       = 0;
-  cref1->trk.fend         = 150;
+  cref1->fstart_          = 0;
+  cref1->fend_            = 150;
   main->insert_entity(cref1);
 
   auto cref2              = cutil::make_ref<CompoAudioEntt>();
   cref2->target_comp_guid = 302;
-  cref2->trk.fstart       = 0;
-  cref2->trk.fend         = 150;
+  cref2->fstart_          = 0;
+  cref2->fend_            = 150;
   main->insert_entity(cref2);
 
   std::vector<int16_t> combined((size_t)kN * kCh);
@@ -211,10 +211,10 @@ TEST_CASE("音声プリコンポジション: start_frame/speedを適用した�
   constexpr int kN  = 200;
   constexpr int kCh = 2;
 
-  auto sub              = make_compo("Sub", 401, 100, 100, 30);
-  auto sub_audio        = AudioEntt::Create("sa", "../assets/audio/file_example_WAV_1MG.wav");
-  sub_audio->trk.fstart = 0;
-  sub_audio->trk.fend   = 300;
+  auto sub           = make_compo("Sub", 401, 100, 100, 30);
+  auto sub_audio     = AudioEntt::Create("sa", "../assets/audio/file_example_WAV_1MG.wav");
+  sub_audio->fstart_ = 0;
+  sub_audio->fend_   = 300;
   sub->insert_entity(sub_audio);
   Project::Get()->compos_.push_back(sub);
 
@@ -223,8 +223,8 @@ TEST_CASE("音声プリコンポジション: start_frame/speedを適用した�
   cref->target_comp_guid = 401;
   cref->start_frame      = 10;   // オフセット
   cref->speed            = 2.0f; // 2倍速
-  cref->trk.fstart       = 0;
-  cref->trk.fend         = 300;
+  cref->fstart_          = 0;
+  cref->fend_            = 300;
   main->insert_entity(cref);
 
   std::vector<int16_t> actual((size_t)kN * kCh);
@@ -258,8 +258,8 @@ TEST_CASE("プリコンポジション合成: ネストされたComposition内�
   auto ref              = cutil::make_ref<CompoRefEntt>();
   ref->pos              = Vec3(0, 0, 0);
   ref->target_comp_guid = 601;
-  ref->trk.fstart       = 0;
-  ref->trk.fend         = 29;
+  ref->fstart_          = 0;
+  ref->fend_            = 29;
   main->insert_entity(ref);
 
   CPURenderer renderer;
@@ -285,8 +285,8 @@ TEST_CASE("キャッシュ無効化伝播: 参照先変更後の再レンダリ�
   auto ref              = cutil::make_ref<CompoRefEntt>();
   ref->pos              = Vec3(0, 0, 0);
   ref->target_comp_guid = 701;
-  ref->trk.fstart       = 0;
-  ref->trk.fend         = 29;
+  ref->fstart_          = 0;
+  ref->fend_            = 29;
   main->insert_entity(ref);
 
   CPURenderer renderer;
@@ -314,8 +314,8 @@ TEST_CASE("キャッシュ無効化伝播: 参照先Compositionの中身変更�
   auto ref              = cutil::make_ref<CompoRefEntt>();
   ref->pos              = Vec3(0, 0, 0);
   ref->target_comp_guid = 801;
-  ref->trk.fstart       = 0;
-  ref->trk.fend         = 29;
+  ref->fstart_          = 0;
+  ref->fend_            = 29;
   main->insert_entity(ref);
 
   CPURenderer renderer;
@@ -340,8 +340,8 @@ TEST_CASE("循環参照ガード: 自己参照するCompoRefEnttがあっても�
   auto self_ref              = cutil::make_ref<CompoRefEntt>();
   self_ref->pos              = Vec3(0, 0, 0);
   self_ref->target_comp_guid = 501; // 自分自身を参照
-  self_ref->trk.fstart       = 0;
-  self_ref->trk.fend         = 29;
+  self_ref->fstart_          = 0;
+  self_ref->fend_            = 29;
   comp_a->insert_entity(self_ref);
   Project::Get()->compos_.push_back(comp_a);
 

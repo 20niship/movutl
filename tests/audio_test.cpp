@@ -245,15 +245,15 @@ TEST_CASE("audio_echo_filter/audio_reverb_filter: 小さいスタックのスレ
   CHECK(reverb_ok);
 }
 
-// Inspectorの手順(trk.filtersへFilterParamを積む)をそのまま再現し、mix_audio_range経由でも効果が反映されるか確認する(fn_proc直接呼び出しだけでは経路全体を検証できないため)
+// Inspectorの手順(filters_へFilterParamを積む)をそのまま再現し、mix_audio_range経由でも効果が反映されるか確認する(fn_proc直接呼び出しだけでは経路全体を検証できないため)
 TEST_CASE("音声トラックにエコーフィルタをGUIと同じ手順で付けるとミキシング結果に反映される") {
   detail::register_default_filters();
   detail::activate_all_plugins();
 
-  auto comp         = cutil::make_ref<Composition>("t", 100, 100, 30);
-  auto audio        = AudioEntt::Create("a", "../assets/audio/file_example_WAV_1MG.wav");
-  audio->trk.fstart = 0;
-  audio->trk.fend   = 150;
+  auto comp      = cutil::make_ref<Composition>("t", 100, 100, 30);
+  auto audio     = AudioEntt::Create("a", "../assets/audio/file_example_WAV_1MG.wav");
+  audio->fstart_ = 0;
+  audio->fend_   = 150;
   comp->insert_entity(audio);
 
   std::vector<int16_t> baseline((size_t)kN * kCh);
@@ -265,11 +265,11 @@ TEST_CASE("音声トラックにエコーフィルタをGUIと同じ手順で付
     if(std::string(f.name.c_str()) == "エコー") echo_plg = &f;
   REQUIRE(echo_plg != nullptr);
 
-  TrackObject::FilterParam fp;
+  FilterParam fp;
   fp.plg_ = echo_plg;
   fp.props.add_props(echo_plg->defaults);
   fp.enabled = true;
-  audio->trk.filters.push_back(fp);
+  audio->filters_.push_back(fp);
 
   std::vector<int16_t> filtered((size_t)kN * kCh);
   mix_audio_range(comp.get(), 0, kN, filtered.data());
@@ -280,26 +280,26 @@ TEST_CASE("音声トラックにエコーフィルタをGUIと同じ手順で付
 TEST_CASE("mix_audio_range: solo_中のトラックのみがミックスされる(#35)") {
   auto comp_full = cutil::make_ref<Composition>("full", 100, 100, 30);
   auto a         = AudioEntt::Create("a", "../assets/audio/file_example_WAV_1MG.wav");
-  a->trk.fstart  = 0;
-  a->trk.fend    = 150;
+  a->fstart_     = 0;
+  a->fend_       = 150;
   comp_full->insert_entity(a);
-  auto b        = AudioEntt::Create("b", "../assets/audio/file_example_WAV_1MG.wav");
-  b->trk.fstart = 0;
-  b->trk.fend   = 150;
-  b->volume_    = 150.0f; // Aと区別できるよう音量を変えておく
+  auto b     = AudioEntt::Create("b", "../assets/audio/file_example_WAV_1MG.wav");
+  b->fstart_ = 0;
+  b->fend_   = 150;
+  b->volume_ = 150.0f; // Aと区別できるよう音量を変えておく
   comp_full->insert_entity(b);
 
   std::vector<int16_t> both((size_t)kN * kCh);
   mix_audio_range(comp_full.get(), 0, kN, both.data());
 
-  a->trk.solo_ = true;
+  a->solo_ = true;
   std::vector<int16_t> solo_a((size_t)kN * kCh);
   mix_audio_range(comp_full.get(), 0, kN, solo_a.data());
 
   auto comp_a_only = cutil::make_ref<Composition>("a_only", 100, 100, 30);
   auto a2          = AudioEntt::Create("a2", "../assets/audio/file_example_WAV_1MG.wav");
-  a2->trk.fstart   = 0;
-  a2->trk.fend     = 150;
+  a2->fstart_      = 0;
+  a2->fend_        = 150;
   comp_a_only->insert_entity(a2);
   std::vector<int16_t> a_only((size_t)kN * kCh);
   mix_audio_range(comp_a_only.get(), 0, kN, a_only.data());

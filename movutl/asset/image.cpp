@@ -257,7 +257,7 @@ bool Image::render(Composition* cmp, Image* target, int frame) {
   int base_y = (int)this->pos[1];
 
   const Image* src = this;
-  if(!trk.filters.empty()) {
+  if(!filters_.empty()) {
     if(!filtered_) filtered_ = cutil::make_ref<Image>();
     filtered_->resize(this->width, this->height);
     filtered_->has_alpha = this->has_alpha;
@@ -266,7 +266,7 @@ bool Image::render(Composition* cmp, Image* target, int frame) {
     render_filters(cmp, filtered_.get(), frame);
     src = filtered_.get();
   }
-  return src->copyto(target, Vec2d(base_x, base_y), this->scale.avg(), this->rotation, this->alpha, trk.blend_);
+  return src->copyto(target, Vec2d(base_x, base_y), this->scale.avg(), this->rotation, this->alpha, blend_);
 }
 
 bool Image::load_file(const char* path) {

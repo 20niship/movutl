@@ -86,7 +86,7 @@ void mix_audio_range(Composition* comp, int64_t start_sample, int n, int16_t* ou
   auto entities = comp->get_all_entities();
   bool any_solo = false;
   for(auto& e : entities) {
-    if((e->getType() == EntityType_Audio || e->getType() == EntityType_SceneAudio) && e->visible(frame) && e->trk.solo_) {
+    if((e->getType() == EntityType_Audio || e->getType() == EntityType_SceneAudio) && e->visible(frame) && e->solo_) {
       any_solo = true;
       break;
     }
@@ -95,12 +95,12 @@ void mix_audio_range(Composition* comp, int64_t start_sample, int n, int16_t* ou
   for(auto& e : entities) {
     if(e->getType() != EntityType_Audio && e->getType() != EntityType_SceneAudio) continue;
     if(!e->visible(frame)) continue;
-    if(any_solo && !e->trk.solo_) continue; // ソロ中のトラックが1つでもあれば、ソロでないトラックはミュートする
+    if(any_solo && !e->solo_) continue; // ソロ中のトラックが1つでもあれば、ソロでないトラックはミュートする
 
     std::fill(track_buf.begin(), track_buf.end(), (int16_t)0);
     if(!e->fetch_audio(comp, start_sample, n, track_buf.data())) continue;
 
-    for(auto& f : e->trk.filters) {
+    for(auto& f : e->filters_) {
       if(!f.enabled || f.plg_ == nullptr || f.plg_->fn_proc == nullptr) continue;
       MOVUTL_ZONE_SCOPED;
       MOVUTL_ZONE_NAME(f.plg_->name.c_str(), f.plg_->name.size());

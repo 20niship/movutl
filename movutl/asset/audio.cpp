@@ -53,7 +53,7 @@ bool AudioEntt::load_file(const char* path) {
   auto* cmp           = Composition::GetActiveComp();
   float fps           = cmp ? cmp->framerate : 30.0f;
   double duration_sec = (double)info.audio_n / std::max(1, info.audio_sample_rate);
-  this->trk.fend      = trk.fstart + (int)std::max(1.0, duration_sec * fps);
+  this->fend_         = fstart_ + (int)std::max(1.0, duration_sec * fps);
 
   auto cache_path = waveform_cache_path(path_);
   if(!load_waveform_cache(cache_path, &waveform_)) {
@@ -75,11 +75,11 @@ bool AudioEntt::render(Composition* cmp, Image* target, int frame) {
 bool AudioEntt::fetch_audio(Composition* cmp, int64_t start_sample, int n, int16_t* out) {
   MU_ASSERT(cmp != nullptr);
   MU_ASSERT(out != nullptr);
-  if(load_failed_ || !trk.active_ || in_plg_ == nullptr || in_handle_ == nullptr || in_plg_->fn_read_audio == nullptr) return false;
+  if(load_failed_ || !active_ || in_plg_ == nullptr || in_handle_ == nullptr || in_plg_->fn_read_audio == nullptr) return false;
   if(info.audio_n <= 0) return false;
 
-  int64_t track_start = cmp->frame_to_sample(trk.fstart);
-  int64_t track_len   = cmp->frame_to_sample(trk.fend) - track_start;
+  int64_t track_start = cmp->frame_to_sample(fstart_);
+  int64_t track_len   = cmp->frame_to_sample(fend_) - track_start;
   if(track_len <= 0) return false;
   int64_t elapsed = start_sample - track_start;
   if(elapsed + n <= 0) return false;

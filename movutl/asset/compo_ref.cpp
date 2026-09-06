@@ -18,13 +18,13 @@ bool CompoRefEntt::render(Composition* cmp, Image* target, int frame) {
   }
   if(!dst_comp || dst_comp == cmp) return false;
 
-  dst_comp->frame.store(start_frame + (int32_t)std::lround((frame - trk.fstart) * speed));
+  dst_comp->frame.store(start_frame + (int32_t)std::lround((frame - fstart_) * speed));
   Ref<Image> src = dst_comp->render_current_frame_main_thread(true);
   if(!src) return false;
 
   int base_x = (int)pos[0];
   int base_y = (int)pos[1];
-  return src->copyto(target, Vec2d(base_x, base_y), scale.avg(), rotation, alpha, trk.blend_);
+  return src->copyto(target, Vec2d(base_x, base_y), scale.avg(), rotation, alpha, blend_);
 }
 
 } // namespace mu
