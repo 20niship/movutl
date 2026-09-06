@@ -35,6 +35,9 @@ public:
   EntityType getType() const override { return EntityType_Custom; }
   bool render(Composition* cmp, Image* target, int frame) override;
 
+  // インスペクタでtrack0-3/check0-3相当のパラメータを編集するためのUI向けアクセサ(nullptrはスクリプト未解決を意味する)
+  const detail::AviUtlScriptDef* def() const { return def_; }
+
   cutil::Prop getProps() const override;
   void setProps(const cutil::Prop& props) override;
 };

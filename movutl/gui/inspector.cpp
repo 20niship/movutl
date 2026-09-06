@@ -5,6 +5,7 @@
 #include <imgui_internal.h>
 #include <movutl/app/app.hpp>
 #include <movutl/app/app_impl.hpp>
+#include <movutl/asset/custom_object.hpp>
 #include <movutl/asset/entity.hpp>
 #include <movutl/core/logger.hpp>
 #include <movutl/gui/gui.hpp>
@@ -61,6 +62,32 @@ void InspectorWindow::Update() {
   }
 
   wd_entt_props_editor(e.get());
+
+  // カスタムオブジェクト(Luaスクリプト)のtrack0-3/check0-3相当のパラメータはgetPropsInfo()を持たない(動的なcutil::Propで保持している)ため専用UIで編集する
+  if(auto* custom = dynamic_cast<CustomObjectEntt*>(e.get())) {
+    if(const auto* def = custom->def()) {
+      bool params_changed = false;
+      for(const auto& tr : def->tracks) {
+        float v = cutil::get_or<float>(custom->params_, tr.name.c_str(), tr.default_value);
+        if(ImGui::DragFloat(tr.name.c_str(), &v, tr.step, tr.min_value, tr.max_value)) {
+          custom->params_.set<float>(tr.name.c_str(), v);
+          params_changed = true;
+        }
+      }
+      for(const auto& ch : def->checks) {
+        bool v = cutil::get_or<bool>(custom->params_, ch.name.c_str(), ch.default_value);
+        if(ImGui::Checkbox(ch.name.c_str(), &v)) {
+          custom->params_.set<bool>(ch.name.c_str(), v);
+          params_changed = true;
+        }
+      }
+      if(params_changed) {
+        if(auto* comp = e->get_comp()) comp->cache.invalidate_range(e->fstart_, e->fend_);
+      }
+    } else {
+      ImGui::TextDisabled("スクリプト '%s' が見つかりません", custom->script_name_.c_str());
+    }
+  }
 
   for(int i = 0; i < e->filters_.size(); i++) {
     auto& f = e->filters_[i];
