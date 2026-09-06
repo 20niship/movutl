@@ -40,6 +40,8 @@ class LuaIntfWriter:
             "#include <movutl/asset/audio.hpp>\n"
             "#include <movutl/asset/framebuffer.hpp>\n"
             "#include <movutl/asset/shape.hpp>\n"
+            "#include <movutl/asset/compo_ref.hpp>\n"
+            "#include <movutl/asset/compo_audio_ref.hpp>\n"
             "#include <movutl/core/anim.hpp>\n"
             "#include <movutl/gui/gui.hpp>\n"
             "#include <movutl/binding/imgui_binding.hpp>\n"

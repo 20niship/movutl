@@ -7,6 +7,10 @@ build build_dir="build":
     cmake -S . -B {{build_dir}}
     cmake --build {{build_dir}} -j${BUILD_JOBS:-$(nproc 2>/dev/null || sysctl -n hw.ncpu)}
 
+# ビルドしてmovutl_mainを実行する(例: just run ./examples/foobar.lua)
+run *args: build
+    ./build/movutl_main {{args}}
+
 # ビルドしてテストを実行する
 test: build
     ctest --test-dir build --output-on-failure

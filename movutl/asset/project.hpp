@@ -40,6 +40,7 @@ public:
 
   static Composition* GetActiveCompo();
   static void SetActiveCompo(int idx);
+  static void RemoveComposition(uint32_t guid);
 };
 
 } // namespace mu

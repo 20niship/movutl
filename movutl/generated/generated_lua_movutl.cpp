@@ -6,6 +6,8 @@
 #include <lua.hpp>
 #include <movutl/app/app.hpp>
 #include <movutl/asset/audio.hpp>
+#include <movutl/asset/compo_audio_ref.hpp>
+#include <movutl/asset/compo_ref.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/entity.hpp>
 #include <movutl/asset/framebuffer.hpp>
@@ -117,16 +119,37 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addVariable("loop_", &AudioEntt::loop_)             // bool
     .addVariable("path_", &AudioEntt::path_)             // std::string
     .endClass()
+    .beginClass<CompoAudioEntt>("CompoAudioEntt")
+    .addFunction("getType", &CompoAudioEntt::getType)
+    .addVariable("start_frame", &CompoAudioEntt::start_frame)           // int
+    .addVariable("speed", &CompoAudioEntt::speed)                       // float
+    .addVariable("volume_", &CompoAudioEntt::volume_)                   // float
+    .addVariable("target_comp_guid", &CompoAudioEntt::target_comp_guid) // uint32_t
+    .endClass()
+    .beginClass<CompoRefEntt>("CompoRefEntt")
+    .addFunction("getType", &CompoRefEntt::getType)
+    .addVariable("pos", &CompoRefEntt::pos)                           // Vec3
+    .addVariable("scale", &CompoRefEntt::scale)                       // Vec2
+    .addVariable("rotation", &CompoRefEntt::rotation)                 // float
+    .addVariable("alpha", &CompoRefEntt::alpha)                       // float
+    .addVariable("start_frame", &CompoRefEntt::start_frame)           // int
+    .addVariable("speed", &CompoRefEntt::speed)                       // float
+    .addVariable("target_comp_guid", &CompoRefEntt::target_comp_guid) // uint32_t
+    .endClass()
     .beginClass<Composition>("Composition")
     .addFunction("frame_to_sample", &Composition::frame_to_sample)
     .addFunction("resize", &Composition::resize)
     .addFunction("str", &Composition::str)
     .addFunction("summary", &Composition::summary)
     .addStaticFunction("GetActiveComp", &Composition::GetActiveComp)
+    .addStaticFunction("PushRenderGuard", &Composition::PushRenderGuard)
+    .addStaticFunction("PopRenderGuard", &Composition::PopRenderGuard)
     .addFunction("insertable_layer_index", &Composition::insertable_layer_index)
     .addFunction("insert_entity", &Composition::insert_entity)
     .addFunction("get_all_entities", &Composition::get_all_entities)
     .addFunction("render_current_frame_main_thread", &Composition::render_current_frame_main_thread)
+    .addFunction("invalidate_cache_all", &Composition::invalidate_cache_all)
+    .addFunction("invalidate_cache_range", &Composition::invalidate_cache_range)
     .addFunction("get_frame", &Composition::get_frame)
     .addFunction("set_frame", &Composition::set_frame)
     .addVariable("guid", &Composition::guid)                           // uint32_t
@@ -232,6 +255,7 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("get_main_comp", &Project::get_main_comp)
     .addStaticFunction("GetActiveCompo", &Project::GetActiveCompo)
     .addStaticFunction("SetActiveCompo", &Project::SetActiveCompo)
+    .addStaticFunction("RemoveComposition", &Project::RemoveComposition)
     .addVariable("path", &Project::path)                   // std::string
     .addVariable("output_path", &Project::output_path)     // std::string
     .addVariable("entities", &Project::entities)           // std::vector<Ref<Entity> >

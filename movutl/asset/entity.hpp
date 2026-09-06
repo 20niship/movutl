@@ -97,6 +97,7 @@ public:
 
   Composition* get_comp() const;
   virtual bool render(Composition* cmp, Image* target, int frame) = 0;
+  virtual bool fetch_audio(Composition*, int64_t, int, int16_t*) { return false; }
 
   InputPluginTable* get_input_plugin() const { return in_plg_; }
   InputHandle get_input_handle() const { return in_handle_; }

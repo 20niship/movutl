@@ -97,8 +97,13 @@ void AppMain::update_frame_impl() {
   double now = mu_now_seconds();
   double fps = (double)cmp->framerate;
   if(now - last_frame_time_ >= 1.0 / fps) {
-    cmp->frame++;
-    if(cmp->frame > cmp->fend) cmp->frame = cmp->fstart;
+    int next = cmp->frame + 1;
+    if(next > cmp->fend) {
+      // ループ折り返しもgoto_frame()経由にして音声seekを必ず伴わせる
+      goto_frame(cmp->fstart);
+    } else {
+      cmp->frame = next;
+    }
     last_frame_time_ = now;
   }
 }

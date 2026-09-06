@@ -129,7 +129,7 @@ void wd_entt_props_editor(Entity* e) {
         }
       }
       // Compositionの全フレームではなく、このEntityが映る範囲だけを無効化する(Positionドラッグ等が重くなるのを防ぐ)
-      if(auto* comp = e->get_comp()) comp->cache.invalidate_range(e->trk.fstart, e->trk.fend);
+      if(auto* comp = e->get_comp()) comp->invalidate_cache_range(e->trk.fstart, e->trk.fend);
     }
     ImGui::PopID();
   }
