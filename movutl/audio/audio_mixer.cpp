@@ -83,17 +83,19 @@ void mix_audio_range(Composition* comp, int64_t start_sample, int n, int16_t* ou
 
   int frame = (int)((double)start_sample / std::max(1, comp->audio_sample_rate) * comp->framerate); // このチャンクの時刻に対応するフレーム(現在再生フレームではない)
 
+  auto is_audio_entity = [](EntityType t) { return t == EntityType_Audio || t == EntityType_SceneAudio || t == EntityType_Midi; };
+
   auto entities = comp->get_all_entities();
   bool any_solo = false;
   for(auto& e : entities) {
-    if((e->getType() == EntityType_Audio || e->getType() == EntityType_SceneAudio) && e->visible(frame) && e->trk.solo_) {
+    if(is_audio_entity(e->getType()) && e->visible(frame) && e->trk.solo_) {
       any_solo = true;
       break;
     }
   }
 
   for(auto& e : entities) {
-    if(e->getType() != EntityType_Audio && e->getType() != EntityType_SceneAudio) continue;
+    if(!is_audio_entity(e->getType())) continue;
     if(!e->visible(frame)) continue;
     if(any_solo && !e->trk.solo_) continue; // ソロ中のトラックが1つでもあれば、ソロでないトラックはミュートする
 

@@ -6,6 +6,7 @@
 #include <movutl/asset/entity.hpp>
 #include <movutl/asset/framebuffer.hpp>
 #include <movutl/asset/image.hpp>
+#include <movutl/asset/midi.hpp>
 #include <movutl/asset/movie.hpp>
 #include <movutl/asset/project.hpp>
 #include <movutl/asset/shape.hpp>
@@ -158,6 +159,15 @@ bool add_new_track(const char* name, EntityType type, int start, int end) {
       a->trk.fstart = start;
       a->trk.fend   = end;
       main_comp->insert_entity(a);
+      break;
+    }
+    case EntityType_Midi: {
+      auto m                 = MidiEntt::Create(name);
+      Composition* main_comp = Composition::GetActiveComp();
+      MU_ASSERT(main_comp);
+      m->trk.fstart = start;
+      m->trk.fend   = end;
+      main_comp->insert_entity(m);
       break;
     }
     case EntityType_Framebuffer: {

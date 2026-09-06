@@ -12,6 +12,7 @@
 #include <movutl/asset/entity.hpp>
 #include <movutl/asset/framebuffer.hpp>
 #include <movutl/asset/image.hpp>
+#include <movutl/asset/midi.hpp>
 #include <movutl/asset/movie.hpp>
 #include <movutl/asset/project.hpp>
 #include <movutl/asset/shape.hpp>
@@ -94,6 +95,7 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addConstant("EntityType_3DModel", EntityType::EntityType_3DModel)
     .addConstant("EntityType_Camera", EntityType::EntityType_Camera)
     .addConstant("EntityType_Effect", EntityType::EntityType_Effect)
+    .addConstant("EntityType_Midi", EntityType::EntityType_Midi)
     .endModule()
     .beginModule("ImageFormat")
     .addConstant("ImageFormatRGB", ImageFormat::ImageFormatRGB)
@@ -231,6 +233,20 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addVariable("rotation", &Image::rotation)   // float
     .addVariable("alpha", &Image::alpha)         // float
     .addVariable("path", &Image::path)           // std::string
+    .endClass()
+    .beginClass<MidiEntt>("MidiEntt")
+    .addStaticFunction("Create", &MidiEntt::Create)
+    .addFunction("assign_instrument", &MidiEntt::assign_instrument)
+    .addFunction("instrument_instance_id", &MidiEntt::instrument_instance_id)
+    .addFunction("notes", &MidiEntt::notes)
+    .addFunction("getType", &MidiEntt::getType)
+    .addVariable("instrument_plugin_id_", &MidiEntt::instrument_plugin_id_) // std::string
+    .endClass()
+    .beginClass<MidiNote>("MidiNote")
+    .addVariable("pitch", &MidiNote::pitch)               // uint8_t
+    .addVariable("velocity", &MidiNote::velocity)         // uint8_t
+    .addVariable("start_sample", &MidiNote::start_sample) // int64_t
+    .addVariable("dur_samples", &MidiNote::dur_samples)   // int64_t
     .endClass()
     .beginClass<Movie>("Movie")
     .addStaticFunction("Create", &Movie::Create)

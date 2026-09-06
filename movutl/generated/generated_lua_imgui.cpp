@@ -12,6 +12,7 @@
 #include <movutl/asset/entity.hpp>
 #include <movutl/asset/framebuffer.hpp>
 #include <movutl/asset/image.hpp>
+#include <movutl/asset/midi.hpp>
 #include <movutl/asset/movie.hpp>
 #include <movutl/asset/project.hpp>
 #include <movutl/asset/shape.hpp>

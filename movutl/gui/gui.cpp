@@ -70,6 +70,7 @@ const char* get_entt_icon(const Ref<Entity>& entt) {
     case EntityType::EntityType_3DModel: return ICON_FA_CUBE;
     case EntityType::EntityType_Camera: return ICON_FA_VIDEO;
     case EntityType::EntityType_Effect: return ICON_FA_PLUG;
+    case EntityType::EntityType_Midi: return ICON_FA_KEYBOARD;
     default: return ICON_FA_QUESTION;
   }
   return ICON_FA_QUESTION;
@@ -94,6 +95,7 @@ ImU32 get_entt_color(const Ref<Entity>& entt) {
     case EntityType::EntityType_3DModel: return IM_COL32(120, 220, 160, 150);
     case EntityType::EntityType_Camera: return IM_COL32(220, 220, 90, 150);
     case EntityType::EntityType_Effect: return IM_COL32(220, 90, 90, 150);
+    case EntityType::EntityType_Midi: return IM_COL32(220, 170, 60, 150);
     default: return IM_COL32(150, 150, 150, 150);
   }
 }

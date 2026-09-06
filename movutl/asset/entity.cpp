@@ -13,6 +13,7 @@
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/framebuffer.hpp>
 #include <movutl/asset/image.hpp>
+#include <movutl/asset/midi.hpp>
 #include <movutl/asset/movie.hpp>
 #include <movutl/asset/shape.hpp>
 #include <movutl/asset/text.hpp>
@@ -32,6 +33,7 @@ Ref<Entity> Entity::CreateEntity(const char* name, EntityType type) {
     case EntityType_Camera: e = cutil::make_ref<Camera3D>(); break;
     case EntityType_Scene: e = cutil::make_ref<CompoRefEntt>(); break;
     case EntityType_SceneAudio: e = cutil::make_ref<CompoAudioEntt>(); break;
+    case EntityType_Midi: e = cutil::make_ref<MidiEntt>(); break;
     default: break;
   }
   if(!e) {
