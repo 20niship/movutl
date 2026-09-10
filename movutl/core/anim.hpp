@@ -119,6 +119,78 @@ public:
     if(keys.empty()) return T();
     return keys[0].value_;
   }
+  bool has_key_at(uint32_t frame) const {
+    for(auto& k : keys)
+      if(k.frame_ == frame) return true;
+    return false;
+  }
+  std::vector<uint32_t> frames() const {
+    std::vector<uint32_t> r;
+    r.reserve(keys.size());
+    for(auto& k : keys) r.push_back(k.frame_);
+    return r;
+  }
+  // 中間点(キーフレーム)を最後の1個以外削除できる。単一値に戻すには残り1個の状態にする
+  bool erase_keyframe(uint32_t frame) {
+    if(keys.size() <= 1) return false;
+    for(auto it = keys.begin(); it != keys.end(); ++it) {
+      if(it->frame_ == frame) {
+        keys.erase(it);
+        return true;
+      }
+    }
+    return false;
+  }
+  // キーフレームの位置(frame)だけを移動する(値/補間タイプは維持)。移動先に既存キーがあれば上書きする
+  bool move_keyframe(uint32_t old_frame, uint32_t new_frame) {
+    if(old_frame == new_frame) return true;
+    for(size_t i = 0; i < keys.size(); i++) {
+      if(keys[i].frame_ != old_frame) continue;
+      AnimKeyframe<T> kf = keys[i];
+      kf.frame_          = new_frame;
+      keys.erase(keys.begin() + i);
+      auto it = std::lower_bound(keys.begin(), keys.end(), new_frame, [](const AnimKeyframe<T>& k, uint32_t f) { return k.frame_ < f; });
+      if(it != keys.end() && it->frame_ == new_frame)
+        *it = kf;
+      else
+        keys.insert(it, kf);
+      return true;
+    }
+    return false;
+  }
+
+  // プロジェクト保存用: キーフレーム列をcutil::Propへ変換する(Entity*等JSON化不可な型では呼ばないこと)
+  cutil::Prop save() const {
+    cutil::Prop p;
+    p.set<int32_t>("count", (int32_t)keys.size());
+    for(size_t i = 0; i < keys.size(); i++) {
+      cutil::Prop kp;
+      kp.set<int32_t>("frame", (int32_t)keys[i].frame_);
+      kp.set<int32_t>("interp", (int32_t)keys[i].type);
+      kp.set<float>("ease", keys[i].ease_);
+      kp.set<float>("ease2", keys[i].ease2_);
+      kp.set<T>("value", keys[i].value_);
+      p.set_child(("k" + std::to_string(i)).c_str(), kp);
+    }
+    return p;
+  }
+  void load(const cutil::Prop& p) {
+    keys.clear();
+    int32_t n = cutil::get_or<int32_t>(p, "count", 0);
+    for(int32_t i = 0; i < n; i++) {
+      const std::string key = "k" + std::to_string(i);
+      if(!p.contains(key.c_str())) continue;
+      const auto& kp = p.get_child(key.c_str());
+      AnimKeyframe<T> kf;
+      kf.frame_ = (uint32_t)cutil::get_or<int32_t>(kp, "frame", 0);
+      kf.type   = (AniInterpType)cutil::get_or<int32_t>(kp, "interp", (int32_t)AniInterpType::LINEAR);
+      kf.ease_  = cutil::get_or<float>(kp, "ease", 0.0f);
+      kf.ease2_ = cutil::get_or<float>(kp, "ease2", 0.0f);
+      kf.value_ = cutil::get_or<T>(kp, "value", T());
+      keys.push_back(kf);
+    }
+    if(keys.empty()) reset();
+  }
 };
 
 struct AnimProps {
@@ -161,10 +233,38 @@ public:
     // clang-format on
   }
 
-  bool contains(const std::string& name) const {
-    for(auto& prop : props)
-      if(std::visit([&name](auto&& arg) { return arg.keyname == name; }, prop)) return true;
-    return false;
+  // UI用: index指定でキーフレームの有無/フレーム一覧/追加/削除/移動を型を意識せず操作する(値はget()/set_value()を使う)
+  bool has_key_at(int idx, uint32_t frame) const {
+    if(idx < 0 || idx >= (int)props.size()) return false;
+    return std::visit([frame](auto&& c) { return c.has_key_at(frame); }, props[idx]);
+  }
+  bool has_animation(int idx) const {
+    if(idx < 0 || idx >= (int)props.size()) return false;
+    return std::visit([](auto&& c) { return c.has_animation(); }, props[idx]);
+  }
+  std::vector<uint32_t> keyframe_frames(int idx) const {
+    if(idx < 0 || idx >= (int)props.size()) return {};
+    return std::visit([](auto&& c) { return c.frames(); }, props[idx]);
+  }
+  bool erase_keyframe(int idx, uint32_t frame) {
+    if(idx < 0 || idx >= (int)props.size()) return false;
+    return std::visit([frame](auto&& c) { return c.erase_keyframe(frame); }, props[idx]);
+  }
+  bool move_keyframe(int idx, uint32_t old_frame, uint32_t new_frame) {
+    if(idx < 0 || idx >= (int)props.size()) return false;
+    return std::visit([old_frame, new_frame](auto&& c) { return c.move_keyframe(old_frame, new_frame); }, props[idx]);
+  }
+  // 現在の補間値をそのままキーフレームとして打つ(AE風「現在値でキーを追加」)
+  void add_keyframe_here(int idx, uint32_t frame) {
+    if(idx < 0 || idx >= (int)props.size()) return;
+    std::visit([frame](auto&& c) { c.add_keyframe(frame, c.get(frame)); }, props[idx]);
+  }
+
+  bool contains(const std::string& name) const { return index_of(name) >= 0; }
+  int index_of(const std::string& name) const {
+    for(size_t i = 0; i < props.size(); i++)
+      if(std::visit([&name](auto&& arg) { return arg.keyname == name; }, props[i])) return (int)i;
+    return -1;
   }
   bool erase(const std::string& name) {
     for(auto it = props.begin(); it != props.end(); it++) {
@@ -218,6 +318,10 @@ public:
   const Types& operator[](size_t idx) const { return props[idx]; }
 
   void add_props(const cutil::Prop& defaults);
+
+  // プロジェクト保存用: 全プロパティのキーフレーム列をcutil::Propへ変換する/そこから復元する(名前一致でマージ、propsは事前にadd_props()等で構築済みであること)
+  cutil::Prop save() const;
+  void load_keys(const cutil::Prop& saved);
 };
 
 } // namespace mu

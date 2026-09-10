@@ -98,3 +98,44 @@ TEST_CASE("AnimProps::get(frame): frameに応じて補間された値がcutil::P
   auto p_end = props.get(10);
   CHECK(p_end.get<float>("x") == doctest::Approx(100.0f));
 }
+
+TEST_CASE("PAniClip::has_key_at/erase_keyframe/move_keyframe: 中間点の追加/削除/移動") {
+  PAniClip<float> clip;
+  clip.clear();
+  clip.add_keyframe(0, 0.0f);
+  clip.add_keyframe(10, 100.0f);
+
+  CHECK(clip.has_key_at(0));
+  CHECK(clip.has_key_at(10));
+  CHECK_FALSE(clip.has_key_at(5));
+
+  CHECK(clip.move_keyframe(10, 20));
+  CHECK(clip.has_key_at(20));
+  CHECK_FALSE(clip.has_key_at(10));
+
+  CHECK(clip.erase_keyframe(20));
+  REQUIRE(clip.keys.size() == 1);
+  CHECK_FALSE(clip.erase_keyframe(0)); // 最後の1個は削除できない
+}
+
+TEST_CASE("AnimProps::save/load_keys: キーフレーム列を保存し名前一致で復元する") {
+  AnimProps src;
+  src.add_prop<float>("x", 0.0f);
+  src.add_prop<bool>("visible", true);
+  auto& clip = std::get<PAniClip<float>>(src[0]);
+  clip.add_keyframe(0, 1.0f);
+  clip.add_keyframe(10, 100.0f);
+  clip.add_keyframe(20, 50.0f);
+
+  auto saved = src.save();
+
+  AnimProps dst;
+  dst.add_prop<float>("x", -1.0f);
+  dst.add_prop<bool>("visible", false);
+  dst.load_keys(saved);
+
+  CHECK(dst.get<float>(0, 0) == doctest::Approx(1.0f));
+  CHECK(dst.get<float>(0, 10) == doctest::Approx(100.0f));
+  CHECK(dst.get<float>(0, 20) == doctest::Approx(50.0f));
+  CHECK(dst.has_animation(0));
+}

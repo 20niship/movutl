@@ -2,6 +2,7 @@
 #include <movutl/app/app_impl.hpp>
 #include <movutl/asset/image.hpp>
 #include <movutl/asset/project.hpp>
+#include <movutl/core/anim.hpp>
 
 using namespace mu;
 
@@ -41,10 +42,7 @@ TEST_CASE("Entity::getSaveProps/fromSaveProps: フィルタ(enabled/パラメー
   auto filters_p = saved.get_child("filters");
   REQUIRE(filters_p.get<int32_t>("count") == 1);
   auto filter0 = filters_p.get_child("filter_0");
-  REQUIRE(filter0.contains("params"));
-  auto params = filter0.get_child("params");
-  REQUIRE(params.contains("hue"));
-  CHECK(params.get<float>("hue") == doctest::Approx(42.0f));
+  REQUIRE(filter0.contains("anim_params"));
 
   auto loaded = Entity::fromSaveProps(saved);
   REQUIRE(loaded != nullptr);
@@ -54,6 +52,35 @@ TEST_CASE("Entity::getSaveProps/fromSaveProps: フィルタ(enabled/パラメー
   CHECK(loaded->filters_[0].plg_ == color_correction);
   CHECK(loaded->filters_[0].enabled == false);
   CHECK(loaded->filters_[0].props.get<float>(0) == doctest::Approx(42.0f));
+}
+
+TEST_CASE("Entity::anim_props_: 位置(Vec3)の中間点アニメーションがrender前評価/保存復元できる") {
+  ensure_filters_registered();
+  Project::New();
+
+  auto img = Image::Create("entity_anim_test", 4, 4);
+  REQUIRE(img != nullptr);
+  img->fstart_ = 0;
+  img->fend_   = 20;
+
+  img->ensure_anim_props();
+  int pos_idx = img->anim_props_.index_of("pos");
+  REQUIRE(pos_idx >= 0);
+  auto& clip = std::get<PAniClip<Vec3>>(img->anim_props_[pos_idx]);
+  clip.add_keyframe(0, Vec3(0, 0, 0));
+  clip.add_keyframe(10, Vec3(100, 0, 0));
+
+  img->apply_animated_props(5);
+  CHECK(img->getProps().get<Vec3>("pos")[0] == doctest::Approx(50.0f));
+
+  auto saved  = img->getSaveProps();
+  auto loaded = Entity::fromSaveProps(saved);
+  REQUIRE(loaded != nullptr);
+  int loaded_idx = loaded->anim_props_.index_of("pos");
+  REQUIRE(loaded_idx >= 0);
+  CHECK(loaded->anim_props_.has_animation(loaded_idx));
+  loaded->apply_animated_props(10);
+  CHECK(loaded->getProps().get<Vec3>("pos")[0] == doctest::Approx(100.0f));
 }
 
 TEST_CASE("Entity::getSaveProps/fromSaveProps: フィルタが無ければ空のまま復元される") {

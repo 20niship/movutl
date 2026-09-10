@@ -39,4 +39,59 @@ cutil::Prop AnimProps::get(uint32_t frame) const {
   return p;
 }
 
+namespace {
+// Entity*はJSON化不可(to_json未登録)のため保存対象から除外する
+struct PropsSaveVisitor {
+  cutil::Prop& out;
+  int& idx;
+  template <typename T> void operator()(const PAniClip<T>& clip) {
+    if constexpr(std::is_same_v<T, Entity*>) {
+      return;
+    } else {
+      cutil::Prop cp = clip.save();
+      cp.set<std::string>("name", clip.keyname);
+      out.set_child(("p" + std::to_string(idx)).c_str(), cp);
+      idx++;
+    }
+  }
+};
+
+struct PropsLoadVisitor {
+  const cutil::Prop& node;
+  template <typename T> void operator()(PAniClip<T>& clip) {
+    if constexpr(std::is_same_v<T, Entity*>) {
+      return;
+    } else {
+      clip.load(node);
+    }
+  }
+};
+} // namespace
+
+cutil::Prop AnimProps::save() const {
+  cutil::Prop out;
+  int idx = 0;
+  PropsSaveVisitor visitor{out, idx};
+  for(auto& prop : props) std::visit(visitor, prop);
+  out.set<int32_t>("count", idx);
+  return out;
+}
+
+void AnimProps::load_keys(const cutil::Prop& saved) {
+  int32_t count = cutil::get_or<int32_t>(saved, "count", 0);
+  for(int32_t i = 0; i < count; i++) {
+    const std::string key = "p" + std::to_string(i);
+    if(!saved.contains(key.c_str())) continue;
+    const auto& node       = saved.get_child(key.c_str());
+    const std::string name = cutil::get_or<std::string>(node, "name", "");
+    for(auto& prop : props) {
+      bool match = std::visit([&name](auto&& c) { return c.keyname == name; }, prop);
+      if(!match) continue;
+      PropsLoadVisitor visitor{node};
+      std::visit(visitor, prop);
+      break;
+    }
+  }
+}
+
 } // namespace mu

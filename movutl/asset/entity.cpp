@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <movutl/app/app.hpp>
 #include <movutl/app/app_impl.hpp>
 #include <movutl/asset/entity.hpp>
@@ -61,6 +62,10 @@ cutil::Prop Entity::getSaveProps() const {
   p.set<int32_t>("guid", (int32_t)guid_);
   p.set_child("props", getProps());
   p.set_child("trk", getTrackProps());
+  if(getPropsInfo()) {
+    ensure_anim_props();
+    p.set_child("anim_props", anim_props_.save());
+  }
 
   // filters_はgetTrackPropsInfo()の自動生成対象外(std::vector<FilterParam>)のため個別にシリアライズする
   cutil::Prop filters_p;
@@ -70,7 +75,7 @@ cutil::Prop Entity::getSaveProps() const {
     cutil::Prop fp;
     fp.set<int32_t>("plugin_guid", (int32_t)(f.plg_ ? f.plg_->guid : 0));
     fp.set<bool>("enabled", f.enabled);
-    fp.set_child("params", f.props.get(0));
+    fp.set_child("anim_params", f.props.save());
     filters_p.set_child(("filter_" + std::to_string(i)).c_str(), fp);
   }
   p.set_child("filters", filters_p);
@@ -85,6 +90,10 @@ Ref<Entity> Entity::fromSaveProps(const cutil::Prop& p) {
   e->guid_ = (uint64_t)cutil::get_or<int32_t>(p, "guid", (int32_t)e->guid_);
   if(p.contains("props")) e->setProps(p.get_child("props"));
   if(p.contains("trk")) e->setTrackProps(p.get_child("trk"));
+  if(e->getPropsInfo()) {
+    e->ensure_anim_props(); // setProps()適用後の値を各プロパティの初期キーフレームにする
+    if(p.contains("anim_props")) e->anim_props_.load_keys(p.get_child("anim_props"));
+  }
 
   if(p.contains("filters")) {
     const auto& filters_p = p.get_child("filters");
@@ -105,7 +114,8 @@ Ref<Entity> Entity::fromSaveProps(const cutil::Prop& p) {
         continue;
       }
       f.enabled = cutil::get_or<bool>(fp, "enabled", true);
-      if(fp.contains("params")) f.props.add_props(fp.get_child("params"));
+      f.props.add_props(f.plg_->defaults);
+      if(fp.contains("anim_params")) f.props.load_keys(fp.get_child("anim_params"));
       e->filters_.push_back(f);
     }
   }
@@ -134,6 +144,17 @@ std::string EntityInfo::str() const {
   char buf[256];
   sprintf(buf, "EntityInfo: Flag%d %dx%d %d frames %.3f fps", (int)flag, width, height, nframes, framerate);
   return std::string(buf);
+}
+
+void Entity::ensure_anim_props() const {
+  if(anim_props_.size() > 0 || !getPropsInfo()) return;
+  anim_props_.add_props(getProps());
+}
+
+void Entity::apply_animated_props(int frame) {
+  if(!getPropsInfo()) return;
+  ensure_anim_props();
+  setProps(anim_props_.get((uint32_t)std::max(frame, 0)));
 }
 
 bool Entity::render_filters(Composition* cmp, Image* img, int frame) {

@@ -131,6 +131,9 @@ public:
   int32_t custom_color_ = 0;           // MPROPERTY(name="カスタム色", desc="0の場合メディア種別ごとの既定色を使う", group="track")
   std::vector<FilterParam> filters_;
 
+  // getPropsInfo()を持つEntityの中間点(キーフレーム)アニメーション。ensure_anim_props()でgetProps()から遅延構築される
+  mutable AnimProps anim_props_;
+
   // このEntity固有の状態(img_/デコーダハンドル等)を読み書きする際のロック。Composition::mtxとは別物
   mutable std::mutex mtx;
 
@@ -165,6 +168,12 @@ public:
   virtual const cutil::PropInfo* getPropsInfo() const { return nullptr; }
   virtual cutil::Prop getProps() const { return {}; }
   virtual void setProps(const cutil::Prop& props) { (void)props; }
+
+  // レンダリング直前に呼び、anim_props_をframe時点の値へ評価してsetProps()へ反映する(getPropsInfo()を持たないEntityは何もしない)
+  void apply_animated_props(int frame);
+
+  // 未初期化(size()==0)ならgetProps()から構築する(派生クラスは独自Create()で直接constructしCreateEntity()を経由しないため遅延初期化にする)
+  void ensure_anim_props() const;
 };
 
 } // namespace mu
