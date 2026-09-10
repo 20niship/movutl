@@ -21,6 +21,89 @@ bool wd_color_edit(const char* name, Vec4b* col) {
   return changed;
 }
 
+namespace {
+struct EaseOption {
+  AniInterpType type;
+  const char* name;
+};
+constexpr EaseOption kEaseOptions[] = {
+  {AniInterpType::LINEAR, "Linear"},
+  {AniInterpType::EaseInSine, "In Sine"},
+  {AniInterpType::EaseOutSine, "Out Sine"},
+  {AniInterpType::EaseInOutSine, "InOut Sine"},
+  {AniInterpType::EaseInQuad, "In Quad"},
+  {AniInterpType::EaseOutQuad, "Out Quad"},
+  {AniInterpType::EaseInOutQuad, "InOut Quad"},
+  {AniInterpType::EaseInCubic, "In Cubic"},
+  {AniInterpType::EaseOutCubic, "Out Cubic"},
+  {AniInterpType::EaseInOutCubic, "InOut Cubic"},
+  {AniInterpType::EaseInQuart, "In Quart"},
+  {AniInterpType::EaseOutQuart, "Out Quart"},
+  {AniInterpType::EaseInOutQuart, "InOut Quart"},
+  {AniInterpType::EaseInQuint, "In Quint"},
+  {AniInterpType::EaseOutQuint, "Out Quint"},
+  {AniInterpType::EaseInOutQuint, "InOut Quint"},
+  {AniInterpType::EaseInExpo, "In Expo"},
+  {AniInterpType::EaseOutExpo, "Out Expo"},
+  {AniInterpType::EaseInOutExpo, "InOut Expo"},
+  {AniInterpType::EaseInCirc, "In Circ"},
+  {AniInterpType::EaseOutCirc, "Out Circ"},
+  {AniInterpType::EaseInOutCirc, "InOut Circ"},
+  {AniInterpType::EaseInBack, "In Back"},
+  {AniInterpType::EaseOutBack, "Out Back"},
+  {AniInterpType::EaseInOutBack, "InOut Back"},
+  {AniInterpType::EaseInElastic, "In Elastic"},
+  {AniInterpType::EaseOutElastic, "Out Elastic"},
+  {AniInterpType::EaseInOutElastic, "InOut Elastic"},
+  {AniInterpType::EaseInBounce, "In Bounce"},
+  {AniInterpType::EaseOutBounce, "Out Bounce"},
+  {AniInterpType::EaseInOutBounce, "InOut Bounce"},
+  {AniInterpType::Custom, "Custom (Bezier)"},
+};
+// 旧EaseIn/EaseOut/EaseInOut(EaseInSine等と同式のレガシー別名)はコンボ非表示、見つからない場合はLinear扱いで表示する
+const char* ease_name(AniInterpType t) {
+  for(auto& o : kEaseOptions)
+    if(o.type == t) return o.name;
+  return "Linear";
+}
+} // namespace
+
+bool wd_bezier_handle_editor(std::array<float, 4>& v, float size) {
+  bool changed  = false;
+  ImVec2 origin = ImGui::GetCursorScreenPos();
+  ImGui::InvisibleButton("##bezier_bg", ImVec2(size, size));
+  ImDrawList* dl = ImGui::GetWindowDrawList();
+  dl->AddRectFilled(origin, ImVec2(origin.x + size, origin.y + size), IM_COL32(30, 30, 30, 255));
+  dl->AddRect(origin, ImVec2(origin.x + size, origin.y + size), IM_COL32(90, 90, 90, 255));
+
+  auto to_screen = [&](float x, float y) { return ImVec2(origin.x + x * size, origin.y + (1.0f - y) * size); };
+  ImVec2 p0 = to_screen(0, 0), p3 = to_screen(1, 1);
+  ImVec2 p1 = to_screen(v[0], v[1]), p2 = to_screen(v[2], v[3]);
+  dl->AddLine(p0, p1, IM_COL32(120, 120, 120, 255));
+  dl->AddLine(p3, p2, IM_COL32(120, 120, 120, 255));
+  dl->AddBezierCubic(p0, p1, p2, p3, IM_COL32(255, 190, 40, 255), 2.0f);
+  dl->AddCircleFilled(p0, 3.0f, IM_COL32(180, 180, 180, 255));
+  dl->AddCircleFilled(p3, 3.0f, IM_COL32(180, 180, 180, 255));
+
+  auto handle = [&](const char* id, float* hx, float* hy, ImVec2 screen_pos) {
+    ImGui::SetCursorScreenPos(ImVec2(screen_pos.x - 5, screen_pos.y - 5));
+    ImGui::PushID(id);
+    ImGui::InvisibleButton("##h", ImVec2(10, 10));
+    if(ImGui::IsItemActive() && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
+      ImVec2 mp = ImGui::GetMousePos();
+      *hx       = std::clamp((mp.x - origin.x) / size, 0.0f, 1.0f);
+      *hy       = 1.0f - (mp.y - origin.y) / size; // yはオーバーシュート表現のためclampしない
+      changed   = true;
+    }
+    ImGui::PopID();
+    dl->AddCircleFilled(screen_pos, 4.0f, IM_COL32(255, 255, 255, 255));
+  };
+  handle("p1", &v[0], &v[1], p1);
+  handle("p2", &v[2], &v[3], p2);
+  ImGui::SetCursorScreenPos(ImVec2(origin.x, origin.y + size + 4));
+  return changed;
+}
+
 bool wd_keyframe_toggle(AnimProps& anim, int idx, uint32_t cur_frame) {
   bool has_key  = anim.has_key_at(idx, cur_frame);
   bool animated = anim.has_animation(idx);
@@ -70,6 +153,28 @@ bool wd_keyframe_strip(const char* str_id, AnimProps& anim, int idx, int fstart,
     }
     if(ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
       if(anim.erase_keyframe(idx, kf)) changed = true;
+    }
+    if(ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) ImGui::OpenPopup("##ease_popup");
+    if(ImGui::BeginPopup("##ease_popup")) {
+      AniInterpType cur = anim.get_ease_type(idx, kf);
+      if(ImGui::BeginCombo("イージング", ease_name(cur))) {
+        for(auto& opt : kEaseOptions) {
+          bool selected = opt.type == cur;
+          if(ImGui::Selectable(opt.name, selected)) {
+            anim.set_ease_type(idx, kf, opt.type);
+            changed = true;
+          }
+        }
+        ImGui::EndCombo();
+      }
+      if(cur == AniInterpType::Custom) {
+        auto bez = anim.get_ease_bezier(idx, kf);
+        if(wd_bezier_handle_editor(bez, 120.0f)) {
+          anim.set_ease_bezier(idx, kf, bez);
+          changed = true;
+        }
+      }
+      ImGui::EndPopup();
     }
     ImGui::PopID();
   }

@@ -6,6 +6,7 @@
 #include <movutl/core/profiler.hpp>
 #include <movutl/plugin/filter.hpp>
 #include <movutl/plugin/plugin.hpp>
+#include <set>
 //
 #include <movutl/asset/audio.hpp>
 #include <movutl/asset/camera.hpp>
@@ -155,6 +156,38 @@ void Entity::apply_animated_props(int frame) {
   if(!getPropsInfo()) return;
   ensure_anim_props();
   setProps(anim_props_.get((uint32_t)std::max(frame, 0)));
+}
+
+std::vector<uint32_t> Entity::collect_animated_frames() const {
+  ensure_anim_props();
+  std::set<uint32_t> frames;
+  for(int i = 0; i < (int)anim_props_.props.size(); i++)
+    for(uint32_t f : anim_props_.keyframe_frames(i)) frames.insert(f);
+  for(auto& filt : filters_)
+    for(int i = 0; i < (int)filt.props.props.size(); i++)
+      for(uint32_t f : filt.props.keyframe_frames(i)) frames.insert(f);
+  return std::vector<uint32_t>(frames.begin(), frames.end());
+}
+
+bool Entity::move_keyframes_at(uint32_t old_frame, uint32_t new_frame) {
+  if(old_frame == new_frame) return false;
+  ensure_anim_props();
+  bool any = false;
+  for(int i = 0; i < (int)anim_props_.props.size(); i++)
+    if(anim_props_.has_key_at(i, old_frame)) any |= anim_props_.move_keyframe(i, old_frame, new_frame);
+  for(auto& filt : filters_)
+    for(int i = 0; i < (int)filt.props.props.size(); i++)
+      if(filt.props.has_key_at(i, old_frame)) any |= filt.props.move_keyframe(i, old_frame, new_frame);
+  return any;
+}
+
+bool Entity::erase_keyframes_at(uint32_t frame) {
+  ensure_anim_props();
+  bool any = false;
+  for(int i = 0; i < (int)anim_props_.props.size(); i++) any |= anim_props_.erase_keyframe(i, frame);
+  for(auto& filt : filters_)
+    for(int i = 0; i < (int)filt.props.props.size(); i++) any |= filt.props.erase_keyframe(i, frame);
+  return any;
 }
 
 bool Entity::render_filters(Composition* cmp, Image* img, int frame) {

@@ -174,6 +174,13 @@ public:
 
   // 未初期化(size()==0)ならgetProps()から構築する(派生クラスは独自Create()で直接constructしCreateEntity()を経由しないため遅延初期化にする)
   void ensure_anim_props() const;
+
+  // タイムライン集約表示用: anim_props_ + 全filters_[].propsの全キーフレームframeを重複排除・昇順でまとめる
+  std::vector<uint32_t> collect_animated_frames() const;
+  // old_frameにあるキーフレームを全プロパティ横断でnew_frameへ一括移動する。1つでも動けばtrue
+  bool move_keyframes_at(uint32_t old_frame, uint32_t new_frame);
+  // frameにあるキーフレームを全プロパティ横断で一括削除する。1つでも消せればtrue
+  bool erase_keyframes_at(uint32_t frame);
 };
 
 } // namespace mu

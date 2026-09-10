@@ -48,6 +48,39 @@ TEST_CASE("SplitCommand: 選択中クリップを現在フレームで分割す�
   CHECK(found_second_half);
 }
 
+TEST_CASE("ToggleKeyframeCommand: 選択中エンティティの現在フレームの中間点を一括トグルし、undo/redoできる") {
+  Project::New();
+  detail::register_default_commands();
+  auto* cmp = Project::GetActiveCompo();
+  REQUIRE(cmp != nullptr);
+
+  auto img = Image::Create("kf_toggle_clip", 64, 64);
+  REQUIRE(img != nullptr);
+  img->fstart_ = 0;
+  img->fend_   = 100;
+  cmp->insert_entity(img);
+  cmp->frame = 20;
+
+  clear_selected_entts();
+  select_entt(img);
+
+  // 追加モード: まだどのプロパティにもframe=20のキーが無い状態からトグル
+  CHECK(run_command("toggle_keyframe"));
+  int pos_idx = img->anim_props_.index_of("pos");
+  REQUIRE(pos_idx >= 0);
+  CHECK(img->anim_props_.has_key_at(pos_idx, 20));
+
+  // 削除モード: 同フレームでもう一度トグルすると消える
+  CHECK(run_command("toggle_keyframe"));
+  CHECK_FALSE(img->anim_props_.has_key_at(pos_idx, 20));
+
+  CHECK(undo_command()); // 削除トグルを取り消す→キーが戻る
+  CHECK(img->anim_props_.has_key_at(pos_idx, 20));
+
+  CHECK(redo_command()); // 削除トグルをやり直す→また消える
+  CHECK_FALSE(img->anim_props_.has_key_at(pos_idx, 20));
+}
+
 TEST_CASE("duplicate_asset: Entityを複製できる") {
   Project::New();
   auto img = Image::Create("clip", 64, 64);

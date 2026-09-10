@@ -83,6 +83,63 @@ TEST_CASE("Entity::anim_props_: 位置(Vec3)の中間点アニメーションが
   CHECK(loaded->getProps().get<Vec3>("pos")[0] == doctest::Approx(100.0f));
 }
 
+TEST_CASE("Entity::collect_animated_frames/move_keyframes_at/erase_keyframes_at: 本体+フィルタ横断の集約操作") {
+  ensure_filters_registered();
+  Project::New();
+
+  auto img = Image::Create("aggregate_anim_test", 4, 4);
+  REQUIRE(img != nullptr);
+  img->fstart_ = 0;
+  img->fend_   = 50;
+
+  img->ensure_anim_props();
+  int pos_idx   = img->anim_props_.index_of("pos");
+  int alpha_idx = img->anim_props_.index_of("alpha");
+  REQUIRE(pos_idx >= 0);
+  REQUIRE(alpha_idx >= 0);
+  auto& pos_clip = std::get<PAniClip<Vec3>>(img->anim_props_[pos_idx]);
+  pos_clip.add_keyframe(0, Vec3(0, 0, 0));
+  pos_clip.add_keyframe(20, Vec3(100, 0, 0)); // 同じframe(20)にalphaもキーを打つ
+  auto& alpha_clip = std::get<PAniClip<float>>(img->anim_props_[alpha_idx]);
+  alpha_clip.add_keyframe(0, 1.0f);
+  alpha_clip.add_keyframe(20, 0.0f);
+
+  auto* filters                       = &detail::AppMain::Get()->filters;
+  FilterPluginTable* color_correction = nullptr;
+  for(auto& f : *filters)
+    if(std::string(f.name.c_str()) == "色調補正") color_correction = &f;
+  REQUIRE(color_correction != nullptr);
+  FilterParam fp;
+  fp.plg_ = color_correction;
+  fp.props.add_props(color_correction->defaults);
+  img->filters_.push_back(fp);
+  auto& hue_clip = std::get<PAniClip<float>>(img->filters_.back().props[0]); // filters_へのpush_backはコピーなので、参照は格納後のものを取る
+  hue_clip.add_keyframe(0, 0.0f);
+  hue_clip.add_keyframe(20, 90.0f); // フィルタパラメータにも同じframe(20)でキー
+
+  auto frames = img->collect_animated_frames();
+  REQUIRE(frames.size() == 2);
+  CHECK(frames[0] == 0);
+  CHECK(frames[1] == 20);
+
+  REQUIRE(img->move_keyframes_at(20, 30));
+  CHECK_FALSE(pos_clip.has_key_at(20));
+  CHECK(pos_clip.has_key_at(30));
+  CHECK_FALSE(alpha_clip.has_key_at(20));
+  CHECK(alpha_clip.has_key_at(30));
+  CHECK_FALSE(hue_clip.has_key_at(20));
+  CHECK(hue_clip.has_key_at(30));
+
+  REQUIRE(img->erase_keyframes_at(30));
+  CHECK_FALSE(pos_clip.has_key_at(30));
+  CHECK_FALSE(alpha_clip.has_key_at(30));
+  CHECK_FALSE(hue_clip.has_key_at(30));
+  // 各clipとも frame=0 の1個目のキーは"残り1個未満にはできない"制約で残る
+  auto remaining = img->collect_animated_frames();
+  REQUIRE(remaining.size() == 1);
+  CHECK(remaining[0] == 0);
+}
+
 TEST_CASE("Entity::getSaveProps/fromSaveProps: フィルタが無ければ空のまま復元される") {
   ensure_filters_registered();
   Project::New();

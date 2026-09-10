@@ -8,12 +8,15 @@ extern "C" {
 #include <cstdio>
 #include <doctest/doctest.h>
 #include <movutl/app/app.hpp>
+#include <movutl/app/app_impl.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/entity.hpp>
+#include <movutl/asset/image.hpp>
 #include <movutl/asset/project.hpp>
 #include <movutl/asset/shape.hpp>
 #include <movutl/binding/binding.hpp>
 #include <movutl/binding/lua_command.hpp>
+#include <movutl/core/anim.hpp>
 #include <movutl/core/command.hpp>
 #include <movutl/core/filesystem.hpp>
 #include <unordered_map>
@@ -179,6 +182,68 @@ TEST_CASE("統合テスト: save_project_as_cmdをrun_command()で呼び出す�
   CHECK(Project::Get()->path == path);
 
   std::remove(path.c_str());
+}
+
+TEST_CASE("Lua API: movutl.add_keyframe/remove_keyframe でEntity本体プロパティのキーフレームを操作できる") {
+  Project::New();
+  auto img = Image::Create("lua_kf_test", 4, 4);
+  REQUIRE(img != nullptr);
+  img->ensure_anim_props();
+
+  lua_State* L = make_test_lua();
+  LuaIntf::Lua::setGlobal(L, "e", static_cast<Entity*>(img.get())); // LuaIntfはbeginClass<Entity>()の型でしかEntity*引数を受け取れず、Image*のまま渡すと型不一致になる
+
+  REQUIRE(luaL_dostring(L, "return movutl.add_keyframe(e, 'alpha', 10, 0.5)") == 0);
+  CHECK(lua_toboolean(L, -1));
+  lua_pop(L, 1);
+
+  int idx = img->anim_props_.index_of("alpha");
+  REQUIRE(idx >= 0);
+  CHECK(img->anim_props_.has_key_at(idx, 10));
+  CHECK(img->anim_props_.get<float>(idx, 10) == doctest::Approx(0.5f));
+
+  REQUIRE(luaL_dostring(L, "return movutl.remove_keyframe(e, 'alpha', 10)") == 0);
+  CHECK(lua_toboolean(L, -1));
+  lua_pop(L, 1);
+  CHECK_FALSE(img->anim_props_.has_key_at(idx, 10));
+
+  // 残り1個(frame=0の初期キー)は消せない
+  REQUIRE(luaL_dostring(L, "return movutl.remove_keyframe(e, 'alpha', 0)") == 0);
+  CHECK_FALSE(lua_toboolean(L, -1));
+  lua_pop(L, 1);
+}
+
+TEST_CASE("Lua API: movutl.add_keyframe_filter/remove_keyframe_filter でフィルタパラメータのキーフレームを操作できる") {
+  if(detail::AppMain::Get()->filters.empty()) detail::register_default_filters();
+  detail::activate_all_plugins();
+  Project::New();
+  auto img = Image::Create("lua_kf_filter_test", 4, 4);
+  REQUIRE(img != nullptr);
+
+  FilterPluginTable* color_correction = nullptr;
+  for(auto& f : detail::AppMain::Get()->filters)
+    if(std::string(f.name.c_str()) == "色調補正") color_correction = &f;
+  REQUIRE(color_correction != nullptr);
+  FilterParam fp;
+  fp.plg_ = color_correction;
+  fp.props.add_props(color_correction->defaults);
+  img->filters_.push_back(fp);
+
+  lua_State* L = make_test_lua();
+  LuaIntf::Lua::setGlobal(L, "e", static_cast<Entity*>(img.get()));
+
+  REQUIRE(luaL_dostring(L, "return movutl.add_keyframe_filter(e, 0, 'hue', 15, 90.0)") == 0);
+  CHECK(lua_toboolean(L, -1));
+  lua_pop(L, 1);
+
+  int idx = img->filters_[0].props.index_of("hue");
+  REQUIRE(idx >= 0);
+  CHECK(img->filters_[0].props.has_key_at(idx, 15));
+
+  REQUIRE(luaL_dostring(L, "return movutl.remove_keyframe_filter(e, 0, 'hue', 15)") == 0);
+  CHECK(lua_toboolean(L, -1));
+  lua_pop(L, 1);
+  CHECK_FALSE(img->filters_[0].props.has_key_at(idx, 15));
 }
 
 TEST_CASE("統合テスト: open_project_cmdをrun_command()で呼び出すと保存済みプロジェクトが復元される") {

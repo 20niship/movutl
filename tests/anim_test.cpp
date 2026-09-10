@@ -118,6 +118,72 @@ TEST_CASE("PAniClip::has_key_at/erase_keyframe/move_keyframe: 中間点の追加
   CHECK_FALSE(clip.erase_keyframe(0)); // 最後の1個は削除できない
 }
 
+TEST_CASE("detail::apply_ease: Pennerイージングの境界値/既知値") {
+  using namespace mu::detail;
+  CHECK(apply_ease(EaseInQuad, 0.0) == doctest::Approx(0.0));
+  CHECK(apply_ease(EaseInQuad, 1.0) == doctest::Approx(1.0));
+  CHECK(apply_ease(EaseInQuad, 0.5) == doctest::Approx(0.25));
+
+  CHECK(apply_ease(EaseInSine, 0.0) == doctest::Approx(0.0));
+  CHECK(apply_ease(EaseInSine, 1.0) == doctest::Approx(1.0));
+  CHECK(apply_ease(EaseOutBounce, 0.0) == doctest::Approx(0.0));
+  CHECK(apply_ease(EaseOutBounce, 1.0) == doctest::Approx(1.0));
+  CHECK(apply_ease(EaseInOutElastic, 0.0) == doctest::Approx(0.0));
+  CHECK(apply_ease(EaseInOutElastic, 1.0) == doctest::Approx(1.0));
+}
+
+TEST_CASE("detail::eval_cubic_bezier: cubic-bezier(0,0,1,1)は線形、対称ベジエはt=0.5で0.5") {
+  using namespace mu::detail;
+  CHECK(eval_cubic_bezier(0, 0, 1, 1, 0.0) == doctest::Approx(0.0));
+  CHECK(eval_cubic_bezier(0, 0, 1, 1, 1.0) == doctest::Approx(1.0));
+  CHECK(eval_cubic_bezier(0, 0, 1, 1, 0.5) == doctest::Approx(0.5).epsilon(0.01));
+  CHECK(eval_cubic_bezier(0.42, 0.0, 0.58, 1.0, 0.5) == doctest::Approx(0.5).epsilon(0.01));
+}
+
+TEST_CASE("PAniClip::save/load: ease3/ease4がラウンドトリップする") {
+  PAniClip<float> clip;
+  clip.clear();
+  clip.add_keyframe(0, 0.0f);
+  clip.add_keyframe(10, 100.0f, AniInterpType::Custom);
+  clip.keys[1].ease_  = 0.1f;
+  clip.keys[1].ease2_ = 0.2f;
+  clip.keys[1].ease3_ = 0.3f;
+  clip.keys[1].ease4_ = 0.4f;
+
+  auto saved = clip.save();
+  PAniClip<float> restored;
+  restored.load(saved);
+  REQUIRE(restored.keys.size() == 2);
+  CHECK(restored.keys[1].type == AniInterpType::Custom);
+  CHECK(restored.keys[1].ease_ == doctest::Approx(0.1f));
+  CHECK(restored.keys[1].ease2_ == doctest::Approx(0.2f));
+  CHECK(restored.keys[1].ease3_ == doctest::Approx(0.3f));
+  CHECK(restored.keys[1].ease4_ == doctest::Approx(0.4f));
+}
+
+TEST_CASE("AnimProps::get_ease_type/set_ease_type/get_ease_bezier/set_ease_bezier: キーフレーム単位のイージング編集") {
+  AnimProps props;
+  props.add_prop<float>("x", 0.0f);
+  auto& clip = std::get<PAniClip<float>>(props[0]);
+  clip.add_keyframe(0, 0.0f);
+  clip.add_keyframe(10, 100.0f);
+
+  CHECK(props.get_ease_type(0, 0) == AniInterpType::LINEAR);
+  props.set_ease_type(0, 0, AniInterpType::EaseInOutBack);
+  CHECK(props.get_ease_type(0, 0) == AniInterpType::EaseInOutBack);
+
+  auto bez = props.get_ease_bezier(0, 10);
+  CHECK(bez[0] == doctest::Approx(0.42f));
+  props.set_ease_bezier(0, 10, {0.1f, 0.2f, 0.3f, 0.4f});
+  auto bez2 = props.get_ease_bezier(0, 10);
+  CHECK(bez2[0] == doctest::Approx(0.1f));
+  CHECK(bez2[3] == doctest::Approx(0.4f));
+
+  // 存在しないframeは既定値のまま、何も壊さない
+  props.set_ease_type(0, 999, AniInterpType::Custom);
+  CHECK(props.get_ease_type(0, 999) == AniInterpType::LINEAR);
+}
+
 TEST_CASE("AnimProps::save/load_keys: キーフレーム列を保存し名前一致で復元する") {
   AnimProps src;
   src.add_prop<float>("x", 0.0f);
