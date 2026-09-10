@@ -38,6 +38,7 @@ class LuaIntfWriter:
             "#include <movutl/asset/project.hpp>\n"
             "#include <movutl/asset/movie.hpp>\n"
             "#include <movutl/asset/audio.hpp>\n"
+            "#include <movutl/asset/midi.hpp>\n"
             "#include <movutl/asset/framebuffer.hpp>\n"
             "#include <movutl/asset/shape.hpp>\n"
             "#include <movutl/asset/compo_ref.hpp>\n"

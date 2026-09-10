@@ -8,6 +8,7 @@
 #include <movutl/asset/entity.hpp>
 #include <movutl/asset/framebuffer.hpp>
 #include <movutl/asset/image.hpp>
+#include <movutl/asset/midi.hpp>
 #include <movutl/asset/movie.hpp>
 #include <movutl/asset/text.hpp>
 #include <movutl/core/anim.hpp>
@@ -187,6 +188,21 @@ cutil::Prop Image::getProps() const {
   return p;
 }
 void Image::setProps(const cutil::Prop& p) { (void)p.load_to(this, getPropsInfo()); }
+const cutil::PropInfo* MidiEntt::getPropsInfo() const {
+  static const cutil::PropInfo info = [] {
+    cutil::PropInfo p;
+    p.fields.push_back(cutil::PropInfo::Field("instrument_plugin_id_", offsetof(MidiEntt, instrument_plugin_id_), cutil::prop_info_of<std::string>()));
+    p.fields.back().set_label("音源プラグインID");
+    return p;
+  }();
+  return &info;
+}
+cutil::Prop MidiEntt::getProps() const {
+  cutil::Prop p;
+  p.dump(this, getPropsInfo());
+  return p;
+}
+void MidiEntt::setProps(const cutil::Prop& p) { (void)p.load_to(this, getPropsInfo()); }
 const cutil::PropInfo* Movie::getPropsInfo() const {
   static const cutil::PropInfo info = [] {
     cutil::PropInfo p;

@@ -10,13 +10,17 @@
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/custom_object.hpp>
 #include <movutl/asset/entity.hpp>
+#include <movutl/asset/midi.hpp>
 #include <movutl/asset/project.hpp>
 #include <movutl/core/logger.hpp>
 #include <movutl/gui/graph_editor_window.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/gui/inspector.hpp>
+#include <movutl/gui/vst_edit_ui.hpp>
 #include <movutl/gui/widgets.hpp>
 #include <movutl/plugin/plugin.hpp>
+#include <movutl/plugin/vst/vst_filter_bridge.hpp>
+#include <movutl/plugin/vst/vst_host.hpp>
 #include <string>
 #include <vector>
 
@@ -98,6 +102,23 @@ void InspectorWindow::Update() {
     }
   }
 
+  if(e->getType() == EntityType_Midi) { // 音源選択(vst_host::plugin_list())+ Edit導線(vst_edit_ui)
+    auto* midi            = static_cast<MidiEntt*>(e.get());
+    auto plugins          = vst_host::plugin_list();
+    std::string cur_label = midi->instrument_plugin_id_.empty() ? "(未選択)" : midi->instrument_plugin_id_;
+    for(auto& p : plugins) {
+      if(p.id == midi->instrument_plugin_id_) cur_label = p.name;
+    }
+    ImGui::SetNextItemWidth(-1);
+    if(ImGui::BeginCombo("音源プラグイン", cur_label.c_str())) {
+      for(auto& p : plugins) {
+        if(ImGui::Selectable(p.name.c_str(), p.id == midi->instrument_plugin_id_)) midi->assign_instrument(p.id);
+      }
+      ImGui::EndCombo();
+    }
+    draw_vst_edit_button("midi_instrument_edit", vst_host::get_instance(midi->instrument_instance_id()));
+  }
+
   wd_entt_props_editor(e.get(), cur_frame);
 
   // カスタムオブジェクト(Luaスクリプト)のtrack0-3/check0-3相当のパラメータはgetPropsInfo()を持たない(動的なcutil::Propで保持している)ため専用UIで編集する
@@ -151,11 +172,16 @@ void InspectorWindow::Update() {
       ImGui::Dummy(ImVec2(h + 4, h));
       ImGui::SameLine();
     }
+    if(detail::is_vst_filter_guid(f.plg_->guid)) {
+      ImGui::SameLine();
+      draw_vst_edit_button("vst_fx_edit", detail::vst_filter_instance(f.instance_state));
+    }
     if(ImGui::TreeNode(str.c_str())) {
       bool props_changed = false;
       int size_          = std::min<int>(f.props.size(), (int)e->filters_[i].plg_->props.fields.size());
       for(int k = 0; k < size_; k++) {
         const auto& info = f.plg_->props.fields[k];
+        if(cutil::has_flag(info.flags, cutil::PropFlags::Hidden)) continue;
         ImGui::PushID(k);
         { // animation props editor
           const char* label  = info.label[0] ? info.label : info.name;

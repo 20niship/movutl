@@ -128,6 +128,108 @@ endif()
 set(MOVUTL_INCLUDES ${MOVUTL_INCLUDES} ${maximilian_SOURCE_DIR}/src)
 set(MOVUTL_MAXIMILIAN_SRC ${maximilian_SOURCE_DIR}/src/maximilian.cpp ${maximilian_SOURCE_DIR}/src/libs/maxiReverb.cpp)
 
+# --------------------------------------------------------------
+# ------------     uapmd (remidy VST3ホスティング) ----------------
+# --------------------------------------------------------------
+# atsushieno/uapmd の source/CMakeLists.txt は remidy-gui/uapmd-engine等の
+# 未使用モジュールまで一括add_subdirectoryする作りのため、source/CMakeLists.txtは
+# 経由せず remidy と uapmd-plugin-hosting だけを直接add_subdirectoryする。
+# 両者が親スコープに要求する変数 (choc/concurrentqueue/midicci) を、
+# ext/uapmd/source/CMakeLists.txt に書かれているCPMAddPackage呼び出しと同じ内容で用意する。
+if(APPLE)
+  enable_language(OBJCXX)
+endif()
+include(${MOVUTL_ROOT_DIR}/ext/uapmd/source/cmake/CPM.cmake)
+
+CPMAddPackage(
+  NAME            choc
+  GIT_TAG         1857a38
+  GIT_REPOSITORY  https://github.com/Tracktion/choc
+  DOWNLOAD_ONLY YES
+)
+CPMAddPackage(
+  NAME           concurrentqueue
+  GIT_TAG        2f09da73d22a47dc8a89cdd4fc4c3bfae07f4284
+  GIT_REPOSITORY https://github.com/cameron314/concurrentqueue.git
+  DOWNLOAD_ONLY YES
+)
+# midicci は静的ライブラリとしてビルドされる (remidyがmidicci_staticにリンクする)
+set(_MOVUTL_OLD_BUILD_SHARED_LIBS "${BUILD_SHARED_LIBS}")
+set(BUILD_SHARED_LIBS OFF)
+CPMAddPackage(midicci
+  NAME            midicci
+  GIT_TAG         0.4.0
+  GIT_REPOSITORY  https://github.com/atsushieno/midicci
+  OPTIONS         "MIDICCI_SKIP_TOOLS ON" "BUILD_TESTS OFF" "BUILD_EXAMPLES OFF"
+  EXCLUDE_FROM_ALL
+)
+if(DEFINED _MOVUTL_OLD_BUILD_SHARED_LIBS AND NOT "${_MOVUTL_OLD_BUILD_SHARED_LIBS}" STREQUAL "")
+  set(BUILD_SHARED_LIBS "${_MOVUTL_OLD_BUILD_SHARED_LIBS}")
+else()
+  unset(BUILD_SHARED_LIBS)
+endif()
+
+# uapmd-plugin-hostingのRemoteScanSessionManager.cppはデスクトップ(Android/Emscripten/iOS以外)では
+# UAPMD_PLUGIN_HOSTING_REMOTE_SCAN_SUPPORTEDが常に1になり、無条件でcpplocate/cpplocate.hをincludeする
+# (uapmd側のUAPMD_ENABLE_CPPLOCATEオプションでは制御できない)。source/CMakeLists.txtと同じCPMAddPackageで用意する。
+set(UAPMD_ENABLE_CPPLOCATE ON)
+CPMAddPackage(cpplocate
+  NAME           cpplocate
+  GIT_TAG        b796990d8df747758dbd6217b6315b7bdbb0c27e
+  GIT_REPOSITORY https://github.com/cginternals/cpplocate
+  EXCLUDE_FROM_ALL
+)
+set(cpplocate_LIBRARIES cpplocate::cpplocate)
+
+# remidy/uapmd-plugin-hostingはC++23を要求する(source/CMakeLists.txt準拠)。
+# movutl本体のC++標準を変えないよう、add_subdirectory直前だけ変更して元に戻す。
+set(_MOVUTL_OLD_CXX_STANDARD "${CMAKE_CXX_STANDARD}")
+set(CMAKE_CXX_STANDARD 23)
+add_subdirectory(${MOVUTL_ROOT_DIR}/ext/uapmd/source/remidy ${CMAKE_CURRENT_BINARY_DIR}/uapmd_remidy)
+add_subdirectory(${MOVUTL_ROOT_DIR}/ext/uapmd/source/uapmd-plugin-hosting ${CMAKE_CURRENT_BINARY_DIR}/uapmd_plugin_hosting)
+set(CMAKE_CXX_STANDARD "${_MOVUTL_OLD_CXX_STANDARD}")
+
+set(MOVUTL_INCLUDES
+  ${MOVUTL_INCLUDES}
+  ${MOVUTL_ROOT_DIR}/ext/uapmd/source/uapmd-plugin-hosting/include
+  ${MOVUTL_ROOT_DIR}/ext/uapmd/source/remidy/include
+)
+set(MOVUTL_LIBRARIES ${MOVUTL_LIBRARIES} uapmd::uapmd-plugin-hosting remidy::remidy)
+# vst_host.cppがcpplocate::localDir()でremidy-toolingキャッシュディレクトリを求めるため、mucoreにも公開でリンクする。
+set(MOVUTL_LIBRARIES ${MOVUTL_LIBRARIES} ${cpplocate_LIBRARIES})
+
+# --------------------------------------------------------------
+# ------  動作確認用: mda-vst3サンプルVST3プラグインのビルド  --------
+# --------------------------------------------------------------
+# remidyはvst3sdkをDOWNLOAD_ONLYで取得するのみでadd_subdirectoryしないため、
+# vst3sdk_SOURCE_DIRはremidyのCMakeLists.txtのローカルスコープにしか存在しない。
+# 同じNAME/GIT_TAGでCPMAddPackageを呼び直すと、CPM既存キャッシュを再利用したまま
+# このスコープでもvst3sdk_SOURCE_DIRを得られる(再ダウンロードは発生しない)。
+CPMAddPackage(
+  NAME            vst3sdk
+  GIT_REPOSITORY  https://github.com/steinbergmedia/vst3sdk
+  GIT_TAG         v3.8.0_build_66
+  DOWNLOAD_ONLY   YES
+)
+if(vst3sdk_SOURCE_DIR)
+  set(SMTG_ENABLE_VST3_PLUGIN_EXAMPLES ON)
+  set(SMTG_ENABLE_VST3_HOSTING_EXAMPLES OFF)
+  set(SMTG_ENABLE_VSTGUI_SUPPORT OFF)
+  # OS標準VST3フォルダへのシンボリックリンク作成を抑止する(movutl独自ディレクトリのみで完結させる)
+  set(SMTG_CREATE_PLUGIN_LINK OFF)
+  # ビルド後のvalidator自動実行はこの環境では引数指定が合わず失敗し生成物を削除してしまうため無効化する
+  set(SMTG_RUN_VST_VALIDATOR OFF)
+  # movutl本体はCMAKE_BUILD_TYPEを設定しないため、vst3sdk側が要求するRELEASE/DEVELOPMENT/NDEBUG/_DEBUGの
+  # いずれも定義されずfdebug.hの#errorで止まる。add_subdirectory直前だけCMAKE_CXX_FLAGSにRELEASEを足して戻す
+  # (mucore等movutl本体のターゲットへは影響させない)。
+  set(_MOVUTL_OLD_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DRELEASE")
+  # EXCLUDE_FROM_ALLなので、明示的に`mda-vst3`ターゲットを指定しない限り他のサンプル群はビルドされない
+  # (`cmake --build build --target mda-vst3`)。動作確認用のサンプルVST3プラグインで、通常ビルドには含まれない。
+  add_subdirectory(${vst3sdk_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}/vst3sdk_examples EXCLUDE_FROM_ALL)
+  set(CMAKE_CXX_FLAGS "${_MOVUTL_OLD_CXX_FLAGS}")
+endif()
+
 file(GLOB DATA_FILES ${CMAKE_CURRENT_SOURCE_DIR}/data/*)
 file(COPY ${DATA_FILES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
