@@ -3,6 +3,7 @@
 #include <movutl/asset/image.hpp>
 #include <movutl/asset/shape.hpp>
 #include <movutl/asset/text.hpp>
+#include <string>
 #include <vector>
 
 namespace mu {
@@ -27,6 +28,7 @@ void new_project();
 void save_project();
 void save_project_as(const char* path);
 void open_project(const char* path);
+bool has_project_path(); // 保存先パスが決まっているか(Ctrl+Sで上書き保存かダイアログを出すか判定用)
 
 // srcを複製した新規Entityを返す(全EntityType対応、未対応の型/nullptrはnullptrを返す)
 Ref<Entity> duplicate_asset(const Ref<Entity>& src);
@@ -45,13 +47,17 @@ bool add_new_audio_track(const char* name, const char* path, int start, int laye
 Ref<ShapeEntt> add_new_shape_track(const char* name, int start, int end, ShapeType type);
 Ref<TextEntt> add_new_text_track(const char* name, int start, int end);
 Ref<Image> add_new_image_track(const char* name, const char* path, int start, int end);
+Ref<Entity> add_new_custom_object_track(const std::string& script_name, int start, int end);
 
-// 登録済みフィルタ(AppMain::filters)を名前で検索しentt->trk.filtersへ追加する(見つからなければfalse)
+// 動画/音声/画像を内容から自動判別してEntityを追加する(open_media_fileと違いProject::New()は呼ばない)
+Ref<Entity> import_media_file(const char* path);
+
+// 登録済みフィルタ(AppMain::filters)を名前で検索しentt->filters_へ追加する(見つからなければfalse)
 bool add_filter_to_entity(const Ref<Entity>& entt, const char* filter_name);
 // LuaIntf上はShapeEntt等の派生クラスからEntityへ暗黙変換できないため、Luaから使うための薄いラッパー
 bool add_filter_to_shape(const Ref<ShapeEntt>& entt, const char* filter_name);
 bool add_filter_to_image(const Ref<Image>& entt, const char* filter_name);
-// entt->trk.filters内でfilter_nameに一致する最後のフィルタのfloatパラメータをparam_nameで検索し書き換える
+// entt->filters_内でfilter_nameに一致する最後のフィルタのfloatパラメータをparam_nameで検索し書き換える
 bool set_shape_filter_param(const Ref<ShapeEntt>& entt, const char* filter_name, const char* param_name, float value);
 bool set_image_filter_param(const Ref<Image>& entt, const char* filter_name, const char* param_name, float value);
 // アクティブCompositionの現在フレームをレンダリングしPNGへ書き出す(headlessスクリプト用)

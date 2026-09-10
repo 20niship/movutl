@@ -32,7 +32,7 @@ bool CPURenderer::render_frame(Composition* comp, int frame, Ref<Image>& out, bo
     std::lock_guard<std::mutex> lock(e->mtx);
     if(!e->visible(frame)) continue;
 
-    if(e->trk.clipping_up) {
+    if(e->clipping_up_) {
       // ponytail: 単一共有バッファ逐次合成のため未描画の上レイヤーは参照不可。既に合成済みの下側アルファをマスクに使う近似実装(真の上レイヤークリッピングには2パスレンダリングが必要)
       Image scratch(out->width, out->height);
       scratch.fill_rgba(Vec4b(0, 0, 0, 0));

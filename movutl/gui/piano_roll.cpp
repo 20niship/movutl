@@ -79,7 +79,7 @@ void PianoRollWindow::Update() {
 
   auto* comp                = midi->get_comp();
   int sr                    = comp ? comp->audio_sample_rate : 48000;
-  int64_t track_len_samples = comp ? (comp->frame_to_sample(midi->trk.fend) - comp->frame_to_sample(midi->trk.fstart)) : (int64_t)sr * 8;
+  int64_t track_len_samples = comp ? (comp->frame_to_sample(midi->fend_) - comp->frame_to_sample(midi->fstart_)) : (int64_t)sr * 8;
   track_len_samples         = std::max<int64_t>(track_len_samples, (int64_t)sr * 4); // 最低4秒分は表示する
 
   float content_w = kKeysW + (float)track_len_samples / sr * px_per_sec_ + 40.0f;

@@ -61,12 +61,12 @@ bool MidiEntt::render(Composition* cmp, Image* target, int frame) {
 bool MidiEntt::fetch_audio(Composition* cmp, int64_t start_sample, int n, int16_t* out) {
   MU_ASSERT(cmp != nullptr);
   MU_ASSERT(out != nullptr);
-  if(!trk.active_ || instrument_instance_id_ < 0) return false;
+  if(!active_ || instrument_instance_id_ < 0) return false;
   auto* inst = vst_host::get_instance(instrument_instance_id_);
   if(inst == nullptr) return false;
 
-  int64_t track_start = cmp->frame_to_sample(trk.fstart);
-  int64_t track_end   = cmp->frame_to_sample(trk.fend);
+  int64_t track_start = cmp->frame_to_sample(fstart_);
+  int64_t track_end   = cmp->frame_to_sample(fend_);
   if(track_end <= track_start) return false;
   if(start_sample + n <= track_start || start_sample >= track_end) return false; // このチャンクはトラック範囲外
 

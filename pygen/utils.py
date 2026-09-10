@@ -88,9 +88,12 @@ def parse_mprop_info(arg: MArgument, line: str) -> MArgument:
             arg.maxvalue = value
         if key == "step":
             arg.step = value
+        if key == "group":
+            arg.group = value
     arg.dispname = arg.dispname.replace('"', "")
     arg.category = arg.category.replace('"', "")
     arg.desc = arg.desc.replace('"', "")
+    arg.group = arg.group.replace('"', "")
     return arg
 
 

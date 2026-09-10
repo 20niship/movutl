@@ -77,25 +77,25 @@ TEST_CASE("FramebufferEntt::render scale_を縮小すると貼り戻し範囲外
 TEST_CASE("FramebufferEntt: レイヤーをまたいでグループ化的に使える(下のレイヤーをキャプチャしてクリアし、上のレイヤーだけが最終出力に残る)") {
   auto comp = make_test_comp(60, 60);
 
-  auto bottom        = ShapeEntt::Create("bottom", ShapeType_Rect);
-  bottom->pos_       = Vec3(0, 0, 0);
-  bottom->size_      = Vec2(60, 60);
-  bottom->color_     = Vec4b(255, 0, 0, 255); // 赤
-  bottom->trk.fstart = 0;
-  bottom->trk.fend   = 10;
+  auto bottom     = ShapeEntt::Create("bottom", ShapeType_Rect);
+  bottom->pos_    = Vec3(0, 0, 0);
+  bottom->size_   = Vec2(60, 60);
+  bottom->color_  = Vec4b(255, 0, 0, 255); // 赤
+  bottom->fstart_ = 0;
+  bottom->fend_   = 10;
 
   auto fb             = FramebufferEntt::Create("fb");
   fb->clear_original_ = true;
   fb->alpha_          = 0; // 貼り戻しを無効化し、clear_original_の効果だけを見る
-  fb->trk.fstart      = 0;
-  fb->trk.fend        = 10;
+  fb->fstart_         = 0;
+  fb->fend_           = 10;
 
-  auto top        = ShapeEntt::Create("top", ShapeType_Rect);
-  top->pos_       = Vec3(0, 0, 0);
-  top->size_      = Vec2(20, 20);
-  top->color_     = Vec4b(0, 255, 0, 255); // 緑
-  top->trk.fstart = 0;
-  top->trk.fend   = 10;
+  auto top     = ShapeEntt::Create("top", ShapeType_Rect);
+  top->pos_    = Vec3(0, 0, 0);
+  top->size_   = Vec2(20, 20);
+  top->color_  = Vec4b(0, 255, 0, 255); // 緑
+  top->fstart_ = 0;
+  top->fend_   = 10;
 
   comp->insert_entity(bottom, 0);
   comp->insert_entity(fb, 1);
@@ -121,24 +121,24 @@ Ref<Composition> build_scene(bool clear_original, Ref<FramebufferEntt>* fb_out) 
 
   auto movie = Movie::Create("bg_movie", "../assets/movies/big_buck_bunny_360_10s.mp4");
   REQUIRE(movie->get_input_plugin() != nullptr);
-  movie->pos        = Vec3(-W / 4.0f, 0, 0); // 左半分寄りに配置
-  movie->scale      = Vec2(20, 20);
-  movie->trk.fstart = 0;
-  movie->trk.fend   = 10;
+  movie->pos     = Vec3(-W / 4.0f, 0, 0); // 左半分寄りに配置
+  movie->scale   = Vec2(20, 20);
+  movie->fstart_ = 0;
+  movie->fend_   = 10;
 
-  auto rect        = ShapeEntt::Create("rect", ShapeType_Rect);
-  rect->pos_       = Vec3(10, 10, 0);
-  rect->size_      = Vec2(20, 20);
-  rect->color_     = Vec4b(200, 50, 50, 255);
-  rect->trk.fstart = 0;
-  rect->trk.fend   = 10;
+  auto rect     = ShapeEntt::Create("rect", ShapeType_Rect);
+  rect->pos_    = Vec3(10, 10, 0);
+  rect->size_   = Vec2(20, 20);
+  rect->color_  = Vec4b(200, 50, 50, 255);
+  rect->fstart_ = 0;
+  rect->fend_   = 10;
 
-  auto circ        = ShapeEntt::Create("circ", ShapeType_Circle);
-  circ->pos_       = Vec3(10, 35, 0);
-  circ->size_      = Vec2(20, 20);
-  circ->color_     = Vec4b(50, 50, 200, 255);
-  circ->trk.fstart = 0;
-  circ->trk.fend   = 10;
+  auto circ     = ShapeEntt::Create("circ", ShapeType_Circle);
+  circ->pos_    = Vec3(10, 35, 0);
+  circ->size_   = Vec2(20, 20);
+  circ->color_  = Vec4b(50, 50, 200, 255);
+  circ->fstart_ = 0;
+  circ->fend_   = 10;
 
   detail::register_default_filters();
   detail::activate_all_plugins();
@@ -151,17 +151,17 @@ Ref<Composition> build_scene(bool clear_original, Ref<FramebufferEntt>* fb_out) 
   auto fb             = FramebufferEntt::Create("fb");
   fb->clear_original_ = clear_original;
   fb->pos_            = Vec3((float)W / 2.0f, 0, 0); // Composition幅の半分だけ右へ
-  fb->trk.fstart      = 0;
-  fb->trk.fend        = 10;
+  fb->fstart_         = 0;
+  fb->fend_           = 10;
 
-  TrackObject::FilterParam fp;
+  FilterParam fp;
   fp.plg_ = color_plg;
   cutil::Prop custom_defaults;
   custom_defaults.set<float>("brightness", 50.0f); // 明るさ50%
   custom_defaults.set<float>("contrast", 100.0f);
   fp.props.add_props(custom_defaults);
   fp.enabled = true;
-  fb->trk.filters.push_back(fp);
+  fb->filters_.push_back(fp);
 
   comp->insert_entity(movie, 0);
   comp->insert_entity(rect, 1);

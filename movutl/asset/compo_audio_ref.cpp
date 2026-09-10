@@ -19,7 +19,7 @@ bool CompoAudioEntt::render(Composition* cmp, Image* target, int frame) {
 bool CompoAudioEntt::fetch_audio(Composition* cmp, int64_t start_sample, int n, int16_t* out) {
   MU_ASSERT(cmp != nullptr);
   MU_ASSERT(out != nullptr);
-  if(!trk.active_) return false;
+  if(!active_) return false;
 
   Composition* dst_comp = nullptr;
   for(auto& c : Project::Get()->compos_) {
@@ -37,8 +37,8 @@ bool CompoAudioEntt::fetch_audio(Composition* cmp, int64_t start_sample, int n, 
     ~Guard() { Composition::PopRenderGuard(c->guid); }
   } guard{dst_comp};
 
-  int64_t track_start = cmp->frame_to_sample(trk.fstart);
-  int64_t track_len   = cmp->frame_to_sample(trk.fend) - track_start;
+  int64_t track_start = cmp->frame_to_sample(fstart_);
+  int64_t track_len   = cmp->frame_to_sample(fend_) - track_start;
   if(track_len <= 0) return false;
   int64_t elapsed = start_sample - track_start;
   if(elapsed + n <= 0 || elapsed >= track_len) return false;

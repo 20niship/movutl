@@ -8,7 +8,7 @@
 
 namespace mu {
 
-// ピアノロールで編集する1つのMIDIノート。start_sample/dur_samplesはトラック開始位置(trk.fstart)からの相対サンプル数
+// ピアノロールで編集する1つのMIDIノート。start_sample/dur_samplesはトラック開始位置(fstart_)からの相対サンプル数
 struct MidiNote {
   uint8_t pitch        = 60;  // MIDIノート番号(0-127, 60=C4)
   uint8_t velocity     = 100; // ベロシティ(0-127)
