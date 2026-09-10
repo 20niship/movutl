@@ -74,6 +74,7 @@ movutl.Composition::Flag = {}
 ---@field EntityType_3DModel number
 ---@field EntityType_Camera number
 ---@field EntityType_Effect number
+---@field EntityType_Midi number
 movutl.EntityType = {}
 
 ---@class ImageFormat
@@ -373,6 +374,39 @@ function movutl.Image:load_file( path, ) end
 
 ---@return nil
 function movutl.Image:reload_asset( ) end
+
+---@class MidiEntt
+---@field instrument_plugin_id_ string
+movutl.MidiEntt = {}
+movutl.MidiEntt.instrument_plugin_id_ = ""
+
+---@param name string
+---@return Ref<MidiEntt>
+function movutl.MidiEntt:Create( name, ) end
+
+---@param pluginId std::string 
+---@return boolean
+function movutl.MidiEntt:assign_instrument( pluginId, ) end
+
+---@return number
+function movutl.MidiEntt:instrument_instance_id( ) end
+
+---@return table
+function movutl.MidiEntt:notes( ) end
+
+---@return EntityType
+function movutl.MidiEntt:getType( ) end
+
+---@class MidiNote
+---@field pitch number
+---@field velocity number
+---@field start_sample number
+---@field dur_samples number
+movutl.MidiNote = {}
+movutl.MidiNote.pitch = 60
+movutl.MidiNote.velocity = 100
+movutl.MidiNote.start_sample = 0
+movutl.MidiNote.dur_samples = 0
 
 ---@class Movie
 ---@field pos Vec3

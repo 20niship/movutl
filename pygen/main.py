@@ -260,6 +260,7 @@ def run():
         root / "movutl/asset/entity.hpp",
         root / "movutl/asset/movie.hpp",
         root / "movutl/asset/audio.hpp",
+        root / "movutl/asset/midi.hpp",
         root / "movutl/asset/text.hpp",
         root / "movutl/asset/image.hpp",
         root / "movutl/asset/shape.hpp",

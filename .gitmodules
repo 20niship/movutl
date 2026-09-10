@@ -40,3 +40,6 @@
 [submodule "ext/aviutl2_sdk_mirror"]
 	path = ext/aviutl2_sdk_mirror
 	url = https://github.com/aviutl2/aviutl2_sdk_mirror.git
+[submodule "ext/uapmd"]
+	path = ext/uapmd
+	url = https://github.com/atsushieno/uapmd.git

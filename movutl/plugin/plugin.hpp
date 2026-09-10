@@ -52,5 +52,7 @@ void register_default_filters();
 void register_aviutl_scripts();
 // Config::lua_script_dirsを再帰的に走査し、見つけた.objファイルをすべてCustomObjectRegistryへ自動登録する
 void register_custom_objects();
+// vst_host::plugin_list()のVST3プラグインをそれぞれFilterAudioOnlyのFilterPluginTableとして登録する
+void register_vst_filters();
 } // namespace detail
 } // namespace mu

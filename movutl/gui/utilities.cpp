@@ -20,6 +20,8 @@ void add_entities_ui() {
   ImGui::NextColumn();
   if(ImGui::Button(ICON_FA_MUSIC " 音声")) add_new_track("sound", EntityType_Audio, 0, 100);
   ImGui::NextColumn();
+  if(ImGui::Button(ICON_FA_KEYBOARD " MIDI")) add_new_track("midi", EntityType_Midi, 0, 100);
+  ImGui::NextColumn();
   if(ImGui::Button(ICON_FA_DRAW_POLYGON " 図形")) ImGui::OpenPopup("##ADD_SHAPE_POPUP");
   if(ImGui::BeginPopup("##ADD_SHAPE_POPUP")) {
     if(ImGui::Selectable("三角形")) add_new_shape_track("shape", 0, 100, ShapeType_Triangle);
