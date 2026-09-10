@@ -30,12 +30,12 @@ public:
 #else
   std::vector<std::string> vst_plugin_dirs = {std::string(getenv("HOME") ? getenv("HOME") : "") + "/.vst3"};
 #endif
-  bool log_to_file                         = false;
-  std::string log_filename                 = "log.txt";
-  LogLevel log_level                       = LogLevel::DEBUG;
-  bool show_viewer_ruler                   = false; // Viewportにルーラー(目盛り)を表示するか
-  int default_image_frames                 = 150;   // 画像トラック追加時の長さ(フレーム数)。画像自体には長さが無いため既定値をここで持つ
-  float viewer_wave_footer_height          = 40.0f; // Viewerフッタの波形+L/Rメーター部分の高さ(px)
+  bool log_to_file                = false;
+  std::string log_filename        = "log.txt";
+  LogLevel log_level              = LogLevel::DEBUG;
+  bool show_viewer_ruler          = false; // Viewportにルーラー(目盛り)を表示するか
+  int default_image_frames        = 150;   // 画像トラック追加時の長さ(フレーム数)。画像自体には長さが無いため既定値をここで持つ
+  float viewer_wave_footer_height = 40.0f; // Viewerフッタの波形+L/Rメーター部分の高さ(px)
 
   // 以下 movutl/core/sys_info.hpp より統合
   int sys_flag = 0;                  // システムフラグ (kSysFlagEdit 等)

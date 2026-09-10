@@ -78,7 +78,7 @@ bool vst_fn_proc(void* fp, FilterInData* fpip, const cutil::Prop& p) {
     float* buf = st->ctx->getFloatOutBuffer(0, c);
     if(buf == nullptr) continue;
     for(int i = 0; i < n; i++) {
-      int32_t v               = (int32_t)std::lround(buf[i] * 32768.0f);
+      int32_t v                = (int32_t)std::lround(buf[i] * 32768.0f);
       fpip->audiop[i * ch + c] = (int16_t)std::clamp(v, -32768, 32767);
     }
   }

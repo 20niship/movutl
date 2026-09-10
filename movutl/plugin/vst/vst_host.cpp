@@ -34,7 +34,7 @@ void scan_custom_dirs() {
   // movutlはUIスレッドループ未起動のためこの呼び出しスレッドをメインスレッド扱いにし、ロード待機の無限ブロックを防ぐ。
   remidy::EventLoop::initializeOnUIThread();
 
-  auto format = remidy::PluginFormatVST3::create(override_paths);
+  auto format    = remidy::PluginFormatVST3::create(override_paths);
   auto* scanning = dynamic_cast<remidy::FileOrUrlBasedPluginScanning*>(format->scanning());
   if(!scanning) return;
   // PluginFormatVST3Implのコンストラクタ引数はscanning_へ転送されない(remidy側のバグ)ためaddSearchPath()で登録する。
@@ -42,12 +42,11 @@ void scan_custom_dirs() {
 
   std::vector<remidy::PluginCatalogEntry> found;
   bool done = false;
-  scanning->startSlowPluginScan(
-      [&](remidy::PluginCatalogEntry entry) { found.push_back(std::move(entry)); },
-      [&](std::string error) {
-        if(!error.empty()) LOG_F(WARNING, "vst_host: custom dir scan finished with error: %s", error.c_str());
-        done = true;
-      });
+  scanning->startSlowPluginScan([&](remidy::PluginCatalogEntry entry) { found.push_back(std::move(entry)); },
+                                [&](std::string error) {
+                                  if(!error.empty()) LOG_F(WARNING, "vst_host: custom dir scan finished with error: %s", error.c_str());
+                                  done = true;
+                                });
   if(!done) return; // 同期的に返る実装のみ対応(非同期実装が入った場合は要拡張)
   if(found.empty()) return;
 
