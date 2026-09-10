@@ -12,6 +12,7 @@
 #include <movutl/asset/entity.hpp>
 #include <movutl/asset/project.hpp>
 #include <movutl/core/logger.hpp>
+#include <movutl/gui/graph_editor_window.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/gui/inspector.hpp>
 #include <movutl/gui/widgets.hpp>
@@ -215,6 +216,15 @@ void InspectorWindow::Update() {
           // std::string/Entity*以外はkeyname一致でanim_props_に確実に存在する型のみ登録されるため、上でtype一致した時点でキーフレーム操作可能
           if(info.type == cutil::prop_info_of<float>() || info.type == cutil::prop_info_of<int32_t>() || info.type == cutil::prop_info_of<bool>() || info.type == cutil::prop_info_of<Vec2>() || info.type == cutil::prop_info_of<Vec3>() || info.type == cutil::prop_info_of<Vec4>() ||
              info.type == cutil::prop_info_of<Vec4b>()) {
+            if(ImGui::BeginDragDropSource()) {
+              GraphDragPayload payload;
+              payload.entity_guid  = e->guid_;
+              payload.filter_index = i;
+              strncpy(payload.prop_name, info.name, sizeof(payload.prop_name) - 1);
+              ImGui::SetDragDropPayload(kGraphDragDropId, &payload, sizeof(payload));
+              ImGui::Text("%s", label);
+              ImGui::EndDragDropSource();
+            }
             ImGui::SameLine();
             if(wd_keyframe_toggle(f.props, k, cur_frame)) value_changed = true;
             if(f.props.has_animation(k)) {

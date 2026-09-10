@@ -9,6 +9,7 @@
 #include <movutl/core/assert.hpp>
 #include <movutl/core/filesystem.hpp>
 #include <movutl/core/logger.hpp>
+#include <movutl/gui/graph_editor_window.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/gui/widgets.hpp>
 
@@ -136,14 +137,15 @@ bool wd_keyframe_strip(const char* str_id, AnimProps& anim, int idx, int fstart,
   dl->AddLine(ImVec2(cx, origin.y), ImVec2(cx, origin.y + height), IM_COL32(255, 255, 255, 150));
 
   auto frames = anim.keyframe_frames(idx);
-  for(uint32_t kf : frames) {
-    float x = frame_to_x((int)kf);
+  for(int ki = 0; ki < (int)frames.size(); ki++) {
+    uint32_t kf = frames[ki];
+    float x     = frame_to_x((int)kf);
     ImVec2 center(x, origin.y + height * 0.5f);
     ImU32 col = IM_COL32(255, 170, 40, 255);
     dl->AddQuadFilled(ImVec2(center.x, center.y - 5), ImVec2(center.x + 5, center.y), ImVec2(center.x, center.y + 5), ImVec2(center.x - 5, center.y), col);
 
     ImGui::SetCursorScreenPos(ImVec2(center.x - 5, center.y - 5));
-    ImGui::PushID((int)kf);
+    ImGui::PushID(ki); // frame値(kf)はドラッグ中に変化しIDが不安定になるため、配列indexを使う(ki自体もソート順の入れ替わりで跨ぐケースはあるが稀)
     ImGui::InvisibleButton("##kf", ImVec2(10, 10));
     if(ImGui::IsItemActive() && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
       float mx      = ImGui::GetMousePos().x;
@@ -283,6 +285,16 @@ void wd_entt_props_editor(Entity* e, uint32_t cur_frame) {
         e->anim_props_.set_value<Vec4b>(anim_idx, cur_frame, v);
         changed = true;
       }
+    }
+
+    if(is_animatable && ImGui::BeginDragDropSource()) {
+      GraphDragPayload payload;
+      payload.entity_guid  = e->guid_;
+      payload.filter_index = -1;
+      strncpy(payload.prop_name, f.name, sizeof(payload.prop_name) - 1);
+      ImGui::SetDragDropPayload(kGraphDragDropId, &payload, sizeof(payload));
+      ImGui::Text("%s", name_);
+      ImGui::EndDragDropSource();
     }
 
     if(is_animatable) {
