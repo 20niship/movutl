@@ -64,6 +64,13 @@ void RenderWorkerPool::tick(Composition* comp, bool playing) {
   }
 }
 
+void RenderWorkerPool::flush() {
+  std::unique_lock<std::mutex> lock(qmtx_);
+  queue_.clear();
+  pending_.clear();
+  idle_cv_.wait(lock, [this] { return busy_count_ == 0; });
+}
+
 void RenderWorkerPool::stop() {
   if(stop_.exchange(true)) return;
   cv_.notify_all();
@@ -96,6 +103,7 @@ void RenderWorkerPool::worker_loop(size_t worker_idx) {
       if(stop_.load() && queue_.empty()) return;
       job = queue_.front();
       queue_.pop_front();
+      busy_count_++;
     }
     worker_frame_[worker_idx].store(job.frame);
     Ref<Image> out;
@@ -109,7 +117,9 @@ void RenderWorkerPool::worker_loop(size_t worker_idx) {
       // cache挿入後にpending_解除。早く外すとレンダリング中のフレームが「未処理」と誤認され二重発注される
       std::lock_guard<std::mutex> lock(qmtx_);
       pending_.erase(job);
+      busy_count_--;
     }
+    idle_cv_.notify_all();
   }
 }
 

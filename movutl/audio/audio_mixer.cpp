@@ -70,8 +70,15 @@ void AudioMixWorker::stop() {
 }
 
 void AudioMixWorker::tick(Composition* comp, bool playing) {
-  comp_.store(comp);
+  std::lock_guard<std::mutex> lock(comp_mtx_);
+  comp_ = comp;
   playing_.store(playing);
+}
+
+void AudioMixWorker::pause() {
+  std::unique_lock<std::mutex> lock(comp_mtx_);
+  comp_ = nullptr;
+  idle_cv_.wait(lock, [this] { return !busy_; });
 }
 
 void mix_audio_range(Composition* comp, int64_t start_sample, int n, int16_t* out) {
@@ -127,26 +134,34 @@ void AudioMixWorker::mix_range(Composition* comp, int64_t start_sample, int n) {
 void AudioMixWorker::worker_loop() {
   constexpr int kChunkMs = 20;
   while(!stop_.load()) {
-    Composition* comp = comp_.load();
+    Composition* comp;
+    {
+      std::lock_guard<std::mutex> lock(comp_mtx_);
+      comp  = comp_;
+      busy_ = comp != nullptr; // pause()がcomp_をnullptrにしてから完了を待てるよう、使用中はロック内で明示する
+    }
     if(!comp || !comp->audio_buf) {
       std::this_thread::sleep_for(std::chrono::milliseconds(kChunkMs));
-      continue;
+    } else {
+      // 基準はComposition::frame(GUI描画で律速され重いシーンでは実時間より遅れうる)ではなくread_cursor(実際の再生位置)。frame基準だと先読み済みと誤判定して音切れする
+      int64_t play_pos  = comp->audio_buf->read_cursor();
+      int64_t head      = comp->audio_buf->write_head();
+      int64_t lookahead = comp->audio_sample_rate; // 常時1秒分先読みしておく
+      if(head < play_pos) head = play_pos;         // シーク直後などバッファが再生位置より遅れている場合は追いつく
+
+      if(head - play_pos >= lookahead) {
+        // 先読み十分な時だけ待機する(先頭で無条件sleepだと生産速度が常に等速止まりになり、一度遅れると二度と追いつけない)
+        std::this_thread::sleep_for(std::chrono::milliseconds(kChunkMs));
+      } else {
+        int chunk_samples = comp->audio_sample_rate * kChunkMs / 1000;
+        mix_range(comp, head, chunk_samples);
+      }
     }
-
-    // 基準はComposition::frame(GUI描画で律速され重いシーンでは実時間より遅れうる)ではなくread_cursor(実際の再生位置)。frame基準だと先読み済みと誤判定して音切れする
-    int64_t play_pos  = comp->audio_buf->read_cursor();
-    int64_t head      = comp->audio_buf->write_head();
-    int64_t lookahead = comp->audio_sample_rate; // 常時1秒分先読みしておく
-    if(head < play_pos) head = play_pos;         // シーク直後などバッファが再生位置より遅れている場合は追いつく
-
-    if(head - play_pos >= lookahead) {
-      // 先読み十分な時だけ待機する(先頭で無条件sleepだと生産速度が常に等速止まりになり、一度遅れると二度と追いつけない)
-      std::this_thread::sleep_for(std::chrono::milliseconds(kChunkMs));
-      continue;
+    {
+      std::lock_guard<std::mutex> lock(comp_mtx_);
+      busy_ = false;
     }
-
-    int chunk_samples = comp->audio_sample_rate * kChunkMs / 1000;
-    mix_range(comp, head, chunk_samples);
+    idle_cv_.notify_all();
   }
 }
 

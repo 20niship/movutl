@@ -1,6 +1,7 @@
 #pragma once
 
 #include <atomic>
+#include <condition_variable>
 #include <cstdint>
 #include <cutil/ref.hpp>
 #include <mutex>
@@ -60,6 +61,8 @@ public:
 
   // RenderWorkerPool::tickと同じ呼び出し規約: 毎フレームGUIループから呼ぶ
   void tick(Composition* comp, bool playing);
+  // comp_をnullptrにし、実行中のミックス処理が終わるまで待つ(Project::New/Loadでのdangling Composition*破棄を防ぐ)
+  void pause();
   void stop();
 
 private:
@@ -70,7 +73,11 @@ private:
   std::thread thread_;
   std::atomic<bool> stop_{false};
   std::atomic<bool> playing_{false};
-  std::atomic<Composition*> comp_{nullptr};
+
+  std::mutex comp_mtx_;             // comp_/busy_の保護。tick/pause/worker_loopが競合するため
+  std::condition_variable idle_cv_; // busy_がfalseに戻った時にpause()を起こす
+  Composition* comp_ = nullptr;
+  bool busy_         = false; // worker_loopがcomp_を実際に使用中か
 };
 
 } // namespace mu
