@@ -9,9 +9,12 @@ extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libavutil/imgutils.h>
+#include <libavutil/version.h>
 #include <libswresample/swresample.h>
 #include <libswscale/swscale.h>
 }
+// ch_layout(AVChannelLayout)はFFmpeg 5.1+(libavutil>=57.24)のみ持つため分岐する
+#define MU_FFMPEG_NEW_CHLAYOUT (LIBAVUTIL_VERSION_MAJOR > 57 || (LIBAVUTIL_VERSION_MAJOR == 57 && LIBAVUTIL_VERSION_MINOR >= 24))
 #include <vector>
 
 namespace mu::detail {
@@ -83,8 +86,10 @@ static void decode_audio_track(FFmpegVideoHandle* h) {
     return;
   }
 
+#if MU_FFMPEG_NEW_CHLAYOUT
   AVChannelLayout out_layout;
   av_channel_layout_copy(&out_layout, &actx->ch_layout);
+  int channels    = out_layout.nb_channels;
   SwrContext* swr = nullptr;
   if(swr_alloc_set_opts2(&swr, &out_layout, AV_SAMPLE_FMT_S16, actx->sample_rate, &actx->ch_layout, actx->sample_fmt, actx->sample_rate, 0, nullptr) < 0 || !swr || swr_init(swr) < 0) {
     if(swr) swr_free(&swr);
@@ -92,10 +97,19 @@ static void decode_audio_track(FFmpegVideoHandle* h) {
     avcodec_free_context(&actx);
     return;
   }
+#else
+  int64_t in_layout = actx->channel_layout ? actx->channel_layout : av_get_default_channel_layout(actx->channels);
+  int channels       = actx->channels;
+  SwrContext* swr    = swr_alloc_set_opts(nullptr, in_layout, AV_SAMPLE_FMT_S16, actx->sample_rate, in_layout, actx->sample_fmt, actx->sample_rate, 0, nullptr);
+  if(!swr || swr_init(swr) < 0) {
+    if(swr) swr_free(&swr);
+    avcodec_free_context(&actx);
+    return;
+  }
+#endif
 
   AVPacket* pkt            = av_packet_alloc();
   AVFrame* frame           = av_frame_alloc();
-  int channels             = out_layout.nb_channels;
   h->audio_native_rate     = actx->sample_rate;
   h->audio_native_channels = channels;
   h->audio_stream_index    = idx;
@@ -126,7 +140,9 @@ static void decode_audio_track(FFmpegVideoHandle* h) {
   av_frame_free(&frame);
   av_packet_free(&pkt);
   swr_free(&swr);
+#if MU_FFMPEG_NEW_CHLAYOUT
   av_channel_layout_uninit(&out_layout);
+#endif
   avcodec_free_context(&actx);
 }
 
