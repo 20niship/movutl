@@ -1,10 +1,9 @@
 default:
     @just --list
 
-# cmake configure + ビルド
+# cmake configure(初回のみ) + ビルド。CMakeLists.txt変更時の再configureはcmakeのビルドルールが自動で行う
 build build_dir="build":
-    git submodule update --init --recursive
-    cmake -S . -B {{build_dir}}
+    [ -f {{build_dir}}/CMakeCache.txt ] || (git submodule update --init --recursive && cmake -S . -B {{build_dir}})
     cmake --build {{build_dir}} -j${BUILD_JOBS:-$(nproc 2>/dev/null || sysctl -n hw.ncpu)}
 
 # ビルドしてmovutl_mainを実行する(例: just run ./examples/foobar.lua)
