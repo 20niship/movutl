@@ -12,9 +12,6 @@ namespace mu {
 
 enum AniInterpType {
   LINEAR,
-  EaseIn, // レガシー別名(EaseInSineと同じ式)。保存済みプロジェクトの互換性のため残す
-  EaseOut,
-  EaseInOut,
 
   EaseInQuad,
   EaseOutQuad,
@@ -115,11 +112,8 @@ inline double eval_cubic_bezier(double x1, double y1, double x2, double y2, doub
 inline double apply_ease(AniInterpType type, double t, float ease_ = 0, float ease2_ = 0, float ease3_ = 0.58f, float ease4_ = 1.0f) {
   constexpr double kPi = 3.14159265358979323846;
   switch(type) {
-    case EaseIn:
     case EaseInSine: return 1.0 - std::cos(t * kPi / 2.0);
-    case EaseOut:
     case EaseOutSine: return std::sin(t * kPi / 2.0);
-    case EaseInOut:
     case EaseInOutSine: return -(std::cos(kPi * t) - 1.0) / 2.0;
 
     case EaseInQuad: return t * t;
