@@ -7,7 +7,6 @@ extern "C" {
 #include <LuaIntf/LuaIntf.h>
 #include <doctest/doctest.h>
 #include <movutl/binding/binding.hpp>
-#include <movutl/binding/lua_ui_panel.hpp>
 #include <movutl/gui/gui.hpp>
 
 using namespace mu;

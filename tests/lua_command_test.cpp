@@ -15,7 +15,6 @@ extern "C" {
 #include <movutl/binding/binding.hpp>
 #include <movutl/binding/imgui_custom_values.hpp>
 #include <movutl/binding/lua_command.hpp>
-#include <movutl/binding/lua_ui_panel.hpp>
 #include <movutl/core/command.hpp>
 #include <movutl/core/filesystem.hpp>
 #include <unordered_map>
