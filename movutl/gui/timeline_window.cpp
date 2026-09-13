@@ -14,7 +14,7 @@ void TimelineWindow::header() {}
 
 void TimelineWindow::Update() {
   constexpr auto flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
-  ImGui::Begin("MOVUTL TIMELINE WINDOW", &open, flags);
+  ImGui::Begin("タイムライン", &open, flags);
   auto pj = Project::Get();
   auto cp = Project::GetActiveCompo();
   if(ImGui::BeginTabBar("## MOVUTL TIMELINE TABS")) {
