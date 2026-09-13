@@ -99,8 +99,8 @@ static void decode_audio_track(FFmpegVideoHandle* h) {
   }
 #else
   int64_t in_layout = actx->channel_layout ? actx->channel_layout : av_get_default_channel_layout(actx->channels);
-  int channels       = actx->channels;
-  SwrContext* swr    = swr_alloc_set_opts(nullptr, in_layout, AV_SAMPLE_FMT_S16, actx->sample_rate, in_layout, actx->sample_fmt, actx->sample_rate, 0, nullptr);
+  int channels      = actx->channels;
+  SwrContext* swr   = swr_alloc_set_opts(nullptr, in_layout, AV_SAMPLE_FMT_S16, actx->sample_rate, in_layout, actx->sample_fmt, actx->sample_rate, 0, nullptr);
   if(!swr || swr_init(swr) < 0) {
     if(swr) swr_free(&swr);
     avcodec_free_context(&actx);
