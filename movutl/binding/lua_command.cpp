@@ -5,7 +5,10 @@ extern "C" {
 #include "lualib.h"
 }
 #include <LuaIntf/LuaIntf.h>
+#include <movutl/asset/composition.hpp>
+#include <movutl/asset/entity.hpp>
 #include <movutl/binding/lua_command.hpp>
+#include <movutl/core/anim.hpp>
 #include <movutl/core/command.hpp>
 #include <movutl/core/filesystem.hpp>
 
@@ -64,10 +67,85 @@ std::string lua_select_file_dialog(const std::string& title, const LuaIntf::LuaR
 
 std::string lua_select_save_file_dialog(const std::string& title, const std::string& default_name, const LuaIntf::LuaRef& extensions) { return select_save_file_dialog(title, default_name, lua_table_to_strings(extensions)); }
 
+// LuaIntfはmu::Vec2/Vec3/Vec4/Vec4bを自動変換できないため、1-indexed配列テーブルから手動で組み立てる
+Vec2 lua_to_vec2(const LuaIntf::LuaRef& t) { return Vec2(t.get<float>(1), t.get<float>(2)); }
+Vec3 lua_to_vec3(const LuaIntf::LuaRef& t) { return Vec3(t.get<float>(1), t.get<float>(2), t.get<float>(3)); }
+Vec4 lua_to_vec4(const LuaIntf::LuaRef& t) { return Vec4(t.get<float>(1), t.get<float>(2), t.get<float>(3), t.get<float>(4)); }
+Vec4b lua_to_vec4b(const LuaIntf::LuaRef& t) { return Vec4b((uint8_t)t.get<int>(1), (uint8_t)t.get<int>(2), (uint8_t)t.get<int>(3), (uint8_t)t.get<int>(4)); }
+
+// inspector.cppの型switchと同じ並び。Entity*/未対応型はfalseを返す
+bool lua_add_keyframe_to(AnimProps& anim, const std::string& prop, int frame, const LuaIntf::LuaRef& value) {
+  int idx = anim.index_of(prop);
+  if(idx < 0) return false;
+  const cutil::PropInfo* t = anim.get_type(idx);
+  uint32_t f               = (uint32_t)std::max(frame, 0);
+  // clang-format off
+  if(t == cutil::prop_info_of<float>()) return anim.add_keyframe<float>(idx, f, value.toValue<float>());
+  if(t == cutil::prop_info_of<int32_t>()) return anim.add_keyframe<int>(idx, f, value.toValue<int>());
+  if(t == cutil::prop_info_of<bool>()) return anim.add_keyframe<bool>(idx, f, value.toValue<bool>());
+  if(t == cutil::prop_info_of<std::string>()) return anim.add_keyframe<std::string>(idx, f, value.toValue<std::string>());
+  if(t == cutil::prop_info_of<Vec2>()) return anim.add_keyframe<Vec2>(idx, f, lua_to_vec2(value));
+  if(t == cutil::prop_info_of<Vec3>()) return anim.add_keyframe<Vec3>(idx, f, lua_to_vec3(value));
+  if(t == cutil::prop_info_of<Vec4>()) return anim.add_keyframe<Vec4>(idx, f, lua_to_vec4(value));
+  if(t == cutil::prop_info_of<Vec4b>()) return anim.add_keyframe<Vec4b>(idx, f, lua_to_vec4b(value));
+  // clang-format on
+  return false;
+}
+
+void lua_invalidate_entity_cache(Entity* e) {
+  if(auto* comp = e->get_comp()) comp->invalidate_cache_range(e->fstart_, e->fend_);
+}
+
+bool lua_add_keyframe_entity(Entity* e, const std::string& prop, int frame, LuaIntf::LuaRef value) {
+  if(!e) return false;
+  e->ensure_anim_props();
+  bool ok = lua_add_keyframe_to(e->anim_props_, prop, frame, value);
+  if(ok) lua_invalidate_entity_cache(e);
+  return ok;
+}
+
+bool lua_remove_keyframe_entity(Entity* e, const std::string& prop, int frame) {
+  if(!e) return false;
+  e->ensure_anim_props();
+  int idx = e->anim_props_.index_of(prop);
+  if(idx < 0) return false;
+  bool ok = e->anim_props_.erase_keyframe(idx, (uint32_t)std::max(frame, 0));
+  if(ok) lua_invalidate_entity_cache(e);
+  return ok;
+}
+
+bool lua_add_keyframe_filter(Entity* e, int filter_index, const std::string& prop, int frame, LuaIntf::LuaRef value) {
+  if(!e || filter_index < 0 || filter_index >= (int)e->filters_.size()) return false;
+  bool ok = lua_add_keyframe_to(e->filters_[filter_index].props, prop, frame, value);
+  if(ok) lua_invalidate_entity_cache(e);
+  return ok;
+}
+
+bool lua_remove_keyframe_filter(Entity* e, int filter_index, const std::string& prop, int frame) {
+  if(!e || filter_index < 0 || filter_index >= (int)e->filters_.size()) return false;
+  auto& props = e->filters_[filter_index].props;
+  int idx     = props.index_of(prop);
+  if(idx < 0) return false;
+  bool ok = props.erase_keyframe(idx, (uint32_t)std::max(frame, 0));
+  if(ok) lua_invalidate_entity_cache(e);
+  return ok;
+}
+
 } // namespace
 
 namespace detail {
-void bind_lua_command_api(lua_State* L) { LuaIntf::LuaBinding(L).beginModule("movutl").addFunction("register_command", &lua_register_command).addFunction("select_file_dialog", &lua_select_file_dialog).addFunction("select_save_file_dialog", &lua_select_save_file_dialog).endModule(); }
+void bind_lua_command_api(lua_State* L) {
+  LuaIntf::LuaBinding(L)
+    .beginModule("movutl")
+    .addFunction("register_command", &lua_register_command)
+    .addFunction("select_file_dialog", &lua_select_file_dialog)
+    .addFunction("select_save_file_dialog", &lua_select_save_file_dialog)
+    .addFunction("add_keyframe", &lua_add_keyframe_entity)
+    .addFunction("remove_keyframe", &lua_remove_keyframe_entity)
+    .addFunction("add_keyframe_filter", &lua_add_keyframe_filter)
+    .addFunction("remove_keyframe_filter", &lua_remove_keyframe_filter)
+    .endModule();
+}
 } // namespace detail
 
 } // namespace mu

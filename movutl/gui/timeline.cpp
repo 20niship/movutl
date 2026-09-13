@@ -71,6 +71,10 @@ struct TimelineContext {
   int drag_orig_fend   = 0;
   int drag_start_frame = 0;
 
+  // 集約キーフレーム行のドラッグ移動(BeginTrack下端のダイヤ)。dragging_entt/drag_modeとは別状態にして衝突を避ける
+  Entity* dragging_kf_entt    = nullptr;
+  uint32_t drag_kf_orig_frame = 0;
+
   cutil::Rect tl_area() {
     auto r = all_area;
     r.y.min += header_h;
@@ -507,7 +511,25 @@ bool BeginTrack(const Ref<Entity>& entity) {
     }
   }
 
-  if(!is_exporting() && ctx_.dragging_entt == nullptr && hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+  // 中間点(キーフレーム)の集約ダイヤのヒット判定。クリップ本体move/resizeドラッグより優先させる
+  constexpr int kKfHitR = 4; // ダイヤのヒット半径(px)
+  auto animated_frames  = entity->collect_animated_frames();
+  bool kf_hit           = false;
+  uint32_t kf_hit_frame = 0;
+  if(hovered && !is_exporting()) {
+    float ky = rect.Max.y - kKfHitR;
+    for(uint32_t f : animated_frames) {
+      if((int)f < *start || (int)f > *end) continue;
+      float x = (float)ctx_.f2view((int)f);
+      if(std::abs(mouse_x - x) <= kKfHitR && std::abs(ImGui::GetMousePos().y - ky) <= kKfHitR) {
+        kf_hit       = true;
+        kf_hit_frame = f;
+        break;
+      }
+    }
+  }
+
+  if(!is_exporting() && ctx_.dragging_entt == nullptr && ctx_.dragging_kf_entt == nullptr && hovered && !kf_hit && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
     if(near_left)
       ctx_.drag_mode = 2;
     else if(near_right)
@@ -529,6 +551,27 @@ bool BeginTrack(const Ref<Entity>& entity) {
           }
         }
       }
+    }
+  }
+
+  if(!is_exporting() && ctx_.dragging_entt == nullptr && ctx_.dragging_kf_entt == nullptr && kf_hit && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+    ctx_.dragging_kf_entt   = entity.get();
+    ctx_.drag_kf_orig_frame = kf_hit_frame;
+  } else if(hovered && kf_hit && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+    if(entity->erase_keyframes_at(kf_hit_frame)) {
+      if(auto* comp = entity->get_comp()) comp->invalidate_cache_range(*start, *end);
+    }
+  }
+
+  if(ctx_.dragging_kf_entt == entity.get()) {
+    if(!is_exporting() && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+      ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
+    } else {
+      int new_frame = std::clamp(ctx_.view2f((int)ImGui::GetMousePos().x), *start, *end);
+      if((uint32_t)new_frame != ctx_.drag_kf_orig_frame && entity->move_keyframes_at(ctx_.drag_kf_orig_frame, (uint32_t)new_frame)) {
+        if(auto* comp = entity->get_comp()) comp->invalidate_cache_range(*start, *end);
+      }
+      ctx_.dragging_kf_entt = nullptr;
     }
   }
 
@@ -610,6 +653,17 @@ bool BeginTrack(const Ref<Entity>& entity) {
         int len = (int)(half * (wf.levels[idx] / 255.0f));
         if(len > 0) dl->AddLine(ImVec2((float)x, (float)(mid - len)), ImVec2((float)x, (float)(mid + len)), IM_COL32(255, 255, 255, 200)); // トラック背景(緑系)とのコントラストを確保するため白系にする
       }
+    }
+  }
+
+  { // 中間点(キーフレーム)の集約表示: Entity帯下端にダイヤを重ね描きする(AviUtl方式、frame単位で全プロパティ横断)
+    float ky = rect.Max.y - kKfHitR;
+    for(uint32_t f : animated_frames) {
+      if((int)f < *start || (int)f > *end) continue;
+      float x    = (float)ctx_.f2view((int)f);
+      bool cur   = ctx_.dragging_kf_entt == entity.get() && f == ctx_.drag_kf_orig_frame;
+      ImU32 kcol = cur ? IM_COL32(255, 255, 255, 255) : IM_COL32(255, 190, 40, 255);
+      dl->AddQuadFilled(ImVec2(x, ky - kKfHitR), ImVec2(x + kKfHitR, ky), ImVec2(x, ky + kKfHitR), ImVec2(x - kKfHitR, ky), kcol);
     }
   }
 

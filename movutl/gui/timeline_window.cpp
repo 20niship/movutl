@@ -1,7 +1,6 @@
 #include <IconsFontAwesome6.h>
 #include <algorithm>
 #include <imgui.h>
-#include <imgui_internal.h>
 #include <movutl/app/app.hpp>
 #include <movutl/asset/project.hpp>
 #include <movutl/gui/gui.hpp>
@@ -14,12 +13,8 @@ namespace mu {
 void TimelineWindow::header() {}
 
 void TimelineWindow::Update() {
-  ImGuiWindowClass window_class;
-  window_class.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_NoTabBar;
-  ImGui::SetNextWindowClass(&window_class);
-
   constexpr auto flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
-  ImGui::Begin("MOVUTL TIMELINE WINDOW", nullptr, flags);
+  ImGui::Begin("タイムライン", &open, flags);
   auto pj = Project::Get();
   auto cp = Project::GetActiveCompo();
   if(ImGui::BeginTabBar("## MOVUTL TIMELINE TABS")) {

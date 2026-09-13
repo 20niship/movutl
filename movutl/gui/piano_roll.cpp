@@ -42,7 +42,7 @@ const char* pitch_name(int pitch) {
 } // namespace
 
 void PianoRollWindow::Update() {
-  ImGui::Begin(ICON_FA_KEYBOARD " ピアノロール");
+  ImGui::Begin(ICON_FA_KEYBOARD " ピアノロール", &open);
 
   MidiEntt* midi = nullptr;
   for(auto& e : get_selected_entts()) {

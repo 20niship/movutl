@@ -7,7 +7,7 @@
 namespace mu {
 
 void DeveloperWindow::Update() {
-  ImGui::Begin("開発者ウィンドウ");
+  ImGui::Begin("開発者ウィンドウ", &open);
 
   auto& pool = detail::AppMain::Get()->render_pool;
 

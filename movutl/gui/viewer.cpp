@@ -25,7 +25,7 @@ ImVec2 screen_to_comp(const ImVec2& p, const ImVec2& img_min, const ImVec2& disp
 
 void ViewerWindow::Update() {
   MOVUTL_ZONE_SCOPED_N("ViewerWindow::Update");
-  ImGui::Begin("Viewer");
+  ImGui::Begin("Viewer", &open);
   auto comp = Composition::GetActiveComp();
   if(!comp) {
     ImGui::Text("No active composition");

@@ -105,7 +105,7 @@ std::vector<std::string> get_backtrace() {
   constexpr size_t SymbolInfoSize = sizeof(SYMBOL_INFO) + ((MaxNameSize + 1) * sizeof(char));
   SYMBOL_INFO* symbol             = (SYMBOL_INFO*)calloc(SymbolInfoSize, 1);
   if(symbol == nullptr) {
-    std::cerr << "melchior malloc error : backtrace() malloc of symbols SymbolInfoSize = " << SymbolInfoSize << std::endl;
+    std::cerr << "malloc error : backtrace() malloc of symbols SymbolInfoSize = " << SymbolInfoSize << std::endl;
     return {};
   }
   symbol->MaxNameLen   = MaxNameSize;

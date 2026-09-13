@@ -108,6 +108,78 @@ struct SplitCommand final : mCommand {
   std::vector<SplitState> splits_;
 };
 
+// 選択中Entityの現在フレームの中間点(anim_props_本体+全filters_のパラメータ横断)を一括トグルする
+struct ToggleKeyframeCommand final : mCommand {
+  struct EntityState {
+    Ref<Entity> entt;
+    cutil::Prop before_anim, after_anim;
+    std::vector<cutil::Prop> before_filter_anim, after_filter_anim;
+  };
+
+  CommandStatus on_start() override {
+    auto cmp = Composition::GetActiveComp();
+    if(!cmp) return CommandStatus::Failed;
+    uint32_t frame = (uint32_t)std::max(cmp->frame.load(), 0);
+
+    states_.clear();
+    for(auto& entt : get_selected_entts()) {
+      if(!entt) continue;
+      entt->ensure_anim_props();
+
+      EntityState st;
+      st.entt        = entt;
+      st.before_anim = entt->anim_props_.save();
+      for(auto& f : entt->filters_) st.before_filter_anim.push_back(f.props.save());
+
+      bool has_any = false;
+      for(int i = 0; i < (int)entt->anim_props_.props.size() && !has_any; i++)
+        if(entt->anim_props_.has_key_at(i, frame)) has_any = true;
+      for(auto& f : entt->filters_) {
+        if(has_any) break;
+        for(int i = 0; i < (int)f.props.props.size() && !has_any; i++)
+          if(f.props.has_key_at(i, frame)) has_any = true;
+      }
+
+      if(has_any) {
+        entt->erase_keyframes_at(frame);
+      } else {
+        for(int i = 0; i < (int)entt->anim_props_.props.size(); i++) entt->anim_props_.add_keyframe_here(i, frame);
+        for(auto& f : entt->filters_)
+          for(int i = 0; i < (int)f.props.props.size(); i++) f.props.add_keyframe_here(i, frame);
+      }
+
+      st.after_anim = entt->anim_props_.save();
+      for(auto& f : entt->filters_) st.after_filter_anim.push_back(f.props.save());
+
+      if(auto* comp = entt->get_comp()) comp->invalidate_cache_range(entt->fstart_, entt->fend_);
+      states_.push_back(std::move(st));
+    }
+    return CommandStatus::Finished;
+  }
+
+  void on_undo() override {
+    for(auto& st : states_) {
+      if(!st.entt) continue;
+      st.entt->anim_props_.load_keys(st.before_anim);
+      for(size_t i = 0; i < st.entt->filters_.size() && i < st.before_filter_anim.size(); i++) st.entt->filters_[i].props.load_keys(st.before_filter_anim[i]);
+      if(auto* comp = st.entt->get_comp()) comp->invalidate_cache_range(st.entt->fstart_, st.entt->fend_);
+    }
+  }
+
+  void on_redo() override {
+    for(auto& st : states_) {
+      if(!st.entt) continue;
+      st.entt->anim_props_.load_keys(st.after_anim);
+      for(size_t i = 0; i < st.entt->filters_.size() && i < st.after_filter_anim.size(); i++) st.entt->filters_[i].props.load_keys(st.after_filter_anim[i]);
+      if(auto* comp = st.entt->get_comp()) comp->invalidate_cache_range(st.entt->fstart_, st.entt->fend_);
+    }
+  }
+
+  bool undoable() const override { return true; }
+
+  std::vector<EntityState> states_;
+};
+
 // undo/redoコマンド自身はCommandManagerの履歴には積まない(undoable()==false、既定のまま)
 struct UndoCommand final : mCommand {
   CommandStatus on_start() override { return undo_command() ? CommandStatus::Finished : CommandStatus::Failed; }
@@ -124,6 +196,7 @@ void register_default_commands() {
   register_command<FrameStepCommand>({"frame_step_forward", "次のフレーム", "現在フレームを1つ進める", "right"}, 1);
   register_command<FrameStepCommand>({"frame_step_backward", "前のフレーム", "現在フレームを1つ戻す", "left"}, -1);
   register_command<SplitCommand>({"split", "分割", "選択中のクリップを現在フレームで分割する", "s"});
+  register_command<ToggleKeyframeCommand>({"toggle_keyframe", "中間点をトグル", "選択中オブジェクトの現在フレームの中間点を追加/削除する", "p"});
   register_command<UndoCommand>({"undo", "元に戻す", "直前の操作を取り消す", "ctrl+z"});
   register_command<RedoCommand>({"redo", "やり直し", "取り消した操作をやり直す", "ctrl+y"});
 }
