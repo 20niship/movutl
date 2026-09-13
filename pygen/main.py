@@ -8,6 +8,7 @@ from LuaintfWriter import LuaIntfWriter
 from LuaTypeWriter import LuaTypeWriter
 from PropsWriter import PropsWriter
 from AbiWriter import AbiWriter
+from IconLuaWriter import IconLuaWriter
 from config import ignore_symbols, abi_exclude_symbols
 from utils import (
     logger,
@@ -335,6 +336,10 @@ def run():
     stub_generater = AbiWriter()
     stub_generater.set(abi_funcs)
     stub_generater.save()
+
+    icon_writer = IconLuaWriter("icons_fontawesome6.lua")
+    icon_writer.parse(str(root / "ext/IconFontCppHeaders/IconsFontAwesome6.h"))
+    icon_writer.save()
 
 
 if __name__ == "__main__":

@@ -13,7 +13,9 @@ extern "C" {
 #include <movutl/asset/project.hpp>
 #include <movutl/asset/shape.hpp>
 #include <movutl/binding/binding.hpp>
+#include <movutl/binding/imgui_custom_values.hpp>
 #include <movutl/binding/lua_command.hpp>
+#include <movutl/binding/lua_ui_panel.hpp>
 #include <movutl/core/command.hpp>
 #include <movutl/core/filesystem.hpp>
 #include <unordered_map>
@@ -26,14 +28,20 @@ lua_State* make_test_lua() {
   lua_State* L = luaL_newstate();
   luaL_openlibs(L);
   detail::generated_lua_binding_movutl(L); // save_project/open_project/has_project_path等はpygen生成側のバインディング
+  detail::generated_lua_binding_imgui(L);
+  detail::binding_custom_vectors(L); // imgui.ImVec2等
   detail::bind_lua_command_api(L);
+  detail::bind_lua_ui_panel_api(L);
+  // widgets/utility_window.luaのrequire("icons_fontawesome6")解決用(init.luaが本来設定するpackage.pathをテストでも再現する)
+  luaL_dostring(L, "package.path = package.path .. ';../lancher/runtime/?.lua'");
   return L;
 }
 } // namespace
 
-TEST_CASE("shortcuts.lua: 5つのショートカットコマンドが登録され、shortcut文字列が期待通りになる") {
+TEST_CASE("shortcuts.lua + widgets/utility_window.lua: 5つのショートカットコマンドが登録され、shortcut文字列が期待通りになる") {
   lua_State* L = make_test_lua();
   REQUIRE(luaL_dofile(L, "../lancher/runtime/shortcuts.lua") == 0);
+  REQUIRE(luaL_dofile(L, "../lancher/runtime/widgets/utility_window.lua") == 0); // add_object_menuコマンドはこちらに定義されている
 
   CHECK(has_command("add_object_menu"));
   CHECK(has_command("save_project_cmd"));

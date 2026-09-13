@@ -891,6 +891,8 @@ void generated_lua_binding_imgui(lua_State* L) {
     .addFunction("InputInt2", static_cast<Vec2d (*)(S, Vec2d)>(&InputInt2_))
     .addFunction("InputInt3", static_cast<Vec3d (*)(S, Vec3d)>(&InputInt3_))
     .addFunction("InputInt4", static_cast<Vec4d (*)(S, Vec4d)>(&InputInt4_))
+    .addFunction("InputTextWithHint", static_cast<std::tuple<bool, std::string> (*)(S, S, S, ImGuiInputTextFlags)>(&InputTextWithHint_))
+    .addFunction("InputText", static_cast<std::tuple<bool, std::string> (*)(S, S, ImGuiInputTextFlags)>(&InputText_))
     .addFunction("InvisibleButton", static_cast<bool (*)(const char*, const ImVec2&, ImGuiButtonFlags)>(&InvisibleButton))
     .addFunction("IsAnyItemActive", static_cast<bool (*)()>(&IsAnyItemActive))
     .addFunction("IsAnyItemFocused", static_cast<bool (*)()>(&IsAnyItemFocused))

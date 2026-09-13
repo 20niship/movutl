@@ -9,6 +9,7 @@ extern "C" {
 #include <movutl/app/app.hpp>
 #include <movutl/binding/binding.hpp>
 #include <movutl/binding/lua_command.hpp>
+#include <movutl/binding/lua_ui_panel.hpp>
 #include <movutl/core/defines.hpp>
 #include <movutl/core/logger.hpp>
 
@@ -31,6 +32,7 @@ void init_lua_binding() {
   generated_lua_binding_imgui(ctx->lua);
   binding_custom_vectors(ctx->lua);
   bind_lua_command_api(ctx->lua);
+  bind_lua_ui_panel_api(ctx->lua);
 
   const char* init_file = "../lancher/runtime/init.lua";
   if(luaL_dofile(ctx->lua, init_file)) {

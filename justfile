@@ -22,6 +22,11 @@ run *args: build
 test: build
     ctest --test-dir build --output-on-failure
 
+# pygenでLua/C++バインディングコードとFontAwesomeアイコンテーブルを再生成する
+autogen build_dir="build":
+    [ -f {{build_dir}}/CMakeCache.txt ] || cmake -S . -B {{build_dir}}
+    cmake --build {{build_dir}} --target pygen
+
 # clang-formatで全ファイルをフォーマットする(書き換える)
 format:
     python3 scripts/run_clang_format.py
