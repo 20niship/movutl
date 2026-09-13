@@ -1545,6 +1545,19 @@ function imgui.InputInt3( label, v, )end
 ---@return Vec4d
 function imgui.InputInt4( label, v, )end
 
+---@param label string
+---@param hint string
+---@param text string
+---@param flags ImGuiInputTextFlags
+---@return std::tuple<bool, std::string>
+function imgui.InputTextWithHint( label, hint, text, flags, )end
+
+---@param label string
+---@param text string
+---@param flags ImGuiInputTextFlags
+---@return std::tuple<bool, std::string>
+function imgui.InputText( label, text, flags, )end
+
 ---@param str_id string
 ---@param size ImVec2 
 ---@param flags ImGuiButtonFlags

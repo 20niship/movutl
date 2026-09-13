@@ -1,7 +1,3 @@
-movutl.register_command("add_object_menu", "オブジェクト追加メニュー", "オブジェクト追加メニューを表示する", "shift+a", {
-  on_start = function(self) imgui.OpenPopup("##add_object_shortcut_menu") end,
-})
-
 movutl.register_command("save_project_cmd", "保存", "プロジェクトを保存する", "ctrl+s", {
   on_start = function(self)
     if movutl.has_project_path() then

@@ -1,7 +1,9 @@
 #pragma once
+#include <cstring>
 #include <imgui.h>
 #include <movutl/core/vector.hpp>
 #include <string>
+#include <tuple>
 
 namespace ImGui {
 
@@ -47,6 +49,22 @@ inline void ColorPicker3_(S label, Vec3& color) { ColorPicker3(label.c_str(), &c
 inline void ColorPicker4_(S label, Vec4& color) { ColorPicker4(label.c_str(), &color[0]); }
 
 inline bool TreeNodeEx_(S label, ImGuiTreeNodeFlags flags = 0) { return TreeNodeEx(label.c_str(), flags); }
+
+inline std::tuple<bool, std::string> InputText_(S label, S text, ImGuiInputTextFlags flags = 0) {
+  char buf[4096];
+  strncpy(buf, text.c_str(), sizeof(buf) - 1);
+  buf[sizeof(buf) - 1] = '\0';
+  bool changed = InputText(label.c_str(), buf, sizeof(buf), flags);
+  return {changed, std::string(buf)};
+}
+
+inline std::tuple<bool, std::string> InputTextWithHint_(S label, S hint, S text, ImGuiInputTextFlags flags = 0) {
+  char buf[4096];
+  strncpy(buf, text.c_str(), sizeof(buf) - 1);
+  buf[sizeof(buf) - 1] = '\0';
+  bool changed = InputTextWithHint(label.c_str(), hint.c_str(), buf, sizeof(buf), flags);
+  return {changed, std::string(buf)};
+}
 // clang-format on
 
 // utility functions
