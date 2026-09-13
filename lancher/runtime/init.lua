@@ -8,3 +8,4 @@ local init_styles = require("ui_styles")
 init_styles()
 
 require("shortcuts")
+require("widgets/utility_window")

@@ -15,6 +15,7 @@ extern "C" {
 #include <movutl/asset/project.hpp>
 #include <movutl/asset/shape.hpp>
 #include <movutl/binding/binding.hpp>
+#include <movutl/binding/imgui_custom_values.hpp>
 #include <movutl/binding/lua_command.hpp>
 #include <movutl/core/anim.hpp>
 #include <movutl/core/command.hpp>
@@ -29,14 +30,20 @@ lua_State* make_test_lua() {
   lua_State* L = luaL_newstate();
   luaL_openlibs(L);
   detail::generated_lua_binding_movutl(L); // save_project/open_project/has_project_path等はpygen生成側のバインディング
+  detail::generated_lua_binding_imgui(L);
+  detail::binding_custom_vectors(L); // imgui.ImVec2等
   detail::bind_lua_command_api(L);
+  detail::bind_lua_ui_panel_api(L);
+  // widgets/utility_window.luaのrequire("icons_fontawesome6")解決用(init.luaが本来設定するpackage.pathをテストでも再現する)
+  luaL_dostring(L, "package.path = package.path .. ';../lancher/runtime/?.lua'");
   return L;
 }
 } // namespace
 
-TEST_CASE("shortcuts.lua: 5つのショートカットコマンドが登録され、shortcut文字列が期待通りになる") {
+TEST_CASE("shortcuts.lua + widgets/utility_window.lua: 5つのショートカットコマンドが登録され、shortcut文字列が期待通りになる") {
   lua_State* L = make_test_lua();
   REQUIRE(luaL_dofile(L, "../lancher/runtime/shortcuts.lua") == 0);
+  REQUIRE(luaL_dofile(L, "../lancher/runtime/widgets/utility_window.lua") == 0); // add_object_menuコマンドはこちらに定義されている
 
   CHECK(has_command("add_object_menu"));
   CHECK(has_command("save_project_cmd"));
@@ -51,6 +58,36 @@ TEST_CASE("shortcuts.lua: 5つのショートカットコマンドが登録さ�
   CHECK(shortcuts["save_project_as_cmd"] == "ctrl+shift+s");
   CHECK(shortcuts["open_project_cmd"] == "ctrl+o");
   CHECK(shortcuts["import_media_cmd"] == "ctrl+i");
+}
+
+TEST_CASE("widgets/utility_window.lua: add_entities_uiが参照するmovutlの定数/関数が実際に解決できる") {
+  Project::New();
+  lua_State* L = make_test_lua();
+  REQUIRE(luaL_dofile(L, "../lancher/runtime/widgets/utility_window.lua") == 0);
+
+  // EntityType/ShapeTypeはpygenがenum名でサブモジュール化する(movutl.EntityType.EntityType_3DText等)ので、フラット参照ミスの回帰を防ぐ
+  const char* script = R"(
+    assert(movutl.EntityType.EntityType_3DText ~= nil)
+    assert(movutl.EntityType.EntityType_Image ~= nil)
+    assert(movutl.EntityType.EntityType_Movie ~= nil)
+    assert(movutl.EntityType.EntityType_Audio ~= nil)
+    assert(movutl.EntityType.EntityType_Midi ~= nil)
+    assert(movutl.EntityType.EntityType_Framebuffer ~= nil)
+    assert(movutl.EntityType.EntityType_Scene ~= nil)
+    assert(movutl.EntityType.EntityType_SceneAudio ~= nil)
+    assert(movutl.ShapeType.ShapeType_Triangle ~= nil)
+    assert(movutl.ShapeType.ShapeType_Rect ~= nil)
+    assert(movutl.ShapeType.ShapeType_Hexagon ~= nil)
+    assert(movutl.ShapeType.ShapeType_Circle ~= nil)
+    assert(movutl.ShapeType.ShapeType_Custom ~= nil)
+
+    movutl.add_new_track("test_text", movutl.EntityType.EntityType_3DText, 0, 100)
+    movutl.add_new_shape_track("test_shape", 0, 100, movutl.ShapeType.ShapeType_Rect)
+    movutl.list_custom_objects()
+  )";
+  if(luaL_dostring(L, script) != 0) {
+    FAIL(lua_tostring(L, -1));
+  }
 }
 
 TEST_CASE("LuaCommand: on_startの戻り値がCommandStatusへ正しく変換される") {

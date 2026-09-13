@@ -17,7 +17,6 @@
 #include <movutl/gui/piano_roll.hpp>
 #include <movutl/gui/timeline.hpp>
 #include <movutl/gui/timeline_window.hpp>
-#include <movutl/gui/utilities.hpp>
 #include <movutl/gui/viewer.hpp>
 
 namespace mu {
@@ -31,7 +30,6 @@ void init_gui_panels() {
     cutil::make_ref<InspectorWindow>(),           //
     cutil::make_ref<TimelineWindow>(),            //
     cutil::make_ref<ViewerWindow>(),              //
-    cutil::make_ref<UtilityWindow>(),             //
     cutil::make_ref<CompositionSettingsWindow>(), //
     cutil::make_ref<DeveloperWindow>(),           //
     cutil::make_ref<ExportWindow>(),              //
