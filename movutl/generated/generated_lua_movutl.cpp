@@ -50,6 +50,30 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addConstant("EaseInCubic", AniInterpType::EaseInCubic)
     .addConstant("EaseOutCubic", AniInterpType::EaseOutCubic)
     .addConstant("EaseInOutCubic", AniInterpType::EaseInOutCubic)
+    .addConstant("EaseInSine", AniInterpType::EaseInSine)
+    .addConstant("EaseOutSine", AniInterpType::EaseOutSine)
+    .addConstant("EaseInOutSine", AniInterpType::EaseInOutSine)
+    .addConstant("EaseInQuart", AniInterpType::EaseInQuart)
+    .addConstant("EaseOutQuart", AniInterpType::EaseOutQuart)
+    .addConstant("EaseInOutQuart", AniInterpType::EaseInOutQuart)
+    .addConstant("EaseInQuint", AniInterpType::EaseInQuint)
+    .addConstant("EaseOutQuint", AniInterpType::EaseOutQuint)
+    .addConstant("EaseInOutQuint", AniInterpType::EaseInOutQuint)
+    .addConstant("EaseInExpo", AniInterpType::EaseInExpo)
+    .addConstant("EaseOutExpo", AniInterpType::EaseOutExpo)
+    .addConstant("EaseInOutExpo", AniInterpType::EaseInOutExpo)
+    .addConstant("EaseInCirc", AniInterpType::EaseInCirc)
+    .addConstant("EaseOutCirc", AniInterpType::EaseOutCirc)
+    .addConstant("EaseInOutCirc", AniInterpType::EaseInOutCirc)
+    .addConstant("EaseInBack", AniInterpType::EaseInBack)
+    .addConstant("EaseOutBack", AniInterpType::EaseOutBack)
+    .addConstant("EaseInOutBack", AniInterpType::EaseInOutBack)
+    .addConstant("EaseInElastic", AniInterpType::EaseInElastic)
+    .addConstant("EaseOutElastic", AniInterpType::EaseOutElastic)
+    .addConstant("EaseInOutElastic", AniInterpType::EaseInOutElastic)
+    .addConstant("EaseInBounce", AniInterpType::EaseInBounce)
+    .addConstant("EaseOutBounce", AniInterpType::EaseOutBounce)
+    .addConstant("EaseInOutBounce", AniInterpType::EaseInOutBounce)
     .addConstant("Custom", AniInterpType::Custom)
     .endModule()
     .beginModule("BlendType")
@@ -176,6 +200,11 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("getTrackPropsInfo", &Entity::getTrackPropsInfo)
     .addFunction("getTrackProps", &Entity::getTrackProps)
     .addFunction("setTrackProps", &Entity::setTrackProps)
+    .addFunction("apply_animated_props", &Entity::apply_animated_props)
+    .addFunction("ensure_anim_props", &Entity::ensure_anim_props)
+    .addFunction("collect_animated_frames", &Entity::collect_animated_frames)
+    .addFunction("move_keyframes_at", &Entity::move_keyframes_at)
+    .addFunction("erase_keyframes_at", &Entity::erase_keyframes_at)
     .addVariable("name", &Entity::name)                   // cutil::Str
     .addVariable("guid_", &Entity::guid_)                 // uint64_t
     .addVariable("fstart_", &Entity::fstart_)             // int
@@ -188,6 +217,7 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addVariable("clipping_up_", &Entity::clipping_up_)   // bool
     .addVariable("camera_ctrl_", &Entity::camera_ctrl_)   // bool
     .addVariable("custom_color_", &Entity::custom_color_) // int32_t
+    .addVariable("anim_props_", &Entity::anim_props_)     // mutable AnimProps
     .endClass()
     .beginClass<EntityInfo>("EntityInfo")
     .addFunction("str", &EntityInfo::str)
