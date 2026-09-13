@@ -90,7 +90,7 @@ void ExportWindow::Update() {
   was_running = running;
   if(!running && g_plugin_index < 0) return;
 
-  if(ImGui::Begin("エクスポート")) {
+  if(ImGui::Begin("エクスポート", &open)) {
     if(running) {
       auto& prog      = get_export_progress();
       const int total = prog.total_frames.load();

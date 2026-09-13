@@ -269,7 +269,7 @@ void draw_selected_key_editor() {
 } // namespace
 
 void GraphEditorWindow::Update() {
-  ImGui::Begin(ICON_FA_CHART_LINE " グラフエディタ");
+  ImGui::Begin(ICON_FA_CHART_LINE " グラフエディタ", &open);
   static GraphEditorState state;
 
   auto* comp         = Composition::GetActiveComp();

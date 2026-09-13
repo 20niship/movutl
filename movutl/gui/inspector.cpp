@@ -41,7 +41,7 @@ bool fuzzy_match(const char* src, const char* filter) {
 } // namespace
 
 void InspectorWindow::Update() {
-  ImGui::Begin(ICON_FA_PLUG " エフェクト制御");
+  ImGui::Begin(ICON_FA_PLUG " エフェクト制御", &open);
   auto entts = get_selected_entts();
   if(entts.empty()) {
     ImGui::TextDisabled("オブジェクトが選択されていません");

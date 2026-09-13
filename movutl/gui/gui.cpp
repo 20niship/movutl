@@ -24,8 +24,10 @@ namespace mu {
 namespace detail {
 
 void init_gui_panels() {
-  auto g    = GUIManager::Get();
-  g->panels = {
+  auto g           = GUIManager::Get();
+  auto piano_roll  = cutil::make_ref<PianoRollWindow>();
+  piano_roll->open = false; // デフォルト非表示。ピアノロールを開きたい時はMidi Entityの編集操作から明示的に開く想定
+  g->panels        = {
     cutil::make_ref<InspectorWindow>(),           //
     cutil::make_ref<TimelineWindow>(),            //
     cutil::make_ref<ViewerWindow>(),              //
@@ -35,18 +37,18 @@ void init_gui_panels() {
     cutil::make_ref<ExportWindow>(),              //
     cutil::make_ref<FFTWindow>(),                 //
     cutil::make_ref<GraphEditorWindow>(),         //
-    cutil::make_ref<PianoRollWindow>(),
+    piano_roll,
   };
 
-  // デフォルトワークスペース(初回起動時に適用される)
+  // デフォルトワークスペース(初回起動時に適用される)。dir==Noneのentry(最後を除く)は直前entryと同タブになる
   Workspace default_workspace;
   default_workspace.name = "Default";
   default_workspace.add_entry("MOVUTL TIMELINE WINDOW", ImGuiDir_Down, 0.40f);
+  default_workspace.add_entry(ICON_FA_CHART_LINE " グラフエディタ", ImGuiDir_None, 0.0f); // タイムラインと同タブ
   default_workspace.add_entry("ツール", ImGuiDir_Left, 0.2f);
   default_workspace.add_entry(ICON_FA_PLUG " エフェクト制御", ImGuiDir_Right, 0.25f);
-  default_workspace.add_entry("FFT", ImGuiDir_Right, 0.3f);
-  default_workspace.add_entry(ICON_FA_CHART_LINE " グラフエディタ", ImGuiDir_Down, 0.25f);
-  default_workspace.add_entry(ICON_FA_KEYBOARD " ピアノロール", ImGuiDir_Down, 0.5f);
+  default_workspace.add_entry("FFT", ImGuiDir_None, 0.0f);                            // エフェクト制御と同タブ
+  default_workspace.add_entry(ICON_FA_KEYBOARD " ピアノロール", ImGuiDir_None, 0.0f); // 同タブ(openがfalseなのでデフォルトでは開かない)
   default_workspace.add_entry("Viewer", ImGuiDir_None, 1.0f);
   register_workspace("Default", default_workspace);
 }
@@ -55,6 +57,7 @@ void update_gui_panels() {
   MOVUTL_ZONE_SCOPED_N("update_gui_panels");
   auto a = GUIManager::Get();
   for(auto& panel : a->panels) {
+    if(!panel->open) continue;
     const bool disable = is_exporting() && !panel->always_enabled_during_export();
     if(disable) ImGui::BeginDisabled();
     panel->Update();

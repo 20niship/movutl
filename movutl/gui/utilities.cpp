@@ -55,7 +55,7 @@ void add_entities_ui() {
 }
 
 void UtilityWindow ::Update() {
-  ImGui::Begin("ツール");
+  ImGui::Begin("ツール", &open);
   add_entities_ui();
   ImGui::End();
 

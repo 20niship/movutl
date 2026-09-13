@@ -18,16 +18,16 @@ public:
   virtual void Update() = 0;
   // trueを返すパネルはエクスポート中もBeginDisabledでラップされない(ExportWindow自身のキャンセルUI等)
   virtual bool always_enabled_during_export() const { return false; }
+  bool open  = true; // falseならUpdate()自体を呼ばない(ImGui::Beginのタイトルバー×ボタンで閉じる)
   UIPanel()  = default;
   ~UIPanel() = default;
 };
 
-// ワークスペース内の1ウィンドウ分のドッキング設定
-// entriesは登録順に適用され、残り領域からdir方向へratioの割合で領域を確保し、そこへwindow_nameをドッキングする
+// ワークスペース内の1ウィンドウ分のドッキング設定。最後以外のentryでdir==ImGuiDir_Noneなら直前entryと同ノードへタブとして重ねる
 struct WorkspaceEntry {
   std::string window_name;     // ドッキングするImGuiウィンドウ名
-  int dir     = ImGuiDir_None; // 分割方向 (ImGuiDir_Left / Right / Up / Down)
-  float ratio = 0.5f;          // 残り領域から確保する割合 (0.0 - 1.0)
+  int dir     = ImGuiDir_None; // 分割方向 (ImGuiDir_Left / Right / Up / Down)、直前のentryと同タブにする場合はNone
+  float ratio = 0.5f;          // 残り領域から確保する割合 (0.0 - 1.0)。同タブ指定時は無視される
 };
 
 struct Workspace {
