@@ -58,6 +58,36 @@ TEST_CASE("shortcuts.lua + widgets/utility_window.lua: 5つのショートカッ
   CHECK(shortcuts["import_media_cmd"] == "ctrl+i");
 }
 
+TEST_CASE("widgets/utility_window.lua: add_entities_uiが参照するmovutlの定数/関数が実際に解決できる") {
+  Project::New();
+  lua_State* L = make_test_lua();
+  REQUIRE(luaL_dofile(L, "../lancher/runtime/widgets/utility_window.lua") == 0);
+
+  // EntityType/ShapeTypeはpygenがenum名でサブモジュール化する(movutl.EntityType.EntityType_3DText等)ので、フラット参照ミスの回帰を防ぐ
+  const char* script = R"(
+    assert(movutl.EntityType.EntityType_3DText ~= nil)
+    assert(movutl.EntityType.EntityType_Image ~= nil)
+    assert(movutl.EntityType.EntityType_Movie ~= nil)
+    assert(movutl.EntityType.EntityType_Audio ~= nil)
+    assert(movutl.EntityType.EntityType_Midi ~= nil)
+    assert(movutl.EntityType.EntityType_Framebuffer ~= nil)
+    assert(movutl.EntityType.EntityType_Scene ~= nil)
+    assert(movutl.EntityType.EntityType_SceneAudio ~= nil)
+    assert(movutl.ShapeType.ShapeType_Triangle ~= nil)
+    assert(movutl.ShapeType.ShapeType_Rect ~= nil)
+    assert(movutl.ShapeType.ShapeType_Hexagon ~= nil)
+    assert(movutl.ShapeType.ShapeType_Circle ~= nil)
+    assert(movutl.ShapeType.ShapeType_Custom ~= nil)
+
+    movutl.add_new_track("test_text", movutl.EntityType.EntityType_3DText, 0, 100)
+    movutl.add_new_shape_track("test_shape", 0, 100, movutl.ShapeType.ShapeType_Rect)
+    movutl.list_custom_objects()
+  )";
+  if(luaL_dostring(L, script) != 0) {
+    FAIL(lua_tostring(L, -1));
+  }
+}
+
 TEST_CASE("LuaCommand: on_startの戻り値がCommandStatusへ正しく変換される") {
   lua_State* L = make_test_lua();
 
