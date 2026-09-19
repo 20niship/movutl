@@ -19,6 +19,7 @@ public:
   static Ref<FramebufferEntt> Create(const char* name);
   virtual EntityType getType() const override { return EntityType_Framebuffer; }
   virtual bool render(Composition* cmp, Image* target, int frame) override;
+  virtual bool source_size(Vec2& size, Vec2& origin_offset) const override;
 
   // キャプチャした画像(nullptrの場合は未キャプチャ)
   const Ref<Image>& captured_image() const { return captured_; }
