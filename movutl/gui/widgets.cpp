@@ -45,7 +45,13 @@ void edit_props(Entity* e, const cutil::PropInfo* info, const cutil::Prop& p, co
       }
     } else if(f.type == cutil::prop_info_of<float>()) {
       float v = p.get<float>(f.name);
-      if(ImGui::DragFloat(name_, &v, f.drag_speed, f.min_value, f.max_value)) {
+      if(std::string(f.name) == "alpha_") { // 内部値は0-1だが表示は%
+        float pct = v * 100.0f;
+        if(ImGui::DragFloat(name_, &pct, 1.0f, 0.0f, 100.0f, "%.0f")) {
+          newp.set<float>(f.name, std::clamp(pct, 0.0f, 100.0f) / 100.0f);
+          changed = true;
+        }
+      } else if(ImGui::DragFloat(name_, &v, f.drag_speed, f.min_value, f.max_value)) {
         newp.set<float>(f.name, v);
         changed = true;
       }
