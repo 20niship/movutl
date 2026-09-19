@@ -123,9 +123,13 @@ double obj_field_or_arg(lua_State* L, int argi, const char* field, double def) {
 }
 
 // Image::copytoのcenter引数はpmin相当(内部でwidth/2が加算される)なので、AviUtlの中心原点オフセットx,yをそのまま渡す
-void perform_draw(AviUtlObjContext* ctx, double x, double y, double zoom, double alpha, double rz) {
+// cx,cy: 画像中心から見た基点(obj.cx/cy)。x,yは基点が置かれる位置なので、画像中心の位置は基点を回転・拡大した分だけずれる
+void perform_draw(AviUtlObjContext* ctx, double x, double y, double zoom, double alpha, double rz, double cx, double cy) {
   Image* img = ctx->fpip->img;
   if(!img || img->empty()) return;
+  const double rad = rz * M_PI / 180.0;
+  x -= zoom * (cx * std::cos(rad) - cy * std::sin(rad));
+  y -= zoom * (cx * std::sin(rad) + cy * std::cos(rad));
   Image tmp(img->width, img->height);
   tmp.has_alpha = true;
   std::memcpy(tmp.data(), img->data(), img->size_in_bytes());
@@ -142,7 +146,7 @@ int l_obj_draw(lua_State* L) {
   double zoom  = obj_field_or_arg(L, 4, "zoom", 1.0);
   double alpha = obj_field_or_arg(L, 5, "alpha", 1.0);
   double rz    = obj_field_or_arg(L, 8, "rz", 0.0);
-  perform_draw(ctx, x, y, zoom, alpha, rz);
+  perform_draw(ctx, x, y, zoom, alpha, rz, obj_field_or_arg(L, 999, "cx", 0.0), obj_field_or_arg(L, 999, "cy", 0.0));
   return 0;
 }
 
@@ -292,7 +296,7 @@ void perform_implicit_draw(lua_State* L, AviUtlObjContext* ctx) {
   double zoom  = obj_field_or_arg(L, 999, "zoom", 1.0);
   double alpha = obj_field_or_arg(L, 999, "alpha", 1.0);
   double rz    = obj_field_or_arg(L, 999, "rz", 0.0);
-  perform_draw(ctx, x, y, zoom, alpha, rz);
+  perform_draw(ctx, x, y, zoom, alpha, rz, obj_field_or_arg(L, 999, "cx", 0.0), obj_field_or_arg(L, 999, "cy", 0.0));
 }
 
 void setup_obj_table(lua_State* L, AviUtlObjContext* ctx) {

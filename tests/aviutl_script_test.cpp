@@ -189,6 +189,41 @@ TEST_CASE("register_aviutl_scripts: obj.draw()を明示的に呼ばなくてもo
   CHECK(img(5, 5)[0] == 255); // obj.draw()の呼び出しが無くてもox=3の移動が反映される
 }
 
+TEST_CASE("register_aviutl_scripts: obj.cx(基点)は画像中心からのオフセットとして暗黙drawに反映される") {
+  FilterPluginTable* plg = register_test_script("@基点テスト\nobj.cx = 2\n", "基点テスト");
+  REQUIRE(plg != nullptr);
+
+  Image img(10, 10);
+  for(size_t i = 0; i < img.size(); i++) img[i] = Vec4b(0, 0, 0, 0);
+  img(7, 5) = Vec4b(255, 0, 0, 255);
+  FilterInData fin;
+  fin.img = &img;
+  CHECK(plg->fn_proc(plg, &fin, cutil::Prop{}));
+
+  CHECK(img(5, 5)[0] == 255); // 基点が右へ2pxずれる分、基点をox=0に置くと画像は左へ2px動く
+}
+
+TEST_CASE("Entity::composite: 基点まわりに回転する(基点が画像中心なら位置は動かない、ずらすと画像中心が動く)") {
+  Image src(10, 10);
+  src.fill_rgba(Vec4b(255, 0, 0, 255));
+  auto mk = [] {
+    auto t = cutil::make_ref<Image>(100, 100);
+    t->fill_rgba(Vec4b(0, 0, 0, 0));
+    return t;
+  };
+  auto ent       = cutil::make_ref<Image>();
+  ent->rotation_ = 90.f;
+  auto a         = mk();
+  REQUIRE(ent->composite(src, a.get()));
+  CHECK(a->rgba(50, 50)[0] == 255); // 基点=中心: 中央に残る
+
+  ent->anchor_ = Vec3(20, 0, 0); // 基点を右へ20px。基点は中心(50,50)に固定され、90度回転で画像中心は基点の上(50,30)へ回る
+  auto b       = mk();
+  REQUIRE(ent->composite(src, b.get()));
+  CHECK(b->rgba(50, 50)[0] == 0);
+  CHECK(b->rgba(50, 30)[0] == 255);
+}
+
 TEST_CASE("register_aviutl_scripts: obj.copybufferで画像バッファを退避・復元できる") {
   std::string text = "@バッファテスト\n"
                      "obj.copybuffer(\"cache:saved\", \"obj\")\n"
