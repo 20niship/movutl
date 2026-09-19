@@ -199,6 +199,18 @@ void apply_one_effect(Entity& e, const FxMap& m, const ExoSection& fx) {
 
 } // namespace
 
+void report_exo_unanimated_tracks(const ExoSection* draw, const ExoSection* play) {
+  for(const ExoSection* sec : {draw, play}) {
+    if(!sec) continue;
+    std::string keys;
+    for(auto& [k, v] : *sec) {
+      if(k.empty() || k[0] == '_' || v.find(',') == std::string::npos) continue;
+      if(parse_exo_track(v).animated()) keys += (keys.empty() ? "" : ",") + k;
+    }
+    if(!keys.empty()) exo_import_report().add("トラックバー(" + keys + ")のアニメーションは未対応のため開始値を使用しました");
+  }
+}
+
 void apply_exo_effects(Entity& e, const std::vector<const ExoSection*>& effects) {
   for(size_t i = 1; i < effects.size(); ++i) {
     auto name = get_str(*effects[i], "_name");

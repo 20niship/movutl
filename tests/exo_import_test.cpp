@@ -375,3 +375,17 @@ TEST_CASE("exo: 標準描画以外のエフェクトが対応表に従ってフ�
   CHECK(items[0].msg.find("縦横比") != std::string::npos); // ぼかしの未対応パラメータ
   CHECK(items[1].msg.find("Unknown") != std::string::npos);
 }
+
+TEST_CASE("exo: 標準描画で値が変化するトラックバーはアニメーション未対応として記録される") {
+  Project::New();
+  std::string exo = "[exedit]\r\nwidth=640\r\nheight=360\r\nrate=30\r\nscale=1\r\n"
+                    "[0]\r\nstart=1\r\nend=30\r\nlayer=1\r\n"
+                    "[0.0]\r\n_name=\x90\x7d\x8c\x60\r\ntype=2\r\n"
+                    "[0.1]\r\n_name=\x95\x57\x8f\x80\x95\x60\x89\xe6\r\nX=0.0,100.0,1\r\nY=5.0,5.0,1\r\nZ=0.0\r\n";
+  CHECK(import_exo_text(exo) == 1);
+  auto& items = exo_import_report().items;
+  REQUIRE(items.size() == 1);
+  CHECK(items[0].msg.find("(X)") != std::string::npos); // Y/Zは変化しないので含まれない
+  auto* comp = Composition::GetActiveComp();
+  CHECK(comp->layers[0].entts.at(0)->pos_[0] == doctest::Approx(0.f)); // 開始値
+}

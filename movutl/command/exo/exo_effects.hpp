@@ -40,4 +40,7 @@ AniInterpType exo_track_interp(int mode, bool* exact);
 // キーフレームはEntityのfstart_/fend_(絶対フレーム)へ打つためset_range後に呼ぶこと
 void apply_exo_effects(Entity& e, const std::vector<const ExoSection*>& effects);
 
+// 標準描画/標準再生のトラックバーが開始値と終了値で変化する場合、Entityの変換・音量はアニメーション未対応のため先頭値のまま取り込んだことをレポートに記録する
+void report_exo_unanimated_tracks(const ExoSection* draw, const ExoSection* play);
+
 } // namespace mu
