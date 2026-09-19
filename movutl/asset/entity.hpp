@@ -154,6 +154,13 @@ public:
   // pos_/anchor_/scale_/rotation_/alpha_による描画変換を持つ(=描画系の)Entityか。インスペクタの変換欄表示に使う
   bool has_transform() const { return getType() & (EntityType_Movie | EntityType_Image | EntityType_3DText | EntityType_Polygon | EntityType_Framebuffer | EntityType_Scene); }
 
+  // composite()へ渡す元画像のサイズと基点の既定位置のずれ(画像中心基準)。ビューアのギズモが枠を求めるのに使う。画像が無い/不明ならfalse
+  virtual bool source_size(Vec2& size, Vec2& origin_offset) const {
+    (void)size;
+    (void)origin_offset;
+    return false;
+  }
+
   static Ref<Entity> CreateEntity(const char* name, EntityType type);
   static Ref<Entity> Find(const char* name);
 

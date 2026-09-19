@@ -52,6 +52,7 @@ void render_main_menu_bar() {
     if(ImGui::MenuItem("ステータスバー")) {
     }
     ImGui::MenuItem("ルーラー表示", nullptr, &Config::Get()->show_viewer_ruler);
+    ImGui::MenuItem("ルーラー原点を中央にする", nullptr, &Config::Get()->viewer_ruler_center_origin);
     if(ImGui::BeginMenu("スタイル")) {
       const auto& styles = detail::AppMain::Get()->imgui_styles;
       for(const auto& style : styles) {

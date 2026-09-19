@@ -9,6 +9,7 @@
 #include <movutl/asset/image.hpp>
 #include <movutl/audio/audio_mixer.hpp>
 #include <movutl/core/profiler.hpp>
+#include <movutl/gui/entity_gizmo.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/gui/viewer.hpp>
 #include <vector>
@@ -21,10 +22,40 @@ namespace {
 ImVec2 comp_to_screen(const ImVec2& p, const ImVec2& img_min, const ImVec2& disp_size, float cmp_w, float cmp_h) { return ImVec2(img_min.x + p.x / cmp_w * disp_size.x, img_min.y + p.y / cmp_h * disp_size.y); }
 ImVec2 screen_to_comp(const ImVec2& p, const ImVec2& img_min, const ImVec2& disp_size, float cmp_w, float cmp_h) { return ImVec2((p.x - img_min.x) / disp_size.x * cmp_w, (p.y - img_min.y) / disp_size.y * cmp_h); }
 
+constexpr float kHandleHalf   = 4.0f;  // 角ハンドルの半サイズ(画面px)
+constexpr float kRotHandleR   = 5.0f;  // 回転ハンドルの半径(画面px)
+constexpr float kRotHandleGap = 24.0f; // 回転ハンドルを上辺から離す距離(画面px)
+constexpr float kAnchorR      = 6.0f;  // 基点マーカーの半径(画面px)
+
+// 選択Entityの変換ギズモ(枠・角ハンドル・回転ハンドル・基点マーカー)を描く
+void draw_entity_gizmo(ImDrawList* dl, const EntityGizmo& g, const ImVec2& img_min, const ImVec2& disp_size, float cmp_w, float cmp_h) {
+  auto to_screen = [&](const GizmoPt& p) { return comp_to_screen(ImVec2((float)p.x, (float)p.y), img_min, disp_size, cmp_w, cmp_h); };
+  const ImU32 col = IM_COL32(80, 170, 255, 255);
+  ImVec2 pts[4];
+  for(int i = 0; i < 4; i++) pts[i] = to_screen(g.quad.p[i]);
+  dl->AddPolyline(pts, 4, col, ImDrawFlags_Closed, 1.5f);
+  for(int i = 0; i < 4; i++) dl->AddRectFilled(ImVec2(pts[i].x - kHandleHalf, pts[i].y - kHandleHalf), ImVec2(pts[i].x + kHandleHalf, pts[i].y + kHandleHalf), IM_COL32(255, 255, 255, 255));
+  const float scale_px = disp_size.x / cmp_w;
+  const ImVec2 rot_h   = to_screen(gizmo_rotate_handle(g.quad, kRotHandleGap / scale_px));
+  const ImVec2 top_mid((pts[0].x + pts[1].x) / 2, (pts[0].y + pts[1].y) / 2);
+  dl->AddLine(top_mid, rot_h, col);
+  dl->AddCircleFilled(rot_h, kRotHandleR, col);
+  const ImVec2 ap = to_screen(g.anchor_pt);
+  dl->AddCircle(ap, kAnchorR, IM_COL32(255, 200, 0, 255), 0, 1.5f);
+  dl->AddLine(ImVec2(ap.x - kAnchorR - 3, ap.y), ImVec2(ap.x + kAnchorR + 3, ap.y), IM_COL32(255, 200, 0, 255));
+  dl->AddLine(ImVec2(ap.x, ap.y - kAnchorR - 3), ImVec2(ap.x, ap.y + kAnchorR + 3), IM_COL32(255, 200, 0, 255));
+}
+
 } // namespace
+
+ViewerCursor& viewer_cursor() {
+  static ViewerCursor c;
+  return c;
+}
 
 void ViewerWindow::Update() {
   MOVUTL_ZONE_SCOPED_N("ViewerWindow::Update");
+  viewer_cursor().valid = false;
   ImGui::Begin("Viewer");
   auto comp = Composition::GetActiveComp();
   if(!comp) {
@@ -127,35 +158,88 @@ void ViewerWindow::Update() {
     }
     constexpr float kTick = 8.0f;  // 目盛り線の長さ
     constexpr float kGap  = 14.0f; // ラベル表示用にティックからさらに離す量
-    for(int i = 0; i < (int)cmp_w; i += di) {
-      auto p = comp_to_screen(ImVec2((float)i, 0), img_min, disp_size, cmp_w, cmp_h);
+    const bool center = Config::Get()->viewer_ruler_center_origin;
+    for(auto& t : gizmo_ruler_ticks(cmp_w, di, center)) {
+      auto p = comp_to_screen(ImVec2((float)t.comp_pos, 0), img_min, disp_size, cmp_w, cmp_h);
       dl->AddLine(ImVec2(p.x, img_min.y - kTick), ImVec2(p.x, img_min.y), IM_COL32(255, 255, 0, 200));
-      dl->AddText(ImVec2(p.x + 2, img_min.y - kGap), IM_COL32(255, 255, 0, 200), std::to_string(i).c_str());
+      dl->AddText(ImVec2(p.x + 2, img_min.y - kGap), IM_COL32(255, 255, 0, 200), std::to_string(t.value).c_str());
     }
-    for(int i = 0; i < (int)cmp_h; i += di) {
-      auto p = comp_to_screen(ImVec2(0, (float)i), img_min, disp_size, cmp_w, cmp_h);
+    for(auto& t : gizmo_ruler_ticks(cmp_h, di, center)) {
+      auto p = comp_to_screen(ImVec2(0, (float)t.comp_pos), img_min, disp_size, cmp_w, cmp_h);
       dl->AddLine(ImVec2(img_min.x - kTick, p.y), ImVec2(img_min.x, p.y), IM_COL32(255, 255, 0, 200));
-      dl->AddText(ImVec2(img_min.x - kTick - 30.0f, p.y), IM_COL32(255, 255, 0, 200), std::to_string(i).c_str());
+      dl->AddText(ImVec2(img_min.x - kTick - 30.0f, p.y), IM_COL32(255, 255, 0, 200), std::to_string(t.value).c_str());
     }
   }
 
-  if(hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-    ImVec2 comp_pt = screen_to_comp(ImGui::GetMousePos(), img_min, disp_size, cmp_w, cmp_h);
-    Ref<Entity> hit;
-    // TODO: pos_中心の近似矩形での簡易判定。Mesh側に汎用ジオメトリ取得が無いため回転/スケール後の正確なヒットテストは将来拡張
-    constexpr float kHalfSize = 50.0f;
-    for(auto& layer : comp->layers) {
-      for(auto& e : layer.entts) {
-        if(!e || !e->visible(comp->frame)) continue;
-        // pos_はコンポ中心原点の基点位置
-        const float cx = cmp_w / 2 + e->pos_[0], cy = cmp_h / 2 + e->pos_[1];
-        ImRect r(ImVec2(cx - kHalfSize, cy - kHalfSize), ImVec2(cx + kHalfSize, cy + kHalfSize));
-        if(r.Contains(ImVec2(comp_pt.x, comp_pt.y))) hit = e;
+  const GizmoPt comp_size{cmp_w, cmp_h};
+  const float scale_px = disp_size.x / cmp_w; // コンポ1pxあたりの画面px
+  const GizmoPt mouse_comp = [&] {
+    ImVec2 c = screen_to_comp(ImGui::GetMousePos(), img_min, disp_size, cmp_w, cmp_h);
+    return GizmoPt{c.x, c.y};
+  }();
+
+  if(hovered && mouse_comp.x >= 0 && mouse_comp.y >= 0 && mouse_comp.x < cmp_w && mouse_comp.y < cmp_h) viewer_cursor() = {true, mouse_comp.x, mouse_comp.y};
+
+  if(drag_.part != GizmoPart::None) {
+    if(!ImGui::IsMouseDown(ImGuiMouseButton_Left) || !drag_.entt) {
+      drag_ = {};
+    } else {
+      EntityGizmo g0;
+      entity_gizmo_of(*drag_.entt, comp_size, g0); // src_size/origin_offsetの取得用(変換は開始時のs0を使う)
+      const bool shift = ImGui::GetIO().KeyShift, alt = ImGui::GetIO().KeyAlt;
+      GizmoXform x     = drag_.s0;
+      switch(drag_.part) {
+      case GizmoPart::Body: x = gizmo_drag_move(drag_.s0, drag_.m0, mouse_comp); break;
+      case GizmoPart::Scale: {
+        const double hw = g0.src_size.x / 2, hh = g0.src_size.y / 2;
+        const GizmoPt corners[4] = {{-hw, -hh}, {hw, -hh}, {hw, hh}, {-hw, hh}};
+        x                        = gizmo_drag_scale(drag_.s0, g0.origin_offset, comp_size, corners[drag_.corner], mouse_comp, shift);
+        break;
+      }
+      case GizmoPart::Rotate: x = gizmo_drag_rotate(drag_.s0, comp_size, drag_.m0, mouse_comp); break;
+      case GizmoPart::Anchor: {
+        const GizmoPt local = gizmo_comp_to_local(drag_.s0, g0.origin_offset, comp_size, mouse_comp);
+        x                   = gizmo_set_anchor(drag_.s0, local - g0.origin_offset, !alt); // Altで見た目の補正を無効化
+        break;
+      }
+      default: break;
+      }
+      {
+        std::lock_guard<std::mutex> lock(drag_.entt->mtx);
+        entity_apply_xform(*drag_.entt, x);
+      }
+      comp->invalidate_cache_range(drag_.entt->fstart_, drag_.entt->fend_);
+    }
+  } else if(hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+    GizmoHit hit;
+    Ref<Entity> target;
+    EntityGizmo g;
+    // 選択中のEntityのハンドルを最優先(重なる他のEntityを選び直さない)
+    for(auto& e : get_selected_entts()) {
+      if(!e->visible(comp->frame) || !entity_gizmo_of(*e, comp_size, g)) continue;
+      hit = gizmo_hit_test(g.quad, g.anchor_pt, mouse_comp, (kHandleHalf + 3.0f) / scale_px, kRotHandleGap / scale_px);
+      if(hit.part != GizmoPart::None) {
+        target = e;
+        break;
       }
     }
-    if(hit) {
-      clear_selected_entts();
-      select_entt(hit);
+    if(!target) {
+      target = hit_test_entity(*comp, mouse_comp);
+      if(target) {
+        clear_selected_entts();
+        select_entt(target);
+        entity_gizmo_of(*target, comp_size, g);
+        hit = {GizmoPart::Body, -1};
+      }
+    }
+    if(target && hit.part != GizmoPart::None) drag_ = {hit.part, hit.corner, mouse_comp, g.xform, target};
+  }
+
+  {
+    for(auto& e : get_selected_entts()) {
+      EntityGizmo g;
+      if(!e->visible(comp->frame) || !entity_gizmo_of(*e, comp_size, g)) continue;
+      draw_entity_gizmo(dl, g, img_min, disp_size, cmp_w, cmp_h);
     }
   }
 

@@ -34,6 +34,7 @@ public:
   std::string log_filename        = "log.txt";
   LogLevel log_level              = LogLevel::DEBUG;
   bool show_viewer_ruler          = false; // Viewportにルーラー(目盛り)を表示するか
+  bool viewer_ruler_center_origin = true;  // ルーラー/カーソル座標の原点をコンポ中央にする(false=左上)。Entityのpos_と同じ座標系
   int default_image_frames        = 150;   // 画像トラック追加時の長さ(フレーム数)。画像自体には長さが無いため既定値をここで持つ
   float viewer_wave_footer_height = 40.0f; // Viewerフッタの波形+L/Rメーター部分の高さ(px)
 
