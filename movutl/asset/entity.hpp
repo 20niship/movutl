@@ -137,12 +137,15 @@ public:
   Vec3 anchor_    = Vec3(0, 0, 0);  // MPROPERTY(name="基点", desc="画像中心からの基点オフセット。回転・拡大の中心", group="transform")
   Vec2 scale_     = Vec2(100, 100); // MPROPERTY(name="拡大率(%)", scale=true, group="transform")
   float rotation_ = 0.0f;           // MPROPERTY(name="回転(度)", angle=true, group="transform")
+  float rot_x_    = 0.0f;           // MPROPERTY(name="X軸回転(度)", angle=true, group="transform")
+  float rot_y_    = 0.0f;           // MPROPERTY(name="Y軸回転(度)", angle=true, group="transform")
+  float aspect_   = 0.0f;           // MPROPERTY(name="縦横比", desc="-1〜1。正で横が縮み(縦長)、負で縦が縮む(横長)", min=-1.0, max=1.0, step=0.01, group="transform")
   float alpha_    = 1.0f;           // MPROPERTY(name="不透明度", min=0.0, max=1.0, step=0.01, group="transform")
 
   // このEntity固有の状態(img_/デコーダハンドル等)を読み書きする際のロック。Composition::mtxとは別物
   mutable std::mutex mtx;
 
-  // srcを自身の変換(pos_/anchor_/scale_/rotation_/alpha_/blend_)でtargetへ合成する。
+  // srcを自身の変換(pos_/anchor_/scale_/aspect_/rotation_/rot_x_/rot_y_/alpha_/blend_)でtargetへ合成する。rot_x_/rot_y_が0でなければ射影変換(2D合成のみ、Zは奥行きの遠近のみ)
   // origin_offset: srcの中心から見た、このEntityの局所原点(基点の既定位置)のずれ(px)。通常は0(=画像中心)
   bool composite(const Image& src, Image* target, const Vec2& origin_offset = Vec2(0, 0)) const;
 

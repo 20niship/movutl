@@ -143,17 +143,15 @@ std::string EntityInfo::str() const {
 
 bool Entity::composite(const Image& src, Image* target, const Vec2& origin_offset) const {
   MU_ASSERT(target);
-  if(src.empty() || target->empty()) return false;
-  // ponytail: Image::copyto(center,scale,angle)が等方スケール+整数座標のため、拡大率はX/Yの平均・位置は整数pxに丸める。X/Y別スケールは別途対応
-  const double s   = (scale_[0] + scale_[1]) / 200.0;
-  const double rad = rotation_ * M_PI / 180.0;
-  const double c = std::cos(rad), sn = std::sin(rad);
-  // 画像中心原点での基点(自身のanchor_ + 局所原点のずれ)を回転・拡大し、画像中心の描画位置を求める
-  const double ax = anchor_[0] + origin_offset[0], ay = anchor_[1] + origin_offset[1];
-  const double cx = target->width / 2.0 + pos_[0] - s * (ax * c - ay * sn);
-  const double cy = target->height / 2.0 + pos_[1] - s * (ax * sn + ay * c);
-  const Vec2d pmin((int64_t)std::floor(cx - src.width / 2.0), (int64_t)std::floor(cy - src.height / 2.0));
-  return src.copyto(target, pmin, (float)s, rotation_, alpha_, blend_);
+  Placement pl;
+  pl.x = pos_[0], pl.y = pos_[1];
+  pl.anchor_x = anchor_[0] + origin_offset[0], pl.anchor_y = anchor_[1] + origin_offset[1];
+  pl.scale_x = scale_[0] / 100.0, pl.scale_y = scale_[1] / 100.0;
+  pl.aspect = aspect_;
+  pl.rot_x = rot_x_, pl.rot_y = rot_y_, pl.rot_z = rotation_;
+  pl.alpha = alpha_;
+  pl.blend = blend_;
+  return src.place(target, pl);
 }
 
 bool Entity::render_filters(Composition* cmp, Image* img, int frame) {
