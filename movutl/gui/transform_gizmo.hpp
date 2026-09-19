@@ -15,8 +15,8 @@ struct GizmoPt {
 struct GizmoXform {
   GizmoPt pos;
   GizmoPt anchor;
-  GizmoPt scale = {100, 100};
-  double rot    = 0;
+  double scale = 100;
+  double rot   = 0;
 };
 
 // 表示される画像の枠。p[]は 左上,右上,右下,左下(回転前の並び)
@@ -47,8 +47,8 @@ GizmoHit gizmo_hit_test(const GizmoQuad& q, const GizmoPt& anchor_pt, const Gizm
 
 // ドラッグ操作(開始時のxform s0 と、開始時/現在のマウス位置(コンポ座標)から新しいxformを返す)
 GizmoXform gizmo_drag_move(const GizmoXform& s0, const GizmoPt& m0, const GizmoPt& m);
-// corner_local: 掴んだ角の画像中心局所座標(拡大前)。uniformで縦横比維持
-GizmoXform gizmo_drag_scale(const GizmoXform& s0, const GizmoPt& origin_offset, const GizmoPt& comp_size, const GizmoPt& corner_local, const GizmoPt& m, bool uniform);
+// corner_local: 掴んだ角の画像中心局所座標(拡大前)。拡大率は単体(縦横比は変えない)
+GizmoXform gizmo_drag_scale(const GizmoXform& s0, const GizmoPt& origin_offset, const GizmoPt& comp_size, const GizmoPt& corner_local, const GizmoPt& m);
 GizmoXform gizmo_drag_rotate(const GizmoXform& s0, const GizmoPt& comp_size, const GizmoPt& m0, const GizmoPt& m);
 // 基点を局所座標new_anchor(=anchor_値。origin_offsetを含まない)へ移す。keep_visualなら見た目が動かないようposを補正する(AEのPan Behind)
 GizmoXform gizmo_set_anchor(const GizmoXform& s0, const GizmoPt& new_anchor, bool keep_visual);

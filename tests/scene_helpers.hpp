@@ -32,7 +32,7 @@ inline Ref<Movie> make_fullscreen_movie(const char* name, const char* path, int 
   const float native_w = (float)mov->get_info().width;
   const float native_h = (float)mov->get_info().height;
   const float cover    = std::max((float)kSceneWidth / native_w, (float)kSceneHeight / native_h) * 100.0f;
-  mov->scale_          = Vec2(cover, cover);
+  mov->scale_          = cover;
   return mov;
 }
 

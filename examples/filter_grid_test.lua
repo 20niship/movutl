@@ -57,7 +57,7 @@ for idx, spec in ipairs(cell_specs) do
     local target_w = 180 * (spec.scale or 1.0)
     local target_h = 130 * (spec.scale or 1.0)
     local s = math.min(target_w / entt.width, target_h / entt.height)
-    entt.scale_ = movutl.Vec2(s * 100, s * 100)
+    entt.scale_ = s * 100
     local center_x, center_y = cx + CELL_W / 2, cy + (CELL_H - 20) / 2
     entt.pos_ = movutl.Vec3(center_x - W / 2, center_y - H / 2, 0) -- 中心原点
     if spec.rot then entt.rotation_ = spec.rot end
@@ -92,7 +92,7 @@ for idx, spec in ipairs(cell_specs) do
 
   local txt = movutl.add_new_text_track(string.format("label_%02d", i), 0, 10)
   txt.text = spec.label
-  txt.scale_ = movutl.Vec2(35, 35)
+  txt.scale_ = 35
   txt.pos_ = movutl.Vec3(cx + 8 + 40 - W / 2, cy + 10 + 10 - H / 2, 0)
   txt.color_ = movutl.Vec4b(255, 255, 255, 255)
 end

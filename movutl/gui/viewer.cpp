@@ -186,14 +186,14 @@ void ViewerWindow::Update() {
     } else {
       EntityGizmo g0;
       entity_gizmo_of(*drag_.entt, comp_size, g0); // src_size/origin_offsetの取得用(変換は開始時のs0を使う)
-      const bool shift = ImGui::GetIO().KeyShift, alt = ImGui::GetIO().KeyAlt;
-      GizmoXform x = drag_.s0;
+      const bool alt = ImGui::GetIO().KeyAlt;
+      GizmoXform x   = drag_.s0;
       switch(drag_.part) {
         case GizmoPart::Body: x = gizmo_drag_move(drag_.s0, drag_.m0, mouse_comp); break;
         case GizmoPart::Scale: {
           const double hw = g0.src_size.x / 2, hh = g0.src_size.y / 2;
           const GizmoPt corners[4] = {{-hw, -hh}, {hw, -hh}, {hw, hh}, {-hw, hh}};
-          x                        = gizmo_drag_scale(drag_.s0, g0.origin_offset, comp_size, corners[drag_.corner], mouse_comp, shift);
+          x                        = gizmo_drag_scale(drag_.s0, g0.origin_offset, comp_size, corners[drag_.corner], mouse_comp);
           break;
         }
         case GizmoPart::Rotate: x = gizmo_drag_rotate(drag_.s0, comp_size, drag_.m0, mouse_comp); break;

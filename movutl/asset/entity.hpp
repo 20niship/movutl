@@ -110,7 +110,7 @@ struct EntityInfo {
 // 描画変換(座標は中心原点)。グループ制御の親変換としても使う
 struct GroupXform {
   Vec3 pos       = Vec3(0, 0, 0);
-  Vec2 scale     = Vec2(100, 100);
+  float scale    = 100.0f; // %
   float rotation = 0.0f;
   float alpha    = 1.0f;
 
@@ -155,14 +155,14 @@ public:
 
   // 描画系Entity共通の変換。座標はコンポジション中心原点・Y下向き、単位はpx/%/度(時計回りが正)/0-1。
   // pos_はanchor_(画像中心からの基点オフセット)が置かれる位置で、回転・拡大は基点まわりに行う。
-  Vec3 pos_       = Vec3(0, 0, 0);  // MPROPERTY(name="位置", viewer_anchor=true, position=true, group="transform")
-  Vec3 anchor_    = Vec3(0, 0, 0);  // MPROPERTY(name="基点", desc="画像中心からの基点オフセット。回転・拡大の中心", group="transform")
-  Vec2 scale_     = Vec2(100, 100); // MPROPERTY(name="拡大率(%)", scale=true, group="transform")
-  float rotation_ = 0.0f;           // MPROPERTY(name="回転(度)", angle=true, group="transform")
-  float rot_x_    = 0.0f;           // MPROPERTY(name="X軸回転(度)", angle=true, group="transform")
-  float rot_y_    = 0.0f;           // MPROPERTY(name="Y軸回転(度)", angle=true, group="transform")
-  float aspect_   = 0.0f;           // MPROPERTY(name="縦横比", desc="-1〜1。正で横が縮み(縦長)、負で縦が縮む(横長)", min=-1.0, max=1.0, step=0.01, group="transform")
-  float alpha_    = 1.0f;           // MPROPERTY(name="不透明度", min=0.0, max=1.0, step=0.01, group="transform")
+  Vec3 pos_       = Vec3(0, 0, 0); // MPROPERTY(name="位置(px)", viewer_anchor=true, position=true, group="transform")
+  Vec3 anchor_    = Vec3(0, 0, 0); // MPROPERTY(name="基点(px)", desc="画像中心からの基点オフセット。回転・拡大の中心", group="transform")
+  float scale_    = 100.0f;        // MPROPERTY(name="拡大率(%)", min=0.0, step=1.0, group="transform")
+  float rotation_ = 0.0f;          // MPROPERTY(name="回転(度)", angle=true, group="transform")
+  float rot_x_    = 0.0f;          // MPROPERTY(name="X軸回転(度)", angle=true, group="transform")
+  float rot_y_    = 0.0f;          // MPROPERTY(name="Y軸回転(度)", angle=true, group="transform")
+  float aspect_   = 0.0f;          // MPROPERTY(name="縦横比", desc="-1〜1。正で横が縮み(縦長)、負で縦が縮む(横長)", min=-1.0, max=1.0, step=0.01, group="transform")
+  float alpha_    = 1.0f;          // MPROPERTY(name="不透明度(%)", min=0.0, max=1.0, step=0.01, group="transform")
 
   // このEntity固有の状態(img_/デコーダハンドル等)を読み書きする際のロック。Composition::mtxとは別物
   mutable std::mutex mtx;

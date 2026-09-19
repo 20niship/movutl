@@ -31,7 +31,7 @@ TEST_CASE("hit_test_entity: 回転・拡大後の実描画枠で判定し、後�
   auto front    = Image::Create("front", 40, 40);
   back->fstart_ = front->fstart_ = 0;
   back->fend_ = front->fend_ = 100;
-  front->scale_              = Vec2(50, 50); // 20x20に縮小
+  front->scale_              = 50.f; // 20x20に縮小
   cmp->insert_entity(back, 0);
   cmp->insert_entity(front, 1);
   cmp->frame = 10;
@@ -48,11 +48,11 @@ TEST_CASE("entity_apply_xform: 変換をEntityへ書き戻す") {
   GizmoXform x;
   x.pos    = {3, 4};
   x.anchor = {5, 6};
-  x.scale  = {70, 80};
+  x.scale  = 70;
   x.rot    = 15;
   entity_apply_xform(*shp, x);
   CHECK(shp->pos_[0] == doctest::Approx(3));
   CHECK(shp->anchor_[1] == doctest::Approx(6));
-  CHECK(shp->scale_[0] == doctest::Approx(70));
+  CHECK(shp->scale_ == doctest::Approx(70));
   CHECK(shp->rotation_ == doctest::Approx(15));
 }

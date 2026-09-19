@@ -67,7 +67,7 @@ TEST_CASE("FramebufferEntt::render scale_を縮小すると貼り戻し範囲外
   target->fill_rgba(Vec4b(255, 0, 0, 255)); // 全面赤
   auto fb             = FramebufferEntt::Create("fb");
   fb->clear_original_ = true;
-  fb->scale_          = Vec2(50, 50); // 半分に縮小して中央に貼り戻す
+  fb->scale_          = 50.f; // 半分に縮小して中央に貼り戻す
   CHECK(fb->render(comp.get(), target.get(), 0));
 
   CHECK(target->rgba(29, 29) == Vec4b(255, 0, 0, 255)); // 縮小後の範囲内(中央)は元の赤が残る
@@ -122,7 +122,7 @@ Ref<Composition> build_scene(bool clear_original, Ref<FramebufferEntt>* fb_out) 
   auto movie = Movie::Create("bg_movie", "../assets/movies/big_buck_bunny_360_10s.mp4");
   REQUIRE(movie->get_input_plugin() != nullptr);
   movie->pos_    = Vec3(-W / 4.0f, 0, 0); // 左半分寄りに配置
-  movie->scale_  = Vec2(20, 20);
+  movie->scale_  = 20.f;
   movie->fstart_ = 0;
   movie->fend_   = 10;
 

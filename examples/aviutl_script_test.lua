@@ -3,7 +3,7 @@ local W, H = 64, 64
 movutl.Project.New(W, H, 30)
 
 local img = movutl.add_new_image_track("photo", "../assets/textures/warning.jpeg", 0, 10)
-img.scale_ = movutl.Vec2(W * 100 / img.width, H * 100 / img.height)
+img.scale_ = W * 100 / img.width
 img.pos_ = movutl.Vec3(0, 0, 0)
 
 local applied = movutl.add_filter_to_image(img, "AviUtlグレースケール")

@@ -49,7 +49,7 @@ TEST_CASE("gizmo_comp_to_local は gizmo_local_to_comp の逆変換") {
   GizmoXform x;
   x.pos    = {12, -7};
   x.anchor = {4, 9};
-  x.scale  = {150, 60};
+  x.scale  = 150;
   x.rot    = 37;
   GizmoPt off{3, -2}, l{11, -6};
   auto c = gizmo_local_to_comp(x, off, kComp, l);
@@ -104,21 +104,14 @@ TEST_CASE("gizmo_drag_scale: 角をドラッグすると基点からの距離比
   GizmoXform x;
   GizmoPt corner{20, 10}; // 右下
   // 基点(100,50)から角(120,60)を、(140,70)へ動かす => 2倍
-  auto s = gizmo_drag_scale(x, kNoOff, kComp, corner, {140, 70}, false);
-  CHECK(s.scale.x == doctest::Approx(200));
-  CHECK(s.scale.y == doctest::Approx(200));
-  auto s2 = gizmo_drag_scale(x, kNoOff, kComp, corner, {140, 60}, false); // 縦は変えず横だけ2倍
-  CHECK(s2.scale.x == doctest::Approx(200));
-  CHECK(s2.scale.y == doctest::Approx(100));
-  auto s3 = gizmo_drag_scale(x, kNoOff, kComp, corner, {140, 60}, true); // 縦横比維持
-  CHECK(s3.scale.x == doctest::Approx(200));
-  CHECK(s3.scale.y == doctest::Approx(200));
+  auto s = gizmo_drag_scale(x, kNoOff, kComp, corner, {140, 70});
+  CHECK(s.scale == doctest::Approx(200));
 }
 
 TEST_CASE("gizmo_set_anchor: keep_visualなら見た目(画像の位置)が変わらない") {
   GizmoXform x;
   x.pos       = {5, 5};
-  x.scale     = {200, 50};
+  x.scale     = 200;
   x.rot       = 30;
   auto before = gizmo_quad(x, {40, 20}, kNoOff, kComp);
   auto y      = gizmo_set_anchor(x, {12, -4}, true);

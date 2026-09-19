@@ -26,14 +26,14 @@ int opaque_in_row(const Image& img, int y) {
 }
 } // namespace
 
-TEST_CASE("Entity::composite: 拡大率のX/Yを別々に反映する") {
+TEST_CASE("Entity::composite: 拡大率が縦横に等しく効く") {
   auto src    = make_src(4, 4);
   auto ent    = cutil::make_ref<Image>();
-  ent->scale_ = Vec2(200, 100); // 幅2倍・高さ等倍
+  ent->scale_ = 200.f; // 縦横とも2倍
   auto t      = make_target(20, 20);
   REQUIRE(ent->composite(*src, t.get()));
   CHECK(opaque_in_row(*t, 10) == 8);
-  CHECK(opaque_in_row(*t, 10 - 3) == 0); // 高さは4pxのまま
+  CHECK(opaque_in_row(*t, 10 - 3) == 8); // 高さも8px
 }
 
 TEST_CASE("Entity::composite: 縦横比aspectが正だと横が縮み、負だと縦が縮む") {

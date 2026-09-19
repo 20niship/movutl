@@ -150,11 +150,11 @@ thread_local const GroupXform* tls_parent_xform = nullptr;
 GroupXform GroupXform::compose(const GroupXform& child) const {
   const double rad = rotation * M_PI / 180.0;
   const double c = std::cos(rad), sn = std::sin(rad);
-  const double sx = scale[0] / 100.0, sy = scale[1] / 100.0;
-  const double px = child.pos[0] * sx, py = child.pos[1] * sy;
+  const double s  = scale / 100.0;
+  const double px = child.pos[0] * s, py = child.pos[1] * s;
   GroupXform out;
   out.pos      = Vec3((float)(pos[0] + px * c - py * sn), (float)(pos[1] + px * sn + py * c), pos[2] + child.pos[2]);
-  out.scale    = Vec2((float)(child.scale[0] * sx), (float)(child.scale[1] * sy));
+  out.scale    = (float)(child.scale * s);
   out.rotation = rotation + child.rotation;
   out.alpha    = alpha * child.alpha;
   return out;
@@ -174,8 +174,8 @@ bool Entity::composite(const Image& src, Image* target, const Vec2& origin_offse
   const GroupXform w = world_xform(); // 親グループ変換込みの実効変換
   pl.x = w.pos[0], pl.y = w.pos[1];
   pl.anchor_x = anchor_[0] + origin_offset[0], pl.anchor_y = anchor_[1] + origin_offset[1];
-  pl.scale_x = w.scale[0] / 100.0, pl.scale_y = w.scale[1] / 100.0;
-  pl.aspect = aspect_;
+  pl.scale_x = pl.scale_y = w.scale / 100.0;
+  pl.aspect               = aspect_;
   pl.rot_x = rot_x_, pl.rot_y = rot_y_, pl.rot_z = w.rotation;
   pl.alpha = w.alpha;
   pl.blend = blend_;

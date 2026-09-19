@@ -3,14 +3,14 @@ local W, H = 300, 150
 movutl.Project.New(W, H, 30)
 
 local img1 = movutl.add_new_image_track("tile1", "../assets/textures/tile.jpg", 0, 10)
-img1.scale_ = movutl.Vec2(10000 / img1.width, 10000 / img1.height)
+img1.scale_ = 10000 / img1.width
 img1.pos_ = movutl.Vec3(60 - W / 2, 75 - H / 2, 0)
 print("add perspective filter:", movutl.add_filter_to_image(img1, "あおり変形"))
 movutl.set_image_filter_param(img1, "あおり変形", "上辺の幅", 30)
 movutl.set_image_filter_param(img1, "あおり変形", "下辺の幅", 0)
 
 local img2 = movutl.add_new_image_track("tile2", "../assets/textures/tile.jpg", 0, 10)
-img2.scale_ = movutl.Vec2(10000 / img2.width, 10000 / img2.height)
+img2.scale_ = 10000 / img2.width
 img2.pos_ = movutl.Vec3(200 - W / 2, 75 - H / 2, 0)
 print("add shake filter:", movutl.add_filter_to_image(img2, "シェイク"))
 

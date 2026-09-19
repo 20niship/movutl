@@ -164,11 +164,13 @@ float parse_alpha(const Section& s) { return std::clamp((100.f - getf(s, "透明
 // exoの標準描画(X/Y/Z/拡大率/回転/透明度)をEntity共通の変換へ反映する。exoの座標系(中心原点・Y下向き・%・度)はEntityの規約と同じ
 // 拡張描画の中心X/Y/Zは画像中心から見た基点オフセット(Entity::anchor_)に対応する
 void apply_standard_draw(Entity& e, const Section* draw, const Section* ext) {
-  if(ext) e.anchor_ = Vec3(getf(*ext, "中心X"), getf(*ext, "中心Y"), getf(*ext, "中心Z"));
+  if(ext) {
+    e.anchor_ = Vec3(getf(*ext, "中心X"), getf(*ext, "中心Y"), getf(*ext, "中心Z"));
+    e.aspect_ = std::clamp(getf(*ext, "縦横比") / 100.f, -1.f, 1.f); // ponytail: 正負の向きはAviUtl実機で未検証
+  }
   if(!draw) return;
   e.pos_      = Vec3(getf(*draw, "X"), getf(*draw, "Y"), getf(*draw, "Z"));
-  float scale = getf(*draw, "拡大率", 100.f);
-  e.scale_    = Vec2(scale, scale);
+  e.scale_    = getf(*draw, "拡大率", 100.f);
   e.rotation_ = getf(*draw, "回転");
   e.alpha_    = parse_alpha(*draw);
 }
@@ -319,7 +321,7 @@ int import_exo_file(const char* path) {
     } else if(kind == "グループ制御") {
       auto g            = GroupEntt::Create("グループ制御");
       g->pos_           = Vec3(getf(src, "X"), getf(src, "Y"), getf(src, "Z"));
-      g->scale_         = Vec2(getf(src, "拡大率", 100.f), getf(src, "拡大率", 100.f));
+      g->scale_         = getf(src, "拡大率", 100.f);
       g->rotation_      = getf(src, "Z軸回転");
       g->alpha_         = parse_alpha(src);
       g->target_layers_ = geti(src, "対象レイヤー数");

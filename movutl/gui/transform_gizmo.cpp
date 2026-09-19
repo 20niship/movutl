@@ -11,10 +11,10 @@ GizmoPt rot(const GizmoPt& v, double deg) {
   return {v.x * c - v.y * s, v.x * s + v.y * c};
 }
 // 局所(画像中心原点・拡大前)の基点との差分を拡大→回転
-GizmoPt scale_rot(const GizmoXform& x, const GizmoPt& d) { return rot({d.x * x.scale.x / 100.0, d.y * x.scale.y / 100.0}, x.rot); }
+GizmoPt scale_rot(const GizmoXform& x, const GizmoPt& d) { return rot({d.x * x.scale / 100.0, d.y * x.scale / 100.0}, x.rot); }
 GizmoPt unscale_rot(const GizmoXform& x, const GizmoPt& d) {
   const GizmoPt v = rot(d, -x.rot);
-  return {x.scale.x != 0 ? v.x * 100.0 / x.scale.x : 0, x.scale.y != 0 ? v.y * 100.0 / x.scale.y : 0};
+  return x.scale != 0 ? GizmoPt{v.x * 100.0 / x.scale, v.y * 100.0 / x.scale} : GizmoPt{0, 0};
 }
 double dist2(const GizmoPt& a, const GizmoPt& b) { return (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y); }
 } // namespace
@@ -75,21 +75,14 @@ GizmoXform gizmo_drag_move(const GizmoXform& s0, const GizmoPt& m0, const GizmoP
   return r;
 }
 
-GizmoXform gizmo_drag_scale(const GizmoXform& s0, const GizmoPt& origin_offset, const GizmoPt& comp_size, const GizmoPt& corner_local, const GizmoPt& m, bool uniform) {
+GizmoXform gizmo_drag_scale(const GizmoXform& s0, const GizmoPt& origin_offset, const GizmoPt& comp_size, const GizmoPt& corner_local, const GizmoPt& m) {
   GizmoXform r    = s0;
   const GizmoPt a = s0.anchor + origin_offset;
   const GizmoPt c = corner_local - a;                                    // 基点から角への拡大前ベクトル
   const GizmoPt v = rot(m - gizmo_anchor_point(s0, comp_size), -s0.rot); // 基点からマウスへの、回転を戻したベクトル
-  double sx       = std::abs(c.x) > 1e-6 ? v.x / c.x * 100.0 : s0.scale.x;
-  double sy       = std::abs(c.y) > 1e-6 ? v.y / c.y * 100.0 : s0.scale.y;
-  if(uniform) {
-    // 開始時の縦横比を保つ: 開始スケールに対する倍率の大きい方を採用
-    const double kx = s0.scale.x != 0 ? sx / s0.scale.x : 1, ky = s0.scale.y != 0 ? sy / s0.scale.y : 1;
-    const double k = std::abs(kx) > std::abs(ky) ? kx : ky;
-    sx             = s0.scale.x * k;
-    sy             = s0.scale.y * k;
-  }
-  r.scale = {sx, sy};
+  // 単体拡大率: 角までの拡大前距離に対するマウス距離の比(符号はマウスが角の反対側なら負)
+  const double c2 = c.x * c.x + c.y * c.y;
+  if(c2 > 1e-12) r.scale = (v.x * c.x + v.y * c.y) / c2 * 100.0;
   return r;
 }
 

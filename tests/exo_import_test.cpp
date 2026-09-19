@@ -68,7 +68,7 @@ TEST_CASE("exo: import_exo_file") {
   CHECK(text->text == "テスト");
   CHECK(text->fstart_ == 4);
   CHECK(text->fend_ == 19);
-  CHECK(text->scale_[0] == doctest::Approx(200.f));
+  CHECK(text->scale_ == doctest::Approx(200.f));
   CHECK(text->alpha_ == doctest::Approx(0.5f).epsilon(0.01));
   CHECK(text->guid_ != 0);
   CHECK(text->anchor_[0] == doctest::Approx(5.f)); // 拡張描画の中心X/Y
@@ -99,7 +99,7 @@ TEST_CASE("exo: グループ制御をGroupEnttとして取り込む") {
   CHECK(g->fend_ == 49);
   CHECK(g->pos_[0] == doctest::Approx(12.f));
   CHECK(g->pos_[1] == doctest::Approx(-4.f));
-  CHECK(g->scale_[0] == doctest::Approx(50.f));
+  CHECK(g->scale_ == doctest::Approx(50.f));
   CHECK(g->alpha_ == doctest::Approx(0.75f).epsilon(0.01));
   CHECK(g->rotation_ == doctest::Approx(30.f));
   CHECK(g->target_layers_ == 2);
@@ -156,7 +156,7 @@ TEST_CASE("exo: comprehensive.exo (動画/画像/音声/テキスト/図形を�
     CHECK(m1->fstart_ == 0);
     CHECK(m1->fend_ == 59);
     CHECK(m1->pos_[0] == doctest::Approx(10.f));
-    CHECK(m1->scale_[0] == doctest::Approx(120.f));
+    CHECK(m1->scale_ == doctest::Approx(120.f));
     CHECK(m1->alpha_ == doctest::Approx(0.9f)); // 透明度10%
     CHECK(m2->speed == doctest::Approx(50.f));
     CHECK(m2->loop_);
@@ -181,7 +181,7 @@ TEST_CASE("exo: comprehensive.exo (動画/画像/音声/テキスト/図形を�
     }
     auto* i2 = dynamic_cast<Image*>(l3[1].get());
     CHECK(i2->alpha_ == doctest::Approx(0.75f).epsilon(0.01));
-    CHECK(i2->scale_[0] == doctest::Approx(50.f));
+    CHECK(i2->scale_ == doctest::Approx(50.f));
     auto l4 = layer_entts(comp, 3);
     REQUIRE(l4.size() == 1);
     CHECK(dynamic_cast<Image*>(l4[0].get())->width > 0); // media/sub/image3.png
@@ -219,7 +219,7 @@ TEST_CASE("exo: comprehensive.exo (動画/画像/音声/テキスト/図形を�
     auto* t3 = dynamic_cast<TextEntt*>(layer_entts(comp, 7).at(0).get());
     REQUIRE(t3 != nullptr);
     CHECK(t3->text == "ＭＵＬＴＩ\r\nLINE");
-    CHECK(t3->scale_[0] == doctest::Approx(150.f));
+    CHECK(t3->scale_ == doctest::Approx(150.f));
     CHECK(dynamic_cast<TextEntt*>(layer_entts(comp, 8).at(0).get())->text == "背景の字幕テキスト");
   }
 

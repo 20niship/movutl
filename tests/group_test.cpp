@@ -66,7 +66,7 @@ TEST_CASE("グループ制御: 回転で子がグループ原点まわりに公�
 TEST_CASE("グループ制御: 拡大率が子の位置にも掛かる") {
   auto comp = make_comp();
   auto g    = add_group(comp.get(), 0, Vec3(0, 0, 0));
-  g->scale_ = Vec2(200, 200);
+  g->scale_ = 200.f;
   add_rect(comp.get(), 1, Vec3(10, 0, 0));
   auto out = render(comp.get());
   CHECK(red_at(out, 78, 50));       // 位置(10,0)が20pxへ拡大され、矩形も20px幅(60..80)になる
