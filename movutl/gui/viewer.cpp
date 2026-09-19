@@ -22,6 +22,30 @@ namespace {
 ImVec2 comp_to_screen(const ImVec2& p, const ImVec2& img_min, const ImVec2& disp_size, float cmp_w, float cmp_h) { return ImVec2(img_min.x + p.x / cmp_w * disp_size.x, img_min.y + p.y / cmp_h * disp_size.y); }
 ImVec2 screen_to_comp(const ImVec2& p, const ImVec2& img_min, const ImVec2& disp_size, float cmp_w, float cmp_h) { return ImVec2((p.x - img_min.x) / disp_size.x * cmp_w, (p.y - img_min.y) / disp_size.y * cmp_h); }
 
+constexpr float kHandleHalf   = 4.0f;  // 角ハンドルの半サイズ(画面px)
+constexpr float kRotHandleR   = 5.0f;  // 回転ハンドルの半径(画面px)
+constexpr float kRotHandleGap = 24.0f; // 回転ハンドルを上辺から離す距離(画面px)
+constexpr float kAnchorR      = 6.0f;  // 基点マーカーの半径(画面px)
+
+// 選択Entityの変換ギズモ(枠・角ハンドル・回転ハンドル・基点マーカー)を描く
+void draw_entity_gizmo(ImDrawList* dl, const EntityGizmo& g, const ImVec2& img_min, const ImVec2& disp_size, float cmp_w, float cmp_h) {
+  auto to_screen = [&](const GizmoPt& p) { return comp_to_screen(ImVec2((float)p.x, (float)p.y), img_min, disp_size, cmp_w, cmp_h); };
+  const ImU32 col = IM_COL32(80, 170, 255, 255);
+  ImVec2 pts[4];
+  for(int i = 0; i < 4; i++) pts[i] = to_screen(g.quad.p[i]);
+  dl->AddPolyline(pts, 4, col, ImDrawFlags_Closed, 1.5f);
+  for(int i = 0; i < 4; i++) dl->AddRectFilled(ImVec2(pts[i].x - kHandleHalf, pts[i].y - kHandleHalf), ImVec2(pts[i].x + kHandleHalf, pts[i].y + kHandleHalf), IM_COL32(255, 255, 255, 255));
+  const float scale_px = disp_size.x / cmp_w;
+  const ImVec2 rot_h   = to_screen(gizmo_rotate_handle(g.quad, kRotHandleGap / scale_px));
+  const ImVec2 top_mid((pts[0].x + pts[1].x) / 2, (pts[0].y + pts[1].y) / 2);
+  dl->AddLine(top_mid, rot_h, col);
+  dl->AddCircleFilled(rot_h, kRotHandleR, col);
+  const ImVec2 ap = to_screen(g.anchor_pt);
+  dl->AddCircle(ap, kAnchorR, IM_COL32(255, 200, 0, 255), 0, 1.5f);
+  dl->AddLine(ImVec2(ap.x - kAnchorR - 3, ap.y), ImVec2(ap.x + kAnchorR + 3, ap.y), IM_COL32(255, 200, 0, 255));
+  dl->AddLine(ImVec2(ap.x, ap.y - kAnchorR - 3), ImVec2(ap.x, ap.y + kAnchorR + 3), IM_COL32(255, 200, 0, 255));
+}
+
 } // namespace
 
 void ViewerWindow::Update() {
@@ -146,6 +170,15 @@ void ViewerWindow::Update() {
     if(hit) {
       clear_selected_entts();
       select_entt(hit);
+    }
+  }
+
+  {
+    const GizmoPt comp_size{cmp_w, cmp_h};
+    for(auto& e : get_selected_entts()) {
+      EntityGizmo g;
+      if(!e->visible(comp->frame) || !entity_gizmo_of(*e, comp_size, g)) continue;
+      draw_entity_gizmo(dl, g, img_min, disp_size, cmp_w, cmp_h);
     }
   }
 
