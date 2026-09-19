@@ -99,6 +99,11 @@ TEST_CASE("exo: comprehensive.exo (動画/画像/音声/テキスト/図形を�
   // 20オブジェクト中、カメラ制御(未対応)1個を除く19個
   CHECK(import_exo_file((dir / "comprehensive.exo").string().c_str()) == 19);
 
+  SUBCASE("Compositionの範囲が全Entityのmin/maxになる") {
+    CHECK(comp->fstart == 0); // 最小のstart=1(0始まり換算で0)
+    CHECK(comp->fend == 149); // 最大のend=150
+  }
+
   SUBCASE("動画: 相対/Windows絶対/../含む相対パスが解決される") {
     auto l1 = layer_entts(comp, 0);
     REQUIRE(l1.size() == 2);
@@ -204,5 +209,31 @@ TEST_CASE("exo: comprehensive.exo (動画/画像/音声/テキスト/図形を�
     CHECK(guids.size() == 19);
   }
 
+  fs::remove_all(dir);
+}
+
+TEST_CASE("exo: 既存Entityと重ならない位置までレイヤーを下げて配置する") {
+  auto dir = setup_exo_dir();
+  auto exo = (dir / "comprehensive.exo").string();
+  Project::New();
+  auto* comp = Composition::GetActiveComp();
+  REQUIRE(comp != nullptr);
+  // 既存トラック: layer0にフレーム0-500の長いテキスト
+  auto t     = TextEntt::Create("existing");
+  t->fstart_ = 0;
+  t->fend_   = 500;
+  comp->insert_entity(t, 0);
+
+  REQUIRE(import_exo_file(exo.c_str()) == 19);
+  CHECK(comp->layers[0].entts.size() == 1); // 既存layer0にはexoのものが入らない
+  CHECK(comp->layers[0].entts[0].get() == t.get());
+  CHECK(comp->layers[1].entts.size() == 2); // exoのlayer1(動画2つ)が1つ下がる
+
+  // もう一度取り込んでも、どのレイヤーでもフレーム範囲が重ならない
+  REQUIRE(import_exo_file(exo.c_str()) == 19);
+  for(auto& l : comp->layers)
+    for(size_t i = 0; i < l.entts.size(); i++)
+      for(size_t j = i + 1; j < l.entts.size(); j++) CHECK((l.entts[i]->fend_ < l.entts[j]->fstart_ || l.entts[j]->fend_ < l.entts[i]->fstart_));
+  CHECK(comp->fend == 500);
   fs::remove_all(dir);
 }

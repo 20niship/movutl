@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cerrno>
+#include <climits>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -15,6 +16,7 @@
 #include <movutl/core/command.hpp>
 #include <movutl/core/filesystem.hpp>
 #include <movutl/core/logger.hpp>
+#include <movutl/gui/timeline.hpp>
 #include <sstream>
 #include <vector>
 
@@ -223,7 +225,7 @@ int import_exo_file(const char* path) {
     if(!k.empty() && std::all_of(k.begin(), k.end(), ::isdigit)) ids.push_back(atoi(k.c_str()));
   std::sort(ids.begin(), ids.end());
 
-  int count = 0;
+  std::vector<std::pair<Ref<Entity>, int>> pending; // (Entity, exo上のレイヤーindex)
   for(int n : ids) {
     auto it            = ini.find(std::to_string(n));
     const Section& obj = it->second;
@@ -319,14 +321,52 @@ int import_exo_file(const char* path) {
       continue;
     }
     set_range(ent, start, end);
+    pending.push_back({ent, layer});
+  }
+
+  // 既存のどのEntityともフレーム範囲が重ならない位置まで、exoのレイヤー全体を下(layer index増加方向)へずらす
+  auto free_at = [&](int off) {
+    std::lock_guard<std::mutex> lock(comp->mtx);
+    for(auto& [e, l] : pending) {
+      int li = l + off;
+      if(li >= (int)comp->layers.size()) continue;
+      for(auto& o : comp->layers[li].entts)
+        if(o && o->fstart_ <= e->fend_ && e->fstart_ <= o->fend_) return false;
+    }
+    return true;
+  };
+  int layer_offset = 0;
+  while(!free_at(layer_offset)) ++layer_offset;
+  int count = 0;
+  for(auto& [e, l] : pending) {
+    int li = l + layer_offset;
     {
       std::lock_guard<std::mutex> lock(comp->mtx);
-      if(layer >= (int)comp->layers.size()) comp->layers.resize(layer + 1);
+      if(li >= (int)comp->layers.size()) comp->layers.resize(li + 1);
     }
-    comp->insert_entity(ent, layer);
+    comp->insert_entity(e, li); // insert_entityはlayers[li]が存在する前提
     ++count;
   }
-  LOG_F(INFO, "import_exo_file: %s -> %d objects", path, count);
+
+  // Compositionの表示範囲を全Entityのfstart_の最小値/fend_の最大値から再計算する(exoの[exedit] lengthは使わない)
+  if(count > 0) {
+    int fmin = INT_MAX, fmax = INT_MIN;
+    {
+      std::lock_guard<std::mutex> lock(comp->mtx);
+      for(auto& l : comp->layers)
+        for(auto& e : l.entts) {
+          if(!e) continue;
+          fmin = std::min(fmin, e->fstart_);
+          fmax = std::max(fmax, e->fend_);
+        }
+    }
+    if(fmin <= fmax) {
+      comp->fstart = fmin;
+      comp->fend   = fmax;
+    }
+    comp->invalidate_cache_all();
+  }
+  LOG_F(INFO, "import_exo_file: %s -> %d objects (range %d-%d)", path, count, comp->fstart, comp->fend);
   return count;
 }
 
@@ -336,7 +376,9 @@ struct ExoImportCommand final : mCommand {
     std::string path = arg;
     if(path.empty()) path = select_file_dialog("EXOを読み込む", {"exo"});
     if(path.empty()) return CommandStatus::Failed;
-    return import_exo_file(path.c_str()) >= 0 ? CommandStatus::Finished : CommandStatus::Failed;
+    if(import_exo_file(path.c_str()) < 0) return CommandStatus::Failed;
+    RequestTimelineFit(); // タイムラインの表示範囲を取り込んだEntity全体に合わせる
+    return CommandStatus::Finished;
   }
 };
 } // namespace
