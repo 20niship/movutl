@@ -31,12 +31,23 @@ bool IsTimelineKeyHovered();
 bool IsTimeline_LineHovered();
 bool IsTimelineClickedLeftButton(); // タイムラインのプロパティ名の左側にあるボタンをクリックしたか
 void SetTimelineViewRange(FrameT start, FrameT end);
+// タイムライン右端に別ウィジェット(音量メーター等)用の幅を空ける。次回のBeginTimelineから有効
+void SetTimelineRightStripWidth(int w);
 // ヘッダーのフィットアイコンが押されたか(押されていたらtrueを返しフラグをリセットする)
 bool ConsumeTimelineFitRequest();
 // 次フレームでタイムラインの表示範囲を全Entityへフィットさせる(ヘッダーのフィットアイコンと同じ)
 void RequestTimelineFit();
 // ヘッダーの検索欄(レイヤー名/エンティティ名フィルタ)の現在の文字列
 const char* GetTimelineLayerSearch();
+
+// 「ここに追加」メニュー項目(BeginMenu/BeginPopup内で呼ぶ)。選択されたら次のEndTimelineでframe/layerへ追加する(layer<0なら空きレイヤー)
+bool TimelineAddEntityMenu(int frame, int layer);
+// スナップの有効フラグ(操作バーのトグル用)
+bool* TimelineSnapFlag();
+// 現在の表示範囲(フレーム)。有効ならtrue
+bool GetTimelineViewRange(FrameT* start, FrameT* end);
+// 表示中心を保ったまま表示幅(フレーム数)を設定する
+void SetTimelineVisibleFrames(float frames);
 
 void ResetTimelineState();
 
