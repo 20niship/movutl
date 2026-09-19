@@ -4,6 +4,7 @@
 #include <imgui_internal.h>
 #include <movutl/app/app.hpp>
 #include <movutl/asset/project.hpp>
+#include <movutl/gui/audio_meter.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/gui/timeline.hpp>
 #include <movutl/gui/timeline_window.hpp>
@@ -41,6 +42,7 @@ void TimelineWindow::Update() {
     ImGui::EndTabBar();
   }
   MU_ASSERT(cp);
+  TimelineRightStrip right_strip(cp); // 右端のL/Rメーター+マスター音量(BeginTimelineより前に生成)
 
   bool playing        = false;
   FrameT frame_before = cp->frame.load();
