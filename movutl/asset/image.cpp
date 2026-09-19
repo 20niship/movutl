@@ -128,49 +128,50 @@ bool Image::copyto(Image* dst, const Vec2d& pmin, float alpha_mul, BlendType ble
 bool Image::copyto(Image* dst, const Vec2d& center, float scale, float angle, float alpha_mul, BlendType blend) const {
   MOVUTL_ZONE_SCOPED_N("Image::copyto(center,scale,angle)");
   if(angle == 0 && scale == 1.0) return this->copyto(dst, center, alpha_mul, blend);
-  if(this->width <= 0 || this->height <= 0 || dst->width <= 0 || dst->height <= 0) return false;
-  // centerはpmin相当。回転/拡大の軸はdst全体の中心ではなく画像自身の中心にする(旧実装は中心からズレた位置で意図せず移動して見えるバグがあった)
-  float rad     = angle * M_PI / 180.0f;
-  float cos_a   = std::cos(rad);
-  float sin_a   = std::sin(rad);
-  float true_cx = center[0] + this->width / 2.0f;
-  float true_cy = center[1] + this->height / 2.0f;
-  float src_cx  = this->width / 2.0f;
-  float src_cy  = this->height / 2.0f;
+  // centerはpmin相当(画像左上)。回転/拡大の軸はdst全体の中心ではなく画像自身の中心
+  return transform_to(dst, center[0] + this->width / 2.0, center[1] + this->height / 2.0, scale, scale, angle, alpha_mul, blend);
+}
 
-  // srcの4隅をdst空間へ順変換し、影響範囲のバウンディングボックスだけ走査する(旧実装は毎回dst全域を走査していた)
-  float half_w      = this->width / 2.0f * scale;
-  float half_h      = this->height / 2.0f * scale;
-  float corner_x[4] = {-half_w, half_w, -half_w, half_w};
-  float corner_y[4] = {-half_h, -half_h, half_h, half_h};
-  float min_x = std::numeric_limits<float>::max(), max_x = std::numeric_limits<float>::lowest();
-  float min_y = std::numeric_limits<float>::max(), max_y = std::numeric_limits<float>::lowest();
+bool Image::transform_to(Image* dst, double cx, double cy, double sx, double sy, double angle_deg, float alpha_mul, BlendType blend) const {
+  MOVUTL_ZONE_SCOPED_N("Image::transform_to");
+  MU_ASSERT(dst);
+  if(this->width <= 0 || this->height <= 0 || dst->width <= 0 || dst->height <= 0) return false;
+  if(sx == 0 || sy == 0) return true;
+  const double rad   = angle_deg * M_PI / 180.0;
+  const double cos_a = std::cos(rad);
+  const double sin_a = std::sin(rad);
+  const double src_cx = this->width / 2.0;
+  const double src_cy = this->height / 2.0;
+
+  // srcの4隅をdst空間へ順変換し、影響範囲のバウンディングボックスだけ走査する
+  const double half_w      = src_cx * std::abs(sx);
+  const double half_h      = src_cy * std::abs(sy);
+  const double corner_x[4] = {-half_w, half_w, -half_w, half_w};
+  const double corner_y[4] = {-half_h, -half_h, half_h, half_h};
+  double min_x = std::numeric_limits<double>::max(), max_x = std::numeric_limits<double>::lowest();
+  double min_y = std::numeric_limits<double>::max(), max_y = std::numeric_limits<double>::lowest();
   for(int i = 0; i < 4; i++) {
-    float bx = true_cx + corner_x[i] * cos_a - corner_y[i] * sin_a;
-    float by = true_cy + corner_x[i] * sin_a + corner_y[i] * cos_a;
-    min_x    = std::min(min_x, bx);
-    max_x    = std::max(max_x, bx);
-    min_y    = std::min(min_y, by);
-    max_y    = std::max(max_y, by);
+    const double bx = cx + corner_x[i] * cos_a - corner_y[i] * sin_a;
+    const double by = cy + corner_x[i] * sin_a + corner_y[i] * cos_a;
+    min_x           = std::min(min_x, bx);
+    max_x           = std::max(max_x, bx);
+    min_y           = std::min(min_y, by);
+    max_y           = std::max(max_y, by);
   }
-  int bbox_x0 = std::max(0, (int)std::floor(min_x));
-  int bbox_x1 = std::min((int)dst->width, (int)std::ceil(max_x));
-  int bbox_y0 = std::max(0, (int)std::floor(min_y));
-  int bbox_y1 = std::min((int)dst->height, (int)std::ceil(max_y));
+  const int bbox_x0 = std::max(0, (int)std::floor(min_x));
+  const int bbox_x1 = std::min((int)dst->width, (int)std::ceil(max_x));
+  const int bbox_y0 = std::max(0, (int)std::floor(min_y));
+  const int bbox_y1 = std::min((int)dst->height, (int)std::ceil(max_y));
 
   for(int y = bbox_y0; y < bbox_y1; ++y) {
     for(int x = bbox_x0; x < bbox_x1; ++x) {
-      // dst上のこのピクセルが、画像自身の中心を軸とした逆回転・逆拡大でsrcのどこに対応するか
-      float dx    = x - true_cx;
-      float dy    = y - true_cy;
-      float src_x = src_cx + (dx * cos_a + dy * sin_a) / scale;
-      float src_y = src_cy + (-dx * sin_a + dy * cos_a) / scale;
-
-      // 元画像の座標が範囲内か確認
-      int src_x_int = static_cast<int>(std::floor(src_x));
-      if(src_x_int < 0 || src_x_int >= this->width) continue;
-      int src_y_int = static_cast<int>(std::floor(src_y));
-      if(src_y_int < 0 || src_y_int >= this->height) continue;
+      // dst上のこのピクセルが、画像中心を軸とした逆回転・逆拡大でsrcのどこに対応するか
+      const double dx    = x - cx;
+      const double dy    = y - cy;
+      const int src_x_int = (int)std::floor(src_cx + (dx * cos_a + dy * sin_a) / sx);
+      if(src_x_int < 0 || src_x_int >= (int)this->width) continue;
+      const int src_y_int = (int)std::floor(src_cy + (-dx * sin_a + dy * cos_a) / sy);
+      if(src_y_int < 0 || src_y_int >= (int)this->height) continue;
 
       blend_pixel(dst->data_[y * dst->width + x], data_[src_y_int * width + src_x_int], alpha_mul, blend);
     }
@@ -178,22 +179,67 @@ bool Image::copyto(Image* dst, const Vec2d& center, float scale, float angle, fl
   return true;
 }
 
+bool Image::place(Image* dst, const Placement& pl) const {
+  MU_ASSERT(dst);
+  if(empty() || dst->empty()) return false;
+  double sx = pl.scale_x, sy = pl.scale_y;
+  if(pl.aspect > 0) sx *= 1.0 - pl.aspect;
+  else sy *= 1.0 + pl.aspect;
+  // 基点を拡大したもの。これがplの位置に来るよう画像を置く
+  const double px = pl.anchor_x * sx, py = pl.anchor_y * sy;
+  const double ox = dst->width / 2.0 + pl.x, oy = dst->height / 2.0 + pl.y;
+  const double rad = pl.rot_z * M_PI / 180.0;
+  const double c = std::cos(rad), sn = std::sin(rad);
+
+  if(pl.rot_x == 0.0 && pl.rot_y == 0.0) {
+    const double cx = ox - (px * c - py * sn);
+    const double cy = oy - (px * sn + py * c);
+    // 拡大・回転なしなら画素を補間せず、ピクセル境界に揃えた単純コピーにする
+    if(sx == 1.0 && sy == 1.0 && pl.rot_z == 0.0) return copyto(dst, Vec2d((int64_t)std::floor(cx - width / 2.0), (int64_t)std::floor(cy - height / 2.0)), pl.alpha, pl.blend);
+    return transform_to(dst, cx, cy, sx, sy, pl.rot_z, pl.alpha, pl.blend);
+  }
+
+  // X/Y軸回転: 四隅を基点まわりに Rx→Ry→Rz の順で回し、単純な遠近投影(カメラ距離kCameraDistance)で射影変形する
+  // ponytail: 回転順とカメラ距離はAviUtl実機未検証。Z座標は未反映
+  constexpr double kCameraDistance = 1024.0;
+  const double ax = pl.rot_x * M_PI / 180.0, ay = pl.rot_y * M_PI / 180.0;
+  const double cax = std::cos(ax), sax = std::sin(ax), cay = std::cos(ay), say = std::sin(ay);
+  const double hw = width / 2.0 * sx, hh = height / 2.0 * sy;
+  const double cxs[4] = {-hw, hw, -hw, hw}, cys[4] = {-hh, -hh, hh, hh};
+  Vec2 quad[4];
+  for(int i = 0; i < 4; i++) {
+    const double x = cxs[i] - px, y = cys[i] - py;
+    const double y1 = y * cax, z1 = y * sax;                     // Rx(z=0の平面)
+    const double x2 = x * cay + z1 * say, z2 = -x * say + z1 * cay; // Ry
+    const double x3 = x2 * c - y1 * sn, y3 = x2 * sn + y1 * c;   // Rz
+    const double persp = kCameraDistance / std::max(kCameraDistance + z2, 1.0);
+    quad[i]            = Vec2((float)(ox + x3 * persp), (float)(oy + y3 * persp));
+  }
+  return drawquad(dst, quad, pl.alpha, pl.blend);
+}
+
 bool Image::drawpoly(Image* dst, const Vec2d corners[4], float alpha_mul, BlendType blend) const {
-  MOVUTL_ZONE_SCOPED_N("Image::drawpoly");
+  Vec2 f[4];
+  for(int i = 0; i < 4; i++) f[i] = Vec2((float)corners[i][0], (float)corners[i][1]);
+  return drawquad(dst, f, alpha_mul, blend);
+}
+
+bool Image::drawquad(Image* dst, const Vec2 corners[4], float alpha_mul, BlendType blend) const {
+  MOVUTL_ZONE_SCOPED_N("Image::drawquad");
   MU_ASSERT(dst);
   if(this->width <= 0 || this->height <= 0 || dst->width <= 0 || dst->height <= 0) return false;
 
-  // corners順は左上,右上,左下,右下(AviUtl obj.drawpolyの引数順に合わせる)。端点はcopyto(center,scale,angle)と同様ピクセル座標の右端/下端(width-1,height-1)を使う
+  // corners順は左上,右上,左下,右下(AviUtl obj.drawpolyの引数順に合わせる)。端点はtransform_toと同様ピクセル座標の右端/下端(width-1,height-1)を使う
   cv::Point2f src_pts[4] = {{0, 0}, {(float)width - 1, 0}, {0, (float)height - 1}, {(float)width - 1, (float)height - 1}};
   cv::Point2f dst_pts[4];
   float min_x = std::numeric_limits<float>::max(), max_x = std::numeric_limits<float>::lowest();
   float min_y = std::numeric_limits<float>::max(), max_y = std::numeric_limits<float>::lowest();
   for(int i = 0; i < 4; i++) {
-    dst_pts[i] = cv::Point2f((float)corners[i][0], (float)corners[i][1]);
-    min_x      = std::min(min_x, (float)corners[i][0]);
-    max_x      = std::max(max_x, (float)corners[i][0]);
-    min_y      = std::min(min_y, (float)corners[i][1]);
-    max_y      = std::max(max_y, (float)corners[i][1]);
+    dst_pts[i] = cv::Point2f(corners[i][0], corners[i][1]);
+    min_x      = std::min(min_x, corners[i][0]);
+    max_x      = std::max(max_x, corners[i][0]);
+    min_y      = std::min(min_y, corners[i][1]);
+    max_y      = std::max(max_y, corners[i][1]);
   }
   cv::Mat fwd = cv::getPerspectiveTransform(src_pts, dst_pts);
   cv::Mat inv;
