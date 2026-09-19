@@ -115,14 +115,17 @@ protected:
 
   bool render_filters(Composition* cmp, Image* img, int frame);
 
+  // srcを自身の変換(pos_/anchor_/scale_/rotation_/alpha_/blend_)でtargetへ合成する。
+  // origin_offset: srcの中心から見た、このEntityの局所原点(基点の既定位置)のずれ(px)。通常は0(=画像中心)
+  bool composite(const Image& src, Image* target, const Vec2& origin_offset = Vec2(0, 0)) const;
+
 public:
   cutil::Str name;    // MPROPERTY(name="名前")
   uint64_t guid_ = 0; // MPROPERTY(name="GUID")
 
   // 旧TrackObjectのメンバ。MPROPERTYのgroup="track"はgetTrackPropsInfo()対象を絞り込むpygen用タグ
-  int fstart_ = -1;                    // MPROPERTY(name="開始位置(frame)", hidden_inspector=true, group="track")
-  int fend_   = -1;                    // MPROPERTY(name="終了位置(frame)", hidden_inspector=true, group="track")
-  Vec2 anchor_;                        // MPROPERTY(name="アンカー", viewer_anchor=true, position=true, group="track")
+  int fstart_           = -1;          // MPROPERTY(name="開始位置(frame)", hidden_inspector=true, group="track")
+  int fend_             = -1;          // MPROPERTY(name="終了位置(frame)", hidden_inspector=true, group="track")
   BlendType blend_      = Blend_Alpha; // MPROPERTY(name="合成モード", group="track")
   uint32_t group_guid_  = 0;           // MPROPERTY(name="グループID", desc="グループ化されている時のグループID", hidden_inspector=true, group="track")
   bool active_          = true;        // MPROPERTY(name="アクティブ", desc="オブジェクトが有効かどうか", group="track")
@@ -131,6 +134,14 @@ public:
   bool camera_ctrl_     = false;       // MPROPERTY(name="カメラ制御", desc="カメラ制御の対象", hidden_inspector=true, group="track")
   int32_t custom_color_ = 0;           // MPROPERTY(name="カスタム色", desc="0の場合メディア種別ごとの既定色を使う", group="track")
   std::vector<FilterParam> filters_;
+
+  // 描画系Entity共通の変換。座標はコンポジション中心原点・Y下向き、単位はpx/%/度(時計回りが正)/0-1。
+  // pos_はanchor_(画像中心からの基点オフセット)が置かれる位置で、回転・拡大は基点まわりに行う。
+  Vec3 pos_       = Vec3(0, 0, 0);  // MPROPERTY(name="位置", viewer_anchor=true, position=true, group="transform")
+  Vec3 anchor_    = Vec3(0, 0, 0);  // MPROPERTY(name="基点", desc="画像中心からの基点オフセット。回転・拡大の中心", group="transform")
+  Vec2 scale_     = Vec2(100, 100); // MPROPERTY(name="拡大率(%)", scale=true, group="transform")
+  float rotation_ = 0.0f;           // MPROPERTY(name="回転(度)", angle=true, group="transform")
+  float alpha_    = 1.0f;           // MPROPERTY(name="不透明度", min=0.0, max=1.0, step=0.01, group="transform")
 
   // このEntity固有の状態(img_/デコーダハンドル等)を読み書きする際のロック。Composition::mtxとは別物
   mutable std::mutex mtx;
@@ -159,6 +170,10 @@ public:
   virtual ~Entity();
 
   // 旧TrackObject::getPropsInfo/getProps/setPropsの移行先。上記のトラック共通属性のみを対象とする
+  const cutil::PropInfo* getTransformPropsInfo() const; // MUFUNC_AUTOGEN
+  cutil::Prop getTransformProps() const;                // MUFUNC_AUTOGEN
+  void setTransformProps(const cutil::Prop& props);     // MUFUNC_AUTOGEN
+
   const cutil::PropInfo* getTrackPropsInfo() const; // MUFUNC_AUTOGEN
   cutil::Prop getTrackProps() const;                // MUFUNC_AUTOGEN
   void setTrackProps(const cutil::Prop& props);     // MUFUNC_AUTOGEN

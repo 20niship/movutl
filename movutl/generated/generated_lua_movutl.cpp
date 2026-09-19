@@ -176,6 +176,9 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("get_info", &Entity::get_info)
     .addFunction("reload_asset", &Entity::reload_asset)
     .addFunction("visible", &Entity::visible)
+    .addFunction("getTransformPropsInfo", &Entity::getTransformPropsInfo)
+    .addFunction("getTransformProps", &Entity::getTransformProps)
+    .addFunction("setTransformProps", &Entity::setTransformProps)
     .addFunction("getTrackPropsInfo", &Entity::getTrackPropsInfo)
     .addFunction("getTrackProps", &Entity::getTrackProps)
     .addFunction("setTrackProps", &Entity::setTrackProps)
@@ -183,7 +186,6 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addVariable("guid_", &Entity::guid_)                 // uint64_t
     .addVariable("fstart_", &Entity::fstart_)             // int
     .addVariable("fend_", &Entity::fend_)                 // int
-    .addVariable("anchor_", &Entity::anchor_)             // Vec2
     .addVariable("blend_", &Entity::blend_)               // BlendType
     .addVariable("group_guid_", &Entity::group_guid_)     // uint32_t
     .addVariable("active_", &Entity::active_)             // bool
@@ -191,6 +193,11 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addVariable("clipping_up_", &Entity::clipping_up_)   // bool
     .addVariable("camera_ctrl_", &Entity::camera_ctrl_)   // bool
     .addVariable("custom_color_", &Entity::custom_color_) // int32_t
+    .addVariable("pos_", &Entity::pos_)                   // Vec3
+    .addVariable("anchor_", &Entity::anchor_)             // Vec3
+    .addVariable("scale_", &Entity::scale_)               // Vec2
+    .addVariable("rotation_", &Entity::rotation_)         // float
+    .addVariable("alpha_", &Entity::alpha_)               // float
     .endClass()
     .beginClass<EntityInfo>("EntityInfo")
     .addFunction("str", &EntityInfo::str)

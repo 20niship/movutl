@@ -54,7 +54,7 @@ bool Movie::render(Composition* cmp, Image* target, int frame) {
   MU_ASSERT(img_);
   int base_x  = anchor_[0] + (cw - img_->width) / 2 + pos[0];
   int base_y  = anchor_[1] + (ch - img_->height) / 2 + pos[1];
-  Vec2 center = Vec2(base_x, base_y) + anchor_;
+  Vec2 center = Vec2(base_x, base_y) + Vec2(anchor_[0], anchor_[1]);
   img_->copyto(target, center, this->scale.avg() / 100, this->rotation, 1.0f, blend_);
 
   return true;
