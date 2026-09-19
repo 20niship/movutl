@@ -164,3 +164,31 @@ TEST_CASE("Entity::ensure_anim_props: 文字列プロパティはanim_props_に�
     if(f.type == cutil::prop_info_of<std::string>()) CHECK(img->anim_props_.index_of(f.name) < 0);
   }
 }
+
+TEST_CASE("Entity: 中間点はトラック開始(fstart_)からの相対frameで評価/集約/移動される") {
+  Project::New();
+  auto img = Image::Create("anim_rel_test", 4, 4);
+  REQUIRE(img != nullptr);
+  img->fstart_ = 50;
+  img->fend_   = 200;
+  img->ensure_anim_props();
+  int idx = img->anim_props_.index_of("alpha");
+  REQUIRE(idx >= 0);
+  img->anim_props_.add_keyframe<float>(idx, 0, 0.0f);
+  img->anim_props_.add_keyframe<float>(idx, 100, 1.0f);
+
+  img->apply_animated_props(100); // 絶対100 = 相対50
+  CHECK(img->alpha == doctest::Approx(0.5f));
+  img->apply_animated_props(10); // 開始より前は相対0
+  CHECK(img->alpha == doctest::Approx(0.0f));
+
+  auto frames = img->collect_animated_frames(); // コンポジション絶対frameで返る
+  REQUIRE(frames.size() == 2);
+  CHECK(frames[0] == 50);
+  CHECK(frames[1] == 150);
+
+  CHECK(img->move_keyframes_at(150, 160));
+  CHECK(img->anim_props_.has_key_at(idx, 110));
+  CHECK(img->erase_keyframes_at(160));
+  CHECK_FALSE(img->anim_props_.has_key_at(idx, 110));
+}

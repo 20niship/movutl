@@ -176,7 +176,7 @@ bool draw_anim_value_widget_dyn(const char* id, const cutil::PropInfo::Field& f,
 }
 } // namespace
 
-bool wd_animatable_row(const cutil::PropInfo::Field& f, AnimProps& anim, int idx, uint32_t cur_frame, uint64_t entity_guid, int filter_index, int fstart, int fend) {
+bool wd_animatable_row(const cutil::PropInfo::Field& f, AnimProps& anim, int idx, uint32_t cur_frame, uint64_t entity_guid, int filter_index, int length) {
   ImGui::PushID(f.name);
   bool changed        = false;
   auto [pf, nf]       = anim.neighbor_frames(idx, cur_frame);
@@ -213,8 +213,8 @@ bool wd_animatable_row(const cutil::PropInfo::Field& f, AnimProps& anim, int idx
     const AniInterpType cur = animated ? anim.get_ease_type(idx, pf) : AniInterpType::LINEAR;
     auto pick               = [&](AniInterpType t) {
       if(!animated) {
-        uint32_t a = fstart >= 0 ? (uint32_t)fstart : cur_frame;
-        uint32_t b = fend > fstart && fend >= 0 ? (uint32_t)fend : a + 30;
+        uint32_t a = 0;
+        uint32_t b = length > 0 ? (uint32_t)length : 30;
         anim.add_keyframe_here(idx, a);
         anim.add_keyframe_here(idx, b);
         pf = a;
@@ -365,7 +365,8 @@ void wd_entt_props_editor(Entity* e, uint32_t cur_frame) {
   }
 
   e->ensure_anim_props();
-  const auto p = e->getProps();
+  const uint32_t rel_frame = e->rel_frame((int)cur_frame); // anim_props_の中間点はトラック開始からの相対frame
+  const auto p             = e->getProps();
   for(int idx = 0; idx < (int)info->fields.size(); idx++) {
     const auto& f = info->fields[idx];
     if(!p.contains(f.name)) {
@@ -386,12 +387,12 @@ void wd_entt_props_editor(Entity* e, uint32_t cur_frame) {
       static const char* kShapeNames[] = {"三角形", "四角形", "六角形", "円", "カスタムパス"};
       int shape_idx                    = std::clamp(v, 0, 4);
       if(ImGui::Combo(name_, &shape_idx, kShapeNames, IM_ARRAYSIZE(kShapeNames))) {
-        e->anim_props_.set_value<int>(anim_idx, cur_frame, shape_idx);
+        e->anim_props_.set_value<int>(anim_idx, rel_frame, shape_idx);
         changed = true;
       }
     } else if(is_animatable && (f.type == cutil::prop_info_of<bool>() || f.type == cutil::prop_info_of<float>() || f.type == cutil::prop_info_of<int32_t>() || f.type == cutil::prop_info_of<Vec2>() || f.type == cutil::prop_info_of<Vec3>() || f.type == cutil::prop_info_of<Vec4>() ||
                                 f.type == cutil::prop_info_of<Vec4b>())) {
-      if(wd_animatable_row(f, e->anim_props_, anim_idx, cur_frame, e->guid_, -1, e->fstart_, e->fend_)) changed = true;
+      if(wd_animatable_row(f, e->anim_props_, anim_idx, rel_frame, e->guid_, -1, e->fend_ - e->fstart_)) changed = true;
     } else if(f.type == cutil::prop_info_of<uint8_t>()) {
       int v = p.get<uint8_t>(f.name);
       if(ImGui::InputInt(name_, &v)) {

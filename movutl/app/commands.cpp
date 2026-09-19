@@ -119,12 +119,13 @@ struct ToggleKeyframeCommand final : mCommand {
   CommandStatus on_start() override {
     auto cmp = Composition::GetActiveComp();
     if(!cmp) return CommandStatus::Failed;
-    uint32_t frame = (uint32_t)std::max(cmp->frame.load(), 0);
+    const int abs_frame = std::max(cmp->frame.load(), 0);
 
     states_.clear();
     for(auto& entt : get_selected_entts()) {
       if(!entt) continue;
       entt->ensure_anim_props();
+      const uint32_t frame = entt->rel_frame(abs_frame); // 中間点はトラック開始からの相対frame
 
       EntityState st;
       st.entt        = entt;
@@ -141,7 +142,7 @@ struct ToggleKeyframeCommand final : mCommand {
       }
 
       if(has_any) {
-        entt->erase_keyframes_at(frame);
+        entt->erase_keyframes_at((uint32_t)abs_frame);
       } else {
         for(int i = 0; i < (int)entt->anim_props_.props.size(); i++) entt->anim_props_.add_keyframe_here(i, frame);
         for(auto& f : entt->filters_)

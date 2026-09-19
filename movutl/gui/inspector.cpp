@@ -198,12 +198,12 @@ void InspectorWindow::Update() {
             static char buf[256];
             strncpy(buf, value.c_str(), 256);
             if(ImGui::InputText(label, &buf[0], 256)) {
-              f.props.set_value(k, cur_frame, std::string(buf));
+              f.props.set_value(k, e->rel_frame((int)cur_frame), std::string(buf));
               value_changed = true;
             }
           } else if(info.type == cutil::prop_info_of<float>() || info.type == cutil::prop_info_of<int32_t>() || info.type == cutil::prop_info_of<bool>() || info.type == cutil::prop_info_of<Vec2>() || info.type == cutil::prop_info_of<Vec3>() || info.type == cutil::prop_info_of<Vec4>() ||
                     info.type == cutil::prop_info_of<Vec4b>()) {
-            if(wd_animatable_row(info, f.props, k, cur_frame, e->guid_, i, e->fstart_, e->fend_)) value_changed = true;
+            if(wd_animatable_row(info, f.props, k, e->rel_frame((int)cur_frame), e->guid_, i, e->fend_ - e->fstart_)) value_changed = true;
           }
           if(value_changed) props_changed = true;
         }

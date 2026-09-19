@@ -166,6 +166,7 @@ void draw_graph_area(GraphEditorState& state, uint32_t cur_frame) {
     if(!anim) continue;
     int idx = anim->index_of(ch.prop_name);
     if(idx < 0) continue;
+    const int off            = e ? std::max(e->fstart_, 0) : 0; // キーはトラック開始からの相対frame。表示はコンポジション絶対frame
     const cutil::PropInfo* t = anim->get_type(idx);
     if(!is_scalar_type(t)) continue;
 
@@ -193,7 +194,7 @@ void draw_graph_area(GraphEditorState& state, uint32_t cur_frame) {
     bool has_prev = false;
     for(int x = 0; x <= (int)avail.x; x++) {
       int f   = x_to_frame(origin.x + x);
-      float v = get_scalar(*anim, idx, (uint32_t)std::max(f, 0));
+      float v = get_scalar(*anim, idx, (uint32_t)std::max(f - off, 0));
       ImVec2 cur(origin.x + x, value_to_y(v));
       if(has_prev) dl->AddLine(prev, cur, ch.color, 2.0f);
       prev     = cur;
@@ -202,9 +203,9 @@ void draw_graph_area(GraphEditorState& state, uint32_t cur_frame) {
 
     for(int ki = 0; ki < (int)frames.size(); ki++) {
       uint32_t kf = frames[ki];
-      if((int)kf < state.fstart || (int)kf > state.fend) continue;
+      if((int)kf + off < state.fstart || (int)kf + off > state.fend) continue;
       float v = get_scalar(*anim, idx, kf);
-      ImVec2 center(frame_to_x((int)kf), value_to_y(v));
+      ImVec2 center(frame_to_x((int)kf + off), value_to_y(v));
       bool selected = g_selected_key.valid && g_selected_key.entity_guid == ch.entity_guid && g_selected_key.filter_index == ch.filter_index && g_selected_key.prop_name == ch.prop_name && g_selected_key.frame == kf;
       ImU32 col     = selected ? IM_COL32(255, 255, 255, 255) : ch.color;
       dl->AddQuadFilled(ImVec2(center.x, center.y - 5), ImVec2(center.x + 5, center.y), ImVec2(center.x, center.y + 5), ImVec2(center.x - 5, center.y), col);
@@ -219,7 +220,7 @@ void draw_graph_area(GraphEditorState& state, uint32_t cur_frame) {
       }
       if(ImGui::IsItemActive() && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
         ImVec2 mp        = ImGui::GetMousePos();
-        int new_frame    = std::clamp(x_to_frame(mp.x), state.fstart, state.fend);
+        int new_frame    = (uint32_t)std::max(std::clamp(x_to_frame(mp.x), state.fstart, state.fend) - off, 0);
         float new_value  = vmin + (1.0f - std::clamp((mp.y - origin.y) / avail.y, 0.0f, 1.0f)) * (vmax - vmin);
         uint32_t cur_key = g_selected_key.frame;
         if((uint32_t)new_frame != cur_key) anim->move_keyframe(idx, cur_key, (uint32_t)new_frame);

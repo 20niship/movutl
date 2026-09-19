@@ -162,21 +162,24 @@ void Entity::ensure_anim_props() const {
 void Entity::apply_animated_props(int frame) {
   if(!getPropsInfo()) return;
   ensure_anim_props();
-  setProps(anim_props_.get((uint32_t)std::max(frame, 0)));
+  setProps(anim_props_.get(rel_frame(frame)));
 }
 
 std::vector<uint32_t> Entity::collect_animated_frames() const {
   ensure_anim_props();
   std::set<uint32_t> frames;
+  const uint32_t off = (uint32_t)std::max(fstart_, 0);
   for(int i = 0; i < (int)anim_props_.props.size(); i++)
-    for(uint32_t f : anim_props_.keyframe_frames(i)) frames.insert(f);
+    for(uint32_t f : anim_props_.keyframe_frames(i)) frames.insert(f + off);
   for(auto& filt : filters_)
     for(int i = 0; i < (int)filt.props.props.size(); i++)
-      for(uint32_t f : filt.props.keyframe_frames(i)) frames.insert(f);
+      for(uint32_t f : filt.props.keyframe_frames(i)) frames.insert(f + off);
   return std::vector<uint32_t>(frames.begin(), frames.end());
 }
 
-bool Entity::move_keyframes_at(uint32_t old_frame, uint32_t new_frame) {
+bool Entity::move_keyframes_at(uint32_t old_abs, uint32_t new_abs) {
+  if(old_abs == new_abs) return false;
+  const uint32_t old_frame = rel_frame((int)old_abs), new_frame = rel_frame((int)new_abs);
   if(old_frame == new_frame) return false;
   ensure_anim_props();
   bool any = false;
@@ -188,7 +191,8 @@ bool Entity::move_keyframes_at(uint32_t old_frame, uint32_t new_frame) {
   return any;
 }
 
-bool Entity::erase_keyframes_at(uint32_t frame) {
+bool Entity::erase_keyframes_at(uint32_t abs_frame) {
+  const uint32_t frame = rel_frame((int)abs_frame);
   ensure_anim_props();
   bool any = false;
   for(int i = 0; i < (int)anim_props_.props.size(); i++) any |= anim_props_.erase_keyframe(i, frame);
@@ -212,12 +216,11 @@ bool Entity::render_filters(Composition* cmp, Image* img, int frame) {
     MOVUTL_ZONE_NAME(f.plg_->name.c_str(), f.plg_->name.size());
     void* fp = f.plg_;
     FilterInData in;
-    in.img            = img;
-    in.compo          = cmp;
-    in.entt           = this;
-    in.frame          = frame;
-    cutil::Prop props = f.props.get(frame);
-    if(!f.plg_->fn_proc(fp, &in, f.props.get(frame))) {
+    in.img   = img;
+    in.compo = cmp;
+    in.entt  = this;
+    in.frame = frame;
+    if(!f.plg_->fn_proc(fp, &in, f.props.get(rel_frame(frame)))) {
       LOG_F(ERROR, "Plugin %s render failed", f.plg_->name.c_str());
       return false;
     }

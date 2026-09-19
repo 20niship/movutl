@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <cstdint>
 #include <cutil/prop.hpp>
 #include <cutil/ref.hpp>
@@ -173,14 +174,17 @@ public:
   // レンダリング直前に呼び、anim_props_をframe時点の値へ評価してsetProps()へ反映する(getPropsInfo()を持たないEntityは何もしない)
   void apply_animated_props(int frame);
 
+  // コンポジション絶対frameをトラック開始からの相対frame(中間点のキー)へ変換する。開始より前は0
+  uint32_t rel_frame(int abs_frame) const { return (uint32_t)std::max(abs_frame - std::max(fstart_, 0), 0); }
+
   // 未初期化(size()==0)ならgetProps()から構築する(派生クラスは独自Create()で直接constructしCreateEntity()を経由しないため遅延初期化にする)
   void ensure_anim_props() const;
 
-  // タイムライン集約表示用: anim_props_ + 全filters_[].propsの全キーフレームframeを重複排除・昇順でまとめる
+  // タイムライン集約表示用: anim_props_ + 全filters_[].propsの全キーフレームを(コンポジション絶対frameへ直して)重複排除・昇順でまとめる
   std::vector<uint32_t> collect_animated_frames() const;
-  // old_frameにあるキーフレームを全プロパティ横断でnew_frameへ一括移動する。1つでも動けばtrue
+  // (コンポジション絶対frame指定)old_frameにあるキーフレームを全プロパティ横断でnew_frameへ一括移動する。1つでも動けばtrue
   bool move_keyframes_at(uint32_t old_frame, uint32_t new_frame);
-  // frameにあるキーフレームを全プロパティ横断で一括削除する。1つでも消せればtrue
+  // (コンポジション絶対frame指定)frameにあるキーフレームを全プロパティ横断で一括削除する。1つでも消せればtrue
   bool erase_keyframes_at(uint32_t frame);
 };
 
