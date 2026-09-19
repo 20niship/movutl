@@ -1,6 +1,8 @@
 #include <doctest/doctest.h>
 #include <filesystem>
+#include <imgui.h>
 #include <fstream>
+#include <movutl/app/app_impl.hpp>
 #include <movutl/asset/audio.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/group.hpp>
@@ -9,7 +11,9 @@
 #include <movutl/asset/project.hpp>
 #include <movutl/asset/shape.hpp>
 #include <movutl/asset/text.hpp>
+#include <movutl/command/exo/exo_effects.hpp>
 #include <movutl/command/exo/exo_import.hpp>
+#include <movutl/command/exo/exo_report.hpp>
 #include <movutl/core/command.hpp>
 #include <set>
 
@@ -274,4 +278,166 @@ TEST_CASE("exo: 既存Entityと重ならない位置までレイヤーを下げ�
       for(size_t j = i + 1; j < l.entts.size(); j++) CHECK((l.entts[i]->fend_ < l.entts[j]->fstart_ || l.entts[j]->fend_ < l.entts[i]->fstart_));
   CHECK(comp->fend == 500);
   fs::remove_all(dir);
+}
+
+namespace {
+// 一時ディレクトリにexo(ASCIIのみ)を書き出して取り込む。日本語のキーが要るテストは16進エスケープで書く
+int import_exo_text(const std::string& body) {
+  auto path = std::filesystem::temp_directory_path() / "movutl_test_ascii.exo";
+  {
+    std::ofstream ofs(path, std::ios::binary);
+    ofs << body;
+  }
+  return import_exo_file(path.string().c_str());
+}
+} // namespace
+
+TEST_CASE("exo: 未対応オブジェクトは取り込み結果レポートに記録される") {
+  Project::New();
+  auto n = import_exo_text("[exedit]\r\nwidth=640\r\nheight=360\r\nrate=30\r\nscale=1\r\n"
+                           "[0]\r\nstart=1\r\nend=10\r\nlayer=1\r\n[0.0]\r\n_name=Unknown\r\n"
+                           "[1]\r\nstart=1\r\nend=10\r\nlayer=2\r\n[1.0]\r\n_name=Unknown\r\n");
+  CHECK(n == 0);
+  auto& rep = exo_import_report();
+  CHECK(rep.imported == 0);
+  REQUIRE(rep.items.size() == 1);
+  CHECK(rep.items[0].count == 2);
+}
+
+TEST_CASE("exo: 取り込み結果ダイアログはImGuiコンテキスト上で描画しても落ちない") {
+  Project::New();
+  import_exo_text("[exedit]\r\nwidth=640\r\nheight=360\r\nrate=30\r\nscale=1\r\n[0]\r\nstart=1\r\nend=10\r\nlayer=1\r\n[0.0]\r\n_name=Unknown\r\n");
+  CHECK_FALSE(exo_import_report().items.empty());
+  ImGui::CreateContext();
+  ImGuiIO& io    = ImGui::GetIO();
+  io.DisplaySize = ImVec2(800, 600);
+  unsigned char* pixels;
+  int w, h;
+  io.Fonts->GetTexDataAsRGBA32(&pixels, &w, &h);
+  for(int i = 0; i < 2; i++) { // 1フレーム目でポップアップを開き、2フレーム目でモーダル本体を描画する
+    io.DeltaTime = 1.0f / 60.0f;
+    ImGui::NewFrame();
+    draw_exo_import_report_dialog();
+    ImGui::EndFrame();
+  }
+  ImGui::DestroyContext();
+}
+
+TEST_CASE("exo: 標準描画のblendがEntity::blend_へ変換される") {
+  bool ok = false;
+  CHECK(exo_blend_type(0, &ok) == Blend_Alpha);
+  CHECK(ok);
+  CHECK(exo_blend_type(1, &ok) == Blend_Add);
+  CHECK(exo_blend_type(4, &ok) == Blend_Screen);
+  CHECK(exo_blend_type(6, &ok) == Blend_Lighten); // 比較(明)
+  CHECK(exo_blend_type(7, &ok) == Blend_Darken);  // 比較(暗)
+  CHECK(ok);
+  CHECK(exo_blend_type(12, &ok) == Blend_Alpha); // 差分は未対応
+  CHECK_FALSE(ok);
+
+  Project::New();
+  // 図形(type=2) + 標準描画(blend=1) / 別レイヤーの図形(blend=12)
+  auto obj = [](int n, int layer, int blend) {
+    auto id = std::to_string(n);
+    return "[" + id + "]\r\nstart=1\r\nend=10\r\nlayer=" + std::to_string(layer) + "\r\n[" + id + ".0]\r\n_name=\x90\x7d\x8c\x60\r\ntype=2\r\n[" + id +
+           ".1]\r\n_name=\x95\x57\x8f\x80\x95\x60\x89\xe6\r\nX=0\r\nY=0\r\nZ=0\r\nblend=" + std::to_string(blend) + "\r\n";
+  };
+  CHECK(import_exo_text("[exedit]\r\nwidth=640\r\nheight=360\r\nrate=30\r\nscale=1\r\n" + obj(0, 1, 1) + obj(1, 2, 12)) == 2);
+  auto* comp = Composition::GetActiveComp();
+  CHECK(comp->layers[0].entts.at(0)->blend_ == Blend_Add);
+  CHECK(comp->layers[1].entts.at(0)->blend_ == Blend_Alpha);
+  REQUIRE(exo_import_report().items.size() == 1); // 差分のみ未対応
+}
+
+TEST_CASE("exo: camera/clippingがEntityへ反映され、overlay=0は未対応として記録される") {
+  Project::New();
+  auto obj = [](int n, int layer, const std::string& extra) {
+    auto id = std::to_string(n);
+    return "[" + id + "]\r\nstart=1\r\nend=10\r\nlayer=" + std::to_string(layer) + "\r\n" + extra + "[" + id + ".0]\r\n_name=\x90\x7d\x8c\x60\r\ntype=2\r\n";
+  };
+  CHECK(import_exo_text("[exedit]\r\nwidth=640\r\nheight=360\r\nrate=30\r\nscale=1\r\n" + obj(0, 1, "camera=1\r\nclipping=1\r\n") + obj(1, 2, "camera=0\r\noverlay=0\r\n")) == 2);
+  auto* comp = Composition::GetActiveComp();
+  CHECK(comp->layers[0].entts.at(0)->camera_ctrl_);
+  CHECK(comp->layers[0].entts.at(0)->clipping_up_);
+  CHECK_FALSE(comp->layers[1].entts.at(0)->camera_ctrl_);
+  CHECK_FALSE(comp->layers[1].entts.at(0)->clipping_up_);
+  CHECK(exo_import_report().items.size() == 1);
+}
+
+TEST_CASE("exo: [exedit]の解像度/フレームレート/音声設定が空のCompositionへ反映され、既存Entityがあれば変更しない") {
+  Project::New();
+  auto* comp = Composition::GetActiveComp();
+  auto obj   = std::string("[0]\r\nstart=1\r\nend=10\r\nlayer=1\r\n[0.0]\r\n_name=\x90\x7d\x8c\x60\r\ntype=2\r\n");
+  CHECK(import_exo_text("[exedit]\r\nwidth=1280\r\nheight=720\r\nrate=30000\r\nscale=1001\r\naudio_rate=44100\r\naudio_ch=1\r\n" + obj) == 1);
+  CHECK(comp->size[0] == 1280);
+  CHECK(comp->size[1] == 720);
+  CHECK(comp->framerate == doctest::Approx(29.97f).epsilon(0.001));
+  CHECK(comp->audio_sample_rate == 44100);
+  CHECK(comp->audio_channels == 1);
+
+  // 既存Entityがあるので2回目の取り込みでは設定を変えない
+  CHECK(import_exo_text("[exedit]\r\nwidth=100\r\nheight=50\r\nrate=60\r\nscale=1\r\n" + obj) == 1);
+  CHECK(comp->size[0] == 1280);
+  CHECK(comp->framerate == doctest::Approx(29.97f).epsilon(0.001));
+}
+
+TEST_CASE("exo: トラックバー値の解析と移動方式の対応") {
+  auto t = parse_exo_track("5.0,20.0,1");
+  CHECK(t.start == doctest::Approx(5.f));
+  CHECK(t.end == doctest::Approx(20.f));
+  CHECK(t.mode == 1);
+  CHECK(t.animated());
+  auto fixed = parse_exo_track("12.5");
+  CHECK(fixed.start == doctest::Approx(12.5f));
+  CHECK(fixed.end == doctest::Approx(12.5f));
+  CHECK_FALSE(fixed.animated());
+  CHECK_FALSE(parse_exo_track("7.0,7.0,1").animated());
+  bool exact = false;
+  CHECK(exo_track_interp(1, &exact) == LINEAR);
+  CHECK(exact);
+  exo_track_interp(2, &exact);
+  CHECK_FALSE(exact);
+}
+
+TEST_CASE("exo: 標準描画以外のエフェクトが対応表に従ってフィルタ化され、トラックバーがキーフレームになる") {
+  if(detail::AppMain::Get()->filters.empty()) detail::register_default_filters();
+  detail::activate_all_plugins();
+  Project::New();
+  std::string exo = "[exedit]\r\nwidth=640\r\nheight=360\r\nrate=30\r\nscale=1\r\n"
+                    "[0]\r\nstart=11\r\nend=30\r\nlayer=1\r\n"
+                    "[0.0]\r\n_name=\x90\x7d\x8c\x60\r\ntype=2\r\n"
+                    "[0.1]\r\n_name=\x95\x57\x8f\x80\x95\x60\x89\xe6\r\nX=0\r\nY=0\r\nZ=0\r\n"
+                    "[0.2]\r\n_name=\x82\xda\x82\xa9\x82\xb5\r\n\x94\xcd\x88\xcd=5.0,25.0,1\r\n\x8f\x63\x89\xa1\x94\xe4=0.0\r\n"
+                    "[0.3]\r\n_name=\x83\x56\x83\x83\x81\x5b\x83\x76\r\n_disable=1\r\n\x8b\xad\x82\xb3=40.0\r\n"
+                    "[0.4]\r\n_name=Unknown\r\n";
+  CHECK(import_exo_text(exo) == 1);
+  auto* comp = Composition::GetActiveComp();
+  auto e     = comp->layers[0].entts.at(0);
+  REQUIRE(e->filters_.size() == 2);
+  auto& blur = e->filters_[0];
+  CHECK(std::string(blur.plg_->name.c_str()) == "ぼかし");
+  CHECK(blur.enabled);
+  // 範囲 5->25 が表示区間(fstart_=10 .. fend_=29)で線形に変化する
+  CHECK(blur.props.get<float>(0, 10) == doctest::Approx(5.f));
+  CHECK(blur.props.get<float>(0, 29) == doctest::Approx(25.f));
+  CHECK(blur.props.get<float>(0, 19) == doctest::Approx(15.f).epsilon(0.05));
+  CHECK_FALSE(e->filters_[1].enabled);
+  auto& items = exo_import_report().items;
+  REQUIRE(items.size() == 2);
+  CHECK(items[0].msg.find("縦横比") != std::string::npos); // ぼかしの未対応パラメータ
+  CHECK(items[1].msg.find("Unknown") != std::string::npos);
+}
+
+TEST_CASE("exo: 標準描画で値が変化するトラックバーはアニメーション未対応として記録される") {
+  Project::New();
+  std::string exo = "[exedit]\r\nwidth=640\r\nheight=360\r\nrate=30\r\nscale=1\r\n"
+                    "[0]\r\nstart=1\r\nend=30\r\nlayer=1\r\n"
+                    "[0.0]\r\n_name=\x90\x7d\x8c\x60\r\ntype=2\r\n"
+                    "[0.1]\r\n_name=\x95\x57\x8f\x80\x95\x60\x89\xe6\r\nX=0.0,100.0,1\r\nY=5.0,5.0,1\r\nZ=0.0\r\n";
+  CHECK(import_exo_text(exo) == 1);
+  auto& items = exo_import_report().items;
+  REQUIRE(items.size() == 1);
+  CHECK(items[0].msg.find("(X)") != std::string::npos); // Y/Zは変化しないので含まれない
+  auto* comp = Composition::GetActiveComp();
+  CHECK(comp->layers[0].entts.at(0)->pos_[0] == doctest::Approx(0.f)); // 開始値
 }

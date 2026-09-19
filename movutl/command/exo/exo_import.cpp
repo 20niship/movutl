@@ -13,7 +13,9 @@
 #include <movutl/asset/project.hpp>
 #include <movutl/asset/shape.hpp>
 #include <movutl/asset/text.hpp>
+#include <movutl/command/exo/exo_effects.hpp>
 #include <movutl/command/exo/exo_import.hpp>
+#include <movutl/command/exo/exo_report.hpp>
 #include <movutl/core/command.hpp>
 #include <movutl/core/filesystem.hpp>
 #include <movutl/core/logger.hpp>
@@ -216,6 +218,7 @@ int import_exo_file(const char* path) {
     LOG_F(ERROR, "import_exo_file: cannot open %s", path);
     return -1;
   }
+  exo_import_report_begin(path);
   std::string raw((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
   const auto base_dir = std::filesystem::absolute(std::filesystem::path(path)).parent_path();
   auto ini            = parse_ini(cp932_to_utf8(raw));
@@ -226,6 +229,7 @@ int import_exo_file(const char* path) {
     comp = Composition::GetActiveComp();
   }
   MU_ASSERT(comp);
+  if(auto ex = ini.find("exedit"); ex != ini.end()) apply_exo_header(*comp, ex->second);
 
   // [N](Nは整数)を番号順に処理する。[N.M]はそのエフェクト
   std::vector<int> ids;
@@ -322,9 +326,14 @@ int import_exo_file(const char* path) {
       ent               = g;
     } else {
       LOG_F(WARNING, "import_exo_file: [%d] unsupported object '%s', skipped", n, kind.c_str());
+      exo_import_report().add("未対応のオブジェクト「" + kind + "」をスキップしました");
       continue;
     }
     set_range(ent, start, end);
+    apply_exo_blend(*ent, draw);
+    apply_exo_object_flags(*ent, obj);
+    apply_exo_effects(*ent, effects);
+    report_exo_unanimated_tracks(draw, play);
     pending.push_back({ent, layer});
   }
 
@@ -370,6 +379,8 @@ int import_exo_file(const char* path) {
     }
     comp->invalidate_cache_all();
   }
+  exo_import_report().imported = count;
+  if(!exo_import_report().items.empty()) exo_import_report_request_dialog();
   LOG_F(INFO, "import_exo_file: %s -> %d objects (range %d-%d)", path, count, comp->fstart, comp->fend);
   return count;
 }
