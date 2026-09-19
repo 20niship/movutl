@@ -10,7 +10,7 @@
 namespace mu {
 
 void FFTWindow::Update() {
-  ImGui::Begin("FFT");
+  ImGui::Begin("FFT", &open);
   auto comp = Composition::GetActiveComp();
   if(!comp || !comp->audio_buf) {
     ImGui::Text("No audio");

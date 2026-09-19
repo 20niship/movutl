@@ -135,6 +135,8 @@ def get_prop_type(argtype: str) -> ArgumentType:
 
 ABI_NAMESPACE_OPEN_RE = re.compile(r"^\s*namespace\s+(\w+)\s*\{")
 ABI_FUNC_DECL_RE = re.compile(r"^\s*([\w:&*<>]+(?:\s+[\w:&*<>]+)*)\s+(\w+)\(([^()]*)\)\s*;\s*(//.*)?$")
+# 関数本体内の "case X: return foo(args);" 等がABI_FUNC_DECL_REに誤マッチするのを防ぐ(戻り値型トークン列の先頭が制御構文キーワードなら宣言ではない)
+_ABI_CONTROL_KEYWORDS = {"case", "return", "if", "else", "while", "for", "switch", "break", "continue", "do"}
 
 
 def parse_abi_candidate_functions(header_file: str, exclude_names: set, include_path: str = "") -> List[MAbiFunc]:
@@ -156,7 +158,8 @@ def parse_abi_candidate_functions(header_file: str, exclude_names: set, include_
                 m = ABI_FUNC_DECL_RE.match(line)
                 if m:
                     ret_type, name, args = m.group(1).strip(), m.group(2).strip(), m.group(3).strip()
-                    if name not in exclude_names and "(*" not in ret_type and "(*" not in args:
+                    first_token = ret_type.split()[0].rstrip(":") if ret_type else ""
+                    if first_token not in _ABI_CONTROL_KEYWORDS and name not in exclude_names and "(*" not in ret_type and "(*" not in args:
                         # abi_ プレフィックスは任意。あれば剥がしてフィールド名にするが、無くても関数名をそのまま使う
                         field_name = name[len("abi_"):] if name.startswith("abi_") else name
                         funcs.append(MAbiFunc(name=name, field_name=field_name, ret_type=ret_type, args=args, include_path=include_path))

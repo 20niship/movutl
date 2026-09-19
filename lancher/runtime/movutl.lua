@@ -21,15 +21,36 @@ imgui.ImColor= {}
 
 ---@class AniInterpType
 ---@field LINEAR number
----@field EaseIn number
----@field EaseOut number
----@field EaseInOut number
 ---@field EaseInQuad number
 ---@field EaseOutQuad number
 ---@field EaseInOutQuad number
 ---@field EaseInCubic number
 ---@field EaseOutCubic number
 ---@field EaseInOutCubic number
+---@field EaseInSine number
+---@field EaseOutSine number
+---@field EaseInOutSine number
+---@field EaseInQuart number
+---@field EaseOutQuart number
+---@field EaseInOutQuart number
+---@field EaseInQuint number
+---@field EaseOutQuint number
+---@field EaseInOutQuint number
+---@field EaseInExpo number
+---@field EaseOutExpo number
+---@field EaseInOutExpo number
+---@field EaseInCirc number
+---@field EaseOutCirc number
+---@field EaseInOutCirc number
+---@field EaseInBack number
+---@field EaseOutBack number
+---@field EaseInOutBack number
+---@field EaseInElastic number
+---@field EaseOutElastic number
+---@field EaseInOutElastic number
+---@field EaseInBounce number
+---@field EaseOutBounce number
+---@field EaseInOutBounce number
 ---@field Custom number
 movutl.AniInterpType = {}
 
