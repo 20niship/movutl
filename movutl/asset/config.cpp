@@ -29,6 +29,7 @@ void Config::Load() {
   c->log_filename              = cutil::get_or<std::string>(js, "log_filename", c->log_filename);
   c->log_level                 = (LogLevel)cutil::get_or<int32_t>(js, "log_level", int(c->log_level));
   c->show_viewer_ruler         = cutil::get_or<bool>(js, "show_viewer_ruler", c->show_viewer_ruler);
+  c->viewer_ruler_center_origin = cutil::get_or<bool>(js, "viewer_ruler_center_origin", c->viewer_ruler_center_origin);
   c->viewer_wave_footer_height = cutil::get_or<float>(js, "viewer_wave_footer_height", c->viewer_wave_footer_height);
 }
 
@@ -42,6 +43,7 @@ void Config::Save() {
   js.set<std::string>("log_filename", c->log_filename);
   js.set<int32_t>("log_level", int(c->log_level));
   js.set<bool>("show_viewer_ruler", c->show_viewer_ruler);
+  js.set<bool>("viewer_ruler_center_origin", c->viewer_ruler_center_origin);
   js.set<float>("viewer_wave_footer_height", c->viewer_wave_footer_height);
 
   std::string out;

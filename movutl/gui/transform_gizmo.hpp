@@ -1,5 +1,6 @@
 #pragma once
 #include <cmath>
+#include <vector>
 
 namespace mu {
 
@@ -56,5 +57,12 @@ GizmoPt gizmo_anchor_preset(int fx, int fy, const GizmoPt& src_size, const Gizmo
 
 // コンポ左上原点 -> 中心原点(Y下向きのまま)。定規・カーソル座標表示用
 GizmoPt gizmo_to_center_origin(const GizmoPt& p, const GizmoPt& comp_size);
+
+// 定規の目盛り。center_originなら値0がコンポ中央(pos_と同じ座標系)、そうでなければ左上。comp_posはコンポ左上原点での位置
+struct RulerTick {
+  double comp_pos;
+  int value;
+};
+std::vector<RulerTick> gizmo_ruler_ticks(double length, int step, bool center_origin);
 
 } // namespace mu

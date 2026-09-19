@@ -5,6 +5,15 @@
 #include <movutl/gui/transform_gizmo.hpp>
 
 namespace mu {
+
+// Viewer上のマウス位置(コンポ左上原点px)。ステータスバーの座標表示用。Viewer外/コンポ外ではvalid=false
+struct ViewerCursor {
+  bool valid = false;
+  double x   = 0;
+  double y   = 0;
+};
+ViewerCursor& viewer_cursor();
+
 class ViewerWindow final : public UIPanel {
   GLTexture tex;
   float zoom = 1.0f; // ダブルクリックで1.0にリセット

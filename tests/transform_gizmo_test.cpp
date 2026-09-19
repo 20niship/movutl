@@ -143,3 +143,18 @@ TEST_CASE("gizmo_anchor_preset / gizmo_to_center_origin") {
   CHECK(c.x == doctest::Approx(0));
   CHECK(c.y == doctest::Approx(0));
 }
+
+TEST_CASE("gizmo_ruler_ticks: 左上原点/中心原点の目盛り") {
+  auto a = gizmo_ruler_ticks(200, 50, false);
+  REQUIRE(a.size() == 4);
+  CHECK(a[0].value == 0);
+  CHECK(a[3].value == 150);
+  CHECK(a[3].comp_pos == doctest::Approx(150));
+  auto c = gizmo_ruler_ticks(200, 50, true); // -100,-50,0,50 (100は範囲外)
+  REQUIRE(c.size() == 4);
+  CHECK(c[0].value == -100);
+  CHECK(c[0].comp_pos == doctest::Approx(0));
+  CHECK(c[2].value == 0);
+  CHECK(c[2].comp_pos == doctest::Approx(100));
+  CHECK(gizmo_ruler_ticks(200, 0, true).empty());
+}

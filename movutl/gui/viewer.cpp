@@ -48,8 +48,14 @@ void draw_entity_gizmo(ImDrawList* dl, const EntityGizmo& g, const ImVec2& img_m
 
 } // namespace
 
+ViewerCursor& viewer_cursor() {
+  static ViewerCursor c;
+  return c;
+}
+
 void ViewerWindow::Update() {
   MOVUTL_ZONE_SCOPED_N("ViewerWindow::Update");
+  viewer_cursor().valid = false;
   ImGui::Begin("Viewer");
   auto comp = Composition::GetActiveComp();
   if(!comp) {
@@ -152,15 +158,16 @@ void ViewerWindow::Update() {
     }
     constexpr float kTick = 8.0f;  // 目盛り線の長さ
     constexpr float kGap  = 14.0f; // ラベル表示用にティックからさらに離す量
-    for(int i = 0; i < (int)cmp_w; i += di) {
-      auto p = comp_to_screen(ImVec2((float)i, 0), img_min, disp_size, cmp_w, cmp_h);
+    const bool center = Config::Get()->viewer_ruler_center_origin;
+    for(auto& t : gizmo_ruler_ticks(cmp_w, di, center)) {
+      auto p = comp_to_screen(ImVec2((float)t.comp_pos, 0), img_min, disp_size, cmp_w, cmp_h);
       dl->AddLine(ImVec2(p.x, img_min.y - kTick), ImVec2(p.x, img_min.y), IM_COL32(255, 255, 0, 200));
-      dl->AddText(ImVec2(p.x + 2, img_min.y - kGap), IM_COL32(255, 255, 0, 200), std::to_string(i).c_str());
+      dl->AddText(ImVec2(p.x + 2, img_min.y - kGap), IM_COL32(255, 255, 0, 200), std::to_string(t.value).c_str());
     }
-    for(int i = 0; i < (int)cmp_h; i += di) {
-      auto p = comp_to_screen(ImVec2(0, (float)i), img_min, disp_size, cmp_w, cmp_h);
+    for(auto& t : gizmo_ruler_ticks(cmp_h, di, center)) {
+      auto p = comp_to_screen(ImVec2(0, (float)t.comp_pos), img_min, disp_size, cmp_w, cmp_h);
       dl->AddLine(ImVec2(img_min.x - kTick, p.y), ImVec2(img_min.x, p.y), IM_COL32(255, 255, 0, 200));
-      dl->AddText(ImVec2(img_min.x - kTick - 30.0f, p.y), IM_COL32(255, 255, 0, 200), std::to_string(i).c_str());
+      dl->AddText(ImVec2(img_min.x - kTick - 30.0f, p.y), IM_COL32(255, 255, 0, 200), std::to_string(t.value).c_str());
     }
   }
 
@@ -170,6 +177,8 @@ void ViewerWindow::Update() {
     ImVec2 c = screen_to_comp(ImGui::GetMousePos(), img_min, disp_size, cmp_w, cmp_h);
     return GizmoPt{c.x, c.y};
   }();
+
+  if(hovered && mouse_comp.x >= 0 && mouse_comp.y >= 0 && mouse_comp.x < cmp_w && mouse_comp.y < cmp_h) viewer_cursor() = {true, mouse_comp.x, mouse_comp.y};
 
   if(drag_.part != GizmoPart::None) {
     if(!ImGui::IsMouseDown(ImGuiMouseButton_Left) || !drag_.entt) {

@@ -114,4 +114,13 @@ GizmoPt gizmo_anchor_preset(int fx, int fy, const GizmoPt& src_size, const Gizmo
 
 GizmoPt gizmo_to_center_origin(const GizmoPt& p, const GizmoPt& comp_size) { return {p.x - comp_size.x / 2, p.y - comp_size.y / 2}; }
 
+std::vector<RulerTick> gizmo_ruler_ticks(double length, int step, bool center_origin) {
+  std::vector<RulerTick> out;
+  if(step <= 0) return out;
+  const double shift = center_origin ? length / 2 : 0;
+  const int lo       = (int)std::ceil(-shift / step);
+  for(int k = lo; k * (double)step + shift < length; k++) out.push_back({k * (double)step + shift, k * step});
+  return out;
+}
+
 } // namespace mu

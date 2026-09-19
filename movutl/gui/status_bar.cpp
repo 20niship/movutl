@@ -1,8 +1,12 @@
 #include <IconsFontAwesome6.h>
 #include <filesystem>
 #include <movutl/app/export_state.hpp>
+#include <movutl/asset/composition.hpp>
 #include <movutl/asset/project.hpp>
+#include <movutl/asset/config.hpp>
 #include <movutl/gui/gui.hpp>
+#include <movutl/gui/transform_gizmo.hpp>
+#include <movutl/gui/viewer.hpp>
 
 namespace mu {
 
@@ -27,6 +31,15 @@ void render_status_bar() {
   const float right_area_width = 200.0f;
 
   ImGui::Text(ICON_FA_FILE " %s", proj_name.c_str());
+
+  const auto* active = Composition::GetActiveComp();
+  if(const auto& cur = viewer_cursor(); cur.valid && active) {
+    GizmoPt p{cur.x, cur.y};
+    const bool center = Config::Get()->viewer_ruler_center_origin;
+    if(center) p = gizmo_to_center_origin(p, GizmoPt{(double)active->size[0], (double)active->size[1]});
+    ImGui::SameLine();
+    ImGui::Text(ICON_FA_LOCATION_CROSSHAIRS " X:%.0f Y:%.0f (%s原点)", p.x, p.y, center ? "中央" : "左上");
+  }
 
   if(is_exporting()) {
     auto& prog      = get_export_progress();
