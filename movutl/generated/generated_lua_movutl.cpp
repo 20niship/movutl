@@ -129,13 +129,14 @@ void generated_lua_binding_movutl(lua_State* L) {
     .endClass()
     .beginClass<CompoRefEntt>("CompoRefEntt")
     .addFunction("getType", &CompoRefEntt::getType)
-    .addVariable("pos", &CompoRefEntt::pos)                           // Vec3
-    .addVariable("scale", &CompoRefEntt::scale)                       // Vec2
-    .addVariable("rotation", &CompoRefEntt::rotation)                 // float
-    .addVariable("alpha", &CompoRefEntt::alpha)                       // float
-    .addVariable("start_frame", &CompoRefEntt::start_frame)           // int
-    .addVariable("speed", &CompoRefEntt::speed)                       // float
-    .addVariable("target_comp_guid", &CompoRefEntt::target_comp_guid) // uint32_t
+    .addVariable("start_frame", &CompoRefEntt::start_frame)                           // int
+    .addVariable("speed", &CompoRefEntt::speed)                                       // float
+    .addVariable("target_comp_guid", &CompoRefEntt::target_comp_guid)                 // uint32_t
+    .addVariable("pos_", static_cast<Vec3 CompoRefEntt::*>(&Entity::pos_))            // Vec3
+    .addVariable("anchor_", static_cast<Vec3 CompoRefEntt::*>(&Entity::anchor_))      // Vec3
+    .addVariable("scale_", static_cast<Vec2 CompoRefEntt::*>(&Entity::scale_))        // Vec2
+    .addVariable("rotation_", static_cast<float CompoRefEntt::*>(&Entity::rotation_)) // float
+    .addVariable("alpha_", static_cast<float CompoRefEntt::*>(&Entity::alpha_))       // float
     .endClass()
     .beginClass<Composition>("Composition")
     .addFunction("frame_to_sample", &Composition::frame_to_sample)
@@ -217,11 +218,12 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addStaticFunction("Create", &FramebufferEntt::Create)
     .addFunction("getType", &FramebufferEntt::getType)
     .addFunction("captured_image", &FramebufferEntt::captured_image)
-    .addVariable("clear_original_", &FramebufferEntt::clear_original_) // bool
-    .addVariable("pos_", &FramebufferEntt::pos_)                       // Vec3
-    .addVariable("scale_", &FramebufferEntt::scale_)                   // Vec2
-    .addVariable("rotation_", &FramebufferEntt::rotation_)             // float
-    .addVariable("alpha_", &FramebufferEntt::alpha_)                   // uint8_t
+    .addVariable("clear_original_", &FramebufferEntt::clear_original_)                   // bool
+    .addVariable("pos_", static_cast<Vec3 FramebufferEntt::*>(&Entity::pos_))            // Vec3
+    .addVariable("anchor_", static_cast<Vec3 FramebufferEntt::*>(&Entity::anchor_))      // Vec3
+    .addVariable("scale_", static_cast<Vec2 FramebufferEntt::*>(&Entity::scale_))        // Vec2
+    .addVariable("rotation_", static_cast<float FramebufferEntt::*>(&Entity::rotation_)) // float
+    .addVariable("alpha_", static_cast<float FramebufferEntt::*>(&Entity::alpha_))       // float
     .endClass()
     .beginClass<Image>("Image")
     .addFunction("dirty", &Image::dirty)
@@ -242,12 +244,17 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("getType", &Image::getType)
     .addFunction("load_file", &Image::load_file)
     .addFunction("reload_asset", &Image::reload_asset)
-    .addVariable("width", &Image::width)         // unsigned int
-    .addVariable("height", &Image::height)       // unsigned int
-    .addVariable("dirty_", &Image::dirty_)       // int16_t
-    .addVariable("has_alpha", &Image::has_alpha) // bool
-    .addVariable("fmt", &Image::fmt)             // ImageFormat
-    .addVariable("path", &Image::path)           // std::string
+    .addVariable("width", &Image::width)                                       // unsigned int
+    .addVariable("height", &Image::height)                                     // unsigned int
+    .addVariable("dirty_", &Image::dirty_)                                     // int16_t
+    .addVariable("has_alpha", &Image::has_alpha)                               // bool
+    .addVariable("fmt", &Image::fmt)                                           // ImageFormat
+    .addVariable("path", &Image::path)                                         // std::string
+    .addVariable("pos_", static_cast<Vec3 Image::*>(&Entity::pos_))            // Vec3
+    .addVariable("anchor_", static_cast<Vec3 Image::*>(&Entity::anchor_))      // Vec3
+    .addVariable("scale_", static_cast<Vec2 Image::*>(&Entity::scale_))        // Vec2
+    .addVariable("rotation_", static_cast<float Image::*>(&Entity::rotation_)) // float
+    .addVariable("alpha_", static_cast<float Image::*>(&Entity::alpha_))       // float
     .endClass()
     .beginClass<MidiEntt>("MidiEntt")
     .addStaticFunction("Create", &MidiEntt::Create)
@@ -268,11 +275,16 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("load_file", &Movie::load_file)
     .addFunction("getType", &Movie::getType)
     .addFunction("reload_asset", &Movie::reload_asset)
-    .addVariable("start_frame_", &Movie::start_frame_) // int
-    .addVariable("speed", &Movie::speed)               // float
-    .addVariable("loop_", &Movie::loop_)               // bool
-    .addVariable("with_alpha_", &Movie::with_alpha_)   // bool
-    .addVariable("path_", &Movie::path_)               // std::string
+    .addVariable("start_frame_", &Movie::start_frame_)                         // int
+    .addVariable("speed", &Movie::speed)                                       // float
+    .addVariable("loop_", &Movie::loop_)                                       // bool
+    .addVariable("with_alpha_", &Movie::with_alpha_)                           // bool
+    .addVariable("path_", &Movie::path_)                                       // std::string
+    .addVariable("pos_", static_cast<Vec3 Movie::*>(&Entity::pos_))            // Vec3
+    .addVariable("anchor_", static_cast<Vec3 Movie::*>(&Entity::anchor_))      // Vec3
+    .addVariable("scale_", static_cast<Vec2 Movie::*>(&Entity::scale_))        // Vec2
+    .addVariable("rotation_", static_cast<float Movie::*>(&Entity::rotation_)) // float
+    .addVariable("alpha_", static_cast<float Movie::*>(&Entity::alpha_))       // float
     .endClass()
     .beginClass<Project>("Project")
     .addStaticFunction("New", &Project::New)
@@ -292,32 +304,34 @@ void generated_lua_binding_movutl(lua_State* L) {
     .beginClass<ShapeEntt>("ShapeEntt")
     .addStaticFunction("Create", &ShapeEntt::Create)
     .addFunction("getType", &ShapeEntt::getType)
-    .addVariable("pos_", &ShapeEntt::pos_)                   // Vec3
-    .addVariable("size_", &ShapeEntt::size_)                 // Vec2
-    .addVariable("rot_", &ShapeEntt::rot_)                   // float
-    .addVariable("alpha_", &ShapeEntt::alpha_)               // uint8_t
-    .addVariable("color_", &ShapeEntt::color_)               // Vec4b
-    .addVariable("shape_type_", &ShapeEntt::shape_type_)     // int32_t
-    .addVariable("custom_path", &ShapeEntt::custom_path)     // std::string
-    .addVariable("border_color_", &ShapeEntt::border_color_) // Vec4b
-    .addVariable("border_width_", &ShapeEntt::border_width_) // int32_t
+    .addVariable("size_", &ShapeEntt::size_)                                       // Vec2
+    .addVariable("color_", &ShapeEntt::color_)                                     // Vec4b
+    .addVariable("shape_type_", &ShapeEntt::shape_type_)                           // int32_t
+    .addVariable("custom_path", &ShapeEntt::custom_path)                           // std::string
+    .addVariable("border_color_", &ShapeEntt::border_color_)                       // Vec4b
+    .addVariable("border_width_", &ShapeEntt::border_width_)                       // int32_t
+    .addVariable("pos_", static_cast<Vec3 ShapeEntt::*>(&Entity::pos_))            // Vec3
+    .addVariable("anchor_", static_cast<Vec3 ShapeEntt::*>(&Entity::anchor_))      // Vec3
+    .addVariable("scale_", static_cast<Vec2 ShapeEntt::*>(&Entity::scale_))        // Vec2
+    .addVariable("rotation_", static_cast<float ShapeEntt::*>(&Entity::rotation_)) // float
+    .addVariable("alpha_", static_cast<float ShapeEntt::*>(&Entity::alpha_))       // float
     .endClass()
     .beginClass<TextEntt>("TextEntt")
     .addStaticFunction("Create", &TextEntt::Create)
     .addFunction("getType", &TextEntt::getType)
-    .addVariable("dirty_", &TextEntt::dirty_)               // int32_t
-    .addVariable("pos_", &TextEntt::pos_)                   // Vec3
-    .addVariable("scale_x_", &TextEntt::scale_x_)           // float
-    .addVariable("scale_y_", &TextEntt::scale_y_)           // float
-    .addVariable("rot_", &TextEntt::rot_)                   // float
-    .addVariable("speed", &TextEntt::speed)                 // float
-    .addVariable("alpha_", &TextEntt::alpha_)               // uint8_t
-    .addVariable("font", &TextEntt::font)                   // std::string
-    .addVariable("text", &TextEntt::text)                   // std::string
-    .addVariable("separate", &TextEntt::separate)           // bool
-    .addVariable("color_", &TextEntt::color_)               // Vec4b
-    .addVariable("border_color_", &TextEntt::border_color_) // Vec4b
-    .addVariable("border_width_", &TextEntt::border_width_) // int32_t
+    .addVariable("dirty_", &TextEntt::dirty_)                                     // int32_t
+    .addVariable("speed", &TextEntt::speed)                                       // float
+    .addVariable("font", &TextEntt::font)                                         // std::string
+    .addVariable("text", &TextEntt::text)                                         // std::string
+    .addVariable("separate", &TextEntt::separate)                                 // bool
+    .addVariable("color_", &TextEntt::color_)                                     // Vec4b
+    .addVariable("border_color_", &TextEntt::border_color_)                       // Vec4b
+    .addVariable("border_width_", &TextEntt::border_width_)                       // int32_t
+    .addVariable("pos_", static_cast<Vec3 TextEntt::*>(&Entity::pos_))            // Vec3
+    .addVariable("anchor_", static_cast<Vec3 TextEntt::*>(&Entity::anchor_))      // Vec3
+    .addVariable("scale_", static_cast<Vec2 TextEntt::*>(&Entity::scale_))        // Vec2
+    .addVariable("rotation_", static_cast<float TextEntt::*>(&Entity::rotation_)) // float
+    .addVariable("alpha_", static_cast<float TextEntt::*>(&Entity::alpha_))       // float
     .endClass()
     .beginClass<TrackLayer>("TrackLayer")
     .addFunction("find_entt", &TrackLayer::find_entt)

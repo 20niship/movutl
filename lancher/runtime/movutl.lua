@@ -137,18 +137,10 @@ movutl.CompoAudioEntt.target_comp_guid = 0
 function movutl.CompoAudioEntt:getType( ) end
 
 ---@class CompoRefEntt
----@field pos Vec3
----@field scale Vec2
----@field rotation number
----@field alpha number
 ---@field start_frame number
 ---@field speed number
 ---@field target_comp_guid number
 movutl.CompoRefEntt = {}
-movutl.CompoRefEntt.pos = Vec3()
-movutl.CompoRefEntt.scale = Vec2 ( 1.0 , 1.0 )
-movutl.CompoRefEntt.rotation = 0.0
-movutl.CompoRefEntt.alpha = 1.0
 movutl.CompoRefEntt.start_frame = 0
 movutl.CompoRefEntt.speed = 1.0 f
 movutl.CompoRefEntt.target_comp_guid = 0
@@ -263,16 +255,8 @@ function movutl.EntityInfo:str( ) end
 
 ---@class FramebufferEntt
 ---@field clear_original_ boolean
----@field pos_ Vec3
----@field scale_ Vec2
----@field rotation_ number
----@field alpha_ number
 movutl.FramebufferEntt = {}
 movutl.FramebufferEntt.clear_original_ = false
-movutl.FramebufferEntt.pos_ = Vec3 ( 0 , 0 , 0 )
-movutl.FramebufferEntt.scale_ = Vec2 ( 100 , 100 )
-movutl.FramebufferEntt.rotation_ = 0
-movutl.FramebufferEntt.alpha_ = 255
 
 ---@param name string
 ---@return Ref<FramebufferEntt>
@@ -477,20 +461,14 @@ function movutl.Project:SetActiveCompo( idx, ) end
 function movutl.Project:RemoveComposition( guid, ) end
 
 ---@class ShapeEntt
----@field pos_ Vec3
 ---@field size_ Vec2
----@field rot_ number
----@field alpha_ number
 ---@field color_ Vec4b
 ---@field shape_type_ number
 ---@field custom_path string
 ---@field border_color_ Vec4b
 ---@field border_width_ number
 movutl.ShapeEntt = {}
-movutl.ShapeEntt.pos_ = Vec3()
 movutl.ShapeEntt.size_ = Vec2 ( 200 , 200 )
-movutl.ShapeEntt.rot_ = 0.0 f
-movutl.ShapeEntt.alpha_ = 255
 movutl.ShapeEntt.color_ = Vec4b ( 255 , 255 , 255 , 255 )
 movutl.ShapeEntt.shape_type_ = ShapeType_Rect
 movutl.ShapeEntt.custom_path = ""
@@ -507,12 +485,7 @@ function movutl.ShapeEntt:getType( ) end
 
 ---@class TextEntt
 ---@field dirty_ number
----@field pos_ Vec3
----@field scale_x_ number
----@field scale_y_ number
----@field rot_ number
 ---@field speed number
----@field alpha_ number
 ---@field font string
 ---@field text string
 ---@field separate boolean
@@ -521,12 +494,7 @@ function movutl.ShapeEntt:getType( ) end
 ---@field border_width_ number
 movutl.TextEntt = {}
 movutl.TextEntt.dirty_ = 0
-movutl.TextEntt.pos_ = Vec3()
-movutl.TextEntt.scale_x_ = 1.0
-movutl.TextEntt.scale_y_ = 1.0
-movutl.TextEntt.rot_ = 0
 movutl.TextEntt.speed = 100.0
-movutl.TextEntt.alpha_ = 255
 movutl.TextEntt.font = ""
 movutl.TextEntt.text = ""
 movutl.TextEntt.separate = false
