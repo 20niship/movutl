@@ -8,6 +8,7 @@
 #include <movutl/asset/project.hpp>
 #include <movutl/asset/shape.hpp>
 #include <movutl/asset/text.hpp>
+#include <movutl/command/exo/exo_effects.hpp>
 #include <movutl/command/exo/exo_import.hpp>
 #include <movutl/command/exo/exo_report.hpp>
 #include <movutl/core/command.hpp>
@@ -267,4 +268,30 @@ TEST_CASE("exo: 未対応オブジェクトは取り込み結果レポートに�
   CHECK(rep.imported == 0);
   REQUIRE(rep.items.size() == 1);
   CHECK(rep.items[0].count == 2);
+}
+
+TEST_CASE("exo: 標準描画のblendがEntity::blend_へ変換される") {
+  bool ok = false;
+  CHECK(exo_blend_type(0, &ok) == Blend_Alpha);
+  CHECK(ok);
+  CHECK(exo_blend_type(1, &ok) == Blend_Add);
+  CHECK(exo_blend_type(4, &ok) == Blend_Screen);
+  CHECK(exo_blend_type(6, &ok) == Blend_Lighten); // 比較(明)
+  CHECK(exo_blend_type(7, &ok) == Blend_Darken);  // 比較(暗)
+  CHECK(ok);
+  CHECK(exo_blend_type(12, &ok) == Blend_Alpha); // 差分は未対応
+  CHECK_FALSE(ok);
+
+  Project::New();
+  // 図形(type=2) + 標準描画(blend=1) / 別レイヤーの図形(blend=12)
+  auto obj = [](int n, int layer, int blend) {
+    auto id = std::to_string(n);
+    return "[" + id + "]\r\nstart=1\r\nend=10\r\nlayer=" + std::to_string(layer) + "\r\n[" + id + ".0]\r\n_name=\x90\x7d\x8c\x60\r\ntype=2\r\n[" + id +
+           ".1]\r\n_name=\x95\x57\x8f\x80\x95\x60\x89\xe6\r\nX=0\r\nY=0\r\nZ=0\r\nblend=" + std::to_string(blend) + "\r\n";
+  };
+  CHECK(import_exo_text("[exedit]\r\nwidth=640\r\nheight=360\r\nrate=30\r\nscale=1\r\n" + obj(0, 1, 1) + obj(1, 2, 12)) == 2);
+  auto* comp = Composition::GetActiveComp();
+  CHECK(comp->layers[0].entts.at(0)->blend_ == Blend_Add);
+  CHECK(comp->layers[1].entts.at(0)->blend_ == Blend_Alpha);
+  REQUIRE(exo_import_report().items.size() == 1); // 差分のみ未対応
 }

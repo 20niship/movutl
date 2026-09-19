@@ -12,6 +12,7 @@
 #include <movutl/asset/project.hpp>
 #include <movutl/asset/shape.hpp>
 #include <movutl/asset/text.hpp>
+#include <movutl/command/exo/exo_effects.hpp>
 #include <movutl/command/exo/exo_import.hpp>
 #include <movutl/command/exo/exo_report.hpp>
 #include <movutl/core/command.hpp>
@@ -311,6 +312,7 @@ int import_exo_file(const char* path) {
       continue;
     }
     set_range(ent, start, end);
+    apply_exo_blend(*ent, draw);
     pending.push_back({ent, layer});
   }
 
