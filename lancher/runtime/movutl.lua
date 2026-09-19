@@ -702,6 +702,10 @@ function movutl.add_filter_to_entity( entt, filter_name, )end
 ---@return boolean
 function movutl.add_filter_to_image( entt, filter_name, )end
 
+---@param filter_name string
+---@return boolean
+function movutl.add_filter_to_selected_entt( filter_name, )end
+
 ---@param entt Ref<ShapeEntt> 
 ---@param filter_name string
 ---@return boolean

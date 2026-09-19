@@ -471,6 +471,7 @@ void generated_lua_binding_movutl(lua_State* L) {
     .endClass()
     .addFunction("add_filter_to_entity", static_cast<bool (*)(const Ref<Entity>&, const char*)>(&add_filter_to_entity))
     .addFunction("add_filter_to_image", static_cast<bool (*)(const Ref<Image>&, const char*)>(&add_filter_to_image))
+    .addFunction("add_filter_to_selected_entt", static_cast<bool (*)(const char*)>(&add_filter_to_selected_entt))
     .addFunction("add_filter_to_shape", static_cast<bool (*)(const Ref<ShapeEntt>&, const char*)>(&add_filter_to_shape))
     .addFunction("add_new_audio_track", static_cast<bool (*)(const char*, const char*, int, int)>(&add_new_audio_track))
     .addFunction("add_new_custom_object_track", static_cast<Ref<Entity> (*)(const std::string&, int, int)>(&add_new_custom_object_track))

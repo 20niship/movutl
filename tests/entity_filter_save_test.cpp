@@ -134,10 +134,8 @@ TEST_CASE("Entity::collect_animated_frames/move_keyframes_at/erase_keyframes_at:
   CHECK_FALSE(pos_clip.has_key_at(30));
   CHECK_FALSE(alpha_clip.has_key_at(30));
   CHECK_FALSE(hue_clip.has_key_at(30));
-  // 各clipとも frame=0 の1個目のキーは"残り1個未満にはできない"制約で残る
-  auto remaining = img->collect_animated_frames();
-  REQUIRE(remaining.size() == 1);
-  CHECK(remaining[0] == 0);
+  // 各clipとも frame=0 の1個目のキーは残るが、単一キーはアニメーションではないため中間点として集計されない
+  CHECK(img->collect_animated_frames().empty());
 }
 
 TEST_CASE("Entity::getSaveProps/fromSaveProps: フィルタが無ければ空のまま復元される") {

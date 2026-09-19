@@ -231,11 +231,15 @@ std::vector<uint32_t> Entity::collect_animated_frames() const {
   ensure_anim_props();
   std::set<uint32_t> frames;
   const uint32_t off = (uint32_t)std::max(fstart_, 0);
-  for(int i = 0; i < (int)anim_props_.props.size(); i++)
+  for(int i = 0; i < (int)anim_props_.props.size(); i++) {
+    if(!anim_props_.has_animation(i)) continue; // 単一キー(=アニメーションしていない初期値)は中間点として扱わない
     for(uint32_t f : anim_props_.keyframe_frames(i)) frames.insert(f + off);
+  }
   for(auto& filt : filters_)
-    for(int i = 0; i < (int)filt.props.props.size(); i++)
+    for(int i = 0; i < (int)filt.props.props.size(); i++) {
+      if(!filt.props.has_animation(i)) continue;
       for(uint32_t f : filt.props.keyframe_frames(i)) frames.insert(f + off);
+    }
   return std::vector<uint32_t>(frames.begin(), frames.end());
 }
 

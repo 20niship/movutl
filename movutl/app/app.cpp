@@ -229,6 +229,11 @@ bool select_entt_by_index(int index) {
   return false;
 }
 
+bool add_filter_to_selected_entt(const char* filter_name) {
+  auto sel = get_selected_entts();
+  return !sel.empty() && add_filter_to_entity(sel[0], filter_name);
+}
+
 Ref<Entity> duplicate_asset(const Ref<Entity>& src) {
   if(!src) return nullptr;
   auto clone = Entity::fromSaveProps(src->getSaveProps());

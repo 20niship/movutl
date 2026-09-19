@@ -455,7 +455,6 @@ void edit_props(Entity* e, const cutil::PropInfo* info, const cutil::Prop& p, ui
       LOG_F(WARNING, "Property %s -> %s not found", e->name.c_str(), f.name);
       continue;
     }
-    ImGui::PushID(f.name);
     bool changed = false;
     cutil::Prop newp;
     const char* label_       = f.label[0] ? f.label : f.name;
@@ -468,11 +467,11 @@ void edit_props(Entity* e, const cutil::PropInfo* info, const cutil::Prop& p, ui
       is_animatable && !is_enum &&
       (f.type == cutil::prop_info_of<bool>() || f.type == cutil::prop_info_of<float>() || f.type == cutil::prop_info_of<int32_t>() || f.type == cutil::prop_info_of<Vec2>() || f.type == cutil::prop_info_of<Vec3>() || f.type == cutil::prop_info_of<Vec4>() || f.type == cutil::prop_info_of<Vec4b>());
 
+    ensure_table(!use_trackbar); // 表の開閉はPushIDの外で行う(ID stackが食い違うとEndTableでassertする)
+    ImGui::PushID(f.name);
     if(use_trackbar) {
-      ensure_table(false);
       if(wd_animatable_row(f, e->anim_props_, anim_idx, rel_frame, e->guid_, -1, e->fend_ - e->fstart_)) changed = true;
     } else {
-      ensure_table(true);
       if(in_table) wd_row(label_, f.desc);
       if(f.type == cutil::prop_info_of<int32_t>() && is_enum) {
         static const char* kShapeNames[] = {"三角形", "四角形", "六角形", "円", "カスタムパス"};

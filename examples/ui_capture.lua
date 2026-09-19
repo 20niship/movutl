@@ -18,6 +18,11 @@ local steps = {
       -- MU_CAPTURE_SELECT: 選択するEntityの通し番号(レイヤー順、0始まり。既定0)
       local i = tonumber(os.getenv("MU_CAPTURE_SELECT") or "0")
       print("ui_capture: select_entt_by_index(" .. i .. ") = " .. tostring(movutl.select_entt_by_index(i)))
+      -- MU_CAPTURE_FILTER: 選択中Entityに追加するフィルタ名(エフェクト/キーフレームUIの確認用)
+      local fx = os.getenv("MU_CAPTURE_FILTER")
+      if fx and fx ~= "" then
+        print("ui_capture: add_filter(" .. fx .. ") = " .. tostring(movutl.add_filter_to_selected_entt(fx)))
+      end
     end },
   { wait = 10, name = "03_after_select" },
 }

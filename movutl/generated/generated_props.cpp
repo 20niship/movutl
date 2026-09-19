@@ -91,41 +91,6 @@ cutil::Prop CompoRefEntt::getProps() const {
   return p;
 }
 void CompoRefEntt::setProps(const cutil::Prop& p) { (void)p.load_to(this, getPropsInfo()); }
-const cutil::PropInfo* Entity::getTrackPropsInfo() const {
-  static const cutil::PropInfo info = [] {
-    cutil::PropInfo p;
-    p.fields.push_back(cutil::PropInfo::Field("fstart_", offsetof(Entity, fstart_), cutil::prop_info_of<int>()));
-    p.fields.back().set_label("開始位置(frame)");
-    p.fields.push_back(cutil::PropInfo::Field("fend_", offsetof(Entity, fend_), cutil::prop_info_of<int>()));
-    p.fields.back().set_label("終了位置(frame)");
-    // blend_ has an unsupported type (BlendType)
-    p.fields.push_back(cutil::PropInfo::Field("group_guid_", offsetof(Entity, group_guid_), cutil::prop_info_of<uint32_t>()));
-    p.fields.back().set_label("グループID");
-    p.fields.back().set_desc("グループ化されている時のグループID");
-    p.fields.push_back(cutil::PropInfo::Field("active_", offsetof(Entity, active_), cutil::prop_info_of<bool>()));
-    p.fields.back().set_label("アクティブ");
-    p.fields.back().set_desc("オブジェクトが有効かどうか");
-    p.fields.push_back(cutil::PropInfo::Field("solo_", offsetof(Entity, solo_), cutil::prop_info_of<bool>()));
-    p.fields.back().set_label("ソロモード");
-    p.fields.back().set_desc("(音声のみ)他のレイヤを非表示にする");
-    p.fields.push_back(cutil::PropInfo::Field("clipping_up_", offsetof(Entity, clipping_up_), cutil::prop_info_of<bool>()));
-    p.fields.back().set_label("上レイヤでクリッピング");
-    p.fields.push_back(cutil::PropInfo::Field("camera_ctrl_", offsetof(Entity, camera_ctrl_), cutil::prop_info_of<bool>()));
-    p.fields.back().set_label("カメラ制御");
-    p.fields.back().set_desc("カメラ制御の対象");
-    p.fields.push_back(cutil::PropInfo::Field("custom_color_", offsetof(Entity, custom_color_), cutil::prop_info_of<int32_t>()));
-    p.fields.back().set_label("カスタム色");
-    p.fields.back().set_desc("0の場合メディア種別ごとの既定色を使う");
-    return p;
-  }();
-  return &info;
-}
-cutil::Prop Entity::getTrackProps() const {
-  cutil::Prop p;
-  p.dump(this, getTrackPropsInfo());
-  return p;
-}
-void Entity::setTrackProps(const cutil::Prop& p) { (void)p.load_to(this, getTrackPropsInfo()); }
 const cutil::PropInfo* Entity::getTransformPropsInfo() const {
   static const cutil::PropInfo info = [] {
     cutil::PropInfo p;
@@ -165,6 +130,41 @@ cutil::Prop Entity::getTransformProps() const {
   return p;
 }
 void Entity::setTransformProps(const cutil::Prop& p) { (void)p.load_to(this, getTransformPropsInfo()); }
+const cutil::PropInfo* Entity::getTrackPropsInfo() const {
+  static const cutil::PropInfo info = [] {
+    cutil::PropInfo p;
+    p.fields.push_back(cutil::PropInfo::Field("fstart_", offsetof(Entity, fstart_), cutil::prop_info_of<int>()));
+    p.fields.back().set_label("開始位置(frame)");
+    p.fields.push_back(cutil::PropInfo::Field("fend_", offsetof(Entity, fend_), cutil::prop_info_of<int>()));
+    p.fields.back().set_label("終了位置(frame)");
+    // blend_ has an unsupported type (BlendType)
+    p.fields.push_back(cutil::PropInfo::Field("group_guid_", offsetof(Entity, group_guid_), cutil::prop_info_of<uint32_t>()));
+    p.fields.back().set_label("グループID");
+    p.fields.back().set_desc("グループ化されている時のグループID");
+    p.fields.push_back(cutil::PropInfo::Field("active_", offsetof(Entity, active_), cutil::prop_info_of<bool>()));
+    p.fields.back().set_label("アクティブ");
+    p.fields.back().set_desc("オブジェクトが有効かどうか");
+    p.fields.push_back(cutil::PropInfo::Field("solo_", offsetof(Entity, solo_), cutil::prop_info_of<bool>()));
+    p.fields.back().set_label("ソロモード");
+    p.fields.back().set_desc("(音声のみ)他のレイヤを非表示にする");
+    p.fields.push_back(cutil::PropInfo::Field("clipping_up_", offsetof(Entity, clipping_up_), cutil::prop_info_of<bool>()));
+    p.fields.back().set_label("上レイヤでクリッピング");
+    p.fields.push_back(cutil::PropInfo::Field("camera_ctrl_", offsetof(Entity, camera_ctrl_), cutil::prop_info_of<bool>()));
+    p.fields.back().set_label("カメラ制御");
+    p.fields.back().set_desc("カメラ制御の対象");
+    p.fields.push_back(cutil::PropInfo::Field("custom_color_", offsetof(Entity, custom_color_), cutil::prop_info_of<int32_t>()));
+    p.fields.back().set_label("カスタム色");
+    p.fields.back().set_desc("0の場合メディア種別ごとの既定色を使う");
+    return p;
+  }();
+  return &info;
+}
+cutil::Prop Entity::getTrackProps() const {
+  cutil::Prop p;
+  p.dump(this, getTrackPropsInfo());
+  return p;
+}
+void Entity::setTrackProps(const cutil::Prop& p) { (void)p.load_to(this, getTrackPropsInfo()); }
 const cutil::PropInfo* FramebufferEntt::getPropsInfo() const {
   static const cutil::PropInfo info = [] {
     cutil::PropInfo p;

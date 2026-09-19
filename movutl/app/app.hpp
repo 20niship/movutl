@@ -69,6 +69,8 @@ bool export_current_frame_png(const char* path);
 bool export_screen_png(const char* path);
 // アクティブCompositionのEntityをレイヤー順(上のレイヤーから、レイヤー内は並び順)に数えたindex番目(0始まり)だけを選択する(GUIの動作確認スクリプト用)。存在しなければfalse
 bool select_entt_by_index(int index);
+// 選択中の先頭Entityにフィルタを追加する(GUIの動作確認スクリプト用。派生クラスはLuaでEntityに変換できないため)
+bool add_filter_to_selected_entt(const char* filter_name);
 
 std::vector<Ref<Entity>> get_selected_entts();
 void clear_selected_entts();
