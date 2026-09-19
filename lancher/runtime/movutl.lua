@@ -726,7 +726,7 @@ function movutl.new_project( )end
 
 ---@param path string
 ---@return boolean
-function movutl.open_dropped_file( path, )end
+function movutl.open_file( path, )end
 
 ---@param path string
 ---@return nil

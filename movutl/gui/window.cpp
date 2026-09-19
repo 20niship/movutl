@@ -77,7 +77,7 @@ void GUIManager::init() {
   glfwSetDropCallback(glfw_window, [](GLFWwindow*, int n, const char** paths) {
     for(int i = 0; i < n; i++) {
       LOG_F(INFO, "drop: %s", paths[i]);
-      open_dropped_file(paths[i]);
+      open_file(paths[i]);
     }
   });
   LOG_F(INFO, "glfw drop callback registered");

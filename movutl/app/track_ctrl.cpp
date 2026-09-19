@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <filesystem>
 #include <movutl/app/app.hpp>
 #include <movutl/asset/audio.hpp>
@@ -256,9 +257,15 @@ Ref<Entity> import_media_file(const char* path) {
   return nullptr;
 }
 
-bool open_dropped_file(const char* path) {
+bool open_file(const char* path) {
   MU_ASSERT(path != nullptr);
-  if(auto* cmd = find_command_by_extension(fs_extension(path))) return run_command(cmd->id.c_str(), path);
+  auto ext = fs_extension(path);
+  if(auto* cmd = find_command_by_extension(ext)) return run_command(cmd->id.c_str(), path);
+  std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char c) { return (char)std::tolower(c); });
+  if(ext == "json") {
+    open_project(path);
+    return true;
+  }
   return import_media_file(path) != nullptr;
 }
 

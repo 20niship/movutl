@@ -20,9 +20,9 @@ movutl.register_command("save_project_as_cmd", "名前を付けて保存", "プ�
 
 movutl.register_command("open_project_cmd", "開く", "プロジェクトファイルを開く", "ctrl+o", {
   on_start = function(self)
-    local path = movutl.select_file_dialog("プロジェクトを開く", {"json"})
+    local path = movutl.select_file_dialog("ファイルを開く", {})
     if path == "" then return "failed" end
-    movutl.open_project(path)
+    if not movutl.open_file(path) then return "failed" end
   end,
 })
 
