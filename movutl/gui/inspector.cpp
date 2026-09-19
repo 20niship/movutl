@@ -12,6 +12,7 @@
 #include <movutl/asset/entity.hpp>
 #include <movutl/asset/midi.hpp>
 #include <movutl/asset/project.hpp>
+#include <movutl/asset/text.hpp>
 #include <movutl/core/logger.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/gui/inspector.hpp>
@@ -36,6 +37,30 @@ bool fuzzy_match(const char* src, const char* filter) {
     src++;
   }
   return true;
+}
+
+// テキストの揃え位置(3x3)と文字装飾。数値プロパティ(サイズ/太字/字間など)は汎用のプロパティ欄が担当する
+bool draw_text_style_ui(TextEntt* t) {
+  bool changed = false;
+  static const char* kAlignLabels[9] = {"左上", "上", "右上", "左", "中央", "右", "左下", "下", "右下"};
+  ImGui::TextUnformatted("揃え");
+  for(int i = 0; i < 9; i++) {
+    ImGui::PushID(i);
+    if(i % 3 != 0) ImGui::SameLine();
+    if(ImGui::Selectable(kAlignLabels[i], t->align_ == i, 0, ImVec2(44, 22))) {
+      t->align_ = i;
+      changed   = true;
+    }
+    ImGui::PopID();
+  }
+  static const char* kDecoNames[] = {"標準", "影付き", "影付き(薄)", "縁取り", "縁取り(細)"};
+  int deco                        = std::clamp((int)t->deco_, 0, (int)IM_ARRAYSIZE(kDecoNames) - 1);
+  ImGui::SetNextItemWidth(-1);
+  if(ImGui::Combo("文字装飾", &deco, kDecoNames, IM_ARRAYSIZE(kDecoNames))) {
+    t->deco_ = deco;
+    changed  = true;
+  }
+  return changed;
 }
 } // namespace
 
@@ -67,6 +92,12 @@ void InspectorWindow::Update() {
     ImGui::SetNextItemWidth(-1);
     if(ImGui::Combo("合成モード", &idx, kBlendNames, IM_ARRAYSIZE(kBlendNames))) {
       e->blend_ = (BlendType)idx;
+      if(auto* comp = e->get_comp()) comp->invalidate_cache_range(e->fstart_, e->fend_);
+    }
+  }
+
+  if(auto* txt = dynamic_cast<TextEntt*>(e.get())) {
+    if(draw_text_style_ui(txt)) {
       if(auto* comp = e->get_comp()) comp->invalidate_cache_range(e->fstart_, e->fend_);
     }
   }
