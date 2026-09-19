@@ -29,7 +29,7 @@ void render_main_menu_bar() {
   ImGui::BeginDisabled(is_exporting()); // エクスポート中はプロジェクト操作を一切禁止する(キャンセルはExportWindow/Escキーで行う)
   if(ImGui::BeginMenu("ファイル")) {
     if(ImGui::MenuItem("新規", "Ctrl+N")) new_project();
-    if(ImGui::MenuItem("開く", "Ctrl+O")) open_path_popup([](const char* p) { open_file(p); });
+    if(ImGui::MenuItem("開く", "Ctrl+O")) run_command("open_project_cmd"); // OSのファイルダイアログ(shortcuts.luaのCtrl+Oと同経路)
     if(ImGui::MenuItem("保存", "Ctrl+S")) {
       if(Project::Get()->path.empty())
         open_path_popup([](const char* p) { save_project_as(p); });
@@ -54,6 +54,8 @@ void render_main_menu_bar() {
     }
     ImGui::MenuItem("ルーラー表示", nullptr, &Config::Get()->show_viewer_ruler);
     ImGui::MenuItem("ルーラー原点を中央にする", nullptr, &Config::Get()->viewer_ruler_center_origin);
+    ImGui::MenuItem("開発者ウィンドウ", nullptr, &Config::Get()->show_developer_window);
+    ImGui::MenuItem("FFT", nullptr, &Config::Get()->show_fft_window);
     if(ImGui::BeginMenu("スタイル")) {
       const auto& styles = detail::AppMain::Get()->imgui_styles;
       for(const auto& style : styles) {

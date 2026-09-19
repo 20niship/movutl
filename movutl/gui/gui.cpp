@@ -1,5 +1,6 @@
 #include <IconsFontAwesome6.h>
 #include <imgui.h>
+#include <imgui_internal.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 // --
@@ -33,7 +34,6 @@ void init_gui_panels() {
   default_workspace.add_entry("MOVUTL TIMELINE WINDOW", ImGuiDir_Down, 0.40f);
   default_workspace.add_entry("ツール", ImGuiDir_Left, 0.2f);
   default_workspace.add_entry(ICON_FA_PLUG " エフェクト制御", ImGuiDir_Right, 0.25f);
-  default_workspace.add_entry("FFT", ImGuiDir_Right, 0.3f);
   default_workspace.add_entry(ICON_FA_KEYBOARD " ピアノロール", ImGuiDir_Down, 0.5f);
   default_workspace.add_entry("Viewer", ImGuiDir_None, 1.0f);
   register_workspace("Default", default_workspace);
@@ -45,6 +45,10 @@ void update_gui_panels() {
   for(auto& panel : a->panels) {
     const bool disable = is_exporting() && !panel->always_enabled_during_export();
     if(disable) ImGui::BeginDisabled();
+    // ドックタブ左の▼(ウィンドウメニュー)と×は使わないので隠して見出しを軽くする(タイムラインは自前のクラス指定で上書きされる)
+    static ImGuiWindowClass panel_class;
+    panel_class.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_NoWindowMenuButton | ImGuiDockNodeFlags_NoCloseButton;
+    ImGui::SetNextWindowClass(&panel_class);
     panel->Update();
     if(disable) ImGui::EndDisabled();
   }

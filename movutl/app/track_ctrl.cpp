@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <filesystem>
 #include <movutl/app/app.hpp>
+#include <movutl/core/status_log.hpp>
 #include <movutl/asset/audio.hpp>
 #include <movutl/asset/compo_audio_ref.hpp>
 #include <movutl/asset/compo_ref.hpp>
@@ -276,7 +277,14 @@ bool open_file(const char* path) {
     open_project(path);
     return true;
   }
-  return import_media_file(path) != nullptr;
+  const bool ok = import_media_file(path) != nullptr;
+  if(ok) {
+    status_log_set_dirty(true);
+    push_status_log(StatusLevel::Success, "読み込みました: " + std::filesystem::path(path).filename().string());
+  } else {
+    push_status_log(StatusLevel::Error, "読み込めませんでした: " + std::filesystem::path(path).filename().string());
+  }
+  return ok;
 }
 
 } // namespace mu

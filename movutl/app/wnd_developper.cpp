@@ -2,13 +2,18 @@
 #include <movutl/app/app_impl.hpp>
 #include <movutl/app/wnd_developper.hpp>
 #include <movutl/asset/composition.hpp>
+#include <movutl/asset/config.hpp>
 #include <movutl/core/time.hpp>
 #include <movutl/plugin/aviutl_script/aviutl_obj_binding.hpp>
 
 namespace mu {
 
 void DeveloperWindow::Update() {
-  ImGui::Begin("開発者ウィンドウ");
+  if(!Config::Get()->show_developer_window) return;
+  if(!ImGui::Begin("開発者ウィンドウ", &Config::Get()->show_developer_window)) {
+    ImGui::End();
+    return;
+  }
 
   auto& pool = detail::AppMain::Get()->render_pool;
 

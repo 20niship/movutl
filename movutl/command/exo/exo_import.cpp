@@ -19,6 +19,7 @@
 #include <movutl/core/command.hpp>
 #include <movutl/core/filesystem.hpp>
 #include <movutl/core/logger.hpp>
+#include <movutl/core/status_log.hpp>
 #include <movutl/gui/timeline.hpp>
 #include <sstream>
 #include <vector>
@@ -392,7 +393,13 @@ struct ExoImportCommand final : mCommand {
     std::string path = arg;
     if(path.empty()) path = select_file_dialog("EXOを読み込む", {"exo"});
     if(path.empty()) return CommandStatus::Failed;
-    if(import_exo_file(path.c_str()) < 0) return CommandStatus::Failed;
+    const int n = import_exo_file(path.c_str());
+    if(n < 0) {
+      push_status_log(StatusLevel::Error, "EXOを開けませんでした: " + std::filesystem::path(path).filename().string());
+      return CommandStatus::Failed;
+    }
+    status_log_set_dirty(true);
+    push_status_log(StatusLevel::Success, "EXOを読み込みました: " + std::to_string(n) + "オブジェクト");
     RequestTimelineFit(); // タイムラインの表示範囲を取り込んだEntity全体に合わせる
     return CommandStatus::Finished;
   }

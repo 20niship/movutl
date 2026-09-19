@@ -24,7 +24,7 @@ void create_sample_video_data() {
 // 動画/音声/画像のいずれかを内容から自動判別してトラックへ開く
 void open_media_file(const char* path) {
   Project::New();
-  import_media_file(path);
+  open_file(path); // D&D/メニューと同じ経路(拡張子でexo/プロジェクト/メディアを判別)
 }
 
 int main(int argc, char** argv) {

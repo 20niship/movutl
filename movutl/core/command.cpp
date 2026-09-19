@@ -2,6 +2,7 @@
 #include <cctype>
 #include <movutl/core/command.hpp>
 #include <movutl/core/logger.hpp>
+#include <movutl/core/status_log.hpp>
 
 namespace mu {
 
@@ -66,13 +67,21 @@ bool CommandManager::run_command(const char* id, const char* arg) {
   for(const auto& e : entries_) {
     if(e.info.id != id) continue;
     auto instance = e.factory();
-    instance->arg = arg ? arg : "";
-    auto status   = instance->on_start();
+    instance->arg  = arg ? arg : "";
+    instance->name = e.info.name;
+    auto status    = instance->on_start();
     if(status == CommandStatus::Running) running_.push_back(RunningCommand{e.info.id, instance});
     if(status != CommandStatus::Failed && instance->undoable()) {
       undo_stack_.push_back(instance);
       redo_stack_.clear();
+      status_log_set_dirty(true);
     }
+    // 再生/コマ送りは頻度が高くログが流れてしまうため除外する
+    const bool quiet = e.info.id == "play_pause" || e.info.id.rfind("frame_step", 0) == 0;
+    if(status == CommandStatus::Failed)
+      push_status_log(StatusLevel::Warning, e.info.name + ": 実行できませんでした");
+    else if(!quiet)
+      push_status_log(StatusLevel::Info, e.info.name);
     return status != CommandStatus::Failed;
   }
   LOG_F(WARNING, "CommandManager::run_command: unknown id '%s'", id);
@@ -84,6 +93,8 @@ bool CommandManager::undo() {
   auto cmd = undo_stack_.back();
   undo_stack_.pop_back();
   cmd->on_undo();
+  push_status_log(StatusLevel::Info, "元に戻す: " + cmd->name);
+  status_log_set_dirty(true);
   redo_stack_.push_back(cmd);
   return true;
 }
@@ -93,6 +104,8 @@ bool CommandManager::redo() {
   auto cmd = redo_stack_.back();
   redo_stack_.pop_back();
   cmd->on_redo();
+  push_status_log(StatusLevel::Info, "やり直し: " + cmd->name);
+  status_log_set_dirty(true);
   undo_stack_.push_back(cmd);
   return true;
 }
