@@ -147,7 +147,7 @@ bool draw_anim_value_widget_dyn(const char* id, const cutil::PropInfo::Field& f,
 }
 } // namespace
 
-bool wd_animatable_row(const cutil::PropInfo::Field& f, AnimProps& anim, int idx, uint32_t cur_frame, uint64_t entity_guid, int filter_index) {
+bool wd_animatable_row(const cutil::PropInfo::Field& f, AnimProps& anim, int idx, uint32_t cur_frame, uint64_t entity_guid, int filter_index, int fstart, int fend) {
   ImGui::PushID(f.name);
   bool changed        = false;
   auto [pf, nf]       = anim.neighbor_frames(idx, cur_frame);
@@ -178,46 +178,58 @@ bool wd_animatable_row(const cutil::PropInfo::Field& f, AnimProps& anim, int idx
     ImGui::EndDragDropSource();
   }
 
+  bool open_settings = false; // OpenPopupはポップアップ内側だとIDスコープがずれるため、EndPopup後に開く
   if(ImGui::BeginPopup("##anim_popup")) {
-    if(!animated) {
-      if(ImGui::Selectable(ICON_FA_DIAMOND " 現在フレームでアニメーションを開始")) {
-        anim.add_keyframe_here(idx, cur_frame);
-        changed = true;
+    // AviUtl準拠: 移動方式メニュー。未アニメ時に選ぶとfstart〜fendの2点キーで区間アニメを開始する
+    const AniInterpType cur = animated ? anim.get_ease_type(idx, pf) : AniInterpType::LINEAR;
+    auto pick               = [&](AniInterpType t) {
+      if(!animated) {
+        uint32_t a = fstart >= 0 ? (uint32_t)fstart : cur_frame;
+        uint32_t b = fend > fstart && fend >= 0 ? (uint32_t)fend : a + 30;
+        anim.add_keyframe_here(idx, a);
+        anim.add_keyframe_here(idx, b);
+        pf = a;
       }
-    } else {
-      bool has_key = anim.has_key_at(idx, cur_frame);
-      if(has_key) {
-        if(ImGui::Selectable(ICON_FA_TRASH " このフレームの中間点を削除")) {
+      anim.set_ease_type(idx, pf, t);
+      changed = true;
+    };
+    if(ImGui::MenuItem("移動無し", nullptr, !animated) && animated) {
+      anim.collapse_to_single(idx, cur_frame);
+      changed = true;
+    }
+    struct Preset {
+      const char* name;
+      AniInterpType type;
+    };
+    static constexpr Preset kPresets[] = {{"直線移動", AniInterpType::LINEAR}, {"加減速移動", AniInterpType::EaseInOutSine}, {"曲線移動", AniInterpType::Custom}, {"加速", AniInterpType::EaseInQuad}, {"減速", AniInterpType::EaseOutQuad}};
+    for(auto& pr : kPresets)
+      if(ImGui::MenuItem(pr.name, nullptr, animated && cur == pr.type)) pick(pr.type);
+    if(ImGui::BeginMenu("easing")) {
+      for(auto& opt : kEaseOptions)
+        if(ImGui::MenuItem(opt.name, nullptr, animated && cur == opt.type)) pick(opt.type);
+      ImGui::EndMenu();
+    }
+    ImGui::Separator();
+    if(animated) {
+      if(anim.has_key_at(idx, cur_frame)) {
+        if(ImGui::MenuItem(ICON_FA_TRASH " このフレームの中間点を削除")) {
           anim.erase_keyframe(idx, cur_frame);
           changed = true;
         }
-      } else if(ImGui::Selectable(ICON_FA_DIAMOND " このフレームに中間点を追加")) {
+      } else if(ImGui::MenuItem(ICON_FA_DIAMOND " このフレームに中間点を追加")) {
         anim.add_keyframe_here(idx, cur_frame);
         changed = true;
       }
-      if(ImGui::Selectable("アニメーションを解除(現在値で固定)")) {
-        anim.collapse_to_single(idx, cur_frame);
-        changed = true;
-      }
-      ImGui::Separator();
-      AniInterpType cur = anim.get_ease_type(idx, pf);
-      if(ImGui::BeginCombo("イージング", ease_name(cur))) {
-        for(auto& opt : kEaseOptions) {
-          bool selected = opt.type == cur;
-          if(ImGui::Selectable(opt.name, selected)) {
-            anim.set_ease_type(idx, pf, opt.type);
-            changed = true;
-          }
-        }
-        ImGui::EndCombo();
-      }
-      if(cur == AniInterpType::Custom) {
-        auto bez = anim.get_ease_bezier(idx, pf);
-        if(wd_bezier_handle_editor(bez, 120.0f)) {
-          anim.set_ease_bezier(idx, pf, bez);
-          changed = true;
-        }
-      }
+      if(cur == AniInterpType::Custom && ImGui::MenuItem("設定")) open_settings = true;
+    }
+    ImGui::EndPopup();
+  }
+  if(open_settings) ImGui::OpenPopup("##anim_settings");
+  if(ImGui::BeginPopup("##anim_settings")) {
+    auto bez = anim.get_ease_bezier(idx, pf);
+    if(wd_bezier_handle_editor(bez, 120.0f)) {
+      anim.set_ease_bezier(idx, pf, bez);
+      changed = true;
     }
     ImGui::EndPopup();
   }
@@ -343,7 +355,7 @@ void wd_entt_props_editor(Entity* e, uint32_t cur_frame) {
       }
     } else if(is_animatable && (f.type == cutil::prop_info_of<bool>() || f.type == cutil::prop_info_of<float>() || f.type == cutil::prop_info_of<int32_t>() || f.type == cutil::prop_info_of<Vec2>() || f.type == cutil::prop_info_of<Vec3>() || f.type == cutil::prop_info_of<Vec4>() ||
                                 f.type == cutil::prop_info_of<Vec4b>())) {
-      if(wd_animatable_row(f, e->anim_props_, anim_idx, cur_frame, e->guid_, -1)) changed = true;
+      if(wd_animatable_row(f, e->anim_props_, anim_idx, cur_frame, e->guid_, -1, e->fstart_, e->fend_)) changed = true;
     } else if(f.type == cutil::prop_info_of<uint8_t>()) {
       int v = p.get<uint8_t>(f.name);
       if(ImGui::InputInt(name_, &v)) {

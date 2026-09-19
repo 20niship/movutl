@@ -252,3 +252,13 @@ TEST_CASE("AnimProps::save/load_keys: キーフレーム列を保存し名前一
   CHECK(dst.get<float>(0, 20) == doctest::Approx(50.0f));
   CHECK(dst.has_animation(0));
 }
+
+TEST_CASE("PAniClip<Vec4b>::get: 値が減少する方向(白→黒)でも補間できる") {
+  PAniClip<Vec4b> clip;
+  clip.clear();
+  clip.add_keyframe(0, Vec4b(255, 255, 255, 255));
+  clip.add_keyframe(10, Vec4b(0, 0, 0, 255));
+  auto v = clip.get(5);
+  CHECK((int)v[0] == doctest::Approx(127.5).epsilon(0.02));
+  CHECK((int)v[3] == 255);
+}

@@ -203,7 +203,7 @@ void InspectorWindow::Update() {
             }
           } else if(info.type == cutil::prop_info_of<float>() || info.type == cutil::prop_info_of<int32_t>() || info.type == cutil::prop_info_of<bool>() || info.type == cutil::prop_info_of<Vec2>() || info.type == cutil::prop_info_of<Vec3>() || info.type == cutil::prop_info_of<Vec4>() ||
                     info.type == cutil::prop_info_of<Vec4b>()) {
-            if(wd_animatable_row(info, f.props, k, cur_frame, e->guid_, i)) value_changed = true;
+            if(wd_animatable_row(info, f.props, k, cur_frame, e->guid_, i, e->fstart_, e->fend_)) value_changed = true;
           }
           if(value_changed) props_changed = true;
         }

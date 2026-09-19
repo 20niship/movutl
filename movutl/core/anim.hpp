@@ -192,6 +192,10 @@ template <typename T> T anim_lerp(const T& a, const T& b, double t) {
     MU_UNUSED(b);
     MU_UNUSED(t);
     return a;
+  } else if constexpr(std::is_same_v<T, Vec4b>) {
+    T r; // uint8_tの(b-a)は減少方向でラップして壊れるため成分ごとにdoubleで補間する
+    for(int i = 0; i < 4; i++) r[i] = (uint8_t)std::clamp(std::lround(a[i] + ((double)b[i] - (double)a[i]) * t), 0L, 255L);
+    return r;
   } else {
     return (T)(a + (b - a) * t);
   }
