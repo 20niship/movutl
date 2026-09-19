@@ -2,6 +2,7 @@
 #include <cmath>
 #include <imgui.h>
 #include <movutl/asset/composition.hpp>
+#include <movutl/asset/config.hpp>
 #include <movutl/audio/audio_mixer.hpp>
 #include <movutl/audio/fft.hpp>
 #include <movutl/gui/fft_window.hpp>
@@ -10,7 +11,11 @@
 namespace mu {
 
 void FFTWindow::Update() {
-  ImGui::Begin("FFT");
+  if(!Config::Get()->show_fft_window) return;
+  if(!ImGui::Begin("FFT", &Config::Get()->show_fft_window)) {
+    ImGui::End();
+    return;
+  }
   auto comp = Composition::GetActiveComp();
   if(!comp || !comp->audio_buf) {
     ImGui::Text("No audio");

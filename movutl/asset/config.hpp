@@ -49,6 +49,9 @@ public:
   void* font_handle  = nullptr;      // フィルタ設定ウィンドウで使用しているフォントのハンドル (Windows HFONT)
   int build_number   = 0;            // ビルド番号 (新しいバージョンになるほど大きな値になります)
 
+  bool show_developer_window = false; // 開発者ウィンドウの表示(既定は非表示。表示メニューで切替)
+  bool show_fft_window       = false; // FFTウィンドウの表示(同上)
+
   static void Load();
   static void Save();
   static void Reload();
