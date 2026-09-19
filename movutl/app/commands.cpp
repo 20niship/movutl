@@ -49,6 +49,7 @@ struct SplitCommand final : mCommand {
   struct SplitState {
     Ref<Entity> original;                 // 分割された元のクリップ(前半)
     Ref<Entity> clone;                    // 分割で新規生成されたクリップ(後半)
+    int layer = -1;                       // 元クリップのレイヤー。後半も同じレイヤーへ挿入する
     int orig_fstart;                      // 分割前のoriginal->fstart_
     int orig_fend;                        // 分割前のoriginal->fend_
     std::vector<cutil::Prop> before_anim; // 分割前の中間点(anim_props_ + 各filter)。undoで復元する
@@ -84,7 +85,12 @@ struct SplitCommand final : mCommand {
       entt->on_len_change_done(st.orig_fstart);
 
       auto* comp = entt->get_comp();
-      if(comp) comp->insert_entity(clone, -1);
+      if(comp) {
+        for(int li = 0; li < (int)comp->layers.size() && st.layer < 0; li++)
+          for(auto& e : comp->layers[li].entts)
+            if(e == entt) st.layer = li;
+        comp->insert_entity(clone, st.layer);
+      }
 
       st.clone = clone;
       splits_.push_back(std::move(st));
@@ -112,7 +118,7 @@ struct SplitCommand final : mCommand {
       st.original->fend_ = st.clone->fstart_;
       st.original->on_len_change_done(st.orig_fstart);
       auto* comp = st.original->get_comp();
-      if(comp) comp->insert_entity(st.clone, -1);
+      if(comp) comp->insert_entity(st.clone, st.layer);
     }
   }
 

@@ -40,12 +40,18 @@ TEST_CASE("SplitCommand: 選択中クリップを現在フレームで分割す�
   CHECK(img->fend_ == 40); // 前半は現在フレームまで短縮される
 
   bool found_second_half = false;
-  for(auto& layer : cmp->layers) {
-    for(auto& e : layer.entts) {
-      if(e && e.get() != img.get() && e->fstart_ == 40 && e->fend_ == 100) found_second_half = true;
+  int orig_layer = -1, clone_layer = -1;
+  for(int li = 0; li < (int)cmp->layers.size(); li++) {
+    for(auto& e : cmp->layers[li].entts) {
+      if(e.get() == img.get()) orig_layer = li;
+      if(e && e.get() != img.get() && e->fstart_ == 40 && e->fend_ == 100) {
+        found_second_half = true;
+        clone_layer       = li;
+      }
     }
   }
   CHECK(found_second_half);
+  CHECK(clone_layer == orig_layer); // 後半は元と同じレイヤーに残る
 }
 
 TEST_CASE("ToggleKeyframeCommand: 選択中エンティティの現在フレームの中間点を一括トグルし、undo/redoできる") {
