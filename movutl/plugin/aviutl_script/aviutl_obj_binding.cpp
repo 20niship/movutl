@@ -132,6 +132,29 @@ int l_obj_copypixel(lua_State* L) {
   return 0;
 }
 
+uint64_t splitmix64(uint64_t x) {
+  x += 0x9e3779b97f4a7c15ULL;
+  x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9ULL;
+  x = (x ^ (x >> 27)) * 0x94d049bb133111ebULL;
+  return x ^ (x >> 31);
+}
+
+// obj.rand(min,max[,seed,frame]): [min,max]の整数を返す決定的乱数。seed指定時は(seed,frame)だけで値が決まり、省略時は(オブジェクトID,フレーム,呼び出し順)で決まる
+int l_obj_rand(lua_State* L) {
+  auto* ctx     = get_ctx(L);
+  lua_Integer a = (lua_Integer)luaL_checknumber(L, 1);
+  lua_Integer b = (lua_Integer)luaL_checknumber(L, 2);
+  if(a > b) std::swap(a, b);
+  ObjEntityInfo info = query_entity_info(ctx);
+  bool has_seed      = !lua_isnoneornil(L, 3);
+  uint64_t seed      = has_seed ? (uint64_t)(int64_t)luaL_checknumber(L, 3) : info.id;
+  uint64_t frame     = (uint64_t)(int64_t)luaL_optnumber(L, 4, info.frame);
+  uint64_t key       = splitmix64(seed) ^ splitmix64(frame + 0x1234567ULL);
+  if(!has_seed) key = splitmix64(key + (uint64_t)ctx->rand_counter++);
+  lua_pushinteger(L, a + (lua_Integer)(splitmix64(key) % (uint64_t)(b - a + 1)));
+  return 1;
+}
+
 // AviUtl正規のキーのみ対応。未対応キーはnilを返す(旧独自キーimage_w/image_h/screen_w/screen_h/framerateはobj.w/h/screen_w/screen_h/framerate変数へ移行済み)
 // ponytail: saving/editing/multi_object/camera_modeはmovutlに対応する状態が無いので固定値。versionはAviUtl 1.10相当の値
 int l_obj_getinfo(lua_State* L) {
@@ -400,6 +423,7 @@ void setup_obj_table(lua_State* L, AviUtlObjContext* ctx) {
   reg_fn("getpixel", l_obj_getpixel);
   reg_fn("putpixel", l_obj_putpixel);
   reg_fn("copypixel", l_obj_copypixel);
+  reg_fn("rand", l_obj_rand);
   reg_fn("getinfo", l_obj_getinfo);
   reg_fn("effect", l_obj_effect);
   reg_fn("draw", l_obj_draw);

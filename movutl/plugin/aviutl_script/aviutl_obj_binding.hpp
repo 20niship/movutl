@@ -18,6 +18,7 @@ struct AviUtlObjContext {
   const AviUtlScriptDef* def                      = nullptr;
   bool drawn                                      = false;   // draw/drawpoly/putpixeldata/copybuffer(obj復元)のいずれかが呼ばれたか。falseのままフレーム処理が終わるとAviUtl本体同様に暗黙でdraw()相当を行う
   std::unordered_map<std::string, Image>* buffers = nullptr; // obj.copybufferの退避先("tmp"/"cache:xxx")。フィルタインスタンス単位でフレームをまたいで保持する
+  int rand_counter                                = 0;       // seed省略のobj.randが同一フレーム内で呼び出し毎に別の値を返すための連番(フレーム毎に0から数え直すので結果は決定的)
 };
 
 // AviUtlObjContext::drawnをtrueにせず、objの現在値(ox/oy/zoom/alpha/rz)でdraw()相当を行う(スクリプト末尾で暗黙的に呼ばれる)

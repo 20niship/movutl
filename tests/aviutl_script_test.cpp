@@ -206,6 +206,24 @@ TEST_CASE("obj.copypixel: 画素を別位置へコピーし範囲外は無視す
   CHECK(img(1, 0) == Vec4b(0, 0, 0, 255)); // 範囲外のコピー元は無視
 }
 
+TEST_CASE("obj.rand: 範囲内の整数を返し、seed指定時は同じ(seed,frame)で同じ値・省略時は呼び出し毎に変わるが再実行で再現する") {
+  Image img;
+  FilterInData fin;
+  fin.frame = 3;
+  auto v1   = probe("obj.rand(10, 20, 1, 0), obj.rand(10, 20, 1, 0), obj.rand(10, 20, 2, 0), obj.rand(5, 5), obj.rand(0, 100), obj.rand(0, 100)", fin, img);
+  auto v2   = probe("obj.rand(10, 20, 1, 0), obj.rand(10, 20, 1, 0), obj.rand(10, 20, 2, 0), obj.rand(5, 5), obj.rand(0, 100), obj.rand(0, 100)", fin, img);
+  for(int i = 0; i < 3; i++) {
+    CHECK(v1[i] >= 10);
+    CHECK(v1[i] <= 20);
+  }
+  CHECK(v1[0] == v1[1]); // 同じseed/frameは同じ値
+  CHECK(v1[3] == 5);     // min==max
+  CHECK(v1 == v2);       // 同じフレームで再実行すると同じ結果(ctx毎に連番が0から)
+  bool differs = false;  // seed省略の連続呼び出し・別seed・別フレームで値が全て同じになることはない(決定的な固定入力なので偶然の一致で落ちることもない)
+  differs      = differs || v1[4] != v1[5] || v1[0] != v1[2];
+  CHECK(differs);
+}
+
 TEST_CASE("register_aviutl_scripts: 2値化スクリプトをフォルダスキャン経由でフィルタとして登録・実行できる") {
   std::string text = "--track0:しきい値,0,255,128,1\n"
                      "@AviUtlテスト2値化\n"
