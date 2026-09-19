@@ -22,9 +22,7 @@ bool CompoRefEntt::render(Composition* cmp, Image* target, int frame) {
   Ref<Image> src = dst_comp->render_current_frame_main_thread(true);
   if(!src) return false;
 
-  int base_x = (int)pos[0];
-  int base_y = (int)pos[1];
-  return src->copyto(target, Vec2d(base_x, base_y), scale.avg(), rotation, alpha, blend_);
+  return composite(*src, target);
 }
 
 } // namespace mu

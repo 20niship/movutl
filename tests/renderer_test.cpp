@@ -14,7 +14,7 @@ TEST_CASE("clipping_up: 下に何も無い領域では上のオブジェクト�
   comp->bg_color = 0; // 透明背景にしないと下の合成済みアルファが常に255(不透明黒)になりclippingの効果を観測できない
 
   auto bottom     = ShapeEntt::Create("bottom", ShapeType_Rect);
-  bottom->pos_    = Vec3(0, 0, 0); // 左半分(x:0-30)だけに配置
+  bottom->pos_    = Vec3(-15, 0, 0); // 左半分(x:0-30)だけに配置
   bottom->size_   = Vec2(30, 60);
   bottom->color_  = Vec4b(255, 0, 0, 255);
   bottom->fstart_ = 0;
@@ -43,7 +43,7 @@ TEST_CASE("clipping_up=falseなら通常通り全面に描画される") {
   auto comp = make_test_comp(60, 60);
 
   auto bottom     = ShapeEntt::Create("bottom", ShapeType_Rect);
-  bottom->pos_    = Vec3(-15, 0, 0);
+  bottom->pos_    = Vec3(0, 0, 0);
   bottom->size_   = Vec2(30, 60);
   bottom->color_  = Vec4b(255, 0, 0, 255);
   bottom->fstart_ = 0;

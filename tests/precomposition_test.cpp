@@ -55,14 +55,14 @@ TEST_CASE("映像プリコンポジション: 左右にCompoRefEnttを配置し�
   auto main = make_compo("Main", 1, 800, 400, 30);
 
   auto ref1              = cutil::make_ref<CompoRefEntt>();
-  ref1->pos              = Vec3(0, 0, 0); // 左半分
+  ref1->pos_             = Vec3(-200, 0, 0); // 左半分
   ref1->target_comp_guid = 101;
   ref1->fstart_          = 0;
   ref1->fend_            = 29;
   main->insert_entity(ref1);
 
   auto ref2              = cutil::make_ref<CompoRefEntt>();
-  ref2->pos              = Vec3(400, 0, 0); // 右半分
+  ref2->pos_             = Vec3(200, 0, 0); // 右半分
   ref2->target_comp_guid = 102;
   ref2->fstart_          = 0;
   ref2->fend_            = 29;
@@ -95,7 +95,7 @@ TEST_CASE("映像プリコンポジション: start_frame/speedオフセット�
 
   auto main             = make_compo("Main", 2, 100, 100, 30);
   auto ref              = cutil::make_ref<CompoRefEntt>();
-  ref->pos              = Vec3(0, 0, 0);
+  ref->pos_             = Vec3(0, 0, 0);
   ref->target_comp_guid = 201;
   ref->start_frame      = 10; // オフセット
   ref->speed            = 1.0f;
@@ -132,7 +132,7 @@ TEST_CASE("映像プリコンポジション: start_frame/speedオフセット�
 
   auto main             = make_compo("Main", 3, 100, 100, 30);
   auto ref              = cutil::make_ref<CompoRefEntt>();
-  ref->pos              = Vec3(0, 0, 0);
+  ref->pos_             = Vec3(0, 0, 0);
   ref->target_comp_guid = 202;
   ref->start_frame      = 10;
   ref->speed            = 0.5f;
@@ -248,15 +248,17 @@ TEST_CASE("プリコンポジション合成: ネストされたComposition内�
   Project::New();
 
   // Sub: Composition中央に小さな矩形のみ配置し、それ以外は何も描画しない
-  auto sub = make_compo("Sub", 601, 200, 200, 30);
-  sub->insert_entity(make_fill_rect("small", Vec2(50, 50), Vec4b(0, 255, 0, 255), 0, 29));
+  auto sub    = make_compo("Sub", 601, 200, 200, 30);
+  auto small  = make_fill_rect("small", Vec2(50, 50), Vec4b(0, 255, 0, 255), 0, 29);
+  small->pos_ = Vec3(-75, -75, 0); // 左上(0,0)
+  sub->insert_entity(small);
   Project::Get()->compos_.push_back(sub);
 
   // Main: 下レイヤーに全面塗りつぶしの背景、上レイヤーにCompoRefEnttを重ねる。修正前は背景が不透明黒で覆われて見えなくなる
   auto main = make_compo("Main", 6, 200, 200, 30);
   main->insert_entity(make_fill_rect("bg", Vec2(200, 200), Vec4b(0, 0, 255, 255), 0, 29)); // BGRA: 赤
   auto ref              = cutil::make_ref<CompoRefEntt>();
-  ref->pos              = Vec3(0, 0, 0);
+  ref->pos_             = Vec3(0, 0, 0);
   ref->target_comp_guid = 601;
   ref->fstart_          = 0;
   ref->fend_            = 29;
@@ -283,7 +285,7 @@ TEST_CASE("キャッシュ無効化伝播: 参照先変更後の再レンダリ�
 
   auto main             = make_compo("Main", 7, 100, 100, 30);
   auto ref              = cutil::make_ref<CompoRefEntt>();
-  ref->pos              = Vec3(0, 0, 0);
+  ref->pos_             = Vec3(0, 0, 0);
   ref->target_comp_guid = 701;
   ref->fstart_          = 0;
   ref->fend_            = 29;
@@ -312,7 +314,7 @@ TEST_CASE("キャッシュ無効化伝播: 参照先Compositionの中身変更�
 
   auto main             = make_compo("Main", 8, 100, 100, 30);
   auto ref              = cutil::make_ref<CompoRefEntt>();
-  ref->pos              = Vec3(0, 0, 0);
+  ref->pos_             = Vec3(0, 0, 0);
   ref->target_comp_guid = 801;
   ref->fstart_          = 0;
   ref->fend_            = 29;
@@ -324,7 +326,9 @@ TEST_CASE("キャッシュ無効化伝播: 参照先Compositionの中身変更�
   CHECK(out1->rgba(50, 50) == Vec4b(0, 0, 255, 255)); // 変更前は赤一色
 
   // Sub側にEntityを追加(insert_entity内でMain側のキャッシュも伝播無効化されるはず)
-  sub->insert_entity(make_fill_rect("green", Vec2(30, 30), Vec4b(0, 255, 0, 255), 0, 29));
+  auto green  = make_fill_rect("green", Vec2(30, 30), Vec4b(0, 255, 0, 255), 0, 29);
+  green->pos_ = Vec3(-35, -35, 0); // 左上(0,0)
+  sub->insert_entity(green);
 
   Ref<Image> out2;
   REQUIRE(renderer.render_frame(main.get(), 0, out2));
@@ -338,7 +342,7 @@ TEST_CASE("循環参照ガード: 自己参照するCompoRefEnttがあっても�
   auto comp_a = make_compo("A", 501, 100, 100, 30);
 
   auto self_ref              = cutil::make_ref<CompoRefEntt>();
-  self_ref->pos              = Vec3(0, 0, 0);
+  self_ref->pos_             = Vec3(0, 0, 0);
   self_ref->target_comp_guid = 501; // 自分自身を参照
   self_ref->fstart_          = 0;
   self_ref->fend_            = 29;
