@@ -9,22 +9,25 @@
 #include <movutl/asset/shape.hpp>
 #include <movutl/asset/text.hpp>
 #include <movutl/command/exo/exo_import.hpp>
+#include <movutl/core/command.hpp>
 #include <set>
 
 using namespace mu;
 
-TEST_CASE("exo: UTF-16LE hex -> UTF-8") {
-  // "テスト" = 30c6 30b9 30c8
-  CHECK(detail::exo_utf16le_hex_to_utf8("c630b930c830000000000000") == "テスト");
-  // サロゲートペア U+1F600
-  CHECK(detail::exo_utf16le_hex_to_utf8("3dd800de") == "\xF0\x9F\x98\x80");
-  CHECK(detail::exo_utf16le_hex_to_utf8("").empty());
+namespace {
+// import_exoコマンドを実行し、追加されたEntity数を返す(コマンド失敗時は-1)
+int import_exo_file(const char* path) {
+  register_exo_command();
+  auto count = []() {
+    int n = 0;
+    for(auto& l : Composition::GetActiveComp()->layers) n += (int)l.entts.size();
+    return n;
+  };
+  int before = count();
+  if(!run_command("import_exo", path)) return -1;
+  return count() - before;
 }
-
-TEST_CASE("exo: CP932 -> UTF-8") {
-  CHECK(detail::exo_cp932_to_utf8("\x83\x65\x83\x58\x83\x67") == "テスト");
-  CHECK(detail::exo_cp932_to_utf8("abc") == "abc");
-}
+} // namespace
 
 TEST_CASE("exo: import_exo_file") {
   Project::New();

@@ -27,9 +27,9 @@
 #endif
 
 namespace mu {
-namespace detail {
+namespace {
 
-std::string exo_cp932_to_utf8(const std::string& src) {
+std::string cp932_to_utf8(const std::string& src) {
   if(src.empty()) return {};
 #ifdef _WIN32
   int wn = MultiByteToWideChar(932, 0, src.data(), (int)src.size(), nullptr, 0);
@@ -84,7 +84,7 @@ static void append_utf8(std::string& out, uint32_t cp) {
 }
 
 // exoのtext=は UTF-16LE のバイト列を16進文字列にしたもの。0x0000で終端(以降は0埋め)
-std::string exo_utf16le_hex_to_utf8(const std::string& hex) {
+std::string utf16le_hex_to_utf8(const std::string& hex) {
   auto hv = [](char c) -> int {
     if(c >= '0' && c <= '9') return c - '0';
     if(c >= 'a' && c <= 'f') return c - 'a' + 10;
@@ -110,10 +110,6 @@ std::string exo_utf16le_hex_to_utf8(const std::string& hex) {
   }
   return out;
 }
-
-} // namespace detail
-
-namespace {
 
 using Section = std::map<std::string, std::string>;
 
@@ -200,8 +196,7 @@ void set_range(const Ref<Entity>& e, int start, int end) {
   e->fend_   = end - 1;   // 終了フレームも含む
 }
 
-} // namespace
-
+// 追加したEntity数を返す。ファイルが開けない場合は-1
 int import_exo_file(const char* path) {
   std::ifstream ifs(path, std::ios::binary);
   if(!ifs) {
@@ -210,7 +205,7 @@ int import_exo_file(const char* path) {
   }
   std::string raw((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
   const auto base_dir = std::filesystem::absolute(std::filesystem::path(path)).parent_path();
-  auto ini            = parse_ini(detail::exo_cp932_to_utf8(raw));
+  auto ini            = parse_ini(cp932_to_utf8(raw));
 
   Composition* comp = Composition::GetActiveComp();
   if(!comp) {
@@ -303,7 +298,7 @@ int import_exo_file(const char* path) {
       shp->guid_ = Project::Get()->entities.size();
       ent        = shp;
     } else if(kind == "テキスト") {
-      auto t           = TextEntt::Create(detail::exo_utf16le_hex_to_utf8(get(src, "text")).c_str(), get(src, "font").c_str());
+      auto t           = TextEntt::Create(utf16le_hex_to_utf8(get(src, "text")).c_str(), get(src, "font").c_str());
       t->color_        = parse_color(get(src, "color"), t->color_);
       t->border_color_ = parse_color(get(src, "color2"), t->border_color_);
       if(draw) {
@@ -370,7 +365,6 @@ int import_exo_file(const char* path) {
   return count;
 }
 
-namespace {
 struct ExoImportCommand final : mCommand {
   CommandStatus on_start() override {
     std::string path = arg;

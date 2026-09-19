@@ -22,7 +22,6 @@ public:
   mCommand()          = default;
   virtual ~mCommand() = default;
 
-  // run_command(id, arg)で渡された実行引数(ファイルパス等)。未指定なら空文字
   std::string arg;
 
   // run_command()から呼ばれる。Runningを返すとtick()が毎フレーム呼ばれ続ける
@@ -57,7 +56,7 @@ template <typename T, typename... Args> void register_command(CommandInfo info, 
 }
 
 bool run_command(const char* id);
-bool run_command(const char* id, const char* arg); // argはmCommand::argへ渡される
+bool run_command(const char* id, const char* arg);
 // extensions(大文字小文字無視、先頭のドットは無視)が一致する最初のコマンドを返す。無ければnullptr
 const CommandInfo* find_command_by_extension(const std::string& ext);
 bool has_command(const char* id);
