@@ -201,6 +201,8 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("getTrackProps", &Entity::getTrackProps)
     .addFunction("setTrackProps", &Entity::setTrackProps)
     .addFunction("apply_animated_props", &Entity::apply_animated_props)
+    .addFunction("on_len_change_done", &Entity::on_len_change_done)
+    .addFunction("rel_frame", &Entity::rel_frame)
     .addFunction("ensure_anim_props", &Entity::ensure_anim_props)
     .addFunction("collect_animated_frames", &Entity::collect_animated_frames)
     .addFunction("move_keyframes_at", &Entity::move_keyframes_at)
