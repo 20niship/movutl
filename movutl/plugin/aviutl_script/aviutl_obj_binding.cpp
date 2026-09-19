@@ -4,6 +4,7 @@
 #include <movutl/asset/composition.hpp>
 #include <movutl/core/logger.hpp>
 #include <movutl/plugin/aviutl_script/aviutl_obj_binding.hpp>
+#include <mutex>
 #include <string>
 
 extern "C" {
@@ -17,6 +18,42 @@ namespace mu::detail {
 namespace {
 
 AviUtlObjContext* get_ctx(lua_State* L) { return static_cast<AviUtlObjContext*>(lua_touserdata(L, lua_upvalueindex(1))); }
+
+// obj.x/y/z/layer/idなど「対象Entityから引く値」の取得口。Entityの変換(pos等)の持ち方が変わってもここだけ差し替えればよい
+struct ObjEntityInfo {
+  double x = 0, y = 0, z = 0; // ponytail: Entity種別ごとにpos/pos_と持ち方が異なるため未接続(0固定)。Transform統一後にここで実値を返す
+  int layer       = 0;        // 0始まりのレイヤー番号(Compositionに属さない場合は0)
+  uint64_t id     = 0;
+  int frame       = 0; // オブジェクト先頭からの経過フレーム
+  int total_frame = 0;
+};
+
+ObjEntityInfo query_entity_info(const AviUtlObjContext* ctx) {
+  ObjEntityInfo info;
+  Entity* e  = ctx->fpip->entt;
+  info.frame = ctx->frame;
+  if(!e) return info;
+  info.id          = e->guid_;
+  info.frame       = ctx->frame - e->fstart_;
+  info.total_frame = e->fend_ - e->fstart_;
+  if(Composition* cmp = ctx->fpip->compo) {
+    std::lock_guard<std::mutex> lock(cmp->mtx); // レンダリング中はcomp->mtxを保持していない(Entity::mtxのみ)ためデッドロックしない
+    for(size_t i = 0; i < cmp->layers.size(); i++)
+      for(auto& o : cmp->layers[i].entts)
+        if(o.get() == e) info.layer = (int)i;
+  }
+  return info;
+}
+
+// objテーブルのw/hを現在の描画バッファのサイズに同期する(バッファを作り直す関数の後に呼ぶ)
+void sync_obj_size(lua_State* L, const Image* img) {
+  lua_getglobal(L, "obj");
+  lua_pushinteger(L, img ? img->width : 0);
+  lua_setfield(L, -2, "w");
+  lua_pushinteger(L, img ? img->height : 0);
+  lua_setfield(L, -2, "h");
+  lua_pop(L, 1);
+}
 
 // AviUtl仕様: (データ, 幅, 高さ)の3値を返す(第1引数"alloc"等は無視、常に現在のimgサイズを返す)
 int l_obj_getpixeldata(lua_State* L) {
@@ -232,6 +269,7 @@ int l_obj_copybuffer(lua_State* L) {
     img->has_alpha = buf.has_alpha;
     std::memcpy(img->data(), buf.data(), img->size_in_bytes());
     ctx->drawn = true;
+    sync_obj_size(L, img);
   } else {
     Image& buf = (*ctx->buffers)[dst];
     buf.resize(img->width, img->height);
@@ -262,6 +300,7 @@ int l_obj_setoption(lua_State* L) {
   img->resize(w, h);
   img->has_alpha = true;
   std::memcpy(img->data(), tmp.data(), img->size_in_bytes());
+  sync_obj_size(L, img);
   return 0;
 }
 
@@ -338,21 +377,39 @@ void setup_obj_table(lua_State* L, AviUtlObjContext* ctx) {
   lua_setfield(L, -2, "cx");
   lua_pushnumber(L, 0);
   lua_setfield(L, -2, "cy");
+  lua_pushnumber(L, 0);
+  lua_setfield(L, -2, "cz");
+  lua_pushnumber(L, 0);
+  lua_setfield(L, -2, "aspect");
 
-  int total = 0;
-  if(ctx->fpip->entt) total = ctx->fpip->entt->fend_ - ctx->fpip->entt->fstart_;
-  double time_sec = 0.0;
-  if(ctx->fpip->compo && ctx->fpip->compo->framerate > 0) time_sec = ctx->frame / (double)ctx->fpip->compo->framerate;
-  lua_pushinteger(L, ctx->frame);
-  lua_setfield(L, -2, "frame");
-  lua_pushinteger(L, total);
-  lua_setfield(L, -2, "totalframe");
-  lua_pushnumber(L, time_sec);
-  lua_setfield(L, -2, "time");
-  lua_pushinteger(L, 0);
-  lua_setfield(L, -2, "layer");
-  lua_pushnumber(L, ctx->fpip->compo ? ctx->fpip->compo->framerate : 30.0);
-  lua_setfield(L, -2, "framerate");
+  auto set_int = [&](const char* name, lua_Integer v) {
+    lua_pushinteger(L, v);
+    lua_setfield(L, -2, name);
+  };
+  auto set_num = [&](const char* name, double v) {
+    lua_pushnumber(L, v);
+    lua_setfield(L, -2, name);
+  };
+
+  ObjEntityInfo info = query_entity_info(ctx);
+  double fps         = ctx->fpip->compo && ctx->fpip->compo->framerate > 0 ? ctx->fpip->compo->framerate : 30.0;
+  const Image* img   = ctx->fpip->img;
+  set_int("w", img ? img->width : 0);
+  set_int("h", img ? img->height : 0);
+  set_int("screen_w", ctx->fpip->compo ? (int)ctx->fpip->compo->size[0] : 0);
+  set_int("screen_h", ctx->fpip->compo ? (int)ctx->fpip->compo->size[1] : 0);
+  set_num("x", info.x);
+  set_num("y", info.y);
+  set_num("z", info.z);
+  set_int("frame", info.frame);
+  set_int("totalframe", info.total_frame);
+  set_num("time", info.frame / fps);
+  set_num("totaltime", info.total_frame / fps);
+  set_int("layer", info.layer);
+  set_int("index", 0); // 個別オブジェクト(テキストの文字毎など)は未対応のため常に単体扱い
+  set_int("num", 1);
+  set_int("id", (lua_Integer)info.id);
+  set_num("framerate", fps);
 
   for(int i = 0; i < 4; i++) {
     std::string tname = "track" + std::to_string(i);

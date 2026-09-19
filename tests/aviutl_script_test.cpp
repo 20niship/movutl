@@ -2,8 +2,10 @@
 #include <filesystem>
 #include <fstream>
 #include <movutl/app/app_impl.hpp>
+#include <movutl/asset/composition.hpp>
 #include <movutl/asset/config.hpp>
 #include <movutl/asset/image.hpp>
+#include <movutl/asset/shape.hpp>
 #include <movutl/plugin/aviutl_script/aviutl_script_parser.hpp>
 #include <movutl/plugin/plugin.hpp>
 
@@ -92,7 +94,57 @@ FilterPluginTable* register_test_script(const std::string& text, const char* fil
 
   return find_filter(filter_name);
 }
+
+// exprsのLua式(カンマ区切り、最大16個)を評価して2x2画像のバイト列へ書き出して読み返す。スクリプトから値を取り出す手段の代わり(値は0-255の整数)
+std::vector<int> probe(const std::string& exprs, FilterInData& fin, Image& img) {
+  static int counter     = 0;
+  std::string name       = "probe" + std::to_string(counter++);
+  std::string text       = "@" + name + "\nlocal t = {" + exprs + "}\nfor i = 1, #t do t[i] = math.floor(t[i]) end\nfor i = #t + 1, 16 do t[i] = 0 end\n" + "obj.putpixeldata(string.char((table.unpack or unpack)(t)))\n";
+  FilterPluginTable* plg = register_test_script(text, name.c_str());
+  REQUIRE(plg != nullptr);
+  img.resize(2, 2);
+  fin.img = &img;
+  REQUIRE(plg->fn_proc(plg, &fin, cutil::Prop{}));
+  std::vector<int> out;
+  for(size_t i = 0; i < 4; i++)
+    for(int c = 0; c < 4; c++) out.push_back(img[i][c]);
+  return out;
+}
 } // namespace
+
+TEST_CASE("obj変数: w/h/screen_w/screen_h/frame/totalframe/id/index/numが実値で提供される") {
+  auto comp    = cutil::make_ref<Composition>("objvar_comp", 100, 60, 30);
+  auto shp     = ShapeEntt::Create("s", ShapeType_Rect);
+  shp->fstart_ = 10;
+  shp->fend_   = 40;
+  shp->guid_   = 7;
+  comp->insert_entity(shp, 0);
+  comp->insert_entity(ShapeEntt::Create("s2", ShapeType_Rect), 1);
+  auto shp2 = comp->layers[1].entts[0];
+
+  Image img;
+  FilterInData fin;
+  fin.compo = comp.get();
+  fin.entt  = shp.get();
+  fin.frame = 15;
+  auto v    = probe("obj.w, obj.h, obj.screen_w, obj.screen_h, obj.frame, obj.totalframe, obj.id, obj.layer, obj.index, obj.num", fin, img);
+  CHECK(v[0] == 2);
+  CHECK(v[1] == 2);
+  CHECK(v[2] == 100);
+  CHECK(v[3] == 60);
+  CHECK(v[4] == 5);  // オブジェクト先頭(fstart_=10)からの相対フレーム
+  CHECK(v[5] == 30); // fend_-fstart_
+  CHECK(v[6] == 7);
+  CHECK(v[7] == 0);
+  CHECK(v[8] == 0);
+  CHECK(v[9] == 1);
+
+  fin.entt = shp2.get(); // 2レイヤー目のEntity
+  auto v2  = probe("obj.layer, obj.cz, obj.aspect", fin, img);
+  CHECK(v2[0] == 1);
+  CHECK(v2[1] == 0);
+  CHECK(v2[2] == 0);
+}
 
 TEST_CASE("register_aviutl_scripts: 2値化スクリプトをフォルダスキャン経由でフィルタとして登録・実行できる") {
   std::string text = "--track0:しきい値,0,255,128,1\n"
