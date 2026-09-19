@@ -1,6 +1,7 @@
 #include <doctest/doctest.h>
 #include <filesystem>
 #include <fstream>
+#include <movutl/app/app_impl.hpp>
 #include <movutl/asset/audio.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/image.hpp>
@@ -326,4 +327,51 @@ TEST_CASE("exo: [exedit]の解像度/フレームレート/音声設定が空の
   CHECK(import_exo_text("[exedit]\r\nwidth=100\r\nheight=50\r\nrate=60\r\nscale=1\r\n" + obj) == 1);
   CHECK(comp->size[0] == 1280);
   CHECK(comp->framerate == doctest::Approx(29.97f).epsilon(0.001));
+}
+
+TEST_CASE("exo: トラックバー値の解析と移動方式の対応") {
+  auto t = parse_exo_track("5.0,20.0,1");
+  CHECK(t.start == doctest::Approx(5.f));
+  CHECK(t.end == doctest::Approx(20.f));
+  CHECK(t.mode == 1);
+  CHECK(t.animated());
+  auto fixed = parse_exo_track("12.5");
+  CHECK(fixed.start == doctest::Approx(12.5f));
+  CHECK(fixed.end == doctest::Approx(12.5f));
+  CHECK_FALSE(fixed.animated());
+  CHECK_FALSE(parse_exo_track("7.0,7.0,1").animated());
+  bool exact = false;
+  CHECK(exo_track_interp(1, &exact) == LINEAR);
+  CHECK(exact);
+  exo_track_interp(2, &exact);
+  CHECK_FALSE(exact);
+}
+
+TEST_CASE("exo: 標準描画以外のエフェクトが対応表に従ってフィルタ化され、トラックバーがキーフレームになる") {
+  if(detail::AppMain::Get()->filters.empty()) detail::register_default_filters();
+  detail::activate_all_plugins();
+  Project::New();
+  std::string exo = "[exedit]\r\nwidth=640\r\nheight=360\r\nrate=30\r\nscale=1\r\n"
+                    "[0]\r\nstart=11\r\nend=30\r\nlayer=1\r\n"
+                    "[0.0]\r\n_name=\x90\x7d\x8c\x60\r\ntype=2\r\n"
+                    "[0.1]\r\n_name=\x95\x57\x8f\x80\x95\x60\x89\xe6\r\nX=0\r\nY=0\r\nZ=0\r\n"
+                    "[0.2]\r\n_name=\x82\xda\x82\xa9\x82\xb5\r\n\x94\xcd\x88\xcd=5.0,25.0,1\r\n\x8f\x63\x89\xa1\x94\xe4=0.0\r\n"
+                    "[0.3]\r\n_name=\x83\x56\x83\x83\x81\x5b\x83\x76\r\n_disable=1\r\n\x8b\xad\x82\xb3=40.0\r\n"
+                    "[0.4]\r\n_name=Unknown\r\n";
+  CHECK(import_exo_text(exo) == 1);
+  auto* comp = Composition::GetActiveComp();
+  auto e     = comp->layers[0].entts.at(0);
+  REQUIRE(e->filters_.size() == 2);
+  auto& blur = e->filters_[0];
+  CHECK(std::string(blur.plg_->name.c_str()) == "ぼかし");
+  CHECK(blur.enabled);
+  // 範囲 5->25 が表示区間(fstart_=10 .. fend_=29)で線形に変化する
+  CHECK(blur.props.get<float>(0, 10) == doctest::Approx(5.f));
+  CHECK(blur.props.get<float>(0, 29) == doctest::Approx(25.f));
+  CHECK(blur.props.get<float>(0, 19) == doctest::Approx(15.f).epsilon(0.05));
+  CHECK_FALSE(e->filters_[1].enabled);
+  auto& items = exo_import_report().items;
+  REQUIRE(items.size() == 2);
+  CHECK(items[0].msg.find("縦横比") != std::string::npos); // ぼかしの未対応パラメータ
+  CHECK(items[1].msg.find("Unknown") != std::string::npos);
 }

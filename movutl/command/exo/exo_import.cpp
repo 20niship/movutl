@@ -315,6 +315,7 @@ int import_exo_file(const char* path) {
     set_range(ent, start, end);
     apply_exo_blend(*ent, draw);
     apply_exo_object_flags(*ent, obj);
+    apply_exo_effects(*ent, effects);
     pending.push_back({ent, layer});
   }
 
