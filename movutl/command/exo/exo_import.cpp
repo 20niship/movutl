@@ -7,6 +7,7 @@
 #include <map>
 #include <movutl/asset/audio.hpp>
 #include <movutl/asset/composition.hpp>
+#include <movutl/asset/group.hpp>
 #include <movutl/asset/image.hpp>
 #include <movutl/asset/movie.hpp>
 #include <movutl/asset/project.hpp>
@@ -311,6 +312,14 @@ int import_exo_file(const char* path) {
       Project::Get()->entities.push_back(t);
       t->guid_ = Project::Get()->entities.size();
       ent      = t;
+    } else if(kind == "グループ制御") {
+      auto g            = GroupEntt::Create("グループ制御");
+      g->pos_           = Vec3(getf(src, "X"), getf(src, "Y"), getf(src, "Z"));
+      g->scale_         = Vec2(getf(src, "拡大率", 100.f), getf(src, "拡大率", 100.f));
+      g->rotation_      = getf(src, "Z軸回転");
+      g->alpha_         = parse_alpha(src);
+      g->target_layers_ = geti(src, "対象レイヤー数");
+      ent               = g;
     } else {
       LOG_F(WARNING, "import_exo_file: [%d] unsupported object '%s', skipped", n, kind.c_str());
       continue;

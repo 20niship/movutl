@@ -13,6 +13,7 @@
 #include <movutl/app/export_state.hpp>
 #include <movutl/asset/audio.hpp>
 #include <movutl/asset/composition.hpp>
+#include <movutl/asset/group.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/gui/timeline.hpp>
 #include <string>
@@ -431,6 +432,17 @@ bool BeginLayer(Composition* cp, int layer_idx) {
   ImRect R(ImVec2(inside.left(), htop), ImVec2(inside.right(), hbtm));
   bool line_hovered = ImGui::IsMouseHoveringRect(R.Min, R.Max);
   if(line_hovered) dl->AddRectFilled(R.Min, R.Max, IM_COL32(255, 255, 255, 20));
+
+  // 選択中のグループ制御が効くレイヤー(かつグループの表示期間)を半透明でハイライトする
+  for(const auto& sel : get_selected_entts()) {
+    if(!sel || sel->getType() != EntityType_Group) continue;
+    int gl = -1;
+    for(int li = 0; li < (int)cp->layers.size() && gl < 0; li++)
+      for(const auto& e : cp->layers[li].entts)
+        if(e == sel) gl = li;
+    if(gl < 0 || !static_cast<GroupEntt*>(sel.get())->affects(gl, layer_idx)) continue;
+    dl->AddRectFilled(ImVec2(ctx_.f2view(sel->fstart_), htop), ImVec2(ctx_.f2view(sel->fend_), hbtm), IM_COL32(255, 200, 60, 40));
+  }
 
   dl->AddRectFilled(sidebar.Min, sidebar.Max, layer->active ? IM_COL32(40, 40, 40, 255) : IM_COL32(20, 20, 20, 255));
   if(!layer->active) dl->AddRectFilled(ImVec2(inside.left(), htop), ImVec2(inside.right(), hbtm), IM_COL32(0, 0, 0, 110)); // 非表示レイヤーはトラック部分も暗くする

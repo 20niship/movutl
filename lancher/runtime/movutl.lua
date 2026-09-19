@@ -285,8 +285,33 @@ function movutl.FramebufferEntt:Create( name, ) end
 ---@return EntityType
 function movutl.FramebufferEntt:getType( ) end
 
+---@param size Vec2 
+---@param origin_offset Vec2 
+---@return boolean
+function movutl.FramebufferEntt:source_size( size, origin_offset, ) end
+
 ---@return Ref<Image> 
 function movutl.FramebufferEntt:captured_image( ) end
+
+---@class GroupEntt
+---@field target_layers_ number
+movutl.GroupEntt = {}
+movutl.GroupEntt.target_layers_ = 0
+
+---@param name string
+---@return Ref<GroupEntt>
+function movutl.GroupEntt:Create( name, ) end
+
+---@return EntityType
+function movutl.GroupEntt:getType( ) end
+
+---@return GroupXform
+function movutl.GroupEntt:local_xform( ) end
+
+---@param group_layer number
+---@param layer_i number
+---@return boolean
+function movutl.GroupEntt:affects( group_layer, layer_i, ) end
 
 ---@class Image
 ---@field width number
@@ -361,6 +386,11 @@ function movutl.Image:empty( ) end
 ---@return number
 function movutl.Image:channels( ) end
 
+---@param size Vec2 
+---@param origin_offset Vec2 
+---@return boolean
+function movutl.Image:source_size( size, origin_offset, ) end
+
 ---@return EntityType
 function movutl.Image:getType( ) end
 
@@ -428,6 +458,11 @@ function movutl.Movie:load_file( path, ) end
 
 ---@return EntityType
 function movutl.Movie:getType( ) end
+
+---@param size Vec2 
+---@param origin_offset Vec2 
+---@return boolean
+function movutl.Movie:source_size( size, origin_offset, ) end
 
 ---@return nil
 function movutl.Movie:reload_asset( ) end
@@ -540,6 +575,11 @@ function movutl.ShapeEntt:Create( name, type, ) end
 ---@return EntityType
 function movutl.ShapeEntt:getType( ) end
 
+---@param size Vec2 
+---@param origin_offset Vec2 
+---@return boolean
+function movutl.ShapeEntt:source_size( size, origin_offset, ) end
+
 ---@class TextEntt
 ---@field dirty_ number
 ---@field speed number
@@ -583,6 +623,11 @@ function movutl.TextEntt:Create( text, font, ) end
 
 ---@return EntityType
 function movutl.TextEntt:getType( ) end
+
+---@param size Vec2 
+---@param origin_offset Vec2 
+---@return boolean
+function movutl.TextEntt:source_size( size, origin_offset, ) end
 
 ---@class TrackLayer
 ---@field active boolean

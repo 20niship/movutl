@@ -9,6 +9,7 @@
 #include <movutl/asset/custom_object.hpp>
 #include <movutl/asset/entity.hpp>
 #include <movutl/asset/framebuffer.hpp>
+#include <movutl/asset/group.hpp>
 #include <movutl/asset/image.hpp>
 #include <movutl/asset/midi.hpp>
 #include <movutl/asset/movie.hpp>
@@ -207,6 +208,15 @@ bool add_new_track(const char* name, EntityType type, int start, int end) {
       fb->fstart_ = start;
       fb->fend_   = end;
       main_comp->insert_entity(fb);
+      break;
+    }
+    case EntityType_Group: {
+      auto g                 = GroupEntt::Create(name);
+      Composition* main_comp = Composition::GetActiveComp();
+      MU_ASSERT(main_comp);
+      g->fstart_ = start;
+      g->fend_   = end;
+      main_comp->insert_entity(g);
       break;
     }
     case EntityType_Scene: {

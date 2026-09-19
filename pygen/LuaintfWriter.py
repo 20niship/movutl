@@ -3,7 +3,7 @@ from typing import List
 from utils import write_if_different
 
 
-TRANSFORM_ENTITY_CLASSES = {"Movie", "Image", "TextEntt", "ShapeEntt", "FramebufferEntt", "CompoRefEntt"}
+TRANSFORM_ENTITY_CLASSES = {"Movie", "Image", "TextEntt", "ShapeEntt", "FramebufferEntt", "CompoRefEntt", "GroupEntt"}
 
 
 class LuaIntfWriter:
@@ -46,6 +46,7 @@ class LuaIntfWriter:
             "#include <movutl/asset/audio.hpp>\n"
             "#include <movutl/asset/midi.hpp>\n"
             "#include <movutl/asset/framebuffer.hpp>\n"
+            "#include <movutl/asset/group.hpp>\n"
             "#include <movutl/asset/shape.hpp>\n"
             "#include <movutl/asset/compo_ref.hpp>\n"
             "#include <movutl/asset/compo_audio_ref.hpp>\n"

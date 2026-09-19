@@ -14,6 +14,7 @@
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/custom_object.hpp>
 #include <movutl/asset/framebuffer.hpp>
+#include <movutl/asset/group.hpp>
 #include <movutl/asset/image.hpp>
 #include <movutl/asset/midi.hpp>
 #include <movutl/asset/movie.hpp>
@@ -31,6 +32,7 @@ Ref<Entity> Entity::CreateEntity(const char* name, EntityType type) {
     case EntityType_3DText: e = cutil::make_ref<TextEntt>(); break;
     case EntityType_Audio: e = cutil::make_ref<AudioEntt>(); break;
     case EntityType_Framebuffer: e = cutil::make_ref<FramebufferEntt>(); break;
+    case EntityType_Group: e = cutil::make_ref<GroupEntt>(); break;
     case EntityType_Polygon: e = cutil::make_ref<ShapeEntt>(); break;
     case EntityType_Camera: e = cutil::make_ref<Camera3D>(); break;
     // 1個のフラグで複数のLuaスクリプトを表すため、実体はsetProps()内でscript_name経由でdef_を再解決する(ここではdef_未設定のまま生成するだけでよい)
@@ -141,15 +143,41 @@ std::string EntityInfo::str() const {
   return std::string(buf);
 }
 
+namespace {
+thread_local const GroupXform* tls_parent_xform = nullptr;
+}
+
+GroupXform GroupXform::compose(const GroupXform& child) const {
+  const double rad = rotation * M_PI / 180.0;
+  const double c = std::cos(rad), sn = std::sin(rad);
+  const double sx = scale[0] / 100.0, sy = scale[1] / 100.0;
+  const double px = child.pos[0] * sx, py = child.pos[1] * sy;
+  GroupXform out;
+  out.pos      = Vec3((float)(pos[0] + px * c - py * sn), (float)(pos[1] + px * sn + py * c), pos[2] + child.pos[2]);
+  out.scale    = Vec2((float)(child.scale[0] * sx), (float)(child.scale[1] * sy));
+  out.rotation = rotation + child.rotation;
+  out.alpha    = alpha * child.alpha;
+  return out;
+}
+
+GroupXformScope::GroupXformScope(const GroupXform* parent) : prev_(tls_parent_xform) { tls_parent_xform = parent; }
+GroupXformScope::~GroupXformScope() { tls_parent_xform = prev_; }
+
+GroupXform Entity::world_xform() const {
+  GroupXform local{pos_, scale_, rotation_, alpha_};
+  return tls_parent_xform ? tls_parent_xform->compose(local) : local;
+}
+
 bool Entity::composite(const Image& src, Image* target, const Vec2& origin_offset) const {
   MU_ASSERT(target);
   Placement pl;
-  pl.x = pos_[0], pl.y = pos_[1];
+  const GroupXform w = world_xform(); // 親グループ変換込みの実効変換
+  pl.x = w.pos[0], pl.y = w.pos[1];
   pl.anchor_x = anchor_[0] + origin_offset[0], pl.anchor_y = anchor_[1] + origin_offset[1];
-  pl.scale_x = scale_[0] / 100.0, pl.scale_y = scale_[1] / 100.0;
+  pl.scale_x = w.scale[0] / 100.0, pl.scale_y = w.scale[1] / 100.0;
   pl.aspect = aspect_;
-  pl.rot_x = rot_x_, pl.rot_y = rot_y_, pl.rot_z = rotation_;
-  pl.alpha = alpha_;
+  pl.rot_x = rot_x_, pl.rot_y = rot_y_, pl.rot_z = w.rotation;
+  pl.alpha = w.alpha;
   pl.blend = blend_;
   return src.place(target, pl);
 }

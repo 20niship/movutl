@@ -3,6 +3,7 @@
 #include <fstream>
 #include <movutl/asset/audio.hpp>
 #include <movutl/asset/composition.hpp>
+#include <movutl/asset/group.hpp>
 #include <movutl/asset/image.hpp>
 #include <movutl/asset/movie.hpp>
 #include <movutl/asset/project.hpp>
@@ -70,6 +71,34 @@ TEST_CASE("exo: import_exo_file") {
   CHECK(text->anchor_[1] == doctest::Approx(-3.f));
 
   CHECK(import_exo_file("/nonexistent/x.exo") == -1);
+  std::filesystem::remove(path);
+}
+
+TEST_CASE("exo: グループ制御をGroupEnttとして取り込む") {
+  Project::New();
+  auto* comp = Composition::GetActiveComp();
+  REQUIRE(comp != nullptr);
+  std::string exo = "[exedit]\r\nwidth=640\r\nheight=360\r\nrate=30\r\nscale=1\r\nlength=100\r\n"
+                    "[0]\r\nstart=3\r\nend=50\r\nlayer=1\r\n"
+                    "[0.0]\r\n_name=\x83\x4f\x83\x8b\x81\x5b\x83\x76\x90\xa7\x8c\xe4\r\nX=12.0\r\nY=-4.0\r\nZ=0.0\r\n"
+                    "\x8a\x67\x91\xe5\x97\xa6=50.00\r\n\x93\xa7\x96\xbe\x93x=25.0\r\nZ\x8e\xb2\x89\xf1\x93\x5d=30.00\r\n"
+                    "\x91\xce\x8f\xdb\x83\x8c\x83\x43\x83\x84\x81\x5b\x90\x94=2\r\n";
+  auto path       = std::filesystem::temp_directory_path() / "movutl_group_test.exo";
+  {
+    std::ofstream ofs(path, std::ios::binary);
+    ofs << exo;
+  }
+  CHECK(import_exo_file(path.string().c_str()) == 1);
+  auto* g = dynamic_cast<GroupEntt*>(comp->layers.at(0).entts.at(0).get());
+  REQUIRE(g != nullptr);
+  CHECK(g->fstart_ == 2);
+  CHECK(g->fend_ == 49);
+  CHECK(g->pos_[0] == doctest::Approx(12.f));
+  CHECK(g->pos_[1] == doctest::Approx(-4.f));
+  CHECK(g->scale_[0] == doctest::Approx(50.f));
+  CHECK(g->alpha_ == doctest::Approx(0.75f).epsilon(0.01));
+  CHECK(g->rotation_ == doctest::Approx(30.f));
+  CHECK(g->target_layers_ == 2);
   std::filesystem::remove(path);
 }
 
