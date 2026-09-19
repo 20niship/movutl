@@ -538,6 +538,32 @@ void setup_obj_table(lua_State* L, AviUtlObjContext* ctx) {
   lua_setglobal(L, "obj");
 }
 
+namespace {
+std::mutex g_snap_mtx;
+std::string g_snap_name;
+std::vector<std::pair<std::string, double>> g_snap_vars;
+} // namespace
+
+void store_obj_debug_snapshot(lua_State* L, const std::string& script_name) {
+  static const char* keys[] = {"ox", "oy", "oz", "rx", "ry", "rz", "cx", "cy", "cz", "zoom", "aspect", "alpha", "x", "y", "z", "w", "h", "frame", "totalframe", "time", "layer", "index", "num", "id"};
+  std::vector<std::pair<std::string, double>> vars;
+  lua_getglobal(L, "obj");
+  for(const char* k : keys) {
+    lua_getfield(L, -1, k);
+    if(lua_isnumber(L, -1)) vars.emplace_back(k, lua_tonumber(L, -1));
+    lua_pop(L, 1);
+  }
+  lua_pop(L, 1);
+  std::lock_guard<std::mutex> lock(g_snap_mtx);
+  g_snap_name = script_name;
+  g_snap_vars = std::move(vars);
+}
+
+std::pair<std::string, std::vector<std::pair<std::string, double>>> load_obj_debug_snapshot() {
+  std::lock_guard<std::mutex> lock(g_snap_mtx);
+  return {g_snap_name, g_snap_vars};
+}
+
 void setup_global_functions(lua_State* L) {
   lua_pushcfunction(L, l_global_RGB);
   lua_setglobal(L, "RGB");

@@ -4,6 +4,8 @@
 #include <movutl/plugin/filter.hpp>
 #include <string>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
 extern "C" {
 struct lua_State;
@@ -29,5 +31,9 @@ void setup_obj_table(lua_State* L, AviUtlObjContext* ctx);
 
 // AviUtlが提供するobj以外のグローバルヘルパー関数(RGB等)を登録する。lua_State生成直後に1回だけ呼べばよい
 void setup_global_functions(lua_State* L);
+
+// 開発者ウィンドウ表示用: 直近に実行したスクリプトのobj変数(実行後の値)を保存/取得する。ワーカースレッドから書かれるため内部でロックする
+void store_obj_debug_snapshot(lua_State* L, const std::string& script_name);
+std::pair<std::string, std::vector<std::pair<std::string, double>>> load_obj_debug_snapshot();
 
 } // namespace mu::detail
