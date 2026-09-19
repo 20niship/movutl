@@ -3,6 +3,7 @@
 #include <movutl/app/export_state.hpp>
 #include <movutl/asset/config.hpp>
 #include <movutl/asset/project.hpp>
+#include <movutl/core/command.hpp>
 #include <movutl/gui/export_window.hpp>
 #include <movutl/gui/gui.hpp>
 
@@ -27,7 +28,7 @@ void render_main_menu_bar() {
   ImGui::BeginDisabled(is_exporting()); // エクスポート中はプロジェクト操作を一切禁止する(キャンセルはExportWindow/Escキーで行う)
   if(ImGui::BeginMenu("ファイル")) {
     if(ImGui::MenuItem("新規", "Ctrl+N")) new_project();
-    if(ImGui::MenuItem("開く", "Ctrl+O")) open_path_popup([](const char* p) { open_project(p); });
+    if(ImGui::MenuItem("開く", "Ctrl+O")) open_path_popup([](const char* p) { open_file(p); });
     if(ImGui::MenuItem("保存", "Ctrl+S")) {
       if(Project::Get()->path.empty())
         open_path_popup([](const char* p) { save_project_as(p); });

@@ -123,3 +123,25 @@ TEST_CASE("run_command: 新規実行はredo履歴をクリアする") {
   CHECK(run_command("undoable_test_command2")); // 新規実行でredo履歴が消える
   CHECK_FALSE(can_redo());
 }
+
+namespace {
+struct ArgCommand : mCommand {
+  CommandStatus on_start() override {
+    got_arg = arg;
+    return CommandStatus::Finished;
+  }
+  static std::string got_arg;
+};
+std::string ArgCommand::got_arg;
+} // namespace
+
+TEST_CASE("run_command(id, arg)でargが渡り、extensionsで検索できる") {
+  register_command<ArgCommand>({"arg_cmd_test", "arg", "", "", {"tstext"}});
+  CHECK(run_command("arg_cmd_test", "/tmp/a.tstext"));
+  CHECK(ArgCommand::got_arg == "/tmp/a.tstext");
+  auto* info = find_command_by_extension("TSTEXT");
+  REQUIRE(info != nullptr);
+  CHECK(info->id == "arg_cmd_test");
+  CHECK(find_command_by_extension(".tstext") == info);
+  CHECK(find_command_by_extension("nonexistent_ext") == nullptr);
+}

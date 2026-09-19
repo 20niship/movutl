@@ -391,6 +391,7 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("init", static_cast<void (*)()>(&init))
     .addFunction("is_playing", static_cast<bool (*)()>(&is_playing))
     .addFunction("new_project", static_cast<void (*)()>(&new_project))
+    .addFunction("open_file", static_cast<bool (*)(const char*)>(&open_file))
     .addFunction("open_project", static_cast<void (*)(const char*)>(&open_project))
     .addFunction("pause", static_cast<void (*)()>(&pause))
     .addFunction("play", static_cast<void (*)()>(&play))

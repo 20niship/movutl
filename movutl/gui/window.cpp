@@ -74,6 +74,13 @@ void GUIManager::init() {
   // Setup ImGui binding
   ImGui_ImplOpenGL3_Init();
   ImGui_ImplGlfw_InitForOpenGL(glfw_window, true);
+  glfwSetDropCallback(glfw_window, [](GLFWwindow*, int n, const char** paths) {
+    for(int i = 0; i < n; i++) {
+      LOG_F(INFO, "drop: %s", paths[i]);
+      open_file(paths[i]);
+    }
+  });
+  LOG_F(INFO, "glfw drop callback registered");
 
   const float fontSize      = 18.0f;
   auto font_path            = fs_get_font_path();

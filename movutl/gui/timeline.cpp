@@ -693,6 +693,8 @@ bool ConsumeTimelineFitRequest() {
   return v;
 }
 
+void RequestTimelineFit() { ctx_.pending_fit = true; }
+
 const char* GetTimelineLayerSearch() { return ctx_.layer_search_buf; }
 
 void ResetTimelineState() { ctx_ = TimelineContext(); }
