@@ -4,11 +4,11 @@ namespace mu {
 
 bool entity_gizmo_of(const Entity& e, const GizmoPt& comp_size, EntityGizmo& out) {
   if(!e.has_transform()) return false;
-  out.comp_size     = comp_size;
-  out.xform.pos     = {e.pos_[0], e.pos_[1]};
-  out.xform.anchor  = {e.anchor_[0], e.anchor_[1]};
-  out.xform.scale   = {e.scale_[0], e.scale_[1]};
-  out.xform.rot     = e.rotation_;
+  out.comp_size    = comp_size;
+  out.xform.pos    = {e.pos_[0], e.pos_[1]};
+  out.xform.anchor = {e.anchor_[0], e.anchor_[1]};
+  out.xform.scale  = {e.scale_[0], e.scale_[1]};
+  out.xform.rot    = e.rotation_;
   Vec2 size, origin;
   if(e.source_size(size, origin)) {
     out.src_size      = {size[0], size[1]};

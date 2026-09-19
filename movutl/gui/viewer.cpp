@@ -29,7 +29,7 @@ constexpr float kAnchorR      = 6.0f;  // 基点マーカーの半径(画面px)
 
 // 選択Entityの変換ギズモ(枠・角ハンドル・回転ハンドル・基点マーカー)を描く
 void draw_entity_gizmo(ImDrawList* dl, const EntityGizmo& g, const ImVec2& img_min, const ImVec2& disp_size, float cmp_w, float cmp_h) {
-  auto to_screen = [&](const GizmoPt& p) { return comp_to_screen(ImVec2((float)p.x, (float)p.y), img_min, disp_size, cmp_w, cmp_h); };
+  auto to_screen  = [&](const GizmoPt& p) { return comp_to_screen(ImVec2((float)p.x, (float)p.y), img_min, disp_size, cmp_w, cmp_h); };
   const ImU32 col = IM_COL32(80, 170, 255, 255);
   ImVec2 pts[4];
   for(int i = 0; i < 4; i++) pts[i] = to_screen(g.quad.p[i]);
@@ -158,7 +158,7 @@ void ViewerWindow::Update() {
     }
     constexpr float kTick = 8.0f;  // 目盛り線の長さ
     constexpr float kGap  = 14.0f; // ラベル表示用にティックからさらに離す量
-    const bool center = Config::Get()->viewer_ruler_center_origin;
+    const bool center     = Config::Get()->viewer_ruler_center_origin;
     for(auto& t : gizmo_ruler_ticks(cmp_w, di, center)) {
       auto p = comp_to_screen(ImVec2((float)t.comp_pos, 0), img_min, disp_size, cmp_w, cmp_h);
       dl->AddLine(ImVec2(p.x, img_min.y - kTick), ImVec2(p.x, img_min.y), IM_COL32(255, 255, 0, 200));
@@ -172,7 +172,7 @@ void ViewerWindow::Update() {
   }
 
   const GizmoPt comp_size{cmp_w, cmp_h};
-  const float scale_px = disp_size.x / cmp_w; // コンポ1pxあたりの画面px
+  const float scale_px     = disp_size.x / cmp_w; // コンポ1pxあたりの画面px
   const GizmoPt mouse_comp = [&] {
     ImVec2 c = screen_to_comp(ImGui::GetMousePos(), img_min, disp_size, cmp_w, cmp_h);
     return GizmoPt{c.x, c.y};
@@ -187,22 +187,22 @@ void ViewerWindow::Update() {
       EntityGizmo g0;
       entity_gizmo_of(*drag_.entt, comp_size, g0); // src_size/origin_offsetの取得用(変換は開始時のs0を使う)
       const bool shift = ImGui::GetIO().KeyShift, alt = ImGui::GetIO().KeyAlt;
-      GizmoXform x     = drag_.s0;
+      GizmoXform x = drag_.s0;
       switch(drag_.part) {
-      case GizmoPart::Body: x = gizmo_drag_move(drag_.s0, drag_.m0, mouse_comp); break;
-      case GizmoPart::Scale: {
-        const double hw = g0.src_size.x / 2, hh = g0.src_size.y / 2;
-        const GizmoPt corners[4] = {{-hw, -hh}, {hw, -hh}, {hw, hh}, {-hw, hh}};
-        x                        = gizmo_drag_scale(drag_.s0, g0.origin_offset, comp_size, corners[drag_.corner], mouse_comp, shift);
-        break;
-      }
-      case GizmoPart::Rotate: x = gizmo_drag_rotate(drag_.s0, comp_size, drag_.m0, mouse_comp); break;
-      case GizmoPart::Anchor: {
-        const GizmoPt local = gizmo_comp_to_local(drag_.s0, g0.origin_offset, comp_size, mouse_comp);
-        x                   = gizmo_set_anchor(drag_.s0, local - g0.origin_offset, !alt); // Altで見た目の補正を無効化
-        break;
-      }
-      default: break;
+        case GizmoPart::Body: x = gizmo_drag_move(drag_.s0, drag_.m0, mouse_comp); break;
+        case GizmoPart::Scale: {
+          const double hw = g0.src_size.x / 2, hh = g0.src_size.y / 2;
+          const GizmoPt corners[4] = {{-hw, -hh}, {hw, -hh}, {hw, hh}, {-hw, hh}};
+          x                        = gizmo_drag_scale(drag_.s0, g0.origin_offset, comp_size, corners[drag_.corner], mouse_comp, shift);
+          break;
+        }
+        case GizmoPart::Rotate: x = gizmo_drag_rotate(drag_.s0, comp_size, drag_.m0, mouse_comp); break;
+        case GizmoPart::Anchor: {
+          const GizmoPt local = gizmo_comp_to_local(drag_.s0, g0.origin_offset, comp_size, mouse_comp);
+          x                   = gizmo_set_anchor(drag_.s0, local - g0.origin_offset, !alt); // Altで見た目の補正を無効化
+          break;
+        }
+        default: break;
       }
       {
         std::lock_guard<std::mutex> lock(drag_.entt->mtx);

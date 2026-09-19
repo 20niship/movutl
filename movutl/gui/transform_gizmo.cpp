@@ -85,9 +85,9 @@ GizmoXform gizmo_drag_scale(const GizmoXform& s0, const GizmoPt& origin_offset, 
   if(uniform) {
     // 開始時の縦横比を保つ: 開始スケールに対する倍率の大きい方を採用
     const double kx = s0.scale.x != 0 ? sx / s0.scale.x : 1, ky = s0.scale.y != 0 ? sy / s0.scale.y : 1;
-    const double k  = std::abs(kx) > std::abs(ky) ? kx : ky;
-    sx              = s0.scale.x * k;
-    sy              = s0.scale.y * k;
+    const double k = std::abs(kx) > std::abs(ky) ? kx : ky;
+    sx             = s0.scale.x * k;
+    sy             = s0.scale.y * k;
   }
   r.scale = {sx, sy};
   return r;

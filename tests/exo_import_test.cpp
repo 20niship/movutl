@@ -1,7 +1,7 @@
 #include <doctest/doctest.h>
 #include <filesystem>
-#include <imgui.h>
 #include <fstream>
+#include <imgui.h>
 #include <movutl/app/app_impl.hpp>
 #include <movutl/asset/audio.hpp>
 #include <movutl/asset/composition.hpp>
@@ -339,8 +339,7 @@ TEST_CASE("exo: 標準描画のblendがEntity::blend_へ変換される") {
   // 図形(type=2) + 標準描画(blend=1) / 別レイヤーの図形(blend=12)
   auto obj = [](int n, int layer, int blend) {
     auto id = std::to_string(n);
-    return "[" + id + "]\r\nstart=1\r\nend=10\r\nlayer=" + std::to_string(layer) + "\r\n[" + id + ".0]\r\n_name=\x90\x7d\x8c\x60\r\ntype=2\r\n[" + id +
-           ".1]\r\n_name=\x95\x57\x8f\x80\x95\x60\x89\xe6\r\nX=0\r\nY=0\r\nZ=0\r\nblend=" + std::to_string(blend) + "\r\n";
+    return "[" + id + "]\r\nstart=1\r\nend=10\r\nlayer=" + std::to_string(layer) + "\r\n[" + id + ".0]\r\n_name=\x90\x7d\x8c\x60\r\ntype=2\r\n[" + id + ".1]\r\n_name=\x95\x57\x8f\x80\x95\x60\x89\xe6\r\nX=0\r\nY=0\r\nZ=0\r\nblend=" + std::to_string(blend) + "\r\n";
   };
   CHECK(import_exo_text("[exedit]\r\nwidth=640\r\nheight=360\r\nrate=30\r\nscale=1\r\n" + obj(0, 1, 1) + obj(1, 2, 12)) == 2);
   auto* comp = Composition::GetActiveComp();

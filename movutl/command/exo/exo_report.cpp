@@ -8,7 +8,7 @@ namespace {
 ExoImportReport g_report;
 std::atomic<bool> g_open_request{false};
 constexpr const char* kDialogId = "EXO取り込み結果";
-}
+} // namespace
 
 void ExoImportReport::add(const std::string& msg) {
   for(auto& it : items) {

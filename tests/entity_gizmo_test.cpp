@@ -27,18 +27,18 @@ TEST_CASE("hit_test_entity: 回転・拡大後の実描画枠で判定し、後�
   auto* cmp = Composition::GetActiveComp();
   REQUIRE(cmp != nullptr);
   const double cx = cmp->size[0] / 2.0, cy = cmp->size[1] / 2.0;
-  auto back  = Image::Create("back", 40, 40);
-  auto front = Image::Create("front", 40, 40);
+  auto back     = Image::Create("back", 40, 40);
+  auto front    = Image::Create("front", 40, 40);
   back->fstart_ = front->fstart_ = 0;
   back->fend_ = front->fend_ = 100;
-  front->scale_ = Vec2(50, 50); // 20x20に縮小
+  front->scale_              = Vec2(50, 50); // 20x20に縮小
   cmp->insert_entity(back, 0);
   cmp->insert_entity(front, 1);
   cmp->frame = 10;
-  CHECK(hit_test_entity(*cmp, {cx, cy}).get() == front.get());        // 重なる場所は前面
-  CHECK(hit_test_entity(*cmp, {cx + 15, cy}).get() == back.get());    // frontの外・backの内
-  CHECK(hit_test_entity(*cmp, {cx + 60, cy}).get() == nullptr);       // どちらの外
-  back->pos_ = Vec3(200, 0, 0);                                       // 移動すれば元の位置は当たらない
+  CHECK(hit_test_entity(*cmp, {cx, cy}).get() == front.get());     // 重なる場所は前面
+  CHECK(hit_test_entity(*cmp, {cx + 15, cy}).get() == back.get()); // frontの外・backの内
+  CHECK(hit_test_entity(*cmp, {cx + 60, cy}).get() == nullptr);    // どちらの外
+  back->pos_ = Vec3(200, 0, 0);                                    // 移動すれば元の位置は当たらない
   CHECK(hit_test_entity(*cmp, {cx + 15, cy}).get() == nullptr);
   CHECK(hit_test_entity(*cmp, {cx + 200, cy}).get() == back.get());
 }
