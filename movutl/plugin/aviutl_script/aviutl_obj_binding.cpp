@@ -21,9 +21,9 @@ namespace {
 
 AviUtlObjContext* get_ctx(lua_State* L) { return static_cast<AviUtlObjContext*>(lua_touserdata(L, lua_upvalueindex(1))); }
 
-// obj.x/y/z/layer/idなど「対象Entityから引く値」の取得口。Entityの変換(pos等)の持ち方が変わってもここだけ差し替えればよい
+// obj.x/y/z/layer/idなど「対象Entityから引く値」の取得口
 struct ObjEntityInfo {
-  double x = 0, y = 0, z = 0; // ponytail: Entity種別ごとにpos/pos_と持ち方が異なるため未接続(0固定)。Transform統一後にここで実値を返す
+  double x = 0, y = 0, z = 0; // 対象Entityの位置(pos_、コンポ中心原点)
   int layer       = 0;        // 0始まりのレイヤー番号(Compositionに属さない場合は0)
   uint64_t id     = 0;
   int frame       = 0; // オブジェクト先頭からの経過フレーム
@@ -36,6 +36,7 @@ ObjEntityInfo query_entity_info(const AviUtlObjContext* ctx) {
   info.frame = ctx->frame;
   if(!e) return info;
   info.id          = e->guid_;
+  info.x = e->pos_[0], info.y = e->pos_[1], info.z = e->pos_[2];
   info.frame       = ctx->frame - e->fstart_;
   info.total_frame = e->fend_ - e->fstart_;
   if(Composition* cmp = ctx->fpip->compo) {
@@ -255,31 +256,30 @@ double obj_field_or_arg(lua_State* L, int argi, const char* field, double def) {
   return v;
 }
 
-// Image::copytoのcenter引数はpmin相当(内部でwidth/2が加算される)なので、AviUtlの中心原点オフセットx,yをそのまま渡す
-// cx,cy: 画像中心から見た基点(obj.cx/cy)。x,yは基点が置かれる位置なので、画像中心の位置は基点を回転・拡大した分だけずれる
-void perform_draw(AviUtlObjContext* ctx, double x, double y, double zoom, double alpha, double rz, double cx, double cy) {
+// 現在の描画バッファを、objテーブルの基点(cx/cy)・縦横比(aspect)を含む変換で描き直す
+// x,y,zoom,alpha,rx,ry,rzは呼び出し側が決めた値(obj.draw引数またはobjテーブル現在値)。ponytail: oz/czのZ方向は未対応
+void perform_draw(lua_State* L, AviUtlObjContext* ctx, double x, double y, double zoom, double alpha, double rx, double ry, double rz) {
   Image* img = ctx->fpip->img;
   if(!img || img->empty()) return;
-  const double rad = rz * M_PI / 180.0;
-  x -= zoom * (cx * std::cos(rad) - cy * std::sin(rad));
-  y -= zoom * (cx * std::sin(rad) + cy * std::cos(rad));
+  Placement pl;
+  pl.x = x, pl.y = y;
+  pl.anchor_x = obj_field_or_arg(L, 999, "cx", 0.0), pl.anchor_y = obj_field_or_arg(L, 999, "cy", 0.0);
+  pl.scale_x = pl.scale_y = zoom;
+  pl.aspect = std::clamp(obj_field_or_arg(L, 999, "aspect", 0.0), -1.0, 1.0);
+  pl.rot_x = rx, pl.rot_y = ry, pl.rot_z = rz;
+  pl.alpha = (float)alpha;
   Image tmp(img->width, img->height);
   tmp.has_alpha = true;
   std::memcpy(tmp.data(), img->data(), img->size_in_bytes());
   img->fill_rgba(Vec4b(0, 0, 0, 0));
-  tmp.copyto(img, Vec2d(x, y), (float)zoom, (float)rz, (float)alpha, Blend_Alpha);
+  tmp.place(img, pl);
   ctx->drawn = true;
 }
 
-// obj.draw(x,y,z,zoom,alpha,rx,ry,rz): 現在の描画済みバッファを中心原点で移動・拡縮・Z回転して描き直す(rx/ryの3D回転は非対応)
+// obj.draw(x,y,z,zoom,alpha,rx,ry,rz): 現在の描画済みバッファを中心原点で移動・拡縮・回転して描き直す(引数省略時はobjテーブルの現在値)
 int l_obj_draw(lua_State* L) {
-  auto* ctx    = get_ctx(L);
-  double x     = obj_field_or_arg(L, 1, "ox", 0.0);
-  double y     = obj_field_or_arg(L, 2, "oy", 0.0);
-  double zoom  = obj_field_or_arg(L, 4, "zoom", 1.0);
-  double alpha = obj_field_or_arg(L, 5, "alpha", 1.0);
-  double rz    = obj_field_or_arg(L, 8, "rz", 0.0);
-  perform_draw(ctx, x, y, zoom, alpha, rz, obj_field_or_arg(L, 999, "cx", 0.0), obj_field_or_arg(L, 999, "cy", 0.0));
+  auto* ctx = get_ctx(L);
+  perform_draw(L, ctx, obj_field_or_arg(L, 1, "ox", 0.0), obj_field_or_arg(L, 2, "oy", 0.0), obj_field_or_arg(L, 4, "zoom", 1.0), obj_field_or_arg(L, 5, "alpha", 1.0), obj_field_or_arg(L, 6, "rx", 0.0), obj_field_or_arg(L, 7, "ry", 0.0), obj_field_or_arg(L, 8, "rz", 0.0));
   return 0;
 }
 
@@ -440,12 +440,8 @@ int l_global_RGB(lua_State* L) {
 
 void perform_implicit_draw(lua_State* L, AviUtlObjContext* ctx) {
   // 空スタック位置(999)を指定してobj_field_or_argを常にobjテーブルの現在値読み取りモードで動かす
-  double x     = obj_field_or_arg(L, 999, "ox", 0.0);
-  double y     = obj_field_or_arg(L, 999, "oy", 0.0);
-  double zoom  = obj_field_or_arg(L, 999, "zoom", 1.0);
-  double alpha = obj_field_or_arg(L, 999, "alpha", 1.0);
-  double rz    = obj_field_or_arg(L, 999, "rz", 0.0);
-  perform_draw(ctx, x, y, zoom, alpha, rz, obj_field_or_arg(L, 999, "cx", 0.0), obj_field_or_arg(L, 999, "cy", 0.0));
+  auto f = [&](const char* k, double d) { return obj_field_or_arg(L, 999, k, d); };
+  perform_draw(L, ctx, f("ox", 0.0), f("oy", 0.0), f("zoom", 1.0), f("alpha", 1.0), f("rx", 0.0), f("ry", 0.0), f("rz", 0.0));
 }
 
 void setup_obj_table(lua_State* L, AviUtlObjContext* ctx) {
