@@ -155,8 +155,18 @@ Vec4b parse_color(const std::string& hex, Vec4b def) {
   return Vec4b((v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF, 255);
 }
 
-// exoの透明度(0-100, 100で完全透明) -> alpha(0-255)
-uint8_t parse_alpha(const Section& s) { return (uint8_t)std::clamp((int)(255.f * (100.f - getf(s, "透明度", 0.f)) / 100.f + 0.5f), 0, 255); }
+// exoの透明度(0-100, 100で完全透明) -> 不透明度(0-1)
+float parse_alpha(const Section& s) { return std::clamp((100.f - getf(s, "透明度", 0.f)) / 100.f, 0.f, 1.f); }
+
+// exoの標準描画(X/Y/Z/拡大率/回転/透明度)をEntity共通の変換へ反映する。exoの座標系(中心原点・Y下向き・%・度)はEntityの規約と同じ
+void apply_standard_draw(Entity& e, const Section* draw) {
+  if(!draw) return;
+  e.pos_      = Vec3(getf(*draw, "X"), getf(*draw, "Y"), getf(*draw, "Z"));
+  float scale = getf(*draw, "拡大率", 100.f);
+  e.scale_    = Vec2(scale, scale);
+  e.rotation_ = getf(*draw, "回転");
+  e.alpha_    = parse_alpha(*draw);
+}
 
 // exo内のfile=を実在するパスへ解決する。
 //  - 相対パスはexoのあるディレクトリ基準
@@ -250,12 +260,7 @@ int import_exo_file(const char* path) {
     if(kind == "動画ファイル") {
       auto file = resolve_media_path(get(src, "file"), base_dir);
       auto mov  = Movie::Create(stem_of(file).c_str(), file.c_str());
-      if(draw) {
-        mov->pos      = Vec3(getf(*draw, "X"), getf(*draw, "Y"), getf(*draw, "Z"));
-        mov->scale    = Vec2(getf(*draw, "拡大率", 100.f), getf(*draw, "拡大率", 100.f));
-        mov->rotation = getf(*draw, "回転");
-        mov->alpha_   = parse_alpha(*draw);
-      }
+      apply_standard_draw(*mov, draw);
       mov->start_frame_ = geti(src, "再生位置", 0);
       mov->speed        = getf(src, "再生速度", 100.f);
       mov->loop_        = geti(src, "ループ再生") != 0;
@@ -277,7 +282,7 @@ int import_exo_file(const char* path) {
         float sc      = getf(*draw, "拡大率", 100.f) / 100.f;
         img->scale    = Vec2(sc, sc);
         img->rotation = getf(*draw, "回転") * 3.14159265f / 180.f;
-        img->alpha    = parse_alpha(*draw) / 255.f;
+        img->alpha    = parse_alpha(*draw);
       }
       ent = img;
     } else if(kind == "図形") {
@@ -292,7 +297,7 @@ int import_exo_file(const char* path) {
         shp->pos_   = Vec3(getf(*draw, "X"), getf(*draw, "Y"), getf(*draw, "Z"));
         shp->size_  = shp->size_ * (getf(*draw, "拡大率", 100.f) / 100.f);
         shp->rot_   = getf(*draw, "回転") * 3.14159265f / 180.f;
-        shp->alpha_ = parse_alpha(*draw);
+        shp->alpha_ = (uint8_t)std::lround(parse_alpha(*draw) * 255);
       }
       Project::Get()->entities.push_back(shp);
       shp->guid_ = Project::Get()->entities.size();
@@ -305,7 +310,7 @@ int import_exo_file(const char* path) {
         t->pos_     = Vec3(getf(*draw, "X"), getf(*draw, "Y"), getf(*draw, "Z"));
         t->scale_x_ = t->scale_y_ = getf(*draw, "拡大率", 100.f) / 100.f;
         t->rot_                   = getf(*draw, "回転") * 3.14159265f / 180.f;
-        t->alpha_                 = parse_alpha(*draw);
+        t->alpha_                 = (uint8_t)std::lround(parse_alpha(*draw) * 255);
       }
       // TextEntt::CreateはProject::entitiesへ登録もguid採番もしないため自前で行う
       Project::Get()->entities.push_back(t);

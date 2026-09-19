@@ -119,9 +119,9 @@ TEST_CASE("exo: comprehensive.exo (動画/画像/音声/テキスト/図形を�
     CHECK(m2->get_input_plugin() != nullptr);
     CHECK(m1->fstart_ == 0);
     CHECK(m1->fend_ == 59);
-    CHECK(m1->pos[0] == doctest::Approx(10.f));
-    CHECK(m1->scale[0] == doctest::Approx(120.f));
-    CHECK(m1->alpha_ == 230); // 透明度10%
+    CHECK(m1->pos_[0] == doctest::Approx(10.f));
+    CHECK(m1->scale_[0] == doctest::Approx(120.f));
+    CHECK(m1->alpha_ == doctest::Approx(0.9f)); // 透明度10%
     CHECK(m2->speed == doctest::Approx(50.f));
     CHECK(m2->loop_);
     CHECK(m2->start_frame_ == 31);

@@ -121,8 +121,8 @@ Ref<Composition> build_scene(bool clear_original, Ref<FramebufferEntt>* fb_out) 
 
   auto movie = Movie::Create("bg_movie", "../assets/movies/big_buck_bunny_360_10s.mp4");
   REQUIRE(movie->get_input_plugin() != nullptr);
-  movie->pos     = Vec3(-W / 4.0f, 0, 0); // 左半分寄りに配置
-  movie->scale   = Vec2(20, 20);
+  movie->pos_    = Vec3(-W / 4.0f, 0, 0); // 左半分寄りに配置
+  movie->scale_  = Vec2(20, 20);
   movie->fstart_ = 0;
   movie->fend_   = 10;
 

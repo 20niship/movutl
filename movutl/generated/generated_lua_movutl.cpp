@@ -166,6 +166,7 @@ void generated_lua_binding_movutl(lua_State* L) {
     .endClass()
     .beginClass<Entity>("Entity")
     .addFunction("getType", &Entity::getType)
+    .addFunction("has_transform", &Entity::has_transform)
     .addStaticFunction("CreateEntity", &Entity::CreateEntity)
     .addStaticFunction("Find", &Entity::Find)
     .addFunction("getSaveProps", &Entity::getSaveProps)
@@ -271,12 +272,8 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("load_file", &Movie::load_file)
     .addFunction("getType", &Movie::getType)
     .addFunction("reload_asset", &Movie::reload_asset)
-    .addVariable("pos", &Movie::pos)                   // Vec3
-    .addVariable("scale", &Movie::scale)               // Vec2
-    .addVariable("rotation", &Movie::rotation)         // float
     .addVariable("start_frame_", &Movie::start_frame_) // int
     .addVariable("speed", &Movie::speed)               // float
-    .addVariable("alpha_", &Movie::alpha_)             // uint8_t
     .addVariable("loop_", &Movie::loop_)               // bool
     .addVariable("with_alpha_", &Movie::with_alpha_)   // bool
     .addVariable("path_", &Movie::path_)               // std::string

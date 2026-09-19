@@ -409,22 +409,14 @@ movutl.MidiNote.start_sample = 0
 movutl.MidiNote.dur_samples = 0
 
 ---@class Movie
----@field pos Vec3
----@field scale Vec2
----@field rotation number
 ---@field start_frame_ number
 ---@field speed number
----@field alpha_ number
 ---@field loop_ boolean
 ---@field with_alpha_ boolean
 ---@field path_ string
 movutl.Movie = {}
-movutl.Movie.pos = Vec3 ( 0 , 0 , 0 )
-movutl.Movie.scale = Vec2 ( 100 , 100 )
-movutl.Movie.rotation = 0
 movutl.Movie.start_frame_ = 0
 movutl.Movie.speed = 100.0
-movutl.Movie.alpha_ = 255
 movutl.Movie.loop_ = false
 movutl.Movie.with_alpha_ = false
 movutl.Movie.path_ = ""
