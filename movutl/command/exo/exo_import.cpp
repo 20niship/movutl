@@ -159,7 +159,9 @@ Vec4b parse_color(const std::string& hex, Vec4b def) {
 float parse_alpha(const Section& s) { return std::clamp((100.f - getf(s, "透明度", 0.f)) / 100.f, 0.f, 1.f); }
 
 // exoの標準描画(X/Y/Z/拡大率/回転/透明度)をEntity共通の変換へ反映する。exoの座標系(中心原点・Y下向き・%・度)はEntityの規約と同じ
-void apply_standard_draw(Entity& e, const Section* draw) {
+// 拡張描画の中心X/Y/Zは画像中心から見た基点オフセット(Entity::anchor_)に対応する
+void apply_standard_draw(Entity& e, const Section* draw, const Section* ext) {
+  if(ext) e.anchor_ = Vec3(getf(*ext, "中心X"), getf(*ext, "中心Y"), getf(*ext, "中心Z"));
   if(!draw) return;
   e.pos_      = Vec3(getf(*draw, "X"), getf(*draw, "Y"), getf(*draw, "Z"));
   float scale = getf(*draw, "拡大率", 100.f);
@@ -254,13 +256,14 @@ int import_exo_file(const char* path) {
     const Section& src = *effects[0];
     auto kind          = get(src, "_name");
     auto draw          = find_fx("標準描画");
+    auto ext           = find_fx("拡張描画");
     auto play          = find_fx("標準再生");
 
     Ref<Entity> ent;
     if(kind == "動画ファイル") {
       auto file = resolve_media_path(get(src, "file"), base_dir);
       auto mov  = Movie::Create(stem_of(file).c_str(), file.c_str());
-      apply_standard_draw(*mov, draw);
+      apply_standard_draw(*mov, draw, ext);
       mov->start_frame_ = geti(src, "再生位置", 0);
       mov->speed        = getf(src, "再生速度", 100.f);
       mov->loop_        = geti(src, "ループ再生") != 0;
@@ -277,7 +280,7 @@ int import_exo_file(const char* path) {
       auto file  = resolve_media_path(get(src, "file"), base_dir);
       auto img   = Image::Create(stem_of(file).c_str(), file.c_str());
       img->guid_ = Project::Get()->entities.size();
-      apply_standard_draw(*img, draw);
+      apply_standard_draw(*img, draw, ext);
       ent = img;
     } else if(kind == "図形") {
       // exoのtype: 0=背景 1=円 2=四角形 3=三角形 4=五角形 5=六角形(それ以外は四角形扱い)
@@ -287,7 +290,7 @@ int import_exo_file(const char* path) {
       float size                     = getf(src, "サイズ", 100.f);
       shp->size_                     = Vec2(size, size);
       shp->color_                    = parse_color(get(src, "color"), shp->color_);
-      apply_standard_draw(*shp, draw);
+      apply_standard_draw(*shp, draw, ext);
       Project::Get()->entities.push_back(shp);
       shp->guid_ = Project::Get()->entities.size();
       ent        = shp;
@@ -295,7 +298,7 @@ int import_exo_file(const char* path) {
       auto t           = TextEntt::Create(utf16le_hex_to_utf8(get(src, "text")).c_str(), get(src, "font").c_str());
       t->color_        = parse_color(get(src, "color"), t->color_);
       t->border_color_ = parse_color(get(src, "color2"), t->border_color_);
-      apply_standard_draw(*t, draw);
+      apply_standard_draw(*t, draw, ext);
       // TextEntt::CreateはProject::entitiesへ登録もguid採番もしないため自前で行う
       Project::Get()->entities.push_back(t);
       t->guid_ = Project::Get()->entities.size();

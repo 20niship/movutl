@@ -40,7 +40,8 @@ TEST_CASE("exo: import_exo_file") {
                     "[0.1]\r\n_name=\x95\x57\x8f\x80\x8d\xc4\x90\xb6\r\n\x89\xb9\x97\xca=80.0,80.0,1\r\n"
                     "[1]\r\nstart=5\r\nend=20\r\nlayer=3\r\n"
                     "[1.0]\r\n_name=\x83\x65\x83\x4c\x83\x58\x83\x67\r\ntext=c630b930c830000000000000\r\ncolor=ff0000\r\nfont=MS UI Gothic\r\n"
-                    "[1.1]\r\n_name=\x95\x57\x8f\x80\x95\x60\x89\xe6\r\nX=10.0\r\nY=20.0\r\nZ=0.0\r\n\x8Ag\x91\xe5\x97\xa6=200.00\r\n\x93\xa7\x96\xbe\x93x=50.0\r\n";
+                    "[1.1]\r\n_name=\x95\x57\x8f\x80\x95\x60\x89\xe6\r\nX=10.0\r\nY=20.0\r\nZ=0.0\r\n\x8Ag\x91\xe5\x97\xa6=200.00\r\n\x93\xa7\x96\xbe\x93x=50.0\r\n"
+                    "[1.2]\r\n_name=\x8a\x67\x92\xa3\x95\x60\x89\xe6\r\n\x92\x86\x90\x53X=5.0\r\n\x92\x86\x90\x53Y=-3.0\r\n\x92\x86\x90\x53Z=0.0\r\n";
   auto path       = std::filesystem::temp_directory_path() / "movutl_test.exo";
   {
     std::ofstream ofs(path, std::ios::binary);
@@ -65,6 +66,8 @@ TEST_CASE("exo: import_exo_file") {
   CHECK(text->scale_[0] == doctest::Approx(200.f));
   CHECK(text->alpha_ == doctest::Approx(0.5f).epsilon(0.01));
   CHECK(text->guid_ != 0);
+  CHECK(text->anchor_[0] == doctest::Approx(5.f)); // 拡張描画の中心X/Y
+  CHECK(text->anchor_[1] == doctest::Approx(-3.f));
 
   CHECK(import_exo_file("/nonexistent/x.exo") == -1);
   std::filesystem::remove(path);
