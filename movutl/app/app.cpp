@@ -1,6 +1,8 @@
 #include <algorithm>
 #include <cstdlib>
+#include <filesystem>
 #include <movutl/app/app.hpp>
+#include <movutl/core/status_log.hpp>
 #include <movutl/app/app_impl.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/project.hpp>
@@ -116,11 +118,27 @@ void reset() { detail::AppMain::Get()->reset(); }
 void goto_frame(int frame) { detail::AppMain::Get()->goto_frame(frame); }
 bool is_playing() { return detail::AppMain::Get()->is_playing(); }
 
-void new_project() { Project::New(); }
-void save_project() { Project::Save(); }
-void save_project_as(const char* path) { Project::Save(path); }
+void new_project() {
+  Project::New();
+  status_log_set_dirty(false);
+  push_status_log(StatusLevel::Info, "新規プロジェクトを作成しました");
+}
+void save_project() {
+  Project::Save();
+  status_log_set_dirty(false);
+  push_status_log(StatusLevel::Success, "保存しました: " + std::filesystem::path(Project::Get()->path).filename().string());
+}
+void save_project_as(const char* path) {
+  Project::Save(path);
+  status_log_set_dirty(false);
+  push_status_log(StatusLevel::Success, "保存しました: " + std::filesystem::path(path).filename().string());
+}
 
-void open_project(const char* path) { Project::Load(path); }
+void open_project(const char* path) {
+  Project::Load(path);
+  status_log_set_dirty(false);
+  push_status_log(StatusLevel::Success, "プロジェクトを開きました: " + std::filesystem::path(path).filename().string());
+}
 
 // Projectはpygen上シングルトンインスタンスをLuaへ公開していない(beginClassはインスタンス変数アクセサのみ)ため、保存先の有無をLuaから判定するためのヘルパー
 bool has_project_path() { return !Project::Get()->path.empty(); }
