@@ -310,3 +310,20 @@ TEST_CASE("exo: camera/clippingがEntityへ反映され、overlay=0は未対応�
   CHECK_FALSE(comp->layers[1].entts.at(0)->clipping_up_);
   CHECK(exo_import_report().items.size() == 1);
 }
+
+TEST_CASE("exo: [exedit]の解像度/フレームレート/音声設定が空のCompositionへ反映され、既存Entityがあれば変更しない") {
+  Project::New();
+  auto* comp = Composition::GetActiveComp();
+  auto obj   = std::string("[0]\r\nstart=1\r\nend=10\r\nlayer=1\r\n[0.0]\r\n_name=\x90\x7d\x8c\x60\r\ntype=2\r\n");
+  CHECK(import_exo_text("[exedit]\r\nwidth=1280\r\nheight=720\r\nrate=30000\r\nscale=1001\r\naudio_rate=44100\r\naudio_ch=1\r\n" + obj) == 1);
+  CHECK(comp->size[0] == 1280);
+  CHECK(comp->size[1] == 720);
+  CHECK(comp->framerate == doctest::Approx(29.97f).epsilon(0.001));
+  CHECK(comp->audio_sample_rate == 44100);
+  CHECK(comp->audio_channels == 1);
+
+  // 既存Entityがあるので2回目の取り込みでは設定を変えない
+  CHECK(import_exo_text("[exedit]\r\nwidth=100\r\nheight=50\r\nrate=60\r\nscale=1\r\n" + obj) == 1);
+  CHECK(comp->size[0] == 1280);
+  CHECK(comp->framerate == doctest::Approx(29.97f).epsilon(0.001));
+}

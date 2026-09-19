@@ -228,6 +228,7 @@ int import_exo_file(const char* path) {
     comp = Composition::GetActiveComp();
   }
   MU_ASSERT(comp);
+  if(auto ex = ini.find("exedit"); ex != ini.end()) apply_exo_header(*comp, ex->second);
 
   // [N](Nは整数)を番号順に処理する。[N.M]はそのエフェクト
   std::vector<int> ids;

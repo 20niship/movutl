@@ -5,6 +5,8 @@
 
 namespace mu {
 
+class Composition;
+
 // exoのiniセクション(key=value)。exo_import.cppのSectionと同一型
 using ExoSection = std::map<std::string, std::string>;
 
@@ -16,5 +18,8 @@ void apply_exo_blend(Entity& e, const ExoSection* draw);
 
 // オブジェクトセクションの camera=(カメラ制御の対象) / clipping=(上のオブジェクトでクリッピング) / overlay=0 を反映する
 void apply_exo_object_flags(Entity& e, const ExoSection& obj);
+
+// [exedit]のwidth/height/rate/scale/audio_rate/audio_chをCompositionへ反映する。既存Entityがある(=既存プロジェクトへ追加取り込みする)場合は変更しない
+void apply_exo_header(Composition& comp, const ExoSection& exedit);
 
 } // namespace mu

@@ -1,4 +1,6 @@
 #include <cstdlib>
+#include <movutl/asset/composition.hpp>
+#include <movutl/audio/audio_mixer.hpp>
 #include <movutl/command/exo/exo_effects.hpp>
 #include <movutl/command/exo/exo_report.hpp>
 
@@ -46,6 +48,30 @@ void apply_exo_object_flags(Entity& e, const ExoSection& obj) {
   e.camera_ctrl_ = flag("camera", 0) != 0;
   e.clipping_up_ = flag("clipping", 0) != 0;
   if(flag("overlay", 1) == 0) exo_import_report().add("overlay=0(現在のレイヤーを同時に表示しない)は未対応です");
+}
+
+void apply_exo_header(Composition& comp, const ExoSection& exedit) {
+  {
+    std::lock_guard<std::mutex> lock(comp.mtx);
+    for(auto& l : comp.layers)
+      if(!l.entts.empty()) return;
+  }
+  auto num = [&](const char* key) {
+    auto it = exedit.find(key);
+    return it == exedit.end() ? 0.0 : atof(it->second.c_str());
+  };
+  int w = (int)num("width"), h = (int)num("height");
+  if(w > 0 && h > 0) comp.resize(w, h);
+  // AviUtlのフレームレートは rate/scale (例: 30000/1001)
+  double rate = num("rate"), scale = num("scale");
+  if(rate > 0) comp.framerate = (float)(rate / (scale > 0 ? scale : 1.0));
+  int ar = (int)num("audio_rate"), ach = (int)num("audio_ch");
+  if((ar > 0 && ar != comp.audio_sample_rate) || (ach > 0 && ach != comp.audio_channels)) {
+    if(ar > 0) comp.audio_sample_rate = ar;
+    if(ach > 0) comp.audio_channels = ach;
+    comp.audio_buf = cutil::make_ref<AudioRingBuffer>(comp.audio_sample_rate, comp.audio_channels); // ponytail: 再生中の差し替えは考慮しない(取り込み直後は停止中が前提)
+  }
+  comp.invalidate_cache_all();
 }
 
 } // namespace mu
