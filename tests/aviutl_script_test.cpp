@@ -190,6 +190,22 @@ TEST_CASE("obj.putpixel: 指定画素だけを書き換え、範囲外は無視�
   CHECK(img(0, 0) == Vec4b(0, 0, 0, 0));
 }
 
+TEST_CASE("obj.copypixel: 画素を別位置へコピーし範囲外は無視する") {
+  std::string text       = "@copypixelテスト\n"
+                           "obj.copypixel(0, 0, 1, 1)\n"
+                           "obj.copypixel(1, 0, 5, 5)\n";
+  FilterPluginTable* plg = register_test_script(text, "copypixelテスト");
+  REQUIRE(plg != nullptr);
+  Image img(2, 2);
+  img.fill_rgba(Vec4b(0, 0, 0, 255));
+  img(1, 1) = Vec4b(9, 8, 7, 6);
+  FilterInData fin;
+  fin.img = &img;
+  CHECK(plg->fn_proc(plg, &fin, cutil::Prop{}));
+  CHECK(img(0, 0) == Vec4b(9, 8, 7, 6));
+  CHECK(img(1, 0) == Vec4b(0, 0, 0, 255)); // 範囲外のコピー元は無視
+}
+
 TEST_CASE("register_aviutl_scripts: 2値化スクリプトをフォルダスキャン経由でフィルタとして登録・実行できる") {
   std::string text = "--track0:しきい値,0,255,128,1\n"
                      "@AviUtlテスト2値化\n"

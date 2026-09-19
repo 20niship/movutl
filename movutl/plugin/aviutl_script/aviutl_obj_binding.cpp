@@ -116,6 +116,22 @@ int l_obj_putpixel(lua_State* L) {
   return 0;
 }
 
+// obj.copypixel(dx,dy,sx,sy): (sx,sy)の画素を(dx,dy)へコピーする(どちらかが範囲外なら何もしない)
+int l_obj_copypixel(lua_State* L) {
+  auto* ctx  = get_ctx(L);
+  Image* img = ctx->fpip->img;
+  if(!img) return 0;
+  int dx  = (int)std::floor(luaL_checknumber(L, 1));
+  int dy  = (int)std::floor(luaL_checknumber(L, 2));
+  int sx  = (int)std::floor(luaL_checknumber(L, 3));
+  int sy  = (int)std::floor(luaL_checknumber(L, 4));
+  auto in = [&](int x, int y) { return x >= 0 && y >= 0 && x < (int)img->width && y < (int)img->height; };
+  if(!in(dx, dy) || !in(sx, sy)) return 0;
+  (*img)(dx, dy) = (*img)(sx, sy);
+  ctx->drawn     = true;
+  return 0;
+}
+
 // AviUtl正規のキーのみ対応。未対応キーはnilを返す(旧独自キーimage_w/image_h/screen_w/screen_h/framerateはobj.w/h/screen_w/screen_h/framerate変数へ移行済み)
 // ponytail: saving/editing/multi_object/camera_modeはmovutlに対応する状態が無いので固定値。versionはAviUtl 1.10相当の値
 int l_obj_getinfo(lua_State* L) {
@@ -383,6 +399,7 @@ void setup_obj_table(lua_State* L, AviUtlObjContext* ctx) {
   reg_fn("putpixeldata", l_obj_putpixeldata);
   reg_fn("getpixel", l_obj_getpixel);
   reg_fn("putpixel", l_obj_putpixel);
+  reg_fn("copypixel", l_obj_copypixel);
   reg_fn("getinfo", l_obj_getinfo);
   reg_fn("effect", l_obj_effect);
   reg_fn("draw", l_obj_draw);
