@@ -107,6 +107,28 @@ struct EntityInfo {
   std::string str() const;
 };
 
+// 描画変換(座標は中心原点)。グループ制御の親変換としても使う
+struct GroupXform {
+  Vec3 pos       = Vec3(0, 0, 0);
+  Vec2 scale     = Vec2(100, 100);
+  float rotation = 0.0f;
+  float alpha    = 1.0f;
+
+  // this(親)を適用した後にchild(子の局所変換)を置いた合成変換。結合的なので親を外側から順に畳み込める
+  GroupXform compose(const GroupXform& child) const;
+};
+
+// Entity::render()の間だけ、そのスレッドで描画するEntityへ親グループの合成変換を与える(composite()が参照する)
+class GroupXformScope {
+  const GroupXform* prev_;
+
+public:
+  explicit GroupXformScope(const GroupXform* parent);
+  ~GroupXformScope();
+  GroupXformScope(const GroupXformScope&)            = delete;
+  GroupXformScope& operator=(const GroupXformScope&) = delete;
+};
+
 class Entity {
 protected:
   InputPluginTable* in_plg_ = nullptr;
@@ -141,6 +163,9 @@ public:
 
   // このEntity固有の状態(img_/デコーダハンドル等)を読み書きする際のロック。Composition::mtxとは別物
   mutable std::mutex mtx;
+
+  // 自身の局所変換にGroupXformScopeで与えられた親グループ変換を合成した、実際に描画に使う変換
+  GroupXform world_xform() const;
 
   // srcを自身の変換(pos_/anchor_/scale_/rotation_/alpha_/blend_)でtargetへ合成する。
   // origin_offset: srcの中心から見た、このEntityの局所原点(基点の既定位置)のずれ(px)。通常は0(=画像中心)

@@ -141,19 +141,45 @@ std::string EntityInfo::str() const {
   return std::string(buf);
 }
 
+namespace {
+thread_local const GroupXform* tls_parent_xform = nullptr;
+}
+
+GroupXform GroupXform::compose(const GroupXform& child) const {
+  const double rad = rotation * M_PI / 180.0;
+  const double c = std::cos(rad), sn = std::sin(rad);
+  const double sx = scale[0] / 100.0, sy = scale[1] / 100.0;
+  const double px = child.pos[0] * sx, py = child.pos[1] * sy;
+  GroupXform out;
+  out.pos      = Vec3((float)(pos[0] + px * c - py * sn), (float)(pos[1] + px * sn + py * c), pos[2] + child.pos[2]);
+  out.scale    = Vec2((float)(child.scale[0] * sx), (float)(child.scale[1] * sy));
+  out.rotation = rotation + child.rotation;
+  out.alpha    = alpha * child.alpha;
+  return out;
+}
+
+GroupXformScope::GroupXformScope(const GroupXform* parent) : prev_(tls_parent_xform) { tls_parent_xform = parent; }
+GroupXformScope::~GroupXformScope() { tls_parent_xform = prev_; }
+
+GroupXform Entity::world_xform() const {
+  GroupXform local{pos_, scale_, rotation_, alpha_};
+  return tls_parent_xform ? tls_parent_xform->compose(local) : local;
+}
+
 bool Entity::composite(const Image& src, Image* target, const Vec2& origin_offset) const {
   MU_ASSERT(target);
   if(src.empty() || target->empty()) return false;
   // ponytail: Image::copyto(center,scale,angle)が等方スケール+整数座標のため、拡大率はX/Yの平均・位置は整数pxに丸める。X/Y別スケールは別途対応
-  const double s   = (scale_[0] + scale_[1]) / 200.0;
-  const double rad = rotation_ * M_PI / 180.0;
+  const GroupXform w = world_xform(); // 親グループ変換込みの実効変換
+  const double s     = (w.scale[0] + w.scale[1]) / 200.0;
+  const double rad   = w.rotation * M_PI / 180.0;
   const double c = std::cos(rad), sn = std::sin(rad);
   // 画像中心原点での基点(自身のanchor_ + 局所原点のずれ)を回転・拡大し、画像中心の描画位置を求める
   const double ax = anchor_[0] + origin_offset[0], ay = anchor_[1] + origin_offset[1];
-  const double cx = target->width / 2.0 + pos_[0] - s * (ax * c - ay * sn);
-  const double cy = target->height / 2.0 + pos_[1] - s * (ax * sn + ay * c);
+  const double cx = target->width / 2.0 + w.pos[0] - s * (ax * c - ay * sn);
+  const double cy = target->height / 2.0 + w.pos[1] - s * (ax * sn + ay * c);
   const Vec2d pmin((int64_t)std::floor(cx - src.width / 2.0), (int64_t)std::floor(cy - src.height / 2.0));
-  return src.copyto(target, pmin, (float)s, rotation_, alpha_, blend_);
+  return src.copyto(target, pmin, (float)s, w.rotation, w.alpha, blend_);
 }
 
 bool Entity::render_filters(Composition* cmp, Image* img, int frame) {
