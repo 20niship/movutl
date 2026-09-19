@@ -19,6 +19,10 @@ public:
   void stop();
   bool is_running() const { return running_; }
 
+  // プレビュー再生専用のマスター音量(線形ゲイン、1.0=0dB)。書き出し・波形・メーターには影響しない
+  static void set_master_gain(float gain);
+  static float master_gain();
+
 private:
   void* device_      = nullptr; // ma_device*(実体はaudio_player.cppで確保、ヘッダをmovutl全体へ波及させないためvoid*で保持)
   Composition* comp_ = nullptr;

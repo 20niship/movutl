@@ -1,6 +1,8 @@
 #define MINIAUDIO_IMPLEMENTATION
 #include <miniaudio.h>
 //
+#include <algorithm>
+#include <atomic>
 #include <cstring>
 #include <movutl/asset/composition.hpp>
 #include <movutl/audio/audio_mixer.hpp>
@@ -11,6 +13,9 @@ namespace mu {
 
 namespace {
 
+// オーディオスレッドから読むためファイルスコープのatomicに持つ(デバイスは1つだけ)
+std::atomic<float> g_master_gain{1.0f};
+
 void data_callback(ma_device* device, void* output, const void* input, ma_uint32 frame_count) {
   (void)input;
   auto* comp = (Composition*)device->pUserData;
@@ -18,10 +23,20 @@ void data_callback(ma_device* device, void* output, const void* input, ma_uint32
     std::memset(output, 0, (size_t)frame_count * device->playback.channels * sizeof(int16_t));
     return;
   }
-  comp->audio_buf->read_consume((int16_t*)output, (int)frame_count);
+  int n = comp->audio_buf->read_consume((int16_t*)output, (int)frame_count);
+  (void)n;
+  const float g = g_master_gain.load(std::memory_order_relaxed);
+  if(g != 1.0f) {
+    auto* out          = (int16_t*)output;
+    const size_t count = (size_t)frame_count * device->playback.channels;
+    for(size_t i = 0; i < count; i++) out[i] = (int16_t)std::clamp((int)(out[i] * g), -32768, 32767);
+  }
 }
 
 } // namespace
+
+void AudioPlayer::set_master_gain(float gain) { g_master_gain.store(std::max(0.0f, gain), std::memory_order_relaxed); }
+float AudioPlayer::master_gain() { return g_master_gain.load(std::memory_order_relaxed); }
 
 AudioPlayer::AudioPlayer() {}
 
