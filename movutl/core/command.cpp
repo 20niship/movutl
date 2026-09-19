@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cctype>
 #include <movutl/core/command.hpp>
 #include <movutl/core/logger.hpp>
 
@@ -25,7 +26,7 @@ public:
 
   void register_command(CommandInfo info, std::function<Ref<mCommand>()> factory);
   bool has_command(const char* id) const;
-  bool run_command(const char* id);
+  bool run_command(const char* id, const char* arg);
   void cancel_command(const char* id);
   void tick_running_commands();
   const std::vector<CommandInfo>& infos() const { return infos_; }
@@ -61,10 +62,11 @@ bool CommandManager::has_command(const char* id) const {
   return false;
 }
 
-bool CommandManager::run_command(const char* id) {
+bool CommandManager::run_command(const char* id, const char* arg) {
   for(const auto& e : entries_) {
     if(e.info.id != id) continue;
     auto instance = e.factory();
+    instance->arg = arg ? arg : "";
     auto status   = instance->on_start();
     if(status == CommandStatus::Running) running_.push_back(RunningCommand{e.info.id, instance});
     if(status != CommandStatus::Failed && instance->undoable()) {
@@ -120,7 +122,20 @@ CommandManager* CommandManager::singleton_ = nullptr;
 } // namespace
 
 void register_command(CommandInfo info, std::function<Ref<mCommand>()> factory) { CommandManager::Get()->register_command(std::move(info), std::move(factory)); }
-bool run_command(const char* id) { return CommandManager::Get()->run_command(id); }
+bool run_command(const char* id) { return CommandManager::Get()->run_command(id, ""); }
+bool run_command(const char* id, const char* arg) { return CommandManager::Get()->run_command(id, arg); }
+const CommandInfo* find_command_by_extension(const std::string& ext) {
+  auto lower = [](std::string s) {
+    if(!s.empty() && s[0] == '.') s.erase(0, 1);
+    std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return (char)std::tolower(c); });
+    return s;
+  };
+  auto e = lower(ext);
+  for(const auto& info : CommandManager::Get()->infos())
+    for(const auto& x : info.extensions)
+      if(lower(x) == e) return &info;
+  return nullptr;
+}
 bool has_command(const char* id) { return CommandManager::Get()->has_command(id); }
 void cancel_command(const char* id) { CommandManager::Get()->cancel_command(id); }
 void tick_running_commands() { CommandManager::Get()->tick_running_commands(); }

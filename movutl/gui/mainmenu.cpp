@@ -3,6 +3,7 @@
 #include <movutl/app/export_state.hpp>
 #include <movutl/asset/config.hpp>
 #include <movutl/asset/project.hpp>
+#include <movutl/core/command.hpp>
 #include <movutl/gui/export_window.hpp>
 #include <movutl/gui/gui.hpp>
 
@@ -34,6 +35,7 @@ void render_main_menu_bar() {
       else
         save_project();
     }
+    if(ImGui::MenuItem("EXOを読み込む", "Ctrl+Shift+I")) run_command("import_exo");
     if(ImGui::MenuItem("名前を付けて保存", "Ctrl+Shift+S")) open_path_popup([](const char* p) { save_project_as(p); });
     if(ImGui::BeginMenu("エクスポート")) {
       auto& plugins = detail::AppMain::Get()->output_plugins;

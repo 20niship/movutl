@@ -725,6 +725,10 @@ function movutl.is_playing( )end
 function movutl.new_project( )end
 
 ---@param path string
+---@return boolean
+function movutl.open_dropped_file( path, )end
+
+---@param path string
 ---@return nil
 function movutl.open_project( path, )end
 

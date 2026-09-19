@@ -14,6 +14,8 @@
 #include <movutl/asset/project.hpp>
 #include <movutl/asset/shape.hpp>
 #include <movutl/asset/text.hpp>
+#include <movutl/core/command.hpp>
+#include <movutl/core/filesystem.hpp>
 #include <movutl/core/logger.hpp>
 #include <movutl/plugin/input.hpp>
 #include <movutl/plugin/plugin.hpp>
@@ -252,6 +254,12 @@ Ref<Entity> import_media_file(const char* path) {
   if(get_compatible_plugin(path, EntityType_Image)) return add_new_image_track(base.c_str(), path, start, start + Config::Get()->default_image_frames);
   LOG_F(ERROR, "import_media_file: No compatible plugin found for file: %s", path);
   return nullptr;
+}
+
+bool open_dropped_file(const char* path) {
+  MU_ASSERT(path != nullptr);
+  if(auto* cmd = find_command_by_extension(fs_extension(path))) return run_command(cmd->id.c_str(), path);
+  return import_media_file(path) != nullptr;
 }
 
 } // namespace mu
