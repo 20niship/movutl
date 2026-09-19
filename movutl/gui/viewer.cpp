@@ -122,6 +122,17 @@ void ViewerWindow::Update() {
   bool hovered = ImGui::IsItemHovered();
 
   auto dl = ImGui::GetWindowDrawList();
+  if(show_checker_) {
+    const ImVec2 lo(std::max(img_min.x, origin.x), std::max(img_min.y, origin.y));
+    const ImVec2 hi(std::min(img_max.x, origin.x + avail.x), std::min(img_max.y, origin.y + avail.y));
+    constexpr float kCell = 12.0f;
+    for(float y = lo.y; y < hi.y; y += kCell) {
+      for(float x = lo.x; x < hi.x; x += kCell) {
+        const bool odd = ((int)((x - img_min.x) / kCell) + (int)((y - img_min.y) / kCell)) & 1;
+        dl->AddRectFilled(ImVec2(x, y), ImVec2(std::min(x + kCell, hi.x), std::min(y + kCell, hi.y)), odd ? IM_COL32(150, 150, 150, 255) : IM_COL32(100, 100, 100, 255));
+      }
+    }
+  }
   if(texture_id != 0) {
     ImTextureID tex_id = (ImTextureID) reinterpret_cast<void*>(static_cast<intptr_t>(texture_id));
     tex.bind();
@@ -181,6 +192,31 @@ void ViewerWindow::Update() {
       dl->AddLine(ImVec2(img_min.x - kTick, p.y), ImVec2(img_min.x, p.y), IM_COL32(255, 255, 0, 200));
       dl->AddText(ImVec2(img_min.x - kTick - 30.0f, p.y), IM_COL32(255, 255, 0, 200), std::to_string(t.value).c_str());
     }
+  }
+
+  if(show_grid_ || show_safe_ || show_center_) {
+    dl->PushClipRect(ImVec2(std::max(img_min.x, origin.x), std::max(img_min.y, origin.y)), ImVec2(std::min(img_max.x, origin.x + avail.x), std::min(img_max.y, origin.y + avail.y)), true);
+    auto line = [&](float x0, float y0, float x1, float y1, ImU32 col) { dl->AddLine(comp_to_screen(ImVec2(x0, y0), img_min, disp_size, cmp_w, cmp_h), comp_to_screen(ImVec2(x1, y1), img_min, disp_size, cmp_w, cmp_h), col); };
+    if(show_grid_) {
+      constexpr float kStep = 100.0f; // ponytail: 間隔はコンポpx固定(拡大率に応じた自動調整は未対応)
+      for(float x = kStep; x < cmp_w; x += kStep) line(x, 0, x, cmp_h, IM_COL32(255, 255, 255, 50));
+      for(float y = kStep; y < cmp_h; y += kStep) line(0, y, cmp_w, y, IM_COL32(255, 255, 255, 50));
+    }
+    if(show_safe_) {
+      for(float m : {0.9f, 0.8f}) {
+        const float x0 = cmp_w * (1 - m) / 2, y0 = cmp_h * (1 - m) / 2, x1 = cmp_w - x0, y1 = cmp_h - y0;
+        const ImU32 col = m > 0.85f ? IM_COL32(255, 220, 80, 160) : IM_COL32(255, 140, 80, 160);
+        line(x0, y0, x1, y0, col);
+        line(x1, y0, x1, y1, col);
+        line(x1, y1, x0, y1, col);
+        line(x0, y1, x0, y0, col);
+      }
+    }
+    if(show_center_) {
+      line(cmp_w / 2, 0, cmp_w / 2, cmp_h, IM_COL32(80, 220, 255, 140));
+      line(0, cmp_h / 2, cmp_w, cmp_h / 2, IM_COL32(80, 220, 255, 140));
+    }
+    dl->PopClipRect();
   }
 
   const GizmoPt comp_size{cmp_w, cmp_h};
@@ -255,6 +291,33 @@ void ViewerWindow::Update() {
     }
   }
 
+  {
+    // 選択中のオブジェクトが見えない理由をビューア左上に表示する
+    const char* hint = nullptr;
+    int hidden = 0, offscreen = 0;
+    for(auto& e : get_selected_entts()) {
+      if(!e || !e->has_transform()) continue;
+      EntityGizmo g;
+      if(!e->visible(comp->frame)) {
+        hidden++;
+      } else if(entity_gizmo_of(*e, comp_size, g)) {
+        bool any_in = false;
+        for(int i = 0; i < 4; i++) any_in |= g.quad.p[i].x > 0 && g.quad.p[i].x < cmp_w && g.quad.p[i].y > 0 && g.quad.p[i].y < cmp_h;
+        if(!any_in && !gizmo_point_in_quad(g.quad, GizmoPt{cmp_w / 2, cmp_h / 2})) offscreen++;
+      }
+    }
+    if(hidden > 0)
+      hint = "選択中のオブジェクトは現在のフレームでは表示されません";
+    else if(offscreen > 0)
+      hint = "選択中のオブジェクトは画面の外にあります";
+    if(hint) {
+      const ImVec2 ts = ImGui::CalcTextSize(hint);
+      const ImVec2 p0(origin.x + 8, origin.y + 8);
+      dl->AddRectFilled(p0, ImVec2(p0.x + ts.x + 12, p0.y + ts.y + 8), IM_COL32(0, 0, 0, 170), 4.0f);
+      dl->AddText(ImVec2(p0.x + 6, p0.y + 4), IM_COL32(255, 210, 90, 255), hint);
+    }
+  }
+
   // フッター(1行): 再生操作 / タイムコード / 拡大率 / 表示補助 / 右側の残り幅に波形
   ImGui::SetCursorScreenPos(ImVec2(origin.x, origin.y + avail.y));
   ImGui::BeginChild("##viewer_footer", ImVec2(0, kCtrlFooterH), false, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
@@ -284,6 +347,16 @@ void ViewerWindow::Update() {
       }
     }
     ImGui::EndCombo();
+  }
+  ImGui::SameLine(0, 2);
+  if(ImGui::Button(ICON_FA_TABLE_CELLS "##view_opts")) ImGui::OpenPopup("##view_opts_popup");
+  if(ImGui::IsItemHovered()) ImGui::SetTooltip("表示補助");
+  if(ImGui::BeginPopup("##view_opts_popup")) {
+    ImGui::Checkbox("透明を市松模様で表示", &show_checker_);
+    ImGui::Checkbox("グリッド", &show_grid_);
+    ImGui::Checkbox("セーフマージン", &show_safe_);
+    ImGui::Checkbox("中心線", &show_center_);
+    ImGui::EndPopup();
   }
   ImGui::SameLine();
   const ImVec2 wmin = ImGui::GetCursorScreenPos();
