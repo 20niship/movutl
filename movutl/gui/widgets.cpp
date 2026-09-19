@@ -22,10 +22,79 @@ bool wd_color_edit(const char* name, Vec4b* col) {
   return changed;
 }
 
+bool wd_table_begin(const char* id) {
+  if(!ImGui::BeginTable(id, 2, ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_PadOuterX)) return false;
+  ImGui::TableSetupColumn("##label", ImGuiTableColumnFlags_WidthStretch, 0.4f);
+  ImGui::TableSetupColumn("##value", ImGuiTableColumnFlags_WidthStretch, 0.6f);
+  return true;
+}
+
+void wd_table_end() { ImGui::EndTable(); }
+
+void wd_row(const char* label, const char* desc) {
+  ImGui::TableNextRow();
+  ImGui::TableSetColumnIndex(0);
+  ImGui::AlignTextToFramePadding();
+  // 幅が足りないラベルは省略記号で切る(隣の値欄へはみ出さない)。全文はツールチップで見せる
+  const ImVec2 pos = ImGui::GetCursorScreenPos();
+  const float w    = std::max(1.0f, ImGui::GetContentRegionAvail().x);
+  const float h    = ImGui::GetTextLineHeight();
+  ImGui::RenderTextEllipsis(ImGui::GetWindowDrawList(), pos, ImVec2(pos.x + w, pos.y + h), pos.x + w, pos.x + w, label, nullptr, nullptr);
+  ImGui::Dummy(ImVec2(w, h));
+  if(ImGui::IsItemHovered() && (desc && desc[0] || ImGui::CalcTextSize(label).x > w)) {
+    ImGui::BeginTooltip();
+    ImGui::TextUnformatted(label);
+    if(desc && desc[0]) ImGui::TextDisabled("%s", desc);
+    ImGui::EndTooltip();
+  }
+  ImGui::TableSetColumnIndex(1);
+  ImGui::SetNextItemWidth(-FLT_MIN);
+}
+
+bool wd_grid9(const char* id, int selected, int* picked, const char* const* tips) {
+  bool clicked           = false;
+  const float avail      = ImGui::GetContentRegionAvail().x;
+  const float sp         = 2.0f;
+  const float cell       = std::clamp((avail - sp * 2) / 3.0f, 16.0f, 30.0f);
+  const ImVec2 origin    = ImGui::GetCursorScreenPos();
+  auto* dl               = ImGui::GetWindowDrawList();
+  const ImU32 col_sel    = ImGui::GetColorU32(ImGuiCol_ButtonActive);
+  const ImU32 col_hov    = ImGui::GetColorU32(ImGuiCol_ButtonHovered);
+  const ImU32 col_bg     = ImGui::GetColorU32(ImGuiCol_FrameBg);
+  const ImU32 col_border = ImGui::GetColorU32(ImGuiCol_Border);
+  ImGui::PushID(id);
+  for(int i = 0; i < 9; i++) {
+    const int cx = i % 3, cy = i / 3;
+    const ImVec2 mn(origin.x + cx * (cell + sp), origin.y + cy * (cell * 0.75f + sp));
+    const ImVec2 mx(mn.x + cell, mn.y + cell * 0.75f);
+    ImGui::SetCursorScreenPos(mn);
+    ImGui::PushID(i);
+    ImGui::InvisibleButton("##c", ImVec2(cell, cell * 0.75f));
+    const bool hov = ImGui::IsItemHovered();
+    if(ImGui::IsItemClicked()) {
+      if(picked) *picked = i;
+      clicked = true;
+    }
+    if(hov && tips && tips[i]) ImGui::SetTooltip("%s", tips[i]);
+    ImGui::PopID();
+    dl->AddRectFilled(mn, mx, i == selected ? col_sel : (hov ? col_hov : col_bg), 3.0f);
+    dl->AddRect(mn, mx, col_border, 3.0f);
+    // 枠内の該当位置に点を打つ(左上/上/右上/左/中央/右/左下/下/右下)
+    const float pad = 4.0f, d = 3.0f;
+    const float px = cx == 0 ? mn.x + pad : cx == 1 ? (mn.x + mx.x) * 0.5f - d * 0.5f : mx.x - pad - d;
+    const float py = cy == 0 ? mn.y + pad : cy == 1 ? (mn.y + mx.y) * 0.5f - d * 0.5f : mx.y - pad - d;
+    dl->AddRectFilled(ImVec2(px, py), ImVec2(px + d, py + d), i == selected ? IM_COL32(255, 255, 255, 255) : IM_COL32(200, 200, 200, 180));
+  }
+  ImGui::PopID();
+  ImGui::SetCursorScreenPos(ImVec2(origin.x, origin.y + 3 * (cell * 0.75f + sp)));
+  return clicked;
+}
+
 namespace {
 // infoの各フィールドを編集UIとして描画し、変更があればapply(変更分のProp)で反映する
 void edit_props(Entity* e, const cutil::PropInfo* info, const cutil::Prop& p, const std::function<void(const cutil::Prop&)>& apply) {
   if(!info) return;
+  if(!wd_table_begin("##props")) return;
   for(const auto& f : info->fields) {
     if(!p.contains(f.name)) {
       LOG_F(WARNING, "Property %s -> %s not found", e->name.c_str(), f.name);
@@ -34,7 +103,9 @@ void edit_props(Entity* e, const cutil::PropInfo* info, const cutil::Prop& p, co
     ImGui::PushID(f.name);
     bool changed = false;
     cutil::Prop newp;
-    const char* name_        = f.label[0] ? f.label : f.name;
+    const char* label_       = f.label[0] ? f.label : f.name;
+    const char* name_        = "##v"; // ラベルは左の列(wd_row)に出すので、ウィジェット側のラベルは隠す
+    wd_row(label_, f.desc);
     const bool is_path_field = std::string(f.name) == "path" || std::string(f.name) == "path_";
 
     if(f.type == cutil::prop_info_of<bool>()) {
@@ -82,7 +153,7 @@ void edit_props(Entity* e, const cutil::PropInfo* info, const cutil::Prop& p, co
       if(is_path_field) {
         std::string label = s.empty() ? "ファイルを選択" : std::filesystem::path(s).filename().string();
         std::string btn   = std::string(ICON_FA_FOLDER_OPEN " ") + label;
-        if(ImGui::Button(btn.c_str(), ImVec2(-1, 0))) {
+        if(ImGui::Button(btn.c_str(), ImVec2(-FLT_MIN, 0))) {
           std::string picked = select_file_dialog("ファイルを選択", {});
           if(!picked.empty()) {
             newp.set<std::string>(f.name, picked);
@@ -134,6 +205,7 @@ void edit_props(Entity* e, const cutil::PropInfo* info, const cutil::Prop& p, co
     }
     ImGui::PopID();
   }
+  wd_table_end();
 }
 
 // 基点を画像枠上の9点(左上〜右下)へ置くプリセットボタン。keep_visualなら見た目が動かないようposも補正する
