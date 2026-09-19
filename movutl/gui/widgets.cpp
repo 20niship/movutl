@@ -9,6 +9,7 @@
 #include <movutl/core/assert.hpp>
 #include <movutl/core/filesystem.hpp>
 #include <movutl/core/logger.hpp>
+#include <movutl/gui/entity_gizmo.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/gui/widgets.hpp>
 
@@ -128,12 +129,42 @@ void edit_props(Entity* e, const cutil::PropInfo* info, const cutil::Prop& p, co
     ImGui::PopID();
   }
 }
+
+// 基点を画像枠上の9点(左上〜右下)へ置くプリセットボタン。keep_visualなら見た目が動かないようposも補正する
+void edit_anchor_presets(Entity* e) {
+  static bool keep_visual = true;
+  auto* comp              = e->get_comp();
+  if(!comp) return;
+  ImGui::TextUnformatted("基点プリセット");
+  ImGui::SameLine();
+  ImGui::Checkbox("位置を保持", &keep_visual);
+  static const char* labels[9] = {"TL", "T", "TR", "L", "C", "R", "BL", "B", "BR"};
+  for(int i = 0; i < 9; i++) {
+    if(i % 3 != 0) ImGui::SameLine();
+    ImGui::PushID(i);
+    if(ImGui::Button(labels[i], ImVec2(32, 0))) {
+      EntityGizmo g;
+      if(entity_gizmo_of(*e, GizmoPt{(double)comp->size[0], (double)comp->size[1]}, g)) {
+        const GizmoPt anchor = gizmo_anchor_preset(i % 3 - 1, i / 3 - 1, g.src_size, g.origin_offset);
+        {
+          std::lock_guard<std::mutex> lock(e->mtx);
+          entity_apply_xform(*e, gizmo_set_anchor(g.xform, anchor, keep_visual));
+        }
+        comp->invalidate_cache_range(e->fstart_, e->fend_);
+      }
+    }
+    ImGui::PopID();
+  }
+}
 } // namespace
 
 void wd_entt_props_editor(Entity* e) {
   MU_ASSERT(e);
   ImGui::PushID(e);
-  if(e->has_transform()) edit_props(e, e->getTransformPropsInfo(), e->getTransformProps(), [&](const cutil::Prop& np) { e->setTransformProps(np); });
+  if(e->has_transform()) {
+    edit_props(e, e->getTransformPropsInfo(), e->getTransformProps(), [&](const cutil::Prop& np) { e->setTransformProps(np); });
+    edit_anchor_presets(e);
+  }
   edit_props(e, e->getPropsInfo(), e->getProps(), [&](const cutil::Prop& np) { e->setProps(np); });
   ImGui::PopID();
 }
