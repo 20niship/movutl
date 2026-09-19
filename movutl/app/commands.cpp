@@ -47,9 +47,11 @@ void remove_entity_from_comp(Composition* comp, const Ref<Entity>& entt) {
 struct SplitCommand final : mCommand {
   // 1クリップの分割前後の状態。on_undo/on_redoで使う
   struct SplitState {
-    Ref<Entity> original; // 分割された元のクリップ(前半)
-    Ref<Entity> clone;    // 分割で新規生成されたクリップ(後半)
-    int orig_fend;        // 分割前のoriginal->fend_
+    Ref<Entity> original;                 // 分割された元のクリップ(前半)
+    Ref<Entity> clone;                    // 分割で新規生成されたクリップ(後半)
+    int orig_fstart;                      // 分割前のoriginal->fstart_
+    int orig_fend;                        // 分割前のoriginal->fend_
+    std::vector<cutil::Prop> before_anim; // 分割前の中間点(anim_props_ + 各filter)。undoで復元する
   };
 
   CommandStatus on_start() override {
@@ -68,12 +70,18 @@ struct SplitCommand final : mCommand {
       }
 
       SplitState st;
-      st.original  = entt;
-      st.orig_fend = entt->fend_;
+      st.original    = entt;
+      st.orig_fstart = entt->fstart_;
+      st.orig_fend   = entt->fend_;
+      entt->ensure_anim_props();
+      st.before_anim.push_back(entt->anim_props_.save());
+      for(auto& f : entt->filters_) st.before_anim.push_back(f.props.save());
 
       // fstart_/fend_/anchor_等はduplicate_asset内のgetSaveProps/fromSavePropsで既にコピー済み
       clone->fstart_ = frame; // 後半
       entt->fend_    = frame; // 前半
+      clone->on_len_change_done(st.orig_fstart);
+      entt->on_len_change_done(st.orig_fstart);
 
       auto* comp = entt->get_comp();
       if(comp) comp->insert_entity(clone, -1);
@@ -89,6 +97,10 @@ struct SplitCommand final : mCommand {
     for(auto& st : splits_) {
       if(!st.original) continue;
       st.original->fend_ = st.orig_fend;
+      if(!st.before_anim.empty()) {
+        st.original->anim_props_.load_keys(st.before_anim[0]);
+        for(size_t i = 0; i < st.original->filters_.size() && i + 1 < st.before_anim.size(); i++) st.original->filters_[i].props.load_keys(st.before_anim[i + 1]);
+      }
       if(st.clone) remove_entity_from_comp(st.clone->get_comp(), st.clone);
     }
   }
@@ -98,7 +110,8 @@ struct SplitCommand final : mCommand {
     for(auto& st : splits_) {
       if(!st.original || !st.clone) continue;
       st.original->fend_ = st.clone->fstart_;
-      auto* comp         = st.original->get_comp();
+      st.original->on_len_change_done(st.orig_fstart);
+      auto* comp = st.original->get_comp();
       if(comp) comp->insert_entity(st.clone, -1);
     }
   }

@@ -174,6 +174,10 @@ public:
   // レンダリング直前に呼び、anim_props_をframe時点の値へ評価してsetProps()へ反映する(getPropsInfo()を持たないEntityは何もしない)
   void apply_animated_props(int frame);
 
+  // トラックの長さ(fstart_/fend_)を変更した/splitした直後に呼ぶ。old_startは変更前のfstart_。
+  // 中間点は開始からの相対frameなので、開始が動いた分だけキーを逆方向へ動かし、範囲(0〜fend_-fstart_)外のキーは境界の補間値キーに置き換える
+  void on_len_change_done(int old_start);
+
   // コンポジション絶対frameをトラック開始からの相対frame(中間点のキー)へ変換する。開始より前は0
   uint32_t rel_frame(int abs_frame) const { return (uint32_t)std::max(abs_frame - std::max(fstart_, 0), 0); }
 

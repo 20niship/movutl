@@ -262,3 +262,36 @@ TEST_CASE("PAniClip<Vec4b>::get: 値が減少する方向(白→黒)でも補間
   CHECK((int)v[0] == doctest::Approx(127.5).epsilon(0.02));
   CHECK((int)v[3] == 255);
 }
+
+TEST_CASE("PAniClip::shift_frames: 開始が後ろへずれると範囲外キーを境界の補間値キーに置き換える") {
+  PAniClip<float> clip;
+  clip.clear();
+  clip.add_keyframe(0, 0.0f);
+  clip.add_keyframe(100, 100.0f);
+
+  clip.shift_frames(40); // 先頭40frameを切り落とす
+  REQUIRE(clip.keys.size() == 2);
+  CHECK(clip.keys[0].frame_ == 0);
+  CHECK(clip.keys[0].value_ == doctest::Approx(40.0f)); // 元frame40の値
+  CHECK(clip.keys[1].frame_ == 60);
+  CHECK(clip.get(30) == doctest::Approx(70.0f)); // 元frame70
+
+  clip.shift_frames(-10); // 前へ伸ばすと全キーが後ろへずれるだけ
+  CHECK(clip.keys[0].frame_ == 10);
+  CHECK(clip.keys[1].frame_ == 70);
+}
+
+TEST_CASE("PAniClip::trim_end: 範囲外キーを捨て、境界に補間値キーを補う") {
+  PAniClip<float> clip;
+  clip.clear();
+  clip.add_keyframe(0, 0.0f);
+  clip.add_keyframe(100, 100.0f);
+
+  clip.trim_end(60);
+  REQUIRE(clip.keys.size() == 2);
+  CHECK(clip.keys[1].frame_ == 60);
+  CHECK(clip.keys[1].value_ == doctest::Approx(60.0f));
+
+  clip.trim_end(200); // 延長では何も変わらない
+  CHECK(clip.keys.size() == 2);
+}

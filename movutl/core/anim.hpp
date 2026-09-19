@@ -244,6 +244,33 @@ public:
     size_t i = segment_index(frame);
     return {keys[i].frame_, keys[i + 1].frame_};
   }
+  // トラック開始位置がshiftフレーム後ろへずれた(正)/前へずれた(負)ため、キーを逆方向へ動かして見た目の位置を保つ。
+  // 正の場合、範囲外(frame<shift)になるキーは捨て、境界(frame=shift)に補間値のキーを補って値の連続性を保つ
+  void shift_frames(int shift) {
+    if(shift == 0 || keys.size() <= 1) return;
+    if(shift < 0) {
+      for(auto& k : keys) k.frame_ += (uint32_t)(-shift);
+      return;
+    }
+    const uint32_t s = (uint32_t)shift;
+    if(keys.front().frame_ < s) {
+      AnimKeyframe<T> boundary = keys[segment_index(s)]; // 境界を含む区間のイージングを引き継ぐ
+      boundary.value_          = get(s);
+      boundary.frame_          = s;
+      keys.erase(std::remove_if(keys.begin(), keys.end(), [s](const AnimKeyframe<T>& k) { return k.frame_ <= s; }), keys.end());
+      keys.insert(keys.begin(), boundary);
+    }
+    for(auto& k : keys) k.frame_ -= s;
+  }
+  // トラック長がlenフレームに縮んだため、範囲外(frame>len)のキーを捨て、境界(frame=len)に補間値のキーを補う
+  void trim_end(uint32_t len) {
+    if(keys.size() <= 1 || keys.back().frame_ <= len) return;
+    AnimKeyframe<T> boundary = keys[segment_index(len)];
+    boundary.value_          = get(len);
+    boundary.frame_          = len;
+    keys.erase(std::remove_if(keys.begin(), keys.end(), [len](const AnimKeyframe<T>& k) { return k.frame_ >= len; }), keys.end());
+    keys.push_back(boundary);
+  }
   // get(frame)の値を保持したままアニメーションを解除し単一キーへ畳む(値がT()に戻るreset()とは異なる)
   void collapse_to_single(uint32_t frame) {
     T v = get(frame);
@@ -445,6 +472,12 @@ public:
   std::pair<uint32_t, uint32_t> neighbor_frames(int idx, uint32_t frame) const {
     if(idx < 0 || idx >= (int)props.size()) return {0, 0};
     return std::visit([frame](auto&& c) { return c.neighbor_frames(frame); }, props[idx]);
+  }
+  void shift_frames(int shift) {
+    for(auto& p : props) std::visit([shift](auto&& c) { c.shift_frames(shift); }, p);
+  }
+  void trim_end(uint32_t len) {
+    for(auto& p : props) std::visit([len](auto&& c) { c.trim_end(len); }, p);
   }
   void collapse_to_single(int idx, uint32_t frame) {
     if(idx < 0 || idx >= (int)props.size()) return;

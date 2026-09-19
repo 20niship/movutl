@@ -165,6 +165,21 @@ void Entity::apply_animated_props(int frame) {
   setProps(anim_props_.get(rel_frame(frame)));
 }
 
+void Entity::on_len_change_done(int old_start) {
+  const int shift = std::max(fstart_, 0) - std::max(old_start, 0);
+  const int len   = std::max(fend_ - fstart_, 0);
+  auto apply      = [&](AnimProps& a) {
+    a.shift_frames(shift);
+    a.trim_end((uint32_t)len);
+  };
+  if(getPropsInfo()) {
+    ensure_anim_props();
+    apply(anim_props_);
+  }
+  for(auto& f : filters_) apply(f.props);
+  if(auto* comp = get_comp()) comp->invalidate_cache_range(std::min(old_start, fstart_), std::max(fend_, old_start));
+}
+
 std::vector<uint32_t> Entity::collect_animated_frames() const {
   ensure_anim_props();
   std::set<uint32_t> frames;

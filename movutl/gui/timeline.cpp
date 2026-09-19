@@ -607,6 +607,12 @@ bool BeginTrack(const Ref<Entity>& entity) {
         rect = ImRect(ImVec2(fs, htop), ImVec2(fe, htop + ctx_.height));
       }
     } else {
+      if(ctx_.drag_mode == 2 || ctx_.drag_mode == 3) {
+        std::lock_guard<std::mutex> lock(entity->mtx);
+        // 長さ変更が確定した時点で、範囲外になった中間点の整理(ドラッグ中は連続変化するため放した時に1回だけ行う)
+        // 左端ドラッグ(2)は開始位置が動いた分、右端ドラッグ(3)は末尾のみ
+        entity->on_len_change_done(ctx_.drag_orig_fstart);
+      }
       if(auto* comp = entity->get_comp()) {
         int f0 = std::min({ctx_.drag_orig_fstart, ctx_.drag_orig_fend, *start, *end});
         int f1 = std::max({ctx_.drag_orig_fstart, ctx_.drag_orig_fend, *start, *end});

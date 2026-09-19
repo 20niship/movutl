@@ -192,3 +192,25 @@ TEST_CASE("Entity: 中間点はトラック開始(fstart_)からの相対frame�
   CHECK(img->erase_keyframes_at(160));
   CHECK_FALSE(img->anim_props_.has_key_at(idx, 110));
 }
+
+TEST_CASE("Entity::on_len_change_done: split相当の長さ変更で範囲外の中間点が境界値へ整理される") {
+  Project::New();
+  auto img = Image::Create("len_change_test", 4, 4);
+  REQUIRE(img != nullptr);
+  img->fstart_ = 0;
+  img->fend_   = 100;
+  img->ensure_anim_props();
+  int idx = img->anim_props_.index_of("alpha");
+  img->anim_props_.add_keyframe<float>(idx, 0, 0.0f);
+  img->anim_props_.add_keyframe<float>(idx, 100, 1.0f);
+
+  img->fstart_ = 40; // 後半側(frame40で分割)
+  img->on_len_change_done(0);
+  CHECK(img->anim_props_.get<float>(idx, 0) == doctest::Approx(0.4f));
+  CHECK(img->anim_props_.get<float>(idx, 60) == doctest::Approx(1.0f));
+
+  img->fend_ = 70; // さらに末尾を切り詰める(長さ30)
+  img->on_len_change_done(40);
+  CHECK(img->anim_props_.get<float>(idx, 30) == doctest::Approx(0.7f));
+  CHECK(img->anim_props_.keyframe_frames(idx).back() == 30);
+}
