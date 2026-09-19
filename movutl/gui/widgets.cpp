@@ -1,5 +1,7 @@
 #include <IconsFontAwesome6.h>
 #include <algorithm>
+#include <cfloat>
+#include <cmath>
 #include <filesystem>
 #include <functional>
 #include <imgui.h>
@@ -208,41 +210,49 @@ void edit_props(Entity* e, const cutil::PropInfo* info, const cutil::Prop& p, co
   wd_table_end();
 }
 
-// 基点を画像枠上の9点(左上〜右下)へ置くプリセットボタン。keep_visualなら見た目が動かないようposも補正する
+// 基点を画像枠上の9点(左上〜右下)へ置くプリセット。keep_visualなら見た目が動かないようposも補正する。現在の基点がいずれかの点と一致すれば選択表示にする
 void edit_anchor_presets(Entity* e) {
   static bool keep_visual = true;
   auto* comp              = e->get_comp();
   if(!comp) return;
-  ImGui::TextUnformatted("基点プリセット");
-  ImGui::SameLine();
-  ImGui::Checkbox("位置を保持", &keep_visual);
-  static const char* labels[9] = {"TL", "T", "TR", "L", "C", "R", "BL", "B", "BR"};
+  static const char* kTips[9] = {"左上", "上", "右上", "左", "中央", "右", "左下", "下", "右下"};
+  EntityGizmo g;
+  if(!entity_gizmo_of(*e, GizmoPt{(double)comp->size[0], (double)comp->size[1]}, g)) return;
+  int selected = -1;
   for(int i = 0; i < 9; i++) {
-    if(i % 3 != 0) ImGui::SameLine();
-    ImGui::PushID(i);
-    if(ImGui::Button(labels[i], ImVec2(32, 0))) {
-      EntityGizmo g;
-      if(entity_gizmo_of(*e, GizmoPt{(double)comp->size[0], (double)comp->size[1]}, g)) {
-        const GizmoPt anchor = gizmo_anchor_preset(i % 3 - 1, i / 3 - 1, g.src_size, g.origin_offset);
-        {
-          std::lock_guard<std::mutex> lock(e->mtx);
-          entity_apply_xform(*e, gizmo_set_anchor(g.xform, anchor, keep_visual));
-        }
-        comp->invalidate_cache_range(e->fstart_, e->fend_);
-      }
-    }
-    ImGui::PopID();
+    const GizmoPt a = gizmo_anchor_preset(i % 3 - 1, i / 3 - 1, g.src_size, g.origin_offset);
+    if(std::abs(a.x - g.xform.anchor.x) < 0.5 && std::abs(a.y - g.xform.anchor.y) < 0.5) selected = i;
   }
+  if(!wd_table_begin("##anchor_presets")) return;
+  wd_row("基点プリセット");
+  int picked = -1;
+  if(wd_grid9("##anchor_grid", selected, &picked, kTips)) {
+    const GizmoPt anchor = gizmo_anchor_preset(picked % 3 - 1, picked / 3 - 1, g.src_size, g.origin_offset);
+    {
+      std::lock_guard<std::mutex> lock(e->mtx);
+      entity_apply_xform(*e, gizmo_set_anchor(g.xform, anchor, keep_visual));
+    }
+    comp->invalidate_cache_range(e->fstart_, e->fend_);
+  }
+  wd_row("");
+  ImGui::Checkbox("位置を保持", &keep_visual);
+  if(ImGui::IsItemHovered()) ImGui::SetTooltip("基点を動かしても見た目の位置が変わらないよう位置を補正する");
+  wd_table_end();
 }
 } // namespace
+
+void wd_entt_transform_editor(Entity* e) {
+  MU_ASSERT(e);
+  if(!e->has_transform()) return;
+  ImGui::PushID(e);
+  edit_props(e, e->getTransformPropsInfo(), e->getTransformProps(), [&](const cutil::Prop& np) { e->setTransformProps(np); });
+  edit_anchor_presets(e);
+  ImGui::PopID();
+}
 
 void wd_entt_props_editor(Entity* e) {
   MU_ASSERT(e);
   ImGui::PushID(e);
-  if(e->has_transform()) {
-    edit_props(e, e->getTransformPropsInfo(), e->getTransformProps(), [&](const cutil::Prop& np) { e->setTransformProps(np); });
-    edit_anchor_presets(e);
-  }
   edit_props(e, e->getPropsInfo(), e->getProps(), [&](const cutil::Prop& np) { e->setProps(np); });
   ImGui::PopID();
 }
