@@ -142,12 +142,14 @@ void ViewerWindow::Update() {
   if(hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
     ImVec2 comp_pt = screen_to_comp(ImGui::GetMousePos(), img_min, disp_size, cmp_w, cmp_h);
     Ref<Entity> hit;
-    // TODO: anchor中心の近似矩形での簡易判定。Mesh側に汎用ジオメトリ取得が無いため回転/スケール後の正確なヒットテストは将来拡張
+    // TODO: pos_中心の近似矩形での簡易判定。Mesh側に汎用ジオメトリ取得が無いため回転/スケール後の正確なヒットテストは将来拡張
     constexpr float kHalfSize = 50.0f;
     for(auto& layer : comp->layers) {
       for(auto& e : layer.entts) {
         if(!e || !e->visible(comp->frame)) continue;
-        ImRect r(ImVec2(e->anchor_[0] - kHalfSize, e->anchor_[1] - kHalfSize), ImVec2(e->anchor_[0] + kHalfSize, e->anchor_[1] + kHalfSize));
+        // pos_はコンポ中心原点の基点位置
+        const float cx = cmp_w / 2 + e->pos_[0], cy = cmp_h / 2 + e->pos_[1];
+        ImRect r(ImVec2(cx - kHalfSize, cy - kHalfSize), ImVec2(cx + kHalfSize, cy + kHalfSize));
         if(r.Contains(ImVec2(comp_pt.x, comp_pt.y))) hit = e;
       }
     }
