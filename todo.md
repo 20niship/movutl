@@ -1,5 +1,7 @@
 # AviUtl互換 未実装機能リスト (todo)
 
+> **更新**: feature/anchor-transform で以下を実装済み: 共通Transform/基点、原点・単位統一、X/Y別スケール・縦横比・rx/ry、テキスト(サイズ/揃え/装飾等)、グループ制御、obj拡張変数(x/y/z/w/h/aspect/getpixel/putpixel/copypixel/rand/getvalue/interpolation/load(image))、exoのblend/camera/[exedit]/エフェクト/キーフレーム、ビューアのギズモ・選択判定。以下のリストは着手前の調査時点のもので、未実装として残るのは各PRの「残課題」(obj.cz/oz、回転順・縦書きalignの実機検証、表示速度・個別オブジェクト・制御文字、グループのX/Y軸回転 など)。
+
 > 座標系・基点・文字揃え・グループ制御の調査結果と統一仕様案は `docs/座標系と基点の仕様.md` を参照。Movie以外のEntityは位置の原点が左上で、exo取り込み時に位置がずれる問題あり。
 
 調査元: `test.exo`(melchior_202609) / `movutl/plugin/aviutl_script/aviutl_obj_binding.cpp` / `movutl/command/exo/exo_import.cpp` / `movutl/asset/*.hpp`
