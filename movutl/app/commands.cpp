@@ -2,6 +2,7 @@
 #include <movutl/app/app.hpp>
 #include <movutl/app/app_impl.hpp>
 #include <movutl/asset/composition.hpp>
+#include <movutl/command/exo/exo_import.hpp>
 #include <movutl/core/command.hpp>
 #include <movutl/core/logger.hpp>
 
@@ -120,6 +121,7 @@ struct RedoCommand final : mCommand {
 } // namespace
 
 void register_default_commands() {
+  register_exo_command();
   register_command<PlayPauseCommand>({"play_pause", "再生/一時停止", "コンポジションの再生/一時停止をトグルする", "space"});
   register_command<FrameStepCommand>({"frame_step_forward", "次のフレーム", "現在フレームを1つ進める", "right"}, 1);
   register_command<FrameStepCommand>({"frame_step_backward", "前のフレーム", "現在フレームを1つ戻す", "left"}, -1);

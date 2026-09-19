@@ -33,6 +33,8 @@ bool IsTimelineClickedLeftButton(); // タイムラインのプロパティ名�
 void SetTimelineViewRange(FrameT start, FrameT end);
 // ヘッダーのフィットアイコンが押されたか(押されていたらtrueを返しフラグをリセットする)
 bool ConsumeTimelineFitRequest();
+// 次フレームでタイムラインの表示範囲を全Entityへフィットさせる(ヘッダーのフィットアイコンと同じ)
+void RequestTimelineFit();
 // ヘッダーの検索欄(レイヤー名/エンティティ名フィルタ)の現在の文字列
 const char* GetTimelineLayerSearch();
 

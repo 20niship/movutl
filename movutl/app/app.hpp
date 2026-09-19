@@ -52,6 +52,9 @@ Ref<Entity> add_new_custom_object_track(const std::string& script_name, int star
 // 動画/音声/画像を内容から自動判別してEntityを追加する(open_media_fileと違いProject::New()は呼ばない)
 Ref<Entity> import_media_file(const char* path);
 
+// ファイルを開く(D&D等から呼ばれる)。拡張子が一致するコマンドがあればそれを実行し、無ければinput pluginを探索して読み込む
+bool open_file(const char* path);
+
 // 登録済みフィルタ(AppMain::filters)を名前で検索しentt->filters_へ追加する(見つからなければfalse)
 bool add_filter_to_entity(const Ref<Entity>& entt, const char* filter_name);
 // LuaIntf上はShapeEntt等の派生クラスからEntityへ暗黙変換できないため、Luaから使うための薄いラッパー

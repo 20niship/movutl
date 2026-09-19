@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <filesystem>
 #include <movutl/app/app.hpp>
 #include <movutl/asset/audio.hpp>
@@ -14,6 +15,8 @@
 #include <movutl/asset/project.hpp>
 #include <movutl/asset/shape.hpp>
 #include <movutl/asset/text.hpp>
+#include <movutl/core/command.hpp>
+#include <movutl/core/filesystem.hpp>
 #include <movutl/core/logger.hpp>
 #include <movutl/plugin/input.hpp>
 #include <movutl/plugin/plugin.hpp>
@@ -252,6 +255,18 @@ Ref<Entity> import_media_file(const char* path) {
   if(get_compatible_plugin(path, EntityType_Image)) return add_new_image_track(base.c_str(), path, start, start + Config::Get()->default_image_frames);
   LOG_F(ERROR, "import_media_file: No compatible plugin found for file: %s", path);
   return nullptr;
+}
+
+bool open_file(const char* path) {
+  MU_ASSERT(path != nullptr);
+  auto ext = fs_extension(path);
+  if(auto* cmd = find_command_by_extension(ext)) return run_command(cmd->id.c_str(), path);
+  std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char c) { return (char)std::tolower(c); });
+  if(ext == "json") {
+    open_project(path);
+    return true;
+  }
+  return import_media_file(path) != nullptr;
 }
 
 } // namespace mu

@@ -22,6 +22,8 @@ public:
   mCommand()          = default;
   virtual ~mCommand() = default;
 
+  std::string arg;
+
   // run_command()から呼ばれる。Runningを返すとtick()が毎フレーム呼ばれ続ける
   virtual CommandStatus on_start() { return CommandStatus::Finished; }
   // Running状態の間、毎フレーム呼ばれる
@@ -38,10 +40,11 @@ public:
 
 // コマンドの登録情報。mCommandのインスタンス(実行の度に生成/破棄される)とは分離して管理する
 struct CommandInfo {
-  std::string id;          // run_command/has_command/cancel_commandで指定する一意なID
-  std::string name;        // メニュー等に出す表示名
-  std::string description; // コマンドの内容説明
-  std::string shortcut;    // vim風のキー表記(例: "ctrl+shift+a", "g g")。空文字ならショートカット無し。空白区切りで複数キーの連続入力になる
+  std::string id;                      // run_command/has_command/cancel_commandで指定する一意なID
+  std::string name;                    // メニュー等に出す表示名
+  std::string description;             // コマンドの内容説明
+  std::string shortcut;                // vim風のキー表記(例: "ctrl+shift+a", "g g")。空文字ならショートカット無し。空白区切りで複数キーの連続入力になる
+  std::vector<std::string> extensions; // このコマンドが扱えるファイル拡張子(小文字・ドット無し)。D&D時に一致するコマンドが実行される
 };
 
 // コマンドを登録する。run_command()のたびにfactoryを呼んでmCommandの新しいインスタンスを生成する
@@ -53,6 +56,9 @@ template <typename T, typename... Args> void register_command(CommandInfo info, 
 }
 
 bool run_command(const char* id);
+bool run_command(const char* id, const char* arg);
+// extensions(大文字小文字無視、先頭のドットは無視)が一致する最初のコマンドを返す。無ければnullptr
+const CommandInfo* find_command_by_extension(const std::string& ext);
 bool has_command(const char* id);
 void cancel_command(const char* id);
 void tick_running_commands();
