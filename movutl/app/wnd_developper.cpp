@@ -3,6 +3,7 @@
 #include <movutl/app/wnd_developper.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/core/time.hpp>
+#include <movutl/plugin/aviutl_script/aviutl_obj_binding.hpp>
 
 namespace mu {
 
@@ -43,6 +44,17 @@ void DeveloperWindow::Update() {
       ImGui::Text("  worker[%zu]: rendering frame %d", i, s.frame);
     else
       ImGui::TextDisabled("  worker[%zu]: idle", i);
+  }
+
+  ImGui::Separator();
+  auto [obj_script, obj_vars] = detail::load_obj_debug_snapshot();
+  if(ImGui::CollapsingHeader("AviUtlスクリプト obj変数(直近の実行)")) {
+    if(obj_vars.empty()) {
+      ImGui::TextDisabled("(未実行)");
+    } else {
+      ImGui::Text("スクリプト: %s", obj_script.c_str());
+      for(auto& [k, v] : obj_vars) ImGui::Text("  obj.%s = %g", k.c_str(), v);
+    }
   }
 
   ImGui::End();

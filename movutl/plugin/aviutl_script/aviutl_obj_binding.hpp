@@ -4,6 +4,8 @@
 #include <movutl/plugin/filter.hpp>
 #include <string>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
 extern "C" {
 struct lua_State;
@@ -18,6 +20,7 @@ struct AviUtlObjContext {
   const AviUtlScriptDef* def                      = nullptr;
   bool drawn                                      = false;   // draw/drawpoly/putpixeldata/copybuffer(obj復元)のいずれかが呼ばれたか。falseのままフレーム処理が終わるとAviUtl本体同様に暗黙でdraw()相当を行う
   std::unordered_map<std::string, Image>* buffers = nullptr; // obj.copybufferの退避先("tmp"/"cache:xxx")。フィルタインスタンス単位でフレームをまたいで保持する
+  int rand_counter                                = 0;       // seed省略のobj.randが同一フレーム内で呼び出し毎に別の値を返すための連番(フレーム毎に0から数え直すので結果は決定的)
 };
 
 // AviUtlObjContext::drawnをtrueにせず、objの現在値(ox/oy/zoom/alpha/rz)でdraw()相当を行う(スクリプト末尾で暗黙的に呼ばれる)
@@ -28,5 +31,9 @@ void setup_obj_table(lua_State* L, AviUtlObjContext* ctx);
 
 // AviUtlが提供するobj以外のグローバルヘルパー関数(RGB等)を登録する。lua_State生成直後に1回だけ呼べばよい
 void setup_global_functions(lua_State* L);
+
+// 開発者ウィンドウ表示用: 直近に実行したスクリプトのobj変数(実行後の値)を保存/取得する。ワーカースレッドから書かれるため内部でロックする
+void store_obj_debug_snapshot(lua_State* L, const std::string& script_name);
+std::pair<std::string, std::vector<std::pair<std::string, double>>> load_obj_debug_snapshot();
 
 } // namespace mu::detail
