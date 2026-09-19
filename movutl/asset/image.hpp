@@ -28,10 +28,6 @@ public:
   bool has_alpha      = true;
 
   ImageFormat fmt = ImageFormatRGBA; // MPROPERTY(name="フォーマット", readonly=true)
-  Vec3 pos;                          // MPROPERTY(name="位置" viewer_anchor=true, position=true)
-  Vec2 scale     = Vec2(1.0, 1.0);   // MPROPERTY(name="拡大率X, scale=true)
-  float rotation = 0.0;              // MPROPERTY(name="回転", angle=true, radians=true)
-  float alpha    = 1.0;              // MPROPERTY(name="透明度")
   std::string path;                  // MPROPERTY(name="ファイル", type="path")
 
   void dirty() { dirty_++; }

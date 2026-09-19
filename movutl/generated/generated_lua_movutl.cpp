@@ -247,10 +247,6 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addVariable("dirty_", &Image::dirty_)       // int16_t
     .addVariable("has_alpha", &Image::has_alpha) // bool
     .addVariable("fmt", &Image::fmt)             // ImageFormat
-    .addVariable("pos", &Image::pos)             // Vec3
-    .addVariable("scale", &Image::scale)         // Vec2
-    .addVariable("rotation", &Image::rotation)   // float
-    .addVariable("alpha", &Image::alpha)         // float
     .addVariable("path", &Image::path)           // std::string
     .endClass()
     .beginClass<MidiEntt>("MidiEntt")

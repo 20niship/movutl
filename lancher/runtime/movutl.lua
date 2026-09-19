@@ -290,10 +290,6 @@ function movutl.FramebufferEntt:captured_image( ) end
 ---@field dirty_ number
 ---@field has_alpha boolean
 ---@field fmt ImageFormat
----@field pos Vec3
----@field scale Vec2
----@field rotation number
----@field alpha number
 ---@field path string
 movutl.Image = {}
 movutl.Image.width = 0
@@ -301,10 +297,6 @@ movutl.Image.height = 0
 movutl.Image.dirty_ = 1
 movutl.Image.has_alpha = true
 movutl.Image.fmt = ImageFormatRGBA
-movutl.Image.pos = Vec3()
-movutl.Image.scale = Vec2 ( 1.0 , 1.0 )
-movutl.Image.rotation = 0.0
-movutl.Image.alpha = 1.0
 movutl.Image.path = ""
 
 ---@return nil

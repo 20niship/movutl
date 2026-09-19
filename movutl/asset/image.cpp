@@ -249,12 +249,6 @@ bool Image::render(Composition* cmp, Image* target, int frame) {
   MU_ASSERT(cmp);
   MU_ASSERT(target);
   if(this->width <= 0 || this->height <= 0) return false;
-  int cw = cmp->size[0];
-  int ch = cmp->size[1];
-  if(cw <= 0 || ch <= 0) return false;
-
-  int base_x = (int)this->pos[0];
-  int base_y = (int)this->pos[1];
 
   const Image* src = this;
   if(!filters_.empty()) {
@@ -266,7 +260,7 @@ bool Image::render(Composition* cmp, Image* target, int frame) {
     render_filters(cmp, filtered_.get(), frame);
     src = filtered_.get();
   }
-  return src->copyto(target, Vec2d(base_x, base_y), this->scale.avg(), this->rotation, this->alpha, blend_);
+  return composite(*src, target);
 }
 
 bool Image::load_file(const char* path) {

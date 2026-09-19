@@ -277,13 +277,7 @@ int import_exo_file(const char* path) {
       auto file  = resolve_media_path(get(src, "file"), base_dir);
       auto img   = Image::Create(stem_of(file).c_str(), file.c_str());
       img->guid_ = Project::Get()->entities.size();
-      if(draw) {
-        img->pos      = Vec3(getf(*draw, "X"), getf(*draw, "Y"), getf(*draw, "Z"));
-        float sc      = getf(*draw, "拡大率", 100.f) / 100.f;
-        img->scale    = Vec2(sc, sc);
-        img->rotation = getf(*draw, "回転") * 3.14159265f / 180.f;
-        img->alpha    = parse_alpha(*draw);
-      }
+      apply_standard_draw(*img, draw);
       ent = img;
     } else if(kind == "図形") {
       // exoのtype: 0=背景 1=円 2=四角形 3=三角形 4=五角形 5=六角形(それ以外は四角形扱い)

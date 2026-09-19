@@ -144,8 +144,8 @@ TEST_CASE("exo: comprehensive.exo (動画/画像/音声/テキスト/図形を�
       CHECK(img->width > 0);
     }
     auto* i2 = dynamic_cast<Image*>(l3[1].get());
-    CHECK(i2->alpha == doctest::Approx(0.75f).epsilon(0.01));
-    CHECK(i2->scale[0] == doctest::Approx(0.5f));
+    CHECK(i2->alpha_ == doctest::Approx(0.75f).epsilon(0.01));
+    CHECK(i2->scale_[0] == doctest::Approx(50.f));
     auto l4 = layer_entts(comp, 3);
     REQUIRE(l4.size() == 1);
     CHECK(dynamic_cast<Image*>(l4[0].get())->width > 0); // media/sub/image3.png

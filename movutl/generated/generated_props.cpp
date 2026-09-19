@@ -193,14 +193,6 @@ const cutil::PropInfo* Image::getPropsInfo() const {
     p.fields.push_back(cutil::PropInfo::Field("has_alpha", offsetof(Image, has_alpha), cutil::prop_info_of<bool>()));
     p.fields.back().set_label("bool");
     // fmt has an unsupported type (ImageFormat)
-    p.fields.push_back(cutil::PropInfo::Field("pos", offsetof(Image, pos), cutil::prop_info_of<Vec3>()));
-    p.fields.back().set_label("位置 viewer_anchor");
-    p.fields.push_back(cutil::PropInfo::Field("scale", offsetof(Image, scale), cutil::prop_info_of<Vec2>()));
-    p.fields.back().set_label("拡大率X");
-    p.fields.push_back(cutil::PropInfo::Field("rotation", offsetof(Image, rotation), cutil::prop_info_of<float>()));
-    p.fields.back().set_label("回転");
-    p.fields.push_back(cutil::PropInfo::Field("alpha", offsetof(Image, alpha), cutil::prop_info_of<float>()));
-    p.fields.back().set_label("透明度");
     p.fields.push_back(cutil::PropInfo::Field("path", offsetof(Image, path), cutil::prop_info_of<std::string>()));
     p.fields.back().set_label("ファイル");
     return p;
