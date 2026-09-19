@@ -152,3 +152,15 @@ TEST_CASE("Entity::getSaveProps/fromSaveProps: フィルタが無ければ空の
   REQUIRE(loaded != nullptr);
   CHECK(loaded->filters_.empty());
 }
+
+TEST_CASE("Entity::ensure_anim_props: 文字列プロパティはanim_props_に含まれない(apply_animated_propsで入力がリセットされない)") {
+  Project::New();
+  auto img = Image::Create("anim_string_test", 4, 4);
+  REQUIRE(img != nullptr);
+  img->ensure_anim_props();
+  const auto* info = img->getPropsInfo();
+  REQUIRE(info != nullptr);
+  for(const auto& f : info->fields) {
+    if(f.type == cutil::prop_info_of<std::string>()) CHECK(img->anim_props_.index_of(f.name) < 0);
+  }
+}

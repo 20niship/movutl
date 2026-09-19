@@ -152,6 +152,11 @@ std::string EntityInfo::str() const {
 void Entity::ensure_anim_props() const {
   if(anim_props_.size() > 0 || !getPropsInfo()) return;
   anim_props_.add_props(getProps());
+  // 文字列(text/path等)はアニメーション不要。残すとapply_animated_props()が古い値で上書きして入力がリセットされる
+  if(const auto* info = getPropsInfo()) {
+    for(const auto& f : info->fields)
+      if(f.type == cutil::prop_info_of<std::string>()) anim_props_.erase(f.name);
+  }
 }
 
 void Entity::apply_animated_props(int frame) {
