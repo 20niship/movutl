@@ -66,7 +66,7 @@ bool CommandManager::has_command(const char* id) const {
 bool CommandManager::run_command(const char* id, const char* arg) {
   for(const auto& e : entries_) {
     if(e.info.id != id) continue;
-    auto instance = e.factory();
+    auto instance  = e.factory();
     instance->arg  = arg ? arg : "";
     instance->name = e.info.name;
     auto status    = instance->on_start();

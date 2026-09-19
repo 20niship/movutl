@@ -1,6 +1,5 @@
-#include <movutl/core/status_log.hpp>
-#include <filesystem>
 #include <cstring>
+#include <filesystem>
 #include <imgui.h>
 #include <movutl/app/app_impl.hpp>
 #include <movutl/app/export_state.hpp>
@@ -8,6 +7,7 @@
 #include <movutl/asset/composition.hpp>
 #include <movutl/audio/audio_mixer.hpp>
 #include <movutl/core/filesystem.hpp>
+#include <movutl/core/status_log.hpp>
 #include <movutl/gui/export_window.hpp>
 #include <movutl/render2d/renderer.hpp>
 #include <thread>

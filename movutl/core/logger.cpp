@@ -44,8 +44,7 @@ void init_logger() {
   loguru::g_preamble_header = false;
 
   // LOG_F(ERROR)はユーザーにも見えるようステータスバーの操作ログへ流す(WARNINGは毎フレーム出るものがあるため対象外)
-  loguru::add_callback(
-    "status_log", [](void*, const loguru::Message& m) { push_status_log(StatusLevel::Error, m.message); }, nullptr, loguru::Verbosity_ERROR);
+  loguru::add_callback("status_log", [](void*, const loguru::Message& m) { push_status_log(StatusLevel::Error, m.message); }, nullptr, loguru::Verbosity_ERROR);
 
   switch(c->log_level) {
     case LogLevel::TRACE: loguru::g_stderr_verbosity = 2; break;

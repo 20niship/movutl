@@ -37,7 +37,7 @@ ImU32 dim(ImU32 c, float k) {
 
 // ピークホールドとクリップ表示はUI状態としてファイルスコープに持つ(メーターは1つだけ)
 struct MeterState {
-  float peak_db[2]   = {kMinDb, kMinDb};
+  float peak_db[2]    = {kMinDb, kMinDb};
   double peak_time[2] = {0, 0};
   bool clip[2]        = {false, false};
   float pre_mute_gain = 1.0f;
@@ -103,14 +103,14 @@ void draw_audio_wave(ImDrawList* dl, const ImVec2& min, const ImVec2& max, Compo
 }
 
 TimelineRightStrip::TimelineRightStrip(Composition* comp) {
-  ImGuiWindow* win = ImGui::GetCurrentWindow();
-  win_             = win;
-  saved_max_x_     = win->InnerClipRect.Max.x;
-  const ImVec2 cur = ImGui::GetCursorScreenPos();
-  const float x1   = saved_max_x_;
-  const float x0   = x1 - kWidth;
-  const float y0   = cur.y;
-  const float y1   = win->InnerClipRect.Max.y;
+  ImGuiWindow* win         = ImGui::GetCurrentWindow();
+  win_                     = win;
+  saved_max_x_             = win->InnerClipRect.Max.x;
+  const ImVec2 cur         = ImGui::GetCursorScreenPos();
+  const float x1           = saved_max_x_;
+  const float x0           = x1 - kWidth;
+  const float y0           = cur.y;
+  const float y1           = win->InnerClipRect.Max.y;
   win->InnerClipRect.Max.x = x0;
   if(y1 - y0 < 60.0f) return;
 
@@ -130,9 +130,9 @@ TimelineRightStrip::TimelineRightStrip(Composition* comp) {
 
   const float lamp_h = 8.0f, foot_h = 22.0f;
   const float my0 = y0 + lamp_h + 6.0f, my1 = y1 - foot_h - 4.0f;
-  const float mh  = my1 - my0;
-  const float lx = x0 + 22.0f, mw = 9.0f;
-  const float fx = lx + mw * 2 + 9.0f, fw = 16.0f;
+  const float mh = my1 - my0;
+  const float lx = x0 + 33.0f, mw = 7.0f;
+  const float fx = lx + mw * 2 + 3.0f, fw = 12.0f;
 
   for(int c = 0; c < 2; c++) {
     const float db = has_audio ? to_db(lv.rms[c] * gain) : kMinDb;
@@ -198,7 +198,7 @@ TimelineRightStrip::TimelineRightStrip(Composition* comp) {
   }
 
   {
-    const float fy = y1 - foot_h;
+    const float fy   = y1 - foot_h;
     const bool muted = gain <= 0.0f;
     ImGui::SetCursorScreenPos(ImVec2(x0 + 4, fy));
     if(ImGui::InvisibleButton("##master_mute", ImVec2(18, foot_h))) {

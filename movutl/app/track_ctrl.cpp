@@ -1,7 +1,6 @@
 #include <algorithm>
 #include <filesystem>
 #include <movutl/app/app.hpp>
-#include <movutl/core/status_log.hpp>
 #include <movutl/asset/audio.hpp>
 #include <movutl/asset/compo_audio_ref.hpp>
 #include <movutl/asset/compo_ref.hpp>
@@ -20,6 +19,7 @@
 #include <movutl/core/command.hpp>
 #include <movutl/core/filesystem.hpp>
 #include <movutl/core/logger.hpp>
+#include <movutl/core/status_log.hpp>
 #include <movutl/plugin/input.hpp>
 #include <movutl/plugin/plugin.hpp>
 

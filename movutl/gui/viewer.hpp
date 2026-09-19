@@ -16,8 +16,8 @@ ViewerCursor& viewer_cursor();
 
 class ViewerWindow final : public UIPanel {
   GLTexture tex;
-  float zoom = 1.0f; // ダブルクリックで1.0にリセット
-  ImVec2 pan = ImVec2(0, 0);
+  float zoom         = 1.0f; // ダブルクリックで1.0にリセット
+  ImVec2 pan         = ImVec2(0, 0);
   bool show_checker_ = false; // 透明部分を市松模様で表示(背景色のalphaが0のとき有効)
   bool show_grid_    = false;
   bool show_safe_    = false; // セーフマージン(アクション90%/タイトル80%)

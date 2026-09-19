@@ -53,8 +53,8 @@ void draw_latest_log() {
   float alpha      = 1.0f;
   if(e.level != StatusLevel::Error && age > kHoldSec) alpha = (float)std::clamp(1.0 - (age - kHoldSec) / kFadeSec, 0.0, 1.0);
   // フェード後も履歴を開けるよう、最低限の薄い表示は残さず領域だけクリック可能にする
-  ImVec4 col = level_color(e.level);
-  col.w      = std::max(alpha, 0.0f);
+  ImVec4 col             = level_color(e.level);
+  col.w                  = std::max(alpha, 0.0f);
   const std::string text = std::string(level_icon(e.level)) + " " + e.message;
   ImGui::PushStyleColor(ImGuiCol_Text, col);
   ImGui::TextUnformatted(text.c_str());

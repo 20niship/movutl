@@ -5,15 +5,15 @@
 // --
 #include <cstring>
 #include <filesystem>
-#include <movutl/asset/project.hpp>
-#include <movutl/core/status_log.hpp>
 #include <movutl/app/app.hpp>
 #include <movutl/app/app_impl.hpp>
 #include <movutl/asset/image.hpp>
+#include <movutl/asset/project.hpp>
 #include <movutl/core/command.hpp>
 #include <movutl/core/filesystem.hpp>
 #include <movutl/core/logger.hpp>
 #include <movutl/core/profiler.hpp>
+#include <movutl/core/status_log.hpp>
 #include <movutl/core/vector.hpp>
 #include <movutl/gui/gui.hpp>
 #include <stdio.h>
@@ -123,7 +123,7 @@ void gui_new_frame() {
   {
     // タイトルは変化したときだけ更新する(毎フレームのglfwSetWindowTitleを避ける)
     static std::string last_title;
-    auto pj = Project::Get();
+    auto pj           = Project::Get();
     std::string title = "movutl - " + ((pj && !pj->path.empty()) ? std::filesystem::path(pj->path).filename().string() : std::string("(無題)"));
     if(status_log_dirty()) title += " *";
     if(title != last_title) {
