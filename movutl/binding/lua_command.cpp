@@ -7,6 +7,9 @@ extern "C" {
 #include <LuaIntf/LuaIntf.h>
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/entity.hpp>
+#include <movutl/asset/image.hpp>
+#include <movutl/asset/shape.hpp>
+#include <movutl/asset/text.hpp>
 #include <movutl/binding/lua_command.hpp>
 #include <movutl/core/anim.hpp>
 #include <movutl/core/command.hpp>
@@ -92,11 +95,39 @@ bool lua_add_keyframe_to(AnimProps& anim, const std::string& prop, int frame, co
   return false;
 }
 
+// pygen生成のクラスバインディングは継承関係を持たず、ShapeEntt/Image/TextEntt等のオブジェクトはEntity*引数として受け取れないため、既知の派生型を順にlua_pcall経由で試して取り出す
+// (型不一致はluaL_errorで通知されC++例外にならないので、pcallで保護する)
+template <typename T> int lua_entity_ptr_from(lua_State* L) {
+  T* p = LuaIntf::LuaTypeMapping<T*>::get(L, 1);
+  lua_pushlightuserdata(L, static_cast<Entity*>(p));
+  return 1;
+}
+template <typename T> Entity* lua_try_entity_as(const LuaIntf::LuaRef& r) {
+  lua_State* L = r.state();
+  lua_pushcfunction(L, lua_entity_ptr_from<T>);
+  r.pushToStack();
+  if(lua_pcall(L, 1, 1, 0) != 0) {
+    lua_pop(L, 1);
+    return nullptr;
+  }
+  auto* e = static_cast<Entity*>(lua_touserdata(L, -1));
+  lua_pop(L, 1);
+  return e;
+}
+Entity* lua_to_entity(const LuaIntf::LuaRef& r) {
+  if(auto* e = lua_try_entity_as<Entity>(r)) return e;
+  if(auto* e = lua_try_entity_as<ShapeEntt>(r)) return e;
+  if(auto* e = lua_try_entity_as<Image>(r)) return e;
+  if(auto* e = lua_try_entity_as<TextEntt>(r)) return e;
+  return nullptr;
+}
+
 void lua_invalidate_entity_cache(Entity* e) {
   if(auto* comp = e->get_comp()) comp->invalidate_cache_range(e->fstart_, e->fend_);
 }
 
-bool lua_add_keyframe_entity(Entity* e, const std::string& prop, int frame, LuaIntf::LuaRef value) {
+bool lua_add_keyframe_entity(const LuaIntf::LuaRef& eref, const std::string& prop, int frame, LuaIntf::LuaRef value) {
+  Entity* e = lua_to_entity(eref);
   if(!e) return false;
   e->ensure_anim_props();
   bool ok = lua_add_keyframe_to(e->anim_props_, prop, frame, value);
@@ -104,7 +135,20 @@ bool lua_add_keyframe_entity(Entity* e, const std::string& prop, int frame, LuaI
   return ok;
 }
 
-bool lua_remove_keyframe_entity(Entity* e, const std::string& prop, int frame) {
+bool lua_set_keyframe_ease(const LuaIntf::LuaRef& eref, const std::string& prop, int frame, int ease_type) {
+  Entity* e = lua_to_entity(eref);
+  if(!e) return false;
+  e->ensure_anim_props();
+  int idx    = e->anim_props_.index_of(prop);
+  uint32_t f = (uint32_t)std::max(frame, 0);
+  if(idx < 0 || !e->anim_props_.has_key_at(idx, f)) return false;
+  e->anim_props_.set_ease_type(idx, f, (AniInterpType)ease_type);
+  lua_invalidate_entity_cache(e);
+  return true;
+}
+
+bool lua_remove_keyframe_entity(const LuaIntf::LuaRef& eref, const std::string& prop, int frame) {
+  Entity* e = lua_to_entity(eref);
   if(!e) return false;
   e->ensure_anim_props();
   int idx = e->anim_props_.index_of(prop);
@@ -114,14 +158,16 @@ bool lua_remove_keyframe_entity(Entity* e, const std::string& prop, int frame) {
   return ok;
 }
 
-bool lua_add_keyframe_filter(Entity* e, int filter_index, const std::string& prop, int frame, LuaIntf::LuaRef value) {
+bool lua_add_keyframe_filter(const LuaIntf::LuaRef& eref, int filter_index, const std::string& prop, int frame, LuaIntf::LuaRef value) {
+  Entity* e = lua_to_entity(eref);
   if(!e || filter_index < 0 || filter_index >= (int)e->filters_.size()) return false;
   bool ok = lua_add_keyframe_to(e->filters_[filter_index].props, prop, frame, value);
   if(ok) lua_invalidate_entity_cache(e);
   return ok;
 }
 
-bool lua_remove_keyframe_filter(Entity* e, int filter_index, const std::string& prop, int frame) {
+bool lua_remove_keyframe_filter(const LuaIntf::LuaRef& eref, int filter_index, const std::string& prop, int frame) {
+  Entity* e = lua_to_entity(eref);
   if(!e || filter_index < 0 || filter_index >= (int)e->filters_.size()) return false;
   auto& props = e->filters_[filter_index].props;
   int idx     = props.index_of(prop);
@@ -142,6 +188,7 @@ void bind_lua_command_api(lua_State* L) {
     .addFunction("select_save_file_dialog", &lua_select_save_file_dialog)
     .addFunction("add_keyframe", &lua_add_keyframe_entity)
     .addFunction("remove_keyframe", &lua_remove_keyframe_entity)
+    .addFunction("set_keyframe_ease", &lua_set_keyframe_ease)
     .addFunction("add_keyframe_filter", &lua_add_keyframe_filter)
     .addFunction("remove_keyframe_filter", &lua_remove_keyframe_filter)
     .endModule();

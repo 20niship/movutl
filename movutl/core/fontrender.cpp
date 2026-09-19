@@ -2,6 +2,7 @@
 #include <iostream>
 #include <locale>
 #include <math.h>
+#include <mutex>
 #include <stdio.h>
 #include <string>
 
@@ -166,6 +167,9 @@ bool FontRenderManager::renderText(Image* img, const char* text, int size, int s
   }
 
   if(!img) return false;
+  // FT_Face/GlyphSlotとfont_facesは共有状態で、複数のレンダーワーカーが別々のテキストを同時に描くとクラッシュするため直列化する
+  static std::mutex render_mtx;
+  std::lock_guard<std::mutex> lock(render_mtx);
   for(auto& [name, font_face] : manager->font_faces) {
     if(name == font_name) {
       if(font_face.face == nullptr) return false;

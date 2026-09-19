@@ -250,6 +250,26 @@ TEST_CASE("Lua API: movutl.add_keyframe/remove_keyframe でEntity本体プロパ
   lua_pop(L, 1);
 }
 
+TEST_CASE("Lua API: movutl.set_keyframe_ease でキーフレームのイージング種別を設定できる") {
+  Project::New();
+  auto img = Image::Create("lua_ease_test", 4, 4);
+  REQUIRE(img != nullptr);
+  img->ensure_anim_props();
+
+  lua_State* L = make_test_lua();
+  LuaIntf::Lua::setGlobal(L, "e", static_cast<Entity*>(img.get()));
+
+  REQUIRE(luaL_dostring(L, "return movutl.set_keyframe_ease(e, 'alpha', 0, movutl.AniInterpType.EaseInOutQuad)") == 0);
+  CHECK(lua_toboolean(L, -1));
+  lua_pop(L, 1);
+  int idx = img->anim_props_.index_of("alpha");
+  CHECK(img->anim_props_.get_ease_type(idx, 0) == AniInterpType::EaseInOutQuad);
+
+  REQUIRE(luaL_dostring(L, "return movutl.set_keyframe_ease(e, 'alpha', 999, movutl.AniInterpType.EaseInQuad)") == 0);
+  CHECK_FALSE(lua_toboolean(L, -1)); // キーが無いframeはfalse
+  lua_pop(L, 1);
+}
+
 TEST_CASE("Lua API: movutl.add_keyframe_filter/remove_keyframe_filter でフィルタパラメータのキーフレームを操作できる") {
   if(detail::AppMain::Get()->filters.empty()) detail::register_default_filters();
   detail::activate_all_plugins();
