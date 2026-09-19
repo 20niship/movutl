@@ -268,6 +268,26 @@ function movutl.FramebufferEntt:getType( ) end
 ---@return Ref<Image> 
 function movutl.FramebufferEntt:captured_image( ) end
 
+---@class GroupEntt
+---@field target_layers_ number
+movutl.GroupEntt = {}
+movutl.GroupEntt.target_layers_ = 0
+
+---@param name string
+---@return Ref<GroupEntt>
+function movutl.GroupEntt:Create( name, ) end
+
+---@return EntityType
+function movutl.GroupEntt:getType( ) end
+
+---@return GroupXform
+function movutl.GroupEntt:local_xform( ) end
+
+---@param group_layer number
+---@param layer_i number
+---@return boolean
+function movutl.GroupEntt:affects( group_layer, layer_i, ) end
+
 ---@class Image
 ---@field width number
 ---@field height number

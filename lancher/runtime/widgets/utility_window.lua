@@ -66,6 +66,12 @@ local function add_entities_ui()
   end
   imgui.NextColumn()
 
+  if imgui.Button(icons.ICON_FA_LAYER_GROUP .. " グループ制御", imgui.ImVec2(0, 0)) then
+    movutl.add_new_track("group", movutl.EntityType.EntityType_Group, 0, 100)
+    confirmed = true
+  end
+  imgui.NextColumn()
+
   if imgui.Button(icons.ICON_FA_MAGNIFYING_GLASS .. " カスタムオブジェクト", imgui.ImVec2(0, 0)) then imgui.OpenPopup("##ADD_CUSTOM_OBJECT_POPUP", 0) end
   if imgui.BeginPopup("##ADD_CUSTOM_OBJECT_POPUP", 0) then
     local _, new_text = imgui.InputText("##custom_obj_filter", filter_text, 0)

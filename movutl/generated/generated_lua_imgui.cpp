@@ -11,6 +11,7 @@
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/entity.hpp>
 #include <movutl/asset/framebuffer.hpp>
+#include <movutl/asset/group.hpp>
 #include <movutl/asset/image.hpp>
 #include <movutl/asset/midi.hpp>
 #include <movutl/asset/movie.hpp>

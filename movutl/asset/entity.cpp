@@ -14,6 +14,7 @@
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/custom_object.hpp>
 #include <movutl/asset/framebuffer.hpp>
+#include <movutl/asset/group.hpp>
 #include <movutl/asset/image.hpp>
 #include <movutl/asset/midi.hpp>
 #include <movutl/asset/movie.hpp>
@@ -31,6 +32,7 @@ Ref<Entity> Entity::CreateEntity(const char* name, EntityType type) {
     case EntityType_3DText: e = cutil::make_ref<TextEntt>(); break;
     case EntityType_Audio: e = cutil::make_ref<AudioEntt>(); break;
     case EntityType_Framebuffer: e = cutil::make_ref<FramebufferEntt>(); break;
+    case EntityType_Group: e = cutil::make_ref<GroupEntt>(); break;
     case EntityType_Polygon: e = cutil::make_ref<ShapeEntt>(); break;
     case EntityType_Camera: e = cutil::make_ref<Camera3D>(); break;
     // 1個のフラグで複数のLuaスクリプトを表すため、実体はsetProps()内でscript_name経由でdef_を再解決する(ここではdef_未設定のまま生成するだけでよい)

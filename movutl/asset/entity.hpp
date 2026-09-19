@@ -174,7 +174,7 @@ public:
   virtual constexpr EntityType getType() const = 0;
 
   // pos_/anchor_/scale_/rotation_/alpha_による描画変換を持つ(=描画系の)Entityか。インスペクタの変換欄表示に使う
-  bool has_transform() const { return getType() & (EntityType_Movie | EntityType_Image | EntityType_3DText | EntityType_Polygon | EntityType_Framebuffer | EntityType_Scene); }
+  bool has_transform() const { return getType() & (EntityType_Movie | EntityType_Image | EntityType_3DText | EntityType_Polygon | EntityType_Framebuffer | EntityType_Scene | EntityType_Group); }
 
   static Ref<Entity> CreateEntity(const char* name, EntityType type);
   static Ref<Entity> Find(const char* name);

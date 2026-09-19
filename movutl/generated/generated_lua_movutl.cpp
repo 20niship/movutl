@@ -11,6 +11,7 @@
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/entity.hpp>
 #include <movutl/asset/framebuffer.hpp>
+#include <movutl/asset/group.hpp>
 #include <movutl/asset/image.hpp>
 #include <movutl/asset/midi.hpp>
 #include <movutl/asset/movie.hpp>
@@ -166,6 +167,7 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addVariable("layers", &Composition::layers)                       // std::vector<TrackLayer>
     .endClass()
     .beginClass<Entity>("Entity")
+    .addFunction("world_xform", &Entity::world_xform)
     .addFunction("getType", &Entity::getType)
     .addFunction("has_transform", &Entity::has_transform)
     .addStaticFunction("CreateEntity", &Entity::CreateEntity)
@@ -224,6 +226,18 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addVariable("scale_", static_cast<Vec2 FramebufferEntt::*>(&Entity::scale_))        // Vec2
     .addVariable("rotation_", static_cast<float FramebufferEntt::*>(&Entity::rotation_)) // float
     .addVariable("alpha_", static_cast<float FramebufferEntt::*>(&Entity::alpha_))       // float
+    .endClass()
+    .beginClass<GroupEntt>("GroupEntt")
+    .addStaticFunction("Create", &GroupEntt::Create)
+    .addFunction("getType", &GroupEntt::getType)
+    .addFunction("local_xform", &GroupEntt::local_xform)
+    .addFunction("affects", &GroupEntt::affects)
+    .addVariable("target_layers_", &GroupEntt::target_layers_)                     // int32_t
+    .addVariable("pos_", static_cast<Vec3 GroupEntt::*>(&Entity::pos_))            // Vec3
+    .addVariable("anchor_", static_cast<Vec3 GroupEntt::*>(&Entity::anchor_))      // Vec3
+    .addVariable("scale_", static_cast<Vec2 GroupEntt::*>(&Entity::scale_))        // Vec2
+    .addVariable("rotation_", static_cast<float GroupEntt::*>(&Entity::rotation_)) // float
+    .addVariable("alpha_", static_cast<float GroupEntt::*>(&Entity::alpha_))       // float
     .endClass()
     .beginClass<Image>("Image")
     .addFunction("dirty", &Image::dirty)

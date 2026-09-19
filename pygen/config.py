@@ -15,6 +15,7 @@ ignore_symbols = [  #
     ("Movie", "img_"),
     ("TextEntt", "img_"),
     ("Composition", "mtx"),
+    ("Composition", "get_layered_entities"),
     ("Composition", "cache"),
     ("Composition", "cache_transparent"),
     ("Composition", "frame"),
@@ -32,6 +33,8 @@ ignore_symbols = [  #
     ("", "get_entt_icon"),
     ("", "PropAnimClip"),
     ("Project", "MOVUTL_DECLARE_SINGLETON"),
+    ("GroupXform", ""),
+    ("GroupXformScope", ""),
     ("EntityInfo", "reserved"),
     ("EntityInfo", "handler"),
     # -- imgui

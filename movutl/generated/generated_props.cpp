@@ -7,6 +7,7 @@
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/entity.hpp>
 #include <movutl/asset/framebuffer.hpp>
+#include <movutl/asset/group.hpp>
 #include <movutl/asset/image.hpp>
 #include <movutl/asset/midi.hpp>
 #include <movutl/asset/movie.hpp>
@@ -90,6 +91,33 @@ cutil::Prop CompoRefEntt::getProps() const {
   return p;
 }
 void CompoRefEntt::setProps(const cutil::Prop& p) { (void)p.load_to(this, getPropsInfo()); }
+const cutil::PropInfo* Entity::getTransformPropsInfo() const {
+  static const cutil::PropInfo info = [] {
+    cutil::PropInfo p;
+    p.fields.push_back(cutil::PropInfo::Field("pos_", offsetof(Entity, pos_), cutil::prop_info_of<Vec3>()));
+    p.fields.back().set_label("位置");
+    p.fields.push_back(cutil::PropInfo::Field("anchor_", offsetof(Entity, anchor_), cutil::prop_info_of<Vec3>()));
+    p.fields.back().set_label("基点");
+    p.fields.back().set_desc("画像中心からの基点オフセット。回転・拡大の中心");
+    p.fields.push_back(cutil::PropInfo::Field("scale_", offsetof(Entity, scale_), cutil::prop_info_of<Vec2>()));
+    p.fields.back().set_label("拡大率(%)");
+    p.fields.push_back(cutil::PropInfo::Field("rotation_", offsetof(Entity, rotation_), cutil::prop_info_of<float>()));
+    p.fields.back().set_label("回転(度)");
+    p.fields.push_back(cutil::PropInfo::Field("alpha_", offsetof(Entity, alpha_), cutil::prop_info_of<float>()));
+    p.fields.back().set_label("不透明度");
+    p.fields.back().min_value  = 0.0;
+    p.fields.back().max_value  = 1.0;
+    p.fields.back().drag_speed = 0.01;
+    return p;
+  }();
+  return &info;
+}
+cutil::Prop Entity::getTransformProps() const {
+  cutil::Prop p;
+  p.dump(this, getTransformPropsInfo());
+  return p;
+}
+void Entity::setTransformProps(const cutil::Prop& p) { (void)p.load_to(this, getTransformPropsInfo()); }
 const cutil::PropInfo* Entity::getTrackPropsInfo() const {
   static const cutil::PropInfo info = [] {
     cutil::PropInfo p;
@@ -125,33 +153,6 @@ cutil::Prop Entity::getTrackProps() const {
   return p;
 }
 void Entity::setTrackProps(const cutil::Prop& p) { (void)p.load_to(this, getTrackPropsInfo()); }
-const cutil::PropInfo* Entity::getTransformPropsInfo() const {
-  static const cutil::PropInfo info = [] {
-    cutil::PropInfo p;
-    p.fields.push_back(cutil::PropInfo::Field("pos_", offsetof(Entity, pos_), cutil::prop_info_of<Vec3>()));
-    p.fields.back().set_label("位置");
-    p.fields.push_back(cutil::PropInfo::Field("anchor_", offsetof(Entity, anchor_), cutil::prop_info_of<Vec3>()));
-    p.fields.back().set_label("基点");
-    p.fields.back().set_desc("画像中心からの基点オフセット。回転・拡大の中心");
-    p.fields.push_back(cutil::PropInfo::Field("scale_", offsetof(Entity, scale_), cutil::prop_info_of<Vec2>()));
-    p.fields.back().set_label("拡大率(%)");
-    p.fields.push_back(cutil::PropInfo::Field("rotation_", offsetof(Entity, rotation_), cutil::prop_info_of<float>()));
-    p.fields.back().set_label("回転(度)");
-    p.fields.push_back(cutil::PropInfo::Field("alpha_", offsetof(Entity, alpha_), cutil::prop_info_of<float>()));
-    p.fields.back().set_label("不透明度");
-    p.fields.back().min_value  = 0.0;
-    p.fields.back().max_value  = 1.0;
-    p.fields.back().drag_speed = 0.01;
-    return p;
-  }();
-  return &info;
-}
-cutil::Prop Entity::getTransformProps() const {
-  cutil::Prop p;
-  p.dump(this, getTransformPropsInfo());
-  return p;
-}
-void Entity::setTransformProps(const cutil::Prop& p) { (void)p.load_to(this, getTransformPropsInfo()); }
 const cutil::PropInfo* FramebufferEntt::getPropsInfo() const {
   static const cutil::PropInfo info = [] {
     cutil::PropInfo p;
@@ -168,6 +169,23 @@ cutil::Prop FramebufferEntt::getProps() const {
   return p;
 }
 void FramebufferEntt::setProps(const cutil::Prop& p) { (void)p.load_to(this, getPropsInfo()); }
+const cutil::PropInfo* GroupEntt::getPropsInfo() const {
+  static const cutil::PropInfo info = [] {
+    cutil::PropInfo p;
+    p.fields.push_back(cutil::PropInfo::Field("target_layers_", offsetof(GroupEntt, target_layers_), cutil::prop_info_of<int32_t>()));
+    p.fields.back().set_label("対象レイヤー数");
+    p.fields.back().set_desc("自身より下の何レイヤーに効かせるか。0なら以降すべて");
+    p.fields.back().min_value = 0;
+    return p;
+  }();
+  return &info;
+}
+cutil::Prop GroupEntt::getProps() const {
+  cutil::Prop p;
+  p.dump(this, getPropsInfo());
+  return p;
+}
+void GroupEntt::setProps(const cutil::Prop& p) { (void)p.load_to(this, getPropsInfo()); }
 const cutil::PropInfo* Image::getPropsInfo() const {
   static const cutil::PropInfo info = [] {
     cutil::PropInfo p;
