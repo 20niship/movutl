@@ -182,6 +182,17 @@ std::vector<Ref<Entity>> Composition::get_all_entities() const {
   return out;
 }
 
+std::vector<std::pair<int, Ref<Entity>>> Composition::get_layered_entities() const {
+  std::lock_guard<std::mutex> lock(mtx);
+  std::vector<std::pair<int, Ref<Entity>>> out;
+  for(int i = 0; i < (int)layers.size(); i++) {
+    if(!layers[i].active) continue;
+    for(auto& e : layers[i].entts)
+      if(e) out.push_back({i, e});
+  }
+  return out;
+}
+
 Ref<Image> Composition::render_current_frame_main_thread(bool transparent_bg) {
   FrameCache& c = transparent_bg ? cache_transparent : cache;
   Ref<Image> out;
