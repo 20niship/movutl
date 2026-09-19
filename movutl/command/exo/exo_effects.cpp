@@ -38,4 +38,14 @@ void apply_exo_blend(Entity& e, const ExoSection* draw) {
   }
 }
 
+void apply_exo_object_flags(Entity& e, const ExoSection& obj) {
+  auto flag = [&](const char* key, int def) {
+    auto it = obj.find(key);
+    return it == obj.end() || it->second.empty() ? def : atoi(it->second.c_str());
+  };
+  e.camera_ctrl_ = flag("camera", 0) != 0;
+  e.clipping_up_ = flag("clipping", 0) != 0;
+  if(flag("overlay", 1) == 0) exo_import_report().add("overlay=0(現在のレイヤーを同時に表示しない)は未対応です");
+}
+
 } // namespace mu

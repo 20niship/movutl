@@ -295,3 +295,18 @@ TEST_CASE("exo: 標準描画のblendがEntity::blend_へ変換される") {
   CHECK(comp->layers[1].entts.at(0)->blend_ == Blend_Alpha);
   REQUIRE(exo_import_report().items.size() == 1); // 差分のみ未対応
 }
+
+TEST_CASE("exo: camera/clippingがEntityへ反映され、overlay=0は未対応として記録される") {
+  Project::New();
+  auto obj = [](int n, int layer, const std::string& extra) {
+    auto id = std::to_string(n);
+    return "[" + id + "]\r\nstart=1\r\nend=10\r\nlayer=" + std::to_string(layer) + "\r\n" + extra + "[" + id + ".0]\r\n_name=\x90\x7d\x8c\x60\r\ntype=2\r\n";
+  };
+  CHECK(import_exo_text("[exedit]\r\nwidth=640\r\nheight=360\r\nrate=30\r\nscale=1\r\n" + obj(0, 1, "camera=1\r\nclipping=1\r\n") + obj(1, 2, "camera=0\r\noverlay=0\r\n")) == 2);
+  auto* comp = Composition::GetActiveComp();
+  CHECK(comp->layers[0].entts.at(0)->camera_ctrl_);
+  CHECK(comp->layers[0].entts.at(0)->clipping_up_);
+  CHECK_FALSE(comp->layers[1].entts.at(0)->camera_ctrl_);
+  CHECK_FALSE(comp->layers[1].entts.at(0)->clipping_up_);
+  CHECK(exo_import_report().items.size() == 1);
+}

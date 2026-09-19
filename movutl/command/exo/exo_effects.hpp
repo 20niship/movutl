@@ -14,4 +14,7 @@ BlendType exo_blend_type(int v, bool* supported);
 // 標準描画セクションのblend=をEntity::blend_へ反映する(未対応の合成モードは取り込みレポートに記録)
 void apply_exo_blend(Entity& e, const ExoSection* draw);
 
+// オブジェクトセクションの camera=(カメラ制御の対象) / clipping=(上のオブジェクトでクリッピング) / overlay=0 を反映する
+void apply_exo_object_flags(Entity& e, const ExoSection& obj);
+
 } // namespace mu
