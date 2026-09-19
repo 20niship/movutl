@@ -1,3 +1,4 @@
+#include <chrono>
 #include <cmath>
 #include <cstring>
 #include <movutl/app/app_impl.hpp>
@@ -85,30 +86,36 @@ int l_obj_getpixel(lua_State* L) {
   return 2;
 }
 
+// AviUtl正規のキーのみ対応。未対応キーはnilを返す(旧独自キーimage_w/image_h/screen_w/screen_h/framerateはobj.w/h/screen_w/screen_h/framerate変数へ移行済み)
+// ponytail: saving/editing/multi_object/camera_modeはmovutlに対応する状態が無いので固定値。versionはAviUtl 1.10相当の値
 int l_obj_getinfo(lua_State* L) {
-  auto* ctx        = get_ctx(L);
-  std::string key  = luaL_checkstring(L, 1);
-  Image* img       = ctx->fpip->img;
-  Composition* cmp = ctx->fpip->compo;
-  if(key == "image_w") {
-    lua_pushinteger(L, img ? img->width : 0);
+  auto* ctx       = get_ctx(L);
+  std::string key = luaL_checkstring(L, 1);
+  if(key == "clock") {
+    lua_pushnumber(L, std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count());
     return 1;
   }
-  if(key == "image_h") {
-    lua_pushinteger(L, img ? img->height : 0);
+  if(key == "saving" || key == "multi_object" || key == "camera_mode") {
+    lua_pushboolean(L, 0);
     return 1;
   }
-  if(key == "screen_w") {
+  if(key == "editing") {
+    lua_pushboolean(L, 1);
+    return 1;
+  }
+  if(key == "script_path") {
+    lua_pushstring(L, "");
+    return 1;
+  }
+  if(key == "version") {
+    lua_pushinteger(L, 11000);
+    return 1;
+  }
+  if(key == "image_max") {
+    Composition* cmp = ctx->fpip->compo;
     lua_pushinteger(L, cmp ? (int)cmp->size[0] : 0);
-    return 1;
-  }
-  if(key == "screen_h") {
     lua_pushinteger(L, cmp ? (int)cmp->size[1] : 0);
-    return 1;
-  }
-  if(key == "framerate") {
-    lua_pushnumber(L, cmp ? cmp->framerate : 30.0);
-    return 1;
+    return 2;
   }
   lua_pushnil(L);
   return 1;

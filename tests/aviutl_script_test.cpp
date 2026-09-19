@@ -146,12 +146,27 @@ TEST_CASE("obj変数: w/h/screen_w/screen_h/frame/totalframe/id/index/numが実�
   CHECK(v2[2] == 0);
 }
 
+TEST_CASE("obj.getinfo: AviUtl正規キーのみ対応し旧独自キーはnilを返す") {
+  auto comp = cutil::make_ref<Composition>("getinfo_comp", 100, 60, 30);
+  Image img;
+  FilterInData fin;
+  fin.compo = comp.get();
+  // 多値を返すimage_maxは最後に置く(テーブルコンストラクタは末尾以外の多値を1個に切り詰める)
+  auto v = probe("obj.getinfo('editing') and 1 or 0, obj.getinfo('saving') and 1 or 0, obj.getinfo('image_w') == nil and 1 or 0, obj.getinfo('clock') > 0 and 1 or 0, obj.getinfo('image_max')", fin, img);
+  CHECK(v[0] == 1);
+  CHECK(v[1] == 0);
+  CHECK(v[2] == 1); // 旧キーimage_wは廃止
+  CHECK(v[3] == 1);
+  CHECK(v[4] == 100); // image_maxはCompositionサイズ(w,hの2値)
+  CHECK(v[5] == 60);
+}
+
 TEST_CASE("register_aviutl_scripts: 2値化スクリプトをフォルダスキャン経由でフィルタとして登録・実行できる") {
   std::string text = "--track0:しきい値,0,255,128,1\n"
                      "@AviUtlテスト2値化\n"
                      "local unpack = table.unpack or unpack\n"
-                     "local w = obj.getinfo(\"image_w\")\n"
-                     "local h = obj.getinfo(\"image_h\")\n"
+                     "local w = obj.w\n"
+                     "local h = obj.h\n"
                      "local px = obj.getpixeldata()\n"
                      "local buf = {}\n"
                      "for i = 1, w*h do\n"
@@ -188,7 +203,7 @@ TEST_CASE("register_aviutl_scripts: 2値化スクリプトをフォルダスキ�
 
 TEST_CASE("register_aviutl_scripts: obj.drawpolyで台形変形を実行できる") {
   std::string text = "@あおりテスト\n"
-                     "local w, h = obj.getinfo(\"image_w\"), obj.getinfo(\"image_h\")\n"
+                     "local w, h = obj.w, obj.h\n"
                      "obj.drawpoly(-2, -h / 2, 0, 2, -h / 2, 0, -w / 2, h / 2, 0, w / 2, h / 2, 0)\n";
 
   FilterPluginTable* plg = register_test_script(text, "あおりテスト");

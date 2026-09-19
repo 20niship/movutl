@@ -14,8 +14,8 @@ local thickness = obj.track1
 local gap_pct   = obj.track2
 local random    = obj.check0
 
-local w = obj.getinfo("image_w")
-local h = obj.getinfo("image_h")
+local w = obj.w
+local h = obj.h
 local max_radius = math.sqrt(w * w + h * h) / 2
 local inner      = max_radius * (gap_pct / 100)
 
