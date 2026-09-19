@@ -1,6 +1,7 @@
 #include <IconsFontAwesome6.h>
 #include <algorithm>
 #include <filesystem>
+#include <functional>
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <movutl/asset/composition.hpp>
@@ -20,17 +21,10 @@ bool wd_color_edit(const char* name, Vec4b* col) {
   return changed;
 }
 
-void wd_entt_props_editor(Entity* e) {
-  MU_ASSERT(e);
-  ImGui::PushID(e);
-
-  const cutil::PropInfo* info = e->getPropsInfo();
-  if(!info) {
-    ImGui::PopID();
-    return;
-  }
-
-  const auto p = e->getProps();
+namespace {
+// infoの各フィールドを編集UIとして描画し、変更があればapply(変更分のProp)で反映する
+void edit_props(Entity* e, const cutil::PropInfo* info, const cutil::Prop& p, const std::function<void(const cutil::Prop&)>& apply) {
+  if(!info) return;
   for(const auto& f : info->fields) {
     if(!p.contains(f.name)) {
       LOG_F(WARNING, "Property %s -> %s not found", e->name.c_str(), f.name);
@@ -121,7 +115,7 @@ void wd_entt_props_editor(Entity* e) {
     if(changed) {
       {
         std::lock_guard<std::mutex> lock(e->mtx);
-        e->setProps(newp);
+        apply(newp);
         if(is_path_field) {
           e->reload_asset(); // パス変更時は新しいファイルを読み込み直す
           auto new_path = newp.get<std::string>(f.name);
@@ -133,6 +127,14 @@ void wd_entt_props_editor(Entity* e) {
     }
     ImGui::PopID();
   }
+}
+} // namespace
+
+void wd_entt_props_editor(Entity* e) {
+  MU_ASSERT(e);
+  ImGui::PushID(e);
+  if(e->has_transform()) edit_props(e, e->getTransformPropsInfo(), e->getTransformProps(), [&](const cutil::Prop& np) { e->setTransformProps(np); });
+  edit_props(e, e->getPropsInfo(), e->getProps(), [&](const cutil::Prop& np) { e->setProps(np); });
   ImGui::PopID();
 }
 
