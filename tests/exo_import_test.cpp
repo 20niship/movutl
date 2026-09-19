@@ -62,8 +62,8 @@ TEST_CASE("exo: import_exo_file") {
   CHECK(text->text == "テスト");
   CHECK(text->fstart_ == 4);
   CHECK(text->fend_ == 19);
-  CHECK(text->scale_x_ == doctest::Approx(2.f));
-  CHECK(text->alpha_ == 128);
+  CHECK(text->scale_[0] == doctest::Approx(200.f));
+  CHECK(text->alpha_ == doctest::Approx(0.5f).epsilon(0.01));
   CHECK(text->guid_ != 0);
 
   CHECK(import_exo_file("/nonexistent/x.exo") == -1);
@@ -180,7 +180,7 @@ TEST_CASE("exo: comprehensive.exo (動画/画像/音声/テキスト/図形を�
     auto* t3 = dynamic_cast<TextEntt*>(layer_entts(comp, 7).at(0).get());
     REQUIRE(t3 != nullptr);
     CHECK(t3->text == "ＭＵＬＴＩ\r\nLINE");
-    CHECK(t3->scale_x_ == doctest::Approx(1.5f));
+    CHECK(t3->scale_[0] == doctest::Approx(150.f));
     CHECK(dynamic_cast<TextEntt*>(layer_entts(comp, 8).at(0).get())->text == "背景の字幕テキスト");
   }
 

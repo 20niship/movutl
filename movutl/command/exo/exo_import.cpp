@@ -287,12 +287,7 @@ int import_exo_file(const char* path) {
       float size                     = getf(src, "サイズ", 100.f);
       shp->size_                     = Vec2(size, size);
       shp->color_                    = parse_color(get(src, "color"), shp->color_);
-      if(draw) {
-        shp->pos_   = Vec3(getf(*draw, "X"), getf(*draw, "Y"), getf(*draw, "Z"));
-        shp->size_  = shp->size_ * (getf(*draw, "拡大率", 100.f) / 100.f);
-        shp->rot_   = getf(*draw, "回転") * 3.14159265f / 180.f;
-        shp->alpha_ = (uint8_t)std::lround(parse_alpha(*draw) * 255);
-      }
+      apply_standard_draw(*shp, draw);
       Project::Get()->entities.push_back(shp);
       shp->guid_ = Project::Get()->entities.size();
       ent        = shp;
@@ -300,12 +295,7 @@ int import_exo_file(const char* path) {
       auto t           = TextEntt::Create(utf16le_hex_to_utf8(get(src, "text")).c_str(), get(src, "font").c_str());
       t->color_        = parse_color(get(src, "color"), t->color_);
       t->border_color_ = parse_color(get(src, "color2"), t->border_color_);
-      if(draw) {
-        t->pos_     = Vec3(getf(*draw, "X"), getf(*draw, "Y"), getf(*draw, "Z"));
-        t->scale_x_ = t->scale_y_ = getf(*draw, "拡大率", 100.f) / 100.f;
-        t->rot_                   = getf(*draw, "回転") * 3.14159265f / 180.f;
-        t->alpha_                 = (uint8_t)std::lround(parse_alpha(*draw) * 255);
-      }
+      apply_standard_draw(*t, draw);
       // TextEntt::CreateはProject::entitiesへ登録もguid採番もしないため自前で行う
       Project::Get()->entities.push_back(t);
       t->guid_ = Project::Get()->entities.size();
