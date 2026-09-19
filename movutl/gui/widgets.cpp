@@ -180,6 +180,7 @@ bool wd_keyframe_strip(const char* str_id, AnimProps& anim, int idx, int fstart,
     }
     ImGui::PopID();
   }
+  ImGui::SetCursorScreenPos(ImVec2(origin.x, origin.y + height)); // SetCursorScreenPosでのマーカー描画がカーソル位置を乱すため、strip下端に戻す
   ImGui::PopID();
   return changed;
 }
@@ -287,7 +288,8 @@ void wd_entt_props_editor(Entity* e, uint32_t cur_frame) {
       }
     }
 
-    if(is_animatable && ImGui::BeginDragDropSource()) {
+    // 直前に描画したウィジェットがID無し(型switchでどれにもマッチしなかった等)でもBeginDragDropSourceはIM_ASSERTでクラッシュするため、SourceAllowNullIDで無害化する
+    if(is_animatable && ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
       GraphDragPayload payload;
       payload.entity_guid  = e->guid_;
       payload.filter_index = -1;
