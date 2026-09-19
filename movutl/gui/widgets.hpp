@@ -1,6 +1,7 @@
 #pragma once
 #include <array>
 #include <cstdint>
+#include <cutil/prop.hpp>
 #include <movutl/core/vector.hpp>
 
 namespace mu {
@@ -12,11 +13,11 @@ void wd_movie_inspector(Entity* e);
 void wd_image_inspector(Entity* e);
 bool wd_color_edit(const char* name, Vec4b* col);
 
-// キーフレームトグルボタン(cur_frameに有れば削除、無ければ追加)。戻り値trueなら変化(要キャッシュ無効化)
-bool wd_keyframe_toggle(AnimProps& anim, int idx, uint32_t cur_frame);
+// AviUtl風1行トラックバー(左=直前中間点値/中央=名前ボタン/右=直後中間点値)。filter_index=-1はEntity本体のanim_props_
+bool wd_animatable_row(const cutil::PropInfo::Field& f, AnimProps& anim, int idx, uint32_t cur_frame, uint64_t entity_guid, int filter_index);
 
-// ミニタイムラインstrip([fstart,fend]、ドラッグ移動/右クリック削除、ダブルクリックでイージング編集ポップアップ)。戻り値trueなら変化(要キャッシュ無効化)
-bool wd_keyframe_strip(const char* str_id, AnimProps& anim, int idx, int fstart, int fend, uint32_t cur_frame);
+// インスペクタ最上部の集約バー(中間点分布+現在フレーム、クリック/ドラッグでシーク)。戻り値trueならシークが発生した
+bool wd_entity_keyframe_overview(Entity* e, uint32_t cur_frame);
 
 // cubic-bezier(v[0],v[1],v[2],v[3])のハンドルをsize四方の正方形プレビュー上でドラッグ編集する。戻り値trueなら変化
 bool wd_bezier_handle_editor(std::array<float, 4>& v, float size);

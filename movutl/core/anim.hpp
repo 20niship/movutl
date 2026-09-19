@@ -212,20 +212,39 @@ public:
     keys.clear();
     keys.push_back(AnimKeyframe<T>()); // デフォルト値がvalue_=T(), frame_=0, type=LINEARなのでそのまま使う
   }
+  // frame以下の最後のキーのindex(=区間開始側)を返す。get()/neighbor_frames()で共用する探索ロジック
+  size_t segment_index(uint32_t frame) const {
+    size_t i = 0;
+    while(i + 1 < keys.size() && keys[i + 1].frame_ <= frame) i++;
+    return i;
+  }
   T get(uint32_t frame) const {
     if(keys.empty()) return T();
     if(keys.size() == 1 || frame <= keys.front().frame_) return keys.front().value_;
     if(frame >= keys.back().frame_) return keys.back().value_;
 
-    // frame以下の最後のキー(k0)とその次のキー(k1)を探す
-    size_t i = 0;
-    while(i + 1 < keys.size() && keys[i + 1].frame_ <= frame) i++;
+    size_t i       = segment_index(frame);
     const auto& k0 = keys[i];
     const auto& k1 = keys[i + 1];
     if(k1.frame_ == k0.frame_) return k1.value_;
     double t = (double)(frame - k0.frame_) / (double)(k1.frame_ - k0.frame_);
     t        = detail::apply_ease(k0.type, t, k0.ease_, k0.ease2_, k0.ease3_, k0.ease4_);
     return detail::anim_lerp(k0.value_, k1.value_, t);
+  }
+  // frameを挟む前後の中間点のframe番号(AviUtl風トラックバーUIの左右スライダー用)。単一キー/frameがキーちょうど上/範囲外は同じframeを返す
+  std::pair<uint32_t, uint32_t> neighbor_frames(uint32_t frame) const {
+    if(keys.empty()) return {0, 0};
+    if(keys.size() == 1) return {keys.front().frame_, keys.front().frame_};
+    if(frame <= keys.front().frame_) return {keys.front().frame_, keys.front().frame_};
+    if(frame >= keys.back().frame_) return {keys.back().frame_, keys.back().frame_};
+    size_t i = segment_index(frame);
+    return {keys[i].frame_, keys[i + 1].frame_};
+  }
+  // get(frame)の値を保持したままアニメーションを解除し単一キーへ畳む(値がT()に戻るreset()とは異なる)
+  void collapse_to_single(uint32_t frame) {
+    T v = get(frame);
+    keys.clear();
+    keys.push_back(AnimKeyframe<T>(v));
   }
   // frameに対応するキーフレームが既にあれば値を更新、無ければ挿入する(frame昇順を維持)
   bool add_keyframe(uint32_t frame, T value, AniInterpType t = AniInterpType::LINEAR) {
@@ -418,6 +437,14 @@ public:
   bool move_keyframe(int idx, uint32_t old_frame, uint32_t new_frame) {
     if(idx < 0 || idx >= (int)props.size()) return false;
     return std::visit([old_frame, new_frame](auto&& c) { return c.move_keyframe(old_frame, new_frame); }, props[idx]);
+  }
+  std::pair<uint32_t, uint32_t> neighbor_frames(int idx, uint32_t frame) const {
+    if(idx < 0 || idx >= (int)props.size()) return {0, 0};
+    return std::visit([frame](auto&& c) { return c.neighbor_frames(frame); }, props[idx]);
+  }
+  void collapse_to_single(int idx, uint32_t frame) {
+    if(idx < 0 || idx >= (int)props.size()) return;
+    std::visit([frame](auto&& c) { c.collapse_to_single(frame); }, props[idx]);
   }
   // 現在の補間値をそのままキーフレームとして打つ(AE風「現在値でキーを追加」)
   void add_keyframe_here(int idx, uint32_t frame) {

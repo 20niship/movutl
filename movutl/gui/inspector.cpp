@@ -48,9 +48,14 @@ void InspectorWindow::Update() {
     ImGui::End();
     return;
   }
-  Ref<Entity> e            = entts[0];
-  Composition* own_comp    = e->get_comp();
-  const uint32_t cur_frame = (uint32_t)(own_comp ? std::max(own_comp->get_frame(), 0) : 0);
+  Ref<Entity> e = entts[0];
+
+  auto get_cur_frame = [&]() -> uint32_t {
+    Composition* comp = e->get_comp();
+    return (uint32_t)(comp ? std::max(comp->get_frame(), 0) : 0);
+  };
+  uint32_t cur_frame = get_cur_frame();
+  if(wd_entity_keyframe_overview(e.get(), cur_frame)) cur_frame = get_cur_frame();
 
   {
     // アクティブ(目アイコン): このEntityの表示/非表示を切り替える(音声はミュートも兼ねる)
@@ -183,24 +188,12 @@ void InspectorWindow::Update() {
         const auto& info = f.plg_->props.fields[k];
         if(cutil::has_flag(info.flags, cutil::PropFlags::Hidden)) continue;
         ImGui::PushID(k);
-        { // animation props editor
-          const char* label  = info.label[0] ? info.label : info.name;
+        {
           bool value_changed = false;
           if(f.props.get_type(k) != info.type) {
             LOG_F(ERROR, "Invalid type: %s", info.name);
-          } else if(info.type == cutil::prop_info_of<float>()) {
-            float value = f.props.get<float>(k);
-            if(ImGui::DragFloat(label, &value, info.drag_speed, info.min_value, info.max_value)) {
-              f.props.set_value(k, cur_frame, value);
-              value_changed = true;
-            }
-          } else if(info.type == cutil::prop_info_of<int32_t>()) {
-            int value = f.props.get<int>(k);
-            if(ImGui::DragInt(label, &value, info.drag_speed)) {
-              f.props.set_value(k, cur_frame, value);
-              value_changed = true;
-            }
           } else if(info.type == cutil::prop_info_of<std::string>()) {
+            const char* label = info.label[0] ? info.label : info.name;
             std::string value = f.props.get<std::string>(k);
             static char buf[256];
             strncpy(buf, value.c_str(), 256);
@@ -208,55 +201,9 @@ void InspectorWindow::Update() {
               f.props.set_value(k, cur_frame, std::string(buf));
               value_changed = true;
             }
-          } else if(info.type == cutil::prop_info_of<bool>()) {
-            bool value = f.props.get<bool>(k);
-            if(ImGui::Checkbox(label, &value)) {
-              f.props.set_value(k, cur_frame, value);
-              value_changed = true;
-            }
-          } else if(info.type == cutil::prop_info_of<Vec2>()) {
-            Vec2 value = f.props.get<Vec2>(k);
-            if(ImGui::DragFloat2(label, value.value, info.drag_speed)) {
-              f.props.set_value(k, cur_frame, value);
-              value_changed = true;
-            }
-          } else if(info.type == cutil::prop_info_of<Vec3>()) {
-            Vec3 value = f.props.get<Vec3>(k);
-            if(ImGui::DragFloat3(label, value.value, info.drag_speed)) {
-              f.props.set_value(k, cur_frame, value);
-              value_changed = true;
-            }
-          } else if(info.type == cutil::prop_info_of<Vec4>()) {
-            Vec4 value = f.props.get<Vec4>(k);
-            if(ImGui::DragFloat4(label, value.value, info.drag_speed)) {
-              f.props.set_value(k, cur_frame, value);
-              value_changed = true;
-            }
-          } else if(info.type == cutil::prop_info_of<Vec4b>()) {
-            Vec4b value = f.props.get<Vec4b>(k);
-            if(wd_color_edit(label, &value)) {
-              f.props.set_value(k, cur_frame, value);
-              value_changed = true;
-            }
-          }
-          // std::string/Entity*以外はkeyname一致でanim_props_に確実に存在する型のみ登録されるため、上でtype一致した時点でキーフレーム操作可能
-          if(info.type == cutil::prop_info_of<float>() || info.type == cutil::prop_info_of<int32_t>() || info.type == cutil::prop_info_of<bool>() || info.type == cutil::prop_info_of<Vec2>() || info.type == cutil::prop_info_of<Vec3>() || info.type == cutil::prop_info_of<Vec4>() ||
-             info.type == cutil::prop_info_of<Vec4b>()) {
-            // 直前に描画したウィジェットがID無し(型不一致でウィジェット未描画等)でもBeginDragDropSourceはIM_ASSERTでクラッシュするため、SourceAllowNullIDで無害化する
-            if(ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
-              GraphDragPayload payload;
-              payload.entity_guid  = e->guid_;
-              payload.filter_index = i;
-              strncpy(payload.prop_name, info.name, sizeof(payload.prop_name) - 1);
-              ImGui::SetDragDropPayload(kGraphDragDropId, &payload, sizeof(payload));
-              ImGui::Text("%s", label);
-              ImGui::EndDragDropSource();
-            }
-            ImGui::SameLine();
-            if(wd_keyframe_toggle(f.props, k, cur_frame)) value_changed = true;
-            if(f.props.has_animation(k)) {
-              if(wd_keyframe_strip(info.name, f.props, k, e->fstart_, e->fend_, cur_frame)) value_changed = true;
-            }
+          } else if(info.type == cutil::prop_info_of<float>() || info.type == cutil::prop_info_of<int32_t>() || info.type == cutil::prop_info_of<bool>() || info.type == cutil::prop_info_of<Vec2>() || info.type == cutil::prop_info_of<Vec3>() || info.type == cutil::prop_info_of<Vec4>() ||
+                    info.type == cutil::prop_info_of<Vec4b>()) {
+            if(wd_animatable_row(info, f.props, k, cur_frame, e->guid_, i)) value_changed = true;
           }
           if(value_changed) props_changed = true;
         }

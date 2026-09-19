@@ -184,6 +184,46 @@ TEST_CASE("AnimProps::get_ease_type/set_ease_type/get_ease_bezier/set_ease_bezie
   CHECK(props.get_ease_type(0, 999) == AniInterpType::LINEAR);
 }
 
+TEST_CASE("PAniClip::neighbor_frames: 単一キー/キーちょうど上/中間/前後クランプ") {
+  PAniClip<float> clip;
+  clip.clear();
+  clip.add_keyframe(10, 10.0f);
+  CHECK(clip.neighbor_frames(10) == std::pair<uint32_t, uint32_t>(10, 10));
+  CHECK(clip.neighbor_frames(999) == std::pair<uint32_t, uint32_t>(10, 10));
+
+  clip.add_keyframe(20, 20.0f);
+  clip.add_keyframe(30, 30.0f);
+  CHECK(clip.neighbor_frames(20) == std::pair<uint32_t, uint32_t>(20, 30));  // キーちょうど上はそのキーと次のキー
+  CHECK(clip.neighbor_frames(25) == std::pair<uint32_t, uint32_t>(20, 30));  // 中間
+  CHECK(clip.neighbor_frames(0) == std::pair<uint32_t, uint32_t>(10, 10));   // 前方クランプ
+  CHECK(clip.neighbor_frames(999) == std::pair<uint32_t, uint32_t>(30, 30)); // 後方クランプ
+}
+
+TEST_CASE("PAniClip::collapse_to_single: 補間値を保持したまま単一キーへ畳む") {
+  PAniClip<float> clip;
+  clip.clear();
+  clip.add_keyframe(0, 0.0f);
+  clip.add_keyframe(10, 100.0f);
+
+  clip.collapse_to_single(5);
+  REQUIRE(clip.keys.size() == 1);
+  CHECK(clip.keys[0].value_ == doctest::Approx(50.0f));
+  CHECK_FALSE(clip.has_animation());
+}
+
+TEST_CASE("AnimProps::neighbor_frames/collapse_to_single: 型消去ラッパー経由でも同じ挙動になる") {
+  AnimProps props;
+  props.add_prop<float>("x", 0.0f);
+  auto& clip = std::get<PAniClip<float>>(props[0]);
+  clip.add_keyframe(0, 0.0f);
+  clip.add_keyframe(10, 100.0f);
+
+  CHECK(props.neighbor_frames(0, 5) == std::pair<uint32_t, uint32_t>(0, 10));
+  props.collapse_to_single(0, 5);
+  CHECK_FALSE(props.has_animation(0));
+  CHECK(props.get<float>(0, 999) == doctest::Approx(50.0f));
+}
+
 TEST_CASE("AnimProps::save/load_keys: キーフレーム列を保存し名前一致で復元する") {
   AnimProps src;
   src.add_prop<float>("x", 0.0f);

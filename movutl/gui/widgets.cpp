@@ -105,84 +105,204 @@ bool wd_bezier_handle_editor(std::array<float, 4>& v, float size) {
   return changed;
 }
 
-bool wd_keyframe_toggle(AnimProps& anim, int idx, uint32_t cur_frame) {
-  bool has_key  = anim.has_key_at(idx, cur_frame);
-  bool animated = anim.has_animation(idx);
-  ImVec4 col    = has_key ? ImVec4(1.0f, 0.65f, 0.15f, 1.0f) : (animated ? ImVec4(1.0f, 0.65f, 0.15f, 0.35f) : ImVec4(0.6f, 0.6f, 0.6f, 0.5f));
-  ImGui::PushStyleColor(ImGuiCol_Text, col);
-  bool clicked = ImGui::SmallButton(has_key ? ICON_FA_DIAMOND : ICON_FA_CIRCLE);
-  ImGui::PopStyleColor();
-  if(ImGui::IsItemHovered()) ImGui::SetTooltip(has_key ? "中間点を削除" : "中間点を追加");
-  if(!clicked) return false;
-  if(has_key) return anim.erase_keyframe(idx, cur_frame);
-  anim.add_keyframe_here(idx, cur_frame);
-  return true;
+namespace {
+// 型ごとに1ウィジェットだけを描画しanim[idx]のframe位置のキーフレームを読み書きするヘルパー(左右スライダーで共用)
+template <typename T> bool draw_anim_value_widget(const char* id, const cutil::PropInfo::Field& f, AnimProps& anim, int idx, uint32_t frame) {
+  T v = anim.get<T>(idx, frame);
+  bool edited;
+  if constexpr(std::is_same_v<T, float>) {
+    bool has_range = !(f.min_value == 0 && f.max_value == 0);
+    edited         = has_range ? ImGui::SliderFloat(id, &v, f.min_value, f.max_value) : ImGui::DragFloat(id, &v, f.drag_speed);
+  } else if constexpr(std::is_same_v<T, int>) {
+    bool has_range = !(f.min_value == 0 && f.max_value == 0);
+    edited         = has_range ? ImGui::SliderInt(id, &v, (int)f.min_value, (int)f.max_value) : ImGui::DragInt(id, &v, f.drag_speed);
+  } else if constexpr(std::is_same_v<T, bool>) {
+    edited = ImGui::Checkbox(id, &v);
+  } else if constexpr(std::is_same_v<T, Vec2>) {
+    edited = ImGui::DragFloat2(id, v.value, f.drag_speed);
+  } else if constexpr(std::is_same_v<T, Vec3>) {
+    edited = ImGui::DragFloat3(id, v.value, f.drag_speed);
+  } else if constexpr(std::is_same_v<T, Vec4>) {
+    edited = ImGui::DragFloat4(id, v.value, f.drag_speed);
+  } else if constexpr(std::is_same_v<T, Vec4b>) {
+    edited = wd_color_edit(id, &v);
+  } else {
+    edited = false;
+  }
+  if(edited) anim.add_keyframe<T>(idx, frame, v, anim.get_ease_type(idx, frame));
+  return edited;
 }
 
-bool wd_keyframe_strip(const char* str_id, AnimProps& anim, int idx, int fstart, int fend, uint32_t cur_frame) {
-  ImGui::PushID(str_id);
-  bool changed       = false;
-  const float height = 14.0f;
-  ImVec2 origin      = ImGui::GetCursorScreenPos();
-  float width        = ImGui::GetContentRegionAvail().x;
-  ImGui::InvisibleButton("##strip_bg", ImVec2(width, height));
-  ImDrawList* dl = ImGui::GetWindowDrawList();
-  dl->AddRectFilled(origin, ImVec2(origin.x + width, origin.y + height), IM_COL32(40, 40, 40, 180));
+// 実行時のcutil::PropInfo*からdraw_anim_value_widget<T>を選んで呼ぶディスパッチャ
+bool draw_anim_value_widget_dyn(const char* id, const cutil::PropInfo::Field& f, AnimProps& anim, int idx, uint32_t frame) {
+  const cutil::PropInfo* type = anim.get_type(idx);
+  if(type == cutil::prop_info_of<float>()) return draw_anim_value_widget<float>(id, f, anim, idx, frame);
+  if(type == cutil::prop_info_of<int>()) return draw_anim_value_widget<int>(id, f, anim, idx, frame);
+  if(type == cutil::prop_info_of<bool>()) return draw_anim_value_widget<bool>(id, f, anim, idx, frame);
+  if(type == cutil::prop_info_of<Vec2>()) return draw_anim_value_widget<Vec2>(id, f, anim, idx, frame);
+  if(type == cutil::prop_info_of<Vec3>()) return draw_anim_value_widget<Vec3>(id, f, anim, idx, frame);
+  if(type == cutil::prop_info_of<Vec4>()) return draw_anim_value_widget<Vec4>(id, f, anim, idx, frame);
+  if(type == cutil::prop_info_of<Vec4b>()) return draw_anim_value_widget<Vec4b>(id, f, anim, idx, frame);
+  return false;
+}
+} // namespace
 
-  const int range = std::max(fend - fstart, 1);
-  auto frame_to_x = [&](int frame) { return origin.x + width * std::clamp((float)(frame - fstart) / (float)range, 0.0f, 1.0f); };
+bool wd_animatable_row(const cutil::PropInfo::Field& f, AnimProps& anim, int idx, uint32_t cur_frame, uint64_t entity_guid, int filter_index) {
+  ImGui::PushID(f.name);
+  bool changed        = false;
+  auto [pf, nf]       = anim.neighbor_frames(idx, cur_frame);
+  const char* label   = f.label[0] ? f.label : f.name;
+  const bool animated = anim.has_animation(idx);
 
-  // 現在フレーム位置
-  float cx = frame_to_x((int)cur_frame);
-  dl->AddLine(ImVec2(cx, origin.y), ImVec2(cx, origin.y + height), IM_COL32(255, 255, 255, 150));
+  float avail    = ImGui::GetContentRegionAvail().x;
+  float spacing  = ImGui::GetStyle().ItemSpacing.x;
+  float side_w   = avail * 0.26f;
+  float center_w = avail - side_w * 2 - spacing * 2;
 
-  auto frames = anim.keyframe_frames(idx);
-  for(int ki = 0; ki < (int)frames.size(); ki++) {
-    uint32_t kf = frames[ki];
-    float x     = frame_to_x((int)kf);
-    ImVec2 center(x, origin.y + height * 0.5f);
-    ImU32 col = IM_COL32(255, 170, 40, 255);
-    dl->AddQuadFilled(ImVec2(center.x, center.y - 5), ImVec2(center.x + 5, center.y), ImVec2(center.x, center.y + 5), ImVec2(center.x - 5, center.y), col);
+  ImGui::SetNextItemWidth(side_w);
+  if(draw_anim_value_widget_dyn("##l", f, anim, idx, pf)) changed = true;
+  ImGui::SameLine();
 
-    ImGui::SetCursorScreenPos(ImVec2(center.x - 5, center.y - 5));
-    ImGui::PushID(ki); // frame値(kf)はドラッグ中に変化しIDが不安定になるため、配列indexを使う(ki自体もソート順の入れ替わりで跨ぐケースはあるが稀)
-    ImGui::InvisibleButton("##kf", ImVec2(10, 10));
-    if(ImGui::IsItemActive() && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
-      float mx      = ImGui::GetMousePos().x;
-      int new_frame = fstart + (int)std::round((mx - origin.x) / width * range);
-      new_frame     = std::clamp(new_frame, fstart, fend);
-      if((uint32_t)new_frame != kf && anim.move_keyframe(idx, kf, (uint32_t)new_frame)) changed = true;
-    }
-    if(ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
-      if(anim.erase_keyframe(idx, kf)) changed = true;
-    }
-    if(ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) ImGui::OpenPopup("##ease_popup");
-    if(ImGui::BeginPopup("##ease_popup")) {
-      AniInterpType cur = anim.get_ease_type(idx, kf);
+  if(animated) ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.65f, 0.15f, 1.0f));
+  bool clicked = ImGui::Button(label, ImVec2(center_w, 0));
+  if(animated) ImGui::PopStyleColor();
+  if(clicked) ImGui::OpenPopup("##anim_popup");
+
+  if(ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
+    GraphDragPayload payload;
+    payload.entity_guid  = entity_guid;
+    payload.filter_index = filter_index;
+    strncpy(payload.prop_name, f.name, sizeof(payload.prop_name) - 1);
+    ImGui::SetDragDropPayload(kGraphDragDropId, &payload, sizeof(payload));
+    ImGui::Text("%s", label);
+    ImGui::EndDragDropSource();
+  }
+
+  if(ImGui::BeginPopup("##anim_popup")) {
+    if(!animated) {
+      if(ImGui::Selectable(ICON_FA_DIAMOND " 現在フレームでアニメーションを開始")) {
+        anim.add_keyframe_here(idx, cur_frame);
+        changed = true;
+      }
+    } else {
+      bool has_key = anim.has_key_at(idx, cur_frame);
+      if(has_key) {
+        if(ImGui::Selectable(ICON_FA_TRASH " このフレームの中間点を削除")) {
+          anim.erase_keyframe(idx, cur_frame);
+          changed = true;
+        }
+      } else if(ImGui::Selectable(ICON_FA_DIAMOND " このフレームに中間点を追加")) {
+        anim.add_keyframe_here(idx, cur_frame);
+        changed = true;
+      }
+      if(ImGui::Selectable("アニメーションを解除(現在値で固定)")) {
+        anim.collapse_to_single(idx, cur_frame);
+        changed = true;
+      }
+      ImGui::Separator();
+      AniInterpType cur = anim.get_ease_type(idx, pf);
       if(ImGui::BeginCombo("イージング", ease_name(cur))) {
         for(auto& opt : kEaseOptions) {
           bool selected = opt.type == cur;
           if(ImGui::Selectable(opt.name, selected)) {
-            anim.set_ease_type(idx, kf, opt.type);
+            anim.set_ease_type(idx, pf, opt.type);
             changed = true;
           }
         }
         ImGui::EndCombo();
       }
       if(cur == AniInterpType::Custom) {
-        auto bez = anim.get_ease_bezier(idx, kf);
+        auto bez = anim.get_ease_bezier(idx, pf);
         if(wd_bezier_handle_editor(bez, 120.0f)) {
-          anim.set_ease_bezier(idx, kf, bez);
+          anim.set_ease_bezier(idx, pf, bez);
           changed = true;
         }
       }
-      ImGui::EndPopup();
     }
-    ImGui::PopID();
+    ImGui::EndPopup();
   }
-  ImGui::SetCursorScreenPos(ImVec2(origin.x, origin.y + height)); // SetCursorScreenPosでのマーカー描画がカーソル位置を乱すため、strip下端に戻す
+  ImGui::SameLine();
+
+  ImGui::SetNextItemWidth(side_w);
+  if(draw_anim_value_widget_dyn("##r", f, anim, idx, nf)) changed = true;
+
   ImGui::PopID();
   return changed;
+}
+
+bool wd_entity_keyframe_overview(Entity* e, uint32_t cur_frame) {
+  MU_ASSERT(e);
+  ImGui::PushID("##kf_overview");
+  bool seeked     = false;
+  auto frames     = e->collect_animated_frames();
+  auto jump_frame = [&](bool forward) -> int {
+    int cur    = (int)cur_frame;
+    int best   = forward ? e->fend_ : e->fstart_;
+    bool found = false;
+    for(uint32_t fr : frames) {
+      if(forward && (int)fr > cur && (!found || (int)fr < best)) {
+        best  = (int)fr;
+        found = true;
+      }
+      if(!forward && (int)fr < cur && (!found || (int)fr > best)) {
+        best  = (int)fr;
+        found = true;
+      }
+    }
+    return best;
+  };
+
+  ImGui::Text("%d", e->fstart_);
+  ImGui::SameLine();
+  if(ImGui::SmallButton(ICON_FA_BACKWARD_STEP)) {
+    if(auto* comp = e->get_comp()) {
+      comp->set_frame(jump_frame(false));
+      seeked = true;
+    }
+  }
+  ImGui::SameLine();
+
+  const float height = 18.0f;
+  ImVec2 origin      = ImGui::GetCursorScreenPos();
+  float width        = ImGui::GetContentRegionAvail().x - 60.0f; // 右端のジャンプボタン+終了フレーム表示分を空けておく
+  width              = std::max(width, 20.0f);
+  ImGui::InvisibleButton("##overview_bg", ImVec2(width, height));
+  ImDrawList* dl = ImGui::GetWindowDrawList();
+  dl->AddRectFilled(origin, ImVec2(origin.x + width, origin.y + height), IM_COL32(40, 40, 40, 180));
+
+  const int range = std::max(e->fend_ - e->fstart_, 1);
+  auto frame_to_x = [&](int frame) { return origin.x + width * std::clamp((float)(frame - e->fstart_) / (float)range, 0.0f, 1.0f); };
+
+  if(ImGui::IsItemActive() || (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left))) {
+    float mx      = ImGui::GetMousePos().x;
+    int new_frame = e->fstart_ + (int)std::round((mx - origin.x) / width * range);
+    new_frame     = std::clamp(new_frame, e->fstart_, e->fend_);
+    if(auto* comp = e->get_comp()) {
+      comp->set_frame(new_frame);
+      seeked = true;
+    }
+  }
+
+  for(uint32_t kf : frames) {
+    float x = frame_to_x((int)kf);
+    ImVec2 center(x, origin.y + height * 0.5f);
+    dl->AddQuadFilled(ImVec2(center.x, center.y - 5), ImVec2(center.x + 5, center.y), ImVec2(center.x, center.y + 5), ImVec2(center.x - 5, center.y), IM_COL32(255, 170, 40, 255));
+  }
+  float cx = frame_to_x((int)cur_frame);
+  dl->AddLine(ImVec2(cx, origin.y), ImVec2(cx, origin.y + height), IM_COL32(255, 255, 255, 200), 2.0f);
+
+  ImGui::SameLine();
+  if(ImGui::SmallButton(ICON_FA_FORWARD_STEP)) {
+    if(auto* comp = e->get_comp()) {
+      comp->set_frame(jump_frame(true));
+      seeked = true;
+    }
+  }
+  ImGui::SameLine();
+  ImGui::Text("%d", e->fend_);
+
+  ImGui::PopID();
+  return seeked;
 }
 
 // bool/int/float/Vec2/Vec3/Vec4/Vec4bはanim_props_(中間点)経由、それ以外(string/path/uint8_t)は従来通りgetProps/setProps経由で編集する
@@ -212,31 +332,18 @@ void wd_entt_props_editor(Entity* e, uint32_t cur_frame) {
     const int anim_idx       = e->anim_props_.index_of(f.name);
     const bool is_animatable = anim_idx >= 0;
 
-    if(f.type == cutil::prop_info_of<bool>()) {
-      bool v = p.get<bool>(f.name);
-      if(ImGui::Checkbox(name_, &v)) {
-        e->anim_props_.set_value<bool>(anim_idx, cur_frame, v);
+    if(is_animatable && f.type == cutil::prop_info_of<int32_t>() && std::string(f.name) == "shape_type_") {
+      // shape_type_はComboで選ぶ列挙なのでトラックバーUIの対象外(キーフレームUIなし、既存の直接編集のまま)
+      int32_t v                        = p.get<int32_t>(f.name);
+      static const char* kShapeNames[] = {"三角形", "四角形", "六角形", "円", "カスタムパス"};
+      int shape_idx                    = std::clamp(v, 0, 4);
+      if(ImGui::Combo(name_, &shape_idx, kShapeNames, IM_ARRAYSIZE(kShapeNames))) {
+        e->anim_props_.set_value<int>(anim_idx, cur_frame, shape_idx);
         changed = true;
       }
-    } else if(f.type == cutil::prop_info_of<float>()) {
-      float v = p.get<float>(f.name);
-      if(ImGui::DragFloat(name_, &v, f.drag_speed, f.min_value, f.max_value)) {
-        e->anim_props_.set_value<float>(anim_idx, cur_frame, v);
-        changed = true;
-      }
-    } else if(f.type == cutil::prop_info_of<int32_t>()) {
-      int32_t v = p.get<int32_t>(f.name);
-      if(std::string(f.name) == "shape_type_") {
-        static const char* kShapeNames[] = {"三角形", "四角形", "六角形", "円", "カスタムパス"};
-        int shape_idx                    = std::clamp(v, 0, 4);
-        if(ImGui::Combo(name_, &shape_idx, kShapeNames, IM_ARRAYSIZE(kShapeNames))) {
-          e->anim_props_.set_value<int>(anim_idx, cur_frame, shape_idx);
-          changed = true;
-        }
-      } else if(ImGui::InputInt(name_, &v)) {
-        e->anim_props_.set_value<int>(anim_idx, cur_frame, v);
-        changed = true;
-      }
+    } else if(is_animatable && (f.type == cutil::prop_info_of<bool>() || f.type == cutil::prop_info_of<float>() || f.type == cutil::prop_info_of<int32_t>() || f.type == cutil::prop_info_of<Vec2>() || f.type == cutil::prop_info_of<Vec3>() || f.type == cutil::prop_info_of<Vec4>() ||
+                                f.type == cutil::prop_info_of<Vec4b>())) {
+      if(wd_animatable_row(f, e->anim_props_, anim_idx, cur_frame, e->guid_, -1)) changed = true;
     } else if(f.type == cutil::prop_info_of<uint8_t>()) {
       int v = p.get<uint8_t>(f.name);
       if(ImGui::InputInt(name_, &v)) {
@@ -262,46 +369,6 @@ void wd_entt_props_editor(Entity* e, uint32_t cur_frame) {
         newp.set<std::string>(f.name, std::string(buf));
         changed = true;
       }
-    } else if(f.type == cutil::prop_info_of<Vec2>()) {
-      Vec2 v = p.get<Vec2>(f.name);
-      if(ImGui::DragFloat2(name_, v.value, f.drag_speed, f.min_value, f.max_value)) {
-        e->anim_props_.set_value<Vec2>(anim_idx, cur_frame, v);
-        changed = true;
-      }
-    } else if(f.type == cutil::prop_info_of<Vec3>()) {
-      Vec3 v = p.get<Vec3>(f.name);
-      if(ImGui::DragFloat3(name_, v.value, f.drag_speed, f.min_value, f.max_value)) {
-        e->anim_props_.set_value<Vec3>(anim_idx, cur_frame, v);
-        changed = true;
-      }
-    } else if(f.type == cutil::prop_info_of<Vec4>()) {
-      Vec4 v = p.get<Vec4>(f.name);
-      if(ImGui::DragFloat4(name_, v.value, f.drag_speed, f.min_value, f.max_value)) {
-        e->anim_props_.set_value<Vec4>(anim_idx, cur_frame, v);
-        changed = true;
-      }
-    } else if(f.type == cutil::prop_info_of<Vec4b>()) {
-      Vec4b v = p.get<Vec4b>(f.name);
-      if(wd_color_edit(name_, &v)) {
-        e->anim_props_.set_value<Vec4b>(anim_idx, cur_frame, v);
-        changed = true;
-      }
-    }
-
-    // 直前に描画したウィジェットがID無し(型switchでどれにもマッチしなかった等)でもBeginDragDropSourceはIM_ASSERTでクラッシュするため、SourceAllowNullIDで無害化する
-    if(is_animatable && ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
-      GraphDragPayload payload;
-      payload.entity_guid  = e->guid_;
-      payload.filter_index = -1;
-      strncpy(payload.prop_name, f.name, sizeof(payload.prop_name) - 1);
-      ImGui::SetDragDropPayload(kGraphDragDropId, &payload, sizeof(payload));
-      ImGui::Text("%s", name_);
-      ImGui::EndDragDropSource();
-    }
-
-    if(is_animatable) {
-      ImGui::SameLine();
-      if(wd_keyframe_toggle(e->anim_props_, anim_idx, cur_frame)) changed = true;
     }
 
     if(changed) {
@@ -320,12 +387,6 @@ void wd_entt_props_editor(Entity* e, uint32_t cur_frame) {
       }
       // Compositionの全フレームではなく、このEntityが映る範囲だけを無効化する(Positionドラッグ等が重くなるのを防ぐ)
       if(auto* comp = e->get_comp()) comp->invalidate_cache_range(e->fstart_, e->fend_);
-    }
-
-    if(is_animatable && e->anim_props_.has_animation(anim_idx)) {
-      if(wd_keyframe_strip(f.name, e->anim_props_, anim_idx, e->fstart_, e->fend_, cur_frame)) {
-        if(auto* comp = e->get_comp()) comp->invalidate_cache_range(e->fstart_, e->fend_);
-      }
     }
     ImGui::PopID();
   }
