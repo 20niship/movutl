@@ -115,10 +115,6 @@ protected:
 
   bool render_filters(Composition* cmp, Image* img, int frame);
 
-  // srcを自身の変換(pos_/anchor_/scale_/rotation_/alpha_/blend_)でtargetへ合成する。
-  // origin_offset: srcの中心から見た、このEntityの局所原点(基点の既定位置)のずれ(px)。通常は0(=画像中心)
-  bool composite(const Image& src, Image* target, const Vec2& origin_offset = Vec2(0, 0)) const;
-
 public:
   cutil::Str name;    // MPROPERTY(name="名前")
   uint64_t guid_ = 0; // MPROPERTY(name="GUID")
@@ -145,6 +141,10 @@ public:
 
   // このEntity固有の状態(img_/デコーダハンドル等)を読み書きする際のロック。Composition::mtxとは別物
   mutable std::mutex mtx;
+
+  // srcを自身の変換(pos_/anchor_/scale_/rotation_/alpha_/blend_)でtargetへ合成する。
+  // origin_offset: srcの中心から見た、このEntityの局所原点(基点の既定位置)のずれ(px)。通常は0(=画像中心)
+  bool composite(const Image& src, Image* target, const Vec2& origin_offset = Vec2(0, 0)) const;
 
   virtual constexpr EntityType getType() const = 0;
 
