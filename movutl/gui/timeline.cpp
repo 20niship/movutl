@@ -4,6 +4,8 @@
 
 #include <IconsFontAwesome6.h>
 #include <algorithm>
+#include <climits>
+#include <cmath>
 #include <cstdio>
 #include <cstring>
 #include <cutil/rect.hpp>
@@ -14,10 +16,12 @@
 #include <movutl/asset/audio.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/group.hpp>
+#include <movutl/core/command.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/gui/timeline.hpp>
 #include <string>
 #include <tuple>
+#include <vector>
 
 enum ImTimelineState {
   None,
@@ -44,10 +48,55 @@ struct TimelineContext {
   int header_h          = 20;
   int vis_start         = -10;
   int vis_end           = 100;
+  int right_strip_w     = 0;     // タイムライン右端に別ウィジェット(音量メーター等)を置くために空ける幅。SetTimelineRightStripWidthで変更する
+  bool ruler_timecode   = false; // 定規の表記(false=フレーム, true=タイムコード)
+  float fps             = 30.0f;
+  float row_scale       = 1.0f; // レイヤー行の高さ倍率(S/M/L)
   int cur_frame         = 0;
   bool first            = true;
-  bool cur_layer_active = true; // BeginLayerで設定し、そのレイヤー内のBeginTrackが参照する
-  std::vector<Entity*> sel;     // TODO: 複数選択を可能にする
+  bool cur_layer_active = true;  // BeginLayerで設定し、そのレイヤー内のBeginTrackが参照する
+  std::vector<Entity*> selected; // フレーム冒頭にget_selected_entts()から作る選択キャッシュ(クリック処理で随時更新)
+
+  // 1フレーム内の状態(BeginTimelineでリセット)
+  FrameT* frame_ptr     = nullptr; // 呼び出し元のプレイヘッド変数(右クリックメニューからの移動に使う)
+  FrameT* start_ptr     = nullptr;
+  FrameT* end_ptr       = nullptr;
+  bool any_clip_hovered = false;
+  int snap_line         = INT_MIN; // スナップ中の縦ガイド線(フレーム)
+  struct ClipRect {
+    Ref<Entity> e;
+    ImRect r;
+  };
+  std::vector<ClipRect> clips;
+
+  // スナップ/ラバーバンド/コンポ範囲ハンドル
+  bool snap = true;
+  std::vector<int> snap_points; // ドラッグ開始時に集める他クリップの端
+  bool rb_active = false;
+  bool rb_moved  = false;
+  ImVec2 rb_start;
+  int comp_drag      = 0; // 0=なし 1=開始 2=終了
+  bool name_col_drag = false;
+
+  // ソロ: 押す前の各レイヤーactiveを保持(UI状態のみ)。solo_layer<0なら非ソロ
+  int solo_layer = -1;
+  std::vector<bool> solo_saved;
+
+  // 右クリックメニュー
+  Ref<Entity> ctx_entt;
+  int ctx_frame = 0;
+  int ctx_layer = -1;
+
+  // 破壊的操作はEndTimeline()で遅延適用する(BeginTrackはlayer.entts[]への参照を持ったまま呼ばれるため、その最中にvectorを変更しない)
+  int pending_clip_op      = 0;  // 1=分割 2=複製 3=削除 4=有効/無効切替
+  int pending_insert_layer = -1; // 挿入位置(この位置に空レイヤーを追加)
+  struct PendingAdd {
+    bool valid      = false;
+    EntityType type = EntityType_3DText;
+    int shape       = -1; // >=0なら図形(ShapeType)
+    int frame       = 0;
+    int layer       = -1;
+  } pending_add;
 
   // レイヤー名インライン編集
   int editing_layer_idx      = -1;
@@ -95,6 +144,8 @@ struct TimelineContext {
     return vis_start + (vis_end - vis_start) * d / tl_area().w();
   }
 
+  int tl_w() { return (int)tl_area().w(); }
+
   int layer_y1() const { return all_area.y.min + header_h + hidx * height; }
   int layer_y2() const { return all_area.y.min + header_h + (hidx + 1) * height; }
 };
@@ -117,6 +168,57 @@ static std::string frame_to_timecode(int frame, float fps) {
   std::snprintf(buf, sizeof(buf), "%02d:%02d:%02d:%02d", hh, mm, ss, ff);
   return buf;
 }
+
+
+// 定規の目盛り(主/副)をズームに応じて選ぶ。主目盛りのラベル同士がmin_label_px以上離れる最小の刻みを採る
+struct RulerTicks {
+  int major = 10;
+  int minor = 0; // 0なら副目盛りなし
+};
+
+static RulerTicks choose_ruler_ticks(float px_per_frame, float min_label_px, bool timecode, float fps) {
+  const int fps_i = std::max(1, (int)std::round(fps));
+  std::vector<int> cand;
+  for(int v : {1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000}) cand.push_back(v);
+  if(timecode) { // 秒/分/時の区切りを優先して候補にする
+    cand.clear();
+    for(int v : {1, 2, 5, 10, 15}) cand.push_back(v);
+    for(int sec : {1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600, 7200, 18000, 36000}) cand.push_back(sec * fps_i);
+    std::sort(cand.begin(), cand.end());
+    cand.erase(std::unique(cand.begin(), cand.end()), cand.end());
+  }
+  size_t i = 0;
+  while(i + 1 < cand.size() && cand[i] * px_per_frame < min_label_px) i++;
+  RulerTicks t;
+  t.major = cand[i];
+  for(size_t j = i; j-- > 0;) {
+    if(t.major % cand[j] == 0 && t.major / cand[j] >= 2) {
+      t.minor = cand[j];
+      break;
+    }
+  }
+  return t;
+}
+
+// 表示テキストがpx幅に収まるようUTF-8境界で切って末尾に...を付ける。全く入らなければ空文字
+static std::string ellipsize(const char* text, float width_px) {
+  if(!text || width_px <= 0.0f) return "";
+  if(ImGui::CalcTextSize(text).x <= width_px) return text;
+  const float ell_w = ImGui::CalcTextSize("...").x;
+  if(width_px <= ell_w) return "";
+  std::string s(text);
+  size_t end = s.size();
+  while(end > 0) {
+    do {
+      end--;
+    } while(end > 0 && (static_cast<unsigned char>(s[end]) & 0xC0) == 0x80);
+    if(end == 0) return "";
+    if(ImGui::CalcTextSize(s.substr(0, end).c_str()).x + ell_w <= width_px) return s.substr(0, end) + "...";
+  }
+  return "";
+}
+
+static std::string frame_label(int frame, bool timecode, float fps) { return timecode ? frame_to_timecode(frame, fps) : std::to_string(frame); }
 
 inline void draw_diamond(int x, int y, float size, ImU32 color, ImDrawList* dl, bool fill_ = true) {
   const auto r = 0.607f * size / 2.0f;
@@ -141,22 +243,35 @@ bool BeginTimeline(const char* name, FrameT* frame, FrameT* start, FrameT* end, 
   if(playing != nullptr && ctx_.toggle_play) *playing = !*playing;
   ctx_.toggle_play = false;
 
+  // フレーム冒頭のリセット
+  ctx_.frame_ptr        = frame;
+  ctx_.start_ptr        = start;
+  ctx_.end_ptr          = end;
+  ctx_.any_clip_hovered = false;
+  ctx_.last_entt_hov    = nullptr;
+  ctx_.snap_line        = INT_MIN;
+  ctx_.clips.clear();
+  ctx_.selected.clear();
+  for(const auto& e : get_selected_entts())
+    if(e) ctx_.selected.push_back(e.get());
+
   // available max height
   {
     auto height  = ImGui::GetContentRegionAvail().y;
     auto window  = ImGui::GetCurrentWindow();
     auto width_  = std::max(size.x, window->InnerClipRect.GetWidth());
-    ctx_.height  = ImGui::GetTextLineHeightWithSpacing();
+    ctx_.height  = std::max<int>(8, (int)std::round(ImGui::GetTextLineHeightWithSpacing() * ctx_.row_scale));
+    ctx_.fps     = fps > 0.0f ? fps : 30.0f;
     auto height_ = std::max<int>(height, ctx_.hidx * ctx_.height);
     auto pos     = ImGui::GetCursorScreenPos();
 
-    ctx_.all_area = cutil::Rect(pos.x, pos.x + width_, pos.y, pos.y + height_);
+    ctx_.all_area = cutil::Rect(pos.x, pos.x + std::max<float>(1.0f, width_ - ctx_.right_strip_w), pos.y, pos.y + height_);
   }
 
   auto all = ctx_.all_area;
 
   bool open;
-  const float item_height = ImGui::GetTextLineHeightWithSpacing();
+  const float item_height = ctx_.height;
 
   // scroll window
   {
@@ -173,7 +288,7 @@ bool BeginTimeline(const char* name, FrameT* frame, FrameT* start, FrameT* end, 
     auto area  = all;
     area.x.max = area.x.min + ctx_.trackname_width;
     auto col   = IM_COL32(0, 0, 0, 100);
-    dl->AddRectFilled(ImVec2(area.left(), area.top() + item_height), ImVec2(area.right(), area.bottom()), col);
+    dl->AddRectFilled(ImVec2(area.left(), area.top() + ctx_.header_h), ImVec2(area.right(), area.bottom()), col);
   }
 
   dl->AddRect(ImVec2(all.left(), all.top()), ImVec2(all.right(), all.bottom()), col_.border);
@@ -190,31 +305,35 @@ bool BeginTimeline(const char* name, FrameT* frame, FrameT* start, FrameT* end, 
     dl->AddRectFilled(ImVec2(he.x.min, he.y.min), ImVec2(he.x.max, he.y.max), col_.header_bg);
     dl->AddRect(ImVec2(he.x.min, he.y.min), ImVec2(he.x.max, he.y.max), col_.border);
 
-    int di = 10;
-    if(he.w() > 1) {
-      float pi = (ctx_.vis_end - ctx_.vis_start) / he.w();
-      if(pi < 0.1)
-        di = 10;
-      else if(pi < 1.1)
-        di = 50;
-      else if(pi < 3.2)
-        di = 100;
-      else if(pi < 5.4)
-        di = 200;
-      else
-        di = 500;
-    }
-    for(FrameT i = (ctx_.vis_start / di) * di; i < ctx_.vis_end; i += di) {
-      auto x = ctx_.f2view(i);
-      dl->AddLine(ImVec2(x, ctx_.all_area.y.min), ImVec2(x, ctx_.all_area.y.min + 20), IM_COL32(255, 255, 255, 100));
-      dl->AddText(ImVec2(x, ctx_.all_area.y.min), IM_COL32(255, 255, 255, 100), std::to_string(i).c_str());
-    }
+    const int ruler_px = std::max<int>(1, ctx_.tl_w());
+    const float ppf    = (ctx_.vis_end > ctx_.vis_start) ? (float)ruler_px / (float)(ctx_.vis_end - ctx_.vis_start) : 1.0f;
+    const auto ticks   = choose_ruler_ticks(ppf, ctx_.ruler_timecode ? 96.0f : 56.0f, ctx_.ruler_timecode, ctx_.fps);
+    const auto inside_ = ctx_.tl_area();
+    // プレイヘッドのバッジ矩形(この範囲に重なる目盛りラベルは間引く)
+    const std::string badge_txt = frame_label((int)*frame, ctx_.ruler_timecode, ctx_.fps);
+    const float badge_w         = ImGui::CalcTextSize(badge_txt.c_str()).x + 10.0f;
+    const float badge_cx        = std::clamp<float>((float)ctx_.f2view(*frame), inside_.x.min + badge_w / 2, inside_.x.max - badge_w / 2);
+    const float badge_l = badge_cx - badge_w / 2, badge_r = badge_cx + badge_w / 2;
 
-    int di2 = std::max(1, di / 10);
-    for(FrameT i = ctx_.vis_start; i < ctx_.vis_end; i += di2) {
-      auto x = ctx_.f2view(i);
-      dl->AddLine(ImVec2(x, ctx_.all_area.y.min), ImVec2(x, ctx_.all_area.y.min + 8), IM_COL32(255, 255, 255, 50));
+    dl->PushClipRect(ImVec2(inside_.x.min, all.top()), ImVec2(inside_.x.max, all.bottom()), true);
+    // 副目盛り→グリッド線(縦)→主目盛り+ラベルの順に描画
+    const float y0 = all.y.min + ctx_.header_h, y1 = all.bottom();
+    if(ticks.minor > 0 && ticks.minor * ppf >= 5.0f) {
+      for(FrameT i = (ctx_.vis_start / ticks.minor) * ticks.minor; i < ctx_.vis_end; i += ticks.minor) {
+        auto x = ctx_.f2view(i);
+        dl->AddLine(ImVec2(x, all.y.min + ctx_.header_h - 6), ImVec2(x, all.y.min + ctx_.header_h), IM_COL32(255, 255, 255, 70));
+        dl->AddLine(ImVec2(x, y0), ImVec2(x, y1), IM_COL32(255, 255, 255, 12)); // 副グリッド
+      }
     }
+    for(FrameT i = (ctx_.vis_start / ticks.major) * ticks.major; i < ctx_.vis_end; i += ticks.major) {
+      auto x = ctx_.f2view(i);
+      dl->AddLine(ImVec2(x, all.y.min + ctx_.header_h - 12), ImVec2(x, all.y.min + ctx_.header_h), IM_COL32(255, 255, 255, 140));
+      dl->AddLine(ImVec2(x, y0), ImVec2(x, y1), IM_COL32(255, 255, 255, 30)); // 主グリッド
+      const std::string lbl = frame_label(i, ctx_.ruler_timecode, ctx_.fps);
+      const float lw        = ImGui::CalcTextSize(lbl.c_str()).x;
+      if(x + 3 + lw < badge_l - 2 || x + 3 > badge_r + 2) dl->AddText(ImVec2(x + 3, all.y.min + 1), IM_COL32(255, 255, 255, 150), lbl.c_str());
+    }
+    dl->PopClipRect();
 
     // Compositionの範囲を描画
     int st = ctx_.f2view(*start);
@@ -236,8 +355,34 @@ bool BeginTimeline(const char* name, FrameT* frame, FrameT* start, FrameT* end, 
 
     bool start_hovered = ImGui::IsMouseHoveringRect(comp_start_.Min, comp_start_.Max);
     bool end_hovered   = ImGui::IsMouseHoveringRect(comp_end_.Min, comp_end_.Max);
-    if(start_hovered) ImGui::SetTooltip("スタートフレーム=%d", *start);
-    if(end_hovered) ImGui::SetTooltip("エンドフレーム=%d", *end);
+    // 端ハンドルのドラッグでコンポの開始/終了フレームを変更する
+    if(!is_exporting() && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+      if(start_hovered)
+        ctx_.comp_drag = 1;
+      else if(end_hovered)
+        ctx_.comp_drag = 2;
+    }
+    if(ctx_.comp_drag != 0) {
+      if(ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+        int f = ctx_.view2f(ImGui::GetMousePos().x);
+        if(ctx_.comp_drag == 1)
+          *start = std::min(f, *end - 1);
+        else
+          *end = std::max(f, *start + 1);
+        start_hovered = ctx_.comp_drag == 1;
+        end_hovered   = ctx_.comp_drag == 2;
+        ImGui::SetTooltip("%s=%d", ctx_.comp_drag == 1 ? "スタート" : "エンド", ctx_.comp_drag == 1 ? *start : *end);
+      } else {
+        ctx_.comp_drag = 0;
+      }
+    } else if(start_hovered) {
+      ImGui::SetTooltip("スタートフレーム=%d\nドラッグでコンポの開始位置を変更", *start);
+    } else if(end_hovered) {
+      ImGui::SetTooltip("エンドフレーム=%d\nドラッグでコンポの終了位置を変更", *end);
+    } else if(ImGui::IsMouseHoveringRect(ImVec2(st, he.y.max - 8), ImVec2(ed, he.y.max))) {
+      ImGui::SetTooltip("コンポジションの範囲 %d - %d (%d f)\nプレビュー/書き出しの対象範囲。緑の線はレンダリング済みフレーム", *start, *end, *end - *start);
+    }
+    if(start_hovered || end_hovered) ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
     dl->AddRectFilled(comp_start_.Min, comp_start_.Max, IM_COL32(0, 180, 255, start_hovered ? 255 : 200));
     dl->AddRectFilled(comp_end_.Min, comp_end_.Max, IM_COL32(0, 180, 255, end_hovered ? 255 : 200));
 
@@ -289,22 +434,26 @@ bool BeginTimeline(const char* name, FrameT* frame, FrameT* start, FrameT* end, 
   {
     auto x = ctx_.f2view(*frame);
 
-    constexpr int scl_w = 5; // 現在フレームを移動させるバーの幅
-    ImVec2 p1(x - scl_w, ctx_.all_area.y.min);
-    auto H = ImGui::GetTextLineHeightWithSpacing();
-    ImVec2 p2(x + scl_w, ctx_.all_area.y.min + H);
-    auto col = IM_COL32(170, 0, 0, 200);
-    if(ImGui::IsMouseHoveringRect(p1, p2)) col = IM_COL32(255, 0, 0, 255);
+    const auto inside_          = ctx_.tl_area();
+    const std::string badge_txt = frame_label((int)*frame, ctx_.ruler_timecode, ctx_.fps);
+    const float badge_w         = ImGui::CalcTextSize(badge_txt.c_str()).x + 10.0f;
+    const float badge_cx        = std::clamp<float>((float)x, inside_.x.min + badge_w / 2, inside_.x.max - badge_w / 2);
+    ImVec2 p1(badge_cx - badge_w / 2, ctx_.all_area.y.min + 1);
+    ImVec2 p2(badge_cx + badge_w / 2, ctx_.all_area.y.min + ctx_.header_h - 1);
+    const bool badge_hov = ImGui::IsMouseHoveringRect(ImVec2(p1.x - 4, p1.y), ImVec2(p2.x + 4, p2.y));
+    auto col             = badge_hov ? IM_COL32(255, 60, 60, 255) : IM_COL32(200, 30, 30, 235);
     // トラック名カラム(サイドバー)へのはみ出しを防ぐ
-    dl->PushClipRect(ImVec2(all.left() + ctx_.trackname_width, all.top()), ImVec2(all.right(), all.bottom()), true);
-    dl->AddRectFilled(p1, p2, col);
-    dl->AddLine(ImVec2(x, ctx_.all_area.y.min), ImVec2(x, ctx_.all_area.bottom()), col);
+    dl->PushClipRect(ImVec2(inside_.x.min, all.top()), ImVec2(all.right(), all.bottom()), true);
+    dl->AddLine(ImVec2(x, ctx_.all_area.y.min + ctx_.header_h), ImVec2(x, ctx_.all_area.bottom()), col);
+    dl->AddRectFilled(p1, p2, col, 3.0f);
+    dl->AddText(ImVec2(p1.x + 5, p1.y + (p2.y - p1.y - ImGui::GetTextLineHeight()) / 2), col_.cursor_label, badge_txt.c_str());
+    dl->AddTriangleFilled(ImVec2(x - 4, p2.y), ImVec2(x + 4, p2.y), ImVec2(x, p2.y + 4), col);
     dl->PopClipRect();
 
     auto h_             = ctx_.header_area();
-    bool in_header_area = ImGui::IsMouseHoveringRect(ImVec2(h_.x.min, h_.y.min), ImVec2(h_.x.max, h_.y.max));
+    bool in_header_area = ImGui::IsMouseHoveringRect(ImVec2(std::max<float>(h_.x.min, inside_.x.min), h_.y.min), ImVec2(h_.x.max, h_.y.max));
     bool lclick         = ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseDragging(ImGuiMouseButton_Left);
-    if(in_header_area && lclick) {
+    if(in_header_area && lclick && ctx_.comp_drag == 0 && !ImGui::IsPopupOpen("tl_ruler_ctx")) {
       *frame = ctx_.view2f(ImGui::GetMousePos().x);
     }
   }
@@ -315,24 +464,201 @@ bool BeginTimeline(const char* name, FrameT* frame, FrameT* start, FrameT* end, 
   return open;
 }
 
+// 選択Entityをクリップ操作(分割/複製/削除/有効切替)の対象にする
+static std::vector<Ref<Entity>> selected_refs() { return get_selected_entts(); }
+
+static void set_selected_cache() {
+  ctx_.selected.clear();
+  for(const auto& e : get_selected_entts())
+    if(e) ctx_.selected.push_back(e.get());
+}
+
+static bool is_selected_entt(const Entity* e) { return std::find(ctx_.selected.begin(), ctx_.selected.end(), e) != ctx_.selected.end(); }
+
+static const char* entt_type_label(const Entity* e) {
+  switch(e->getType()) {
+    case EntityType_Movie: return "動画";
+    case EntityType_Audio: return "音声";
+    case EntityType_Image: return "画像";
+    case EntityType_3DText: return "テキスト";
+    case EntityType_Polygon: return "図形";
+    case EntityType_Framebuffer: return "フレームバッファ";
+    case EntityType_Group: return "グループ制御";
+    case EntityType_Scene: return "コンポ参照";
+    case EntityType_SceneAudio: return "コンポ音声参照";
+    case EntityType_Custom: return "カスタムオブジェクト";
+    case EntityType_Midi: return "MIDI";
+    case EntityType_Camera: return "カメラ";
+    default: return "オブジェクト";
+  }
+}
+
+// 「ここに追加」メニュー本体。項目が選ばれたら遅延追加(EndTimeline)を予約してtrueを返す
+bool TimelineAddEntityMenu(int frame, int layer) {
+  auto add = [&](EntityType type, int shape = -1) {
+    ctx_.pending_add = {true, type, shape, std::max(0, frame), layer};
+    return true;
+  };
+  bool picked = false;
+  if(ImGui::MenuItem(ICON_FA_FONT " テキスト")) picked = add(EntityType_3DText);
+  if(ImGui::MenuItem(ICON_FA_IMAGE " 画像")) picked = add(EntityType_Image);
+  if(ImGui::MenuItem(ICON_FA_VIDEO " 動画")) picked = add(EntityType_Movie);
+  if(ImGui::MenuItem(ICON_FA_MUSIC " 音声")) picked = add(EntityType_Audio);
+  if(ImGui::MenuItem(ICON_FA_KEYBOARD " MIDI")) picked = add(EntityType_Midi);
+  if(ImGui::BeginMenu(ICON_FA_DRAW_POLYGON " 図形")) {
+    static const char* names[]     = {"三角形", "四角形", "六角形", "円"};
+    static const ShapeType types[] = {ShapeType_Triangle, ShapeType_Rect, ShapeType_Hexagon, ShapeType_Circle};
+    for(int i = 0; i < 4; i++)
+      if(ImGui::MenuItem(names[i])) picked = add(EntityType_Polygon, (int)types[i]);
+    ImGui::EndMenu();
+  }
+  if(ImGui::MenuItem(ICON_FA_TV " フレームバッファ")) picked = add(EntityType_Framebuffer);
+  if(ImGui::MenuItem(ICON_FA_LAYER_GROUP " グループ制御")) picked = add(EntityType_Group);
+  if(ImGui::MenuItem(ICON_FA_GLOBE " コンポ参照")) picked = add(EntityType_Scene);
+  return picked;
+}
+
+bool* TimelineSnapFlag() { return &ctx_.snap; }
+
+bool GetTimelineViewRange(FrameT* start, FrameT* end) {
+  if(start) *start = ctx_.vis_start;
+  if(end) *end = ctx_.vis_end;
+  return ctx_.vis_end > ctx_.vis_start;
+}
+
+// 表示幅(フレーム数)を、表示中心を保ったまま変更する
+void SetTimelineVisibleFrames(float frames) {
+  frames         = std::max(10.0f, frames);
+  float center   = (ctx_.vis_start + ctx_.vis_end) / 2.0f;
+  ctx_.vis_start = (int)(center - frames / 2);
+  ctx_.vis_end   = (int)(center + frames / 2);
+}
+
+// 破壊的操作(クリップ/レイヤーの追加・削除)。ループ中のvector破壊を避けるためEndTimelineで適用する
+static void apply_pending_ops(Composition* cp) {
+  if(!cp) return;
+  bool changed = false;
+
+  if(ctx_.pending_add.valid) {
+    auto pa          = ctx_.pending_add;
+    ctx_.pending_add = {};
+    // 既存のadd_new_*は空きレイヤーへ追加するため、追加後に増えたEntityを指定レイヤーへ移す
+    std::vector<Ref<Entity>> before;
+    {
+      std::lock_guard<std::mutex> lock(cp->mtx);
+      for(auto& l : cp->layers)
+        for(auto& e : l.entts) before.push_back(e);
+    }
+    if(pa.shape >= 0)
+      add_new_shape_track("shape", pa.frame, pa.frame + 100, (ShapeType)pa.shape);
+    else
+      add_new_track(pa.type == EntityType_3DText ? "text" : "obj", pa.type, pa.frame, pa.frame + 100);
+    if(pa.layer >= 0 && pa.layer < (int)cp->layers.size()) {
+      std::lock_guard<std::mutex> lock(cp->mtx);
+      for(auto& l : cp->layers) {
+        for(size_t i = 0; i < l.entts.size();) {
+          auto e = l.entts[i];
+          if(e && std::find(before.begin(), before.end(), e) == before.end() && &l != &cp->layers[pa.layer]) {
+            l.entts.erase(l.entts.begin() + i);
+            cp->layers[pa.layer].entts.push_back(e);
+          } else {
+            i++;
+          }
+        }
+      }
+    }
+    changed = true;
+  }
+
+  if(ctx_.pending_clip_op != 0) {
+    const int op         = ctx_.pending_clip_op;
+    ctx_.pending_clip_op = 0;
+    if(op == 1) { // 分割: 右クリックした位置で分割し、プレイヘッドは動かさない
+      int prev = cp->frame.load();
+      cp->frame.store(ctx_.ctx_frame);
+      run_command("split");
+      cp->frame.store(prev);
+    } else if(op == 2) { // 複製: 元クリップの直後の同じレイヤーへ
+      for(const auto& src : selected_refs()) {
+        auto clone = duplicate_asset(src);
+        if(!clone) continue;
+        int len        = src->fend_ - src->fstart_;
+        clone->fstart_ = src->fend_;
+        clone->fend_   = src->fend_ + len;
+        int layer      = -1;
+        for(int li = 0; li < (int)cp->layers.size() && layer < 0; li++)
+          for(const auto& e : cp->layers[li].entts)
+            if(e == src) layer = li;
+        cp->insert_entity(clone, layer);
+      }
+    } else if(op == 3) { // 削除
+      auto sel = selected_refs();
+      {
+        std::lock_guard<std::mutex> lock(cp->mtx);
+        for(auto& l : cp->layers)
+          for(const auto& d : sel) l.entts.erase(std::remove(l.entts.begin(), l.entts.end(), d), l.entts.end());
+      }
+      clear_selected_entts();
+    } else if(op == 4) { // 有効/無効(選択の一つでも有効なら全て無効、全て無効なら全て有効)
+      auto sel        = selected_refs();
+      bool any_active = false;
+      for(const auto& e : sel) any_active |= e->active_;
+      for(const auto& e : sel) e->active_ = !any_active;
+    }
+    changed = true;
+  }
+
+  {
+    std::lock_guard<std::mutex> lock(cp->mtx);
+    if(ctx_.pending_insert_layer >= 0) {
+      int at = std::clamp(ctx_.pending_insert_layer, 0, (int)cp->layers.size());
+      cp->layers.insert(cp->layers.begin() + at, TrackLayer());
+      ctx_.pending_insert_layer = -1;
+      ctx_.solo_layer           = -1; // レイヤーindexがずれるためソロ状態は解除
+      changed                   = true;
+    }
+    if(ctx_.pending_delete_layer >= 0 && ctx_.pending_delete_layer < (int)cp->layers.size()) {
+      cp->layers.erase(cp->layers.begin() + ctx_.pending_delete_layer);
+      ctx_.pending_delete_layer = -1;
+      ctx_.solo_layer           = -1;
+      changed                   = true;
+    }
+    if(ctx_.pending_move_layer >= 0 && ctx_.pending_move_layer < (int)cp->layers.size()) {
+      int i = ctx_.pending_move_layer;
+      int j = i + ctx_.pending_move_dir;
+      if(j >= 0 && j < (int)cp->layers.size()) std::swap(cp->layers[i], cp->layers[j]);
+      ctx_.pending_move_layer = -1;
+      ctx_.solo_layer         = -1;
+      changed                 = true;
+    }
+  }
+  if(changed) cp->invalidate_cache_all();
+}
+
 int EndTimeline() {
-  int return_value = ctx_.cur_frame;
-  if(ImGui::IsWindowHovered()) {
+  int return_value       = ctx_.cur_frame;
+  const bool hovered_win = ImGui::IsWindowHovered();
+  const auto inside      = ctx_.tl_area();
+  const auto all         = ctx_.all_area;
+  const ImVec2 mouse     = ImGui::GetMousePos();
+  auto dl                = ImGui::GetWindowDrawList();
+
+  if(hovered_win) {
     if(ImGui::IsMouseDragging(ImGuiMouseButton_Middle)) {
       auto delta = ImGui::GetIO().MouseDelta.x;
       ctx_.vis_start -= delta;
       ctx_.vis_end -= delta;
     }
 
-    // マウスホイール: Shift押下時はパン、それ以外はズーム
-    {
-      auto delta = ImGui::GetIO().MouseWheel;
+    // マウスホイール: Shift押下時は横スクロール(パン)、それ以外(Ctrl含む)はカーソル位置中心のズーム
+    auto delta = ImGui::GetIO().MouseWheel;
+    if(delta != 0.0f) {
       if(ImGui::GetIO().KeyShift) {
         auto pan_amount = (ctx_.vis_end - ctx_.vis_start) * (-delta) / 20.0f;
         ctx_.vis_start += pan_amount;
         ctx_.vis_end += pan_amount;
       } else {
-        auto center    = ctx_.view2f(ImGui::GetMousePos().x);
+        auto center    = ctx_.view2f(mouse.x);
         auto scale     = 1.0f + delta / 15.0f;
         ctx_.vis_start = center + (ctx_.vis_start - center) * scale;
         ctx_.vis_end   = center + (ctx_.vis_end - center) * scale;
@@ -341,46 +667,148 @@ int EndTimeline() {
     return_value = ctx_.cur_frame;
   }
 
-  // レイヤーの削除/移動を遅延適用(ループ中のvector破壊を避けるため)
-  if(ctx_.active_comp) {
-    auto* cp     = ctx_.active_comp;
-    bool changed = false;
-    {
-      std::lock_guard<std::mutex> lock(cp->mtx);
-      if(ctx_.pending_delete_layer >= 0 && ctx_.pending_delete_layer < (int)cp->layers.size()) {
-        cp->layers.erase(cp->layers.begin() + ctx_.pending_delete_layer);
-        ctx_.pending_delete_layer = -1;
-        changed                   = true;
-      }
-      if(ctx_.pending_move_layer >= 0 && ctx_.pending_move_layer < (int)cp->layers.size()) {
-        int i = ctx_.pending_move_layer;
-        int j = i + ctx_.pending_move_dir;
-        if(j >= 0 && j < (int)cp->layers.size()) std::swap(cp->layers[i], cp->layers[j]);
-        ctx_.pending_move_layer = -1;
-        changed                 = true;
-      }
-    }
-    if(changed) cp->invalidate_cache_all();
+  const ImRect rows(ImVec2(inside.left(), all.y.min + ctx_.header_h), ImVec2(inside.right(), all.bottom()));
+  const bool in_rows    = rows.Contains(mouse);
+  const bool in_ruler   = ImRect(ImVec2(inside.left(), all.y.min), ImVec2(inside.right(), all.y.min + ctx_.header_h)).Contains(mouse);
+  const bool can_edit   = !is_exporting();
+  const bool popup_open = ImGui::IsPopupOpen("tl_empty_ctx") || ImGui::IsPopupOpen("tl_ruler_ctx") || ImGui::IsPopupOpen("tl_clip_ctx");
+
+  // ---- ラバーバンド範囲選択(空きトラックのドラッグ) ----
+  if(can_edit && !ctx_.rb_active && !popup_open && hovered_win && in_rows && !ctx_.any_clip_hovered && ctx_.dragging_entt == nullptr && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+    ctx_.rb_active = true;
+    ctx_.rb_moved  = false;
+    ctx_.rb_start  = mouse;
   }
+  if(ctx_.rb_active) {
+    ImRect r(ImVec2(std::min(mouse.x, ctx_.rb_start.x), std::min(mouse.y, ctx_.rb_start.y)), ImVec2(std::max(mouse.x, ctx_.rb_start.x), std::max(mouse.y, ctx_.rb_start.y)));
+    if(ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+      if(std::abs(mouse.x - ctx_.rb_start.x) + std::abs(mouse.y - ctx_.rb_start.y) > 4.0f) ctx_.rb_moved = true;
+      if(ctx_.rb_moved) {
+        dl->PushClipRect(rows.Min, rows.Max, true);
+        dl->AddRectFilled(r.Min, r.Max, IM_COL32(80, 150, 255, 40));
+        dl->AddRect(r.Min, r.Max, IM_COL32(120, 180, 255, 200));
+        dl->PopClipRect();
+      }
+    } else {
+      const bool additive = ImGui::GetIO().KeyCtrl || ImGui::GetIO().KeyShift;
+      if(!ctx_.rb_moved) {
+        if(!additive) clear_selected_entts(); // 何もない所のクリック=選択解除
+      } else {
+        std::vector<Ref<Entity>> picked = additive ? get_selected_entts() : std::vector<Ref<Entity>>();
+        for(const auto& c : ctx_.clips)
+          if(c.r.Overlaps(r) && std::find(picked.begin(), picked.end(), c.e) == picked.end()) picked.push_back(c.e);
+        select_entts(picked);
+      }
+      ctx_.rb_active = false;
+      set_selected_cache();
+    }
+  }
+
+  // ---- 右クリック: 空トラック / 定規 ----
+  if(can_edit && hovered_win && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+    if(in_rows && !ctx_.any_clip_hovered) {
+      int li           = (int)((mouse.y - rows.Min.y) / std::max(1, ctx_.height));
+      bool valid_layer = ctx_.active_comp && li >= 0 && li < (int)ctx_.active_comp->layers.size();
+      ctx_.ctx_layer   = valid_layer ? li : -1;
+      ctx_.ctx_frame   = ctx_.view2f((int)mouse.x);
+      ImGui::OpenPopup("tl_empty_ctx");
+    } else if(in_ruler) {
+      ctx_.ctx_frame = ctx_.view2f((int)mouse.x);
+      ImGui::OpenPopup("tl_ruler_ctx");
+    }
+  }
+  if(ImGui::BeginPopup("tl_empty_ctx")) {
+    if(ImGui::BeginMenu(ICON_FA_PLUS " ここに追加")) {
+      TimelineAddEntityMenu(ctx_.ctx_frame, ctx_.ctx_layer);
+      ImGui::EndMenu();
+    }
+    if(ImGui::MenuItem(ICON_FA_LOCATION_ARROW " ここに再生ヘッドを移動") && ctx_.frame_ptr) *ctx_.frame_ptr = ctx_.ctx_frame;
+    if(ImGui::MenuItem(ICON_FA_EXPAND " 全体をフィット")) ctx_.pending_fit = true;
+    ImGui::EndPopup();
+  }
+  if(ImGui::BeginPopup("tl_ruler_ctx")) {
+    if(ImGui::MenuItem(ICON_FA_LOCATION_ARROW " ここに再生ヘッドを移動") && ctx_.frame_ptr) *ctx_.frame_ptr = ctx_.ctx_frame;
+    if(ImGui::MenuItem(ICON_FA_EXPAND " コンポ範囲にフィット")) ctx_.pending_fit = true;
+    if(ImGui::MenuItem("コンポの開始をここにする") && ctx_.start_ptr && ctx_.end_ptr) *ctx_.start_ptr = std::min(ctx_.ctx_frame, *ctx_.end_ptr - 1);
+    if(ImGui::MenuItem("コンポの終了をここにする") && ctx_.start_ptr && ctx_.end_ptr) *ctx_.end_ptr = std::max(ctx_.ctx_frame, *ctx_.start_ptr + 1);
+    ImGui::Separator();
+    if(ImGui::MenuItem("表記: フレーム", nullptr, !ctx_.ruler_timecode)) ctx_.ruler_timecode = false;
+    if(ImGui::MenuItem("表記: タイムコード", nullptr, ctx_.ruler_timecode)) ctx_.ruler_timecode = true;
+    ImGui::EndPopup();
+  }
+
+  // ---- クリップの右クリックメニュー(BeginTrackが開く) ----
+  if(ImGui::BeginPopup("tl_clip_ctx")) {
+    const bool multi = ctx_.selected.size() > 1;
+    if(ImGui::MenuItem(ICON_FA_SCISSORS " ここで分割")) ctx_.pending_clip_op = 1;
+    if(ImGui::MenuItem(multi ? ICON_FA_COPY " 選択を複製" : ICON_FA_COPY " 複製")) ctx_.pending_clip_op = 2;
+    bool now_active = ctx_.ctx_entt ? ctx_.ctx_entt->active_ : true;
+    if(ImGui::MenuItem(now_active ? ICON_FA_EYE_SLASH " 無効にする" : ICON_FA_EYE " 有効にする")) ctx_.pending_clip_op = 4;
+    ImGui::Separator();
+    if(ImGui::MenuItem(multi ? ICON_FA_TRASH " 選択を削除" : ICON_FA_TRASH " 削除")) ctx_.pending_clip_op = 3;
+    ImGui::EndPopup();
+  }
+
+  // ---- 列幅リサイズ(トラック名カラムとトラックの境界をドラッグ) ----
+  {
+    ImRect grip(ImVec2(inside.left() - 3, all.y.min), ImVec2(inside.left() + 3, all.bottom()));
+    bool over = ImGui::IsMouseHoveringRect(grip.Min, grip.Max);
+    if(can_edit && over && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) ctx_.name_col_drag = true;
+    if(ctx_.name_col_drag) {
+      if(ImGui::IsMouseDown(ImGuiMouseButton_Left))
+        ctx_.trackname_width = std::clamp<int>((int)(mouse.x - all.left()), 96, 420);
+      else
+        ctx_.name_col_drag = false;
+    }
+    if(over || ctx_.name_col_drag) ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
+  }
+
+  // ---- 遅延操作 ----
+  apply_pending_ops(ctx_.active_comp ? ctx_.active_comp : Composition::GetActiveComp());
 
   if(ctx_.cur_frame && ctx_.vis_start && ctx_.vis_end) {
     ctx_.cur_frame = std::clamp<int>(ctx_.cur_frame, ctx_.vis_start, ctx_.vis_end);
   }
 
-  auto dl       = ImGui::GetWindowDrawList();
-  auto all      = ctx_.all_area;
+  // ---- スナップのガイド線 ----
+  if(ctx_.snap_line != INT_MIN) {
+    int x = ctx_.f2view(ctx_.snap_line);
+    dl->PushClipRect(ImVec2(inside.left(), all.top()), ImVec2(inside.right(), all.bottom()), true);
+    dl->AddLine(ImVec2(x, all.y.min + ctx_.header_h), ImVec2(x, all.bottom()), IM_COL32(255, 220, 60, 220), 1.5f);
+    dl->PopClipRect();
+  }
+
+  // ---- レイヤー行の区切り線 ----
   auto line_col = ImGui::GetStyle().Colors[ImGuiCol_Border];
   ImVec2 p1(all.left(), all.y.min + ctx_.header_h);
   ImVec2 p2(all.right(), all.y.min + ctx_.header_h);
-  int header_height = ImGui::GetTextLineHeightWithSpacing();
   for(int i = 0; i < ctx_.hidx + 1; i++) {
-    dl->AddLine(p1, p2, IM_COL32(line_col.x * 255, line_col.y * 255, line_col.z * 255, line_col.w * 255), 1.5);
-    p1.y += header_height;
-    p2.y += header_height;
+    dl->AddLine(p1, p2, IM_COL32(line_col.x * 255, line_col.y * 255, line_col.z * 255, line_col.w * 255 * 0.8f), 1.0f);
+    p1.y += ctx_.height;
+    p2.y += ctx_.height;
   }
 
   ImGui::EndChild();
   return return_value;
+}
+
+// ソロ: 押した行以外の全レイヤーをinactiveにする。もう一度押すと押す前のactiveへ戻す(押す前の状態はUI側のctx_に保持)
+static void toggle_solo(Composition* cp, int idx) {
+  {
+    std::lock_guard<std::mutex> lock(cp->mtx);
+    if(ctx_.solo_layer == idx) {
+      for(size_t i = 0; i < cp->layers.size() && i < ctx_.solo_saved.size(); i++) cp->layers[i].active = ctx_.solo_saved[i];
+      ctx_.solo_layer = -1;
+    } else {
+      if(ctx_.solo_layer < 0) {
+        ctx_.solo_saved.clear();
+        for(auto& l : cp->layers) ctx_.solo_saved.push_back(l.active);
+      }
+      for(size_t i = 0; i < cp->layers.size(); i++) cp->layers[i].active = ((int)i == idx);
+      ctx_.solo_layer = idx;
+    }
+  }
+  cp->invalidate_cache_all();
 }
 
 bool BeginLayer(Composition* cp, int layer_idx) {
@@ -397,16 +825,25 @@ bool BeginLayer(Composition* cp, int layer_idx) {
   int htop = ctx_.layer_y1();
   int hbtm = ctx_.layer_y2();
 
-  int eye_w  = hbtm - htop; // 目アイコン用の正方形幅(行高さに合わせる)
-  int name_x = x + eye_w + 2;
+  int btn_w  = hbtm - htop; // 目/ソロボタン用の正方形幅(行高さに合わせる)
+  int name_x = x + btn_w * 2 + 4;
 
   ImRect sidebar(ImVec2(x, htop), ImVec2(inside.left(), hbtm));
-  ImRect eye_rect(ImVec2(x, htop), ImVec2(x + eye_w, hbtm));
+  ImRect eye_rect(ImVec2(x, htop), ImVec2(x + btn_w, hbtm));
+  ImRect solo_rect(ImVec2(x + btn_w, htop), ImVec2(x + btn_w * 2, hbtm));
   bool eye_hovered     = ImGui::IsMouseHoveringRect(eye_rect.Min, eye_rect.Max);
-  bool sidebar_hovered = ImGui::IsMouseHoveringRect(sidebar.Min, sidebar.Max) && !eye_hovered;
+  bool solo_hovered    = ImGui::IsMouseHoveringRect(solo_rect.Min, solo_rect.Max);
+  bool sidebar_hovered = ImGui::IsMouseHoveringRect(sidebar.Min, sidebar.Max) && !eye_hovered && !solo_hovered;
 
-  if(!is_exporting() && eye_hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) layer->active = !layer->active;
-  if(eye_hovered) ImGui::SetTooltip(layer->active ? "レイヤーを非表示にする" : "レイヤーを表示する");
+  const bool solo_on = ctx_.solo_layer == layer_idx;
+  if(!is_exporting() && eye_hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+    layer->active   = !layer->active;
+    ctx_.solo_layer = -1; // 手動で切り替えたらソロ状態は解除(復元しない)
+    cp->invalidate_cache_all();
+  }
+  if(!is_exporting() && solo_hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) toggle_solo(cp, layer_idx);
+  if(eye_hovered) ImGui::SetTooltip(layer->active ? "レイヤーを非表示(ミュート)にする" : "レイヤーを表示する");
+  if(solo_hovered) ImGui::SetTooltip(solo_on ? "ソロを解除(元の表示状態へ戻す)" : "ソロ: このレイヤー以外を非表示にする");
 
   bool editing = ctx_.editing_layer_idx == layer_idx;
   if(editing) {
@@ -421,17 +858,22 @@ bool BeginLayer(Composition* cp, int layer_idx) {
     }
     ImGui::PopID();
   } else {
-    if(sidebar_hovered) ImGui::SetTooltip("name=%s", layer->name.c_str());
+    if(sidebar_hovered) ImGui::SetTooltip("%s\nダブルクリックで名前を変更 / 右クリックでメニュー", layer->name.c_str());
     if(!is_exporting() && sidebar_hovered && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
       ctx_.editing_layer_idx = layer_idx;
       std::snprintf(ctx_.editing_layer_buf, sizeof(ctx_.editing_layer_buf), "%s", layer->name.c_str());
     }
   }
 
-  // レイヤーにマウスが載っていたらlayer全体をハイライトする
+  // 行背景: 交互の濃淡 / 選択中クリップのある行 / マウスホバー
   ImRect R(ImVec2(inside.left(), htop), ImVec2(inside.right(), hbtm));
+  if(layer_idx % 2 == 1) dl->AddRectFilled(R.Min, R.Max, IM_COL32(255, 255, 255, 7));
+  bool row_selected = false;
+  for(const auto& e : layer->entts)
+    if(e && is_selected_entt(e.get())) row_selected = true;
+  if(row_selected) dl->AddRectFilled(R.Min, R.Max, IM_COL32(90, 140, 255, 22));
   bool line_hovered = ImGui::IsMouseHoveringRect(R.Min, R.Max);
-  if(line_hovered) dl->AddRectFilled(R.Min, R.Max, IM_COL32(255, 255, 255, 20));
+  if(line_hovered) dl->AddRectFilled(R.Min, R.Max, IM_COL32(255, 255, 255, 14));
 
   // 選択中のグループ制御が効くレイヤー(かつグループの表示期間)を半透明でハイライトする
   for(const auto& sel : get_selected_entts()) {
@@ -444,21 +886,47 @@ bool BeginLayer(Composition* cp, int layer_idx) {
     dl->AddRectFilled(ImVec2(ctx_.f2view(sel->fstart_), htop), ImVec2(ctx_.f2view(sel->fend_), hbtm), IM_COL32(255, 200, 60, 40));
   }
 
-  dl->AddRectFilled(sidebar.Min, sidebar.Max, layer->active ? IM_COL32(40, 40, 40, 255) : IM_COL32(20, 20, 20, 255));
+  // 見出し背景(選択行は少し明るく)とボタン
+  dl->AddRectFilled(sidebar.Min, sidebar.Max, layer->active ? (row_selected ? IM_COL32(52, 56, 68, 255) : IM_COL32(40, 40, 40, 255)) : IM_COL32(20, 20, 20, 255));
   if(!layer->active) dl->AddRectFilled(ImVec2(inside.left(), htop), ImVec2(inside.right(), hbtm), IM_COL32(0, 0, 0, 110)); // 非表示レイヤーはトラック部分も暗くする
-  dl->AddText(ImVec2(x + 2, htop + (eye_w - ImGui::GetTextLineHeight()) / 2), layer->active ? IM_COL32(255, 255, 255, 200) : IM_COL32(255, 255, 255, 80), layer->active ? ICON_FA_EYE : ICON_FA_EYE_SLASH);
+  if(eye_hovered) dl->AddRectFilled(eye_rect.Min, eye_rect.Max, IM_COL32(255, 255, 255, 25));
+  const float ty_icon = htop + (btn_w - ImGui::GetTextLineHeight()) / 2;
+  dl->AddText(ImVec2(x + 2, ty_icon), layer->active ? IM_COL32(255, 255, 255, 230) : IM_COL32(255, 255, 255, 90), layer->active ? ICON_FA_EYE : ICON_FA_EYE_SLASH);
+  // ソロボタン
+  {
+    if(solo_on)
+      dl->AddRectFilled(ImVec2(solo_rect.Min.x + 1, solo_rect.Min.y + 1), ImVec2(solo_rect.Max.x - 1, solo_rect.Max.y - 1), IM_COL32(230, 160, 30, 255), 3.0f);
+    else if(solo_hovered)
+      dl->AddRectFilled(solo_rect.Min, solo_rect.Max, IM_COL32(255, 255, 255, 25));
+    auto tsz = ImGui::CalcTextSize("S");
+    dl->AddText(ImVec2(solo_rect.Min.x + (btn_w - tsz.x) / 2, htop + (btn_w - tsz.y) / 2), solo_on ? IM_COL32(20, 20, 20, 255) : IM_COL32(255, 255, 255, 150), "S");
+  }
 
   if(!editing) {
     const char* search = ctx_.layer_search_buf;
     bool dim           = !layer->active || (search[0] != '\0' && !strstr(layer->name.c_str(), search));
-    auto tsz           = ImGui::CalcTextSize(layer->name.c_str());
+    std::string shown  = ellipsize(layer->name.c_str(), (float)(inside.left() - name_x - 6));
+    auto tsz           = ImGui::CalcTextSize(shown.c_str());
     float ty           = htop + ((hbtm - htop) - tsz.y) / 2.0f;
-    dl->AddText(ImVec2(name_x, ty), dim ? IM_COL32(255, 255, 255, 40) : IM_COL32(255, 255, 255, 100), layer->name.c_str());
+    dl->AddText(ImVec2(name_x, ty), dim ? IM_COL32(255, 255, 255, 90) : IM_COL32(255, 255, 255, 235), shown.c_str());
   }
 
-  if(!is_exporting() && sidebar_hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) ImGui::OpenPopup(("layer_ctx_" + std::to_string(layer_idx)).c_str());
-  if(ImGui::BeginPopup(("layer_ctx_" + std::to_string(layer_idx)).c_str())) {
-    if(ImGui::MenuItem("削除")) ctx_.pending_delete_layer = layer_idx;
+  const std::string popup_id = "layer_ctx_" + std::to_string(layer_idx);
+  if(!is_exporting() && sidebar_hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) ImGui::OpenPopup(popup_id.c_str());
+  if(ImGui::BeginPopup(popup_id.c_str())) {
+    if(ImGui::MenuItem(ICON_FA_PEN " 名前を変更")) {
+      ctx_.editing_layer_idx = layer_idx;
+      std::snprintf(ctx_.editing_layer_buf, sizeof(ctx_.editing_layer_buf), "%s", layer->name.c_str());
+    }
+    if(ImGui::MenuItem(layer->active ? ICON_FA_EYE_SLASH " 非表示にする" : ICON_FA_EYE " 表示する")) {
+      layer->active   = !layer->active;
+      ctx_.solo_layer = -1;
+      cp->invalidate_cache_all();
+    }
+    if(ImGui::MenuItem("S ソロ", nullptr, solo_on)) toggle_solo(cp, layer_idx);
+    ImGui::Separator();
+    if(ImGui::MenuItem(ICON_FA_ARROW_UP " 上にレイヤーを挿入")) ctx_.pending_insert_layer = layer_idx;
+    if(ImGui::MenuItem(ICON_FA_ARROW_DOWN " 下にレイヤーを挿入")) ctx_.pending_insert_layer = layer_idx + 1;
     if(ImGui::MenuItem("上へ移動")) {
       ctx_.pending_move_layer = layer_idx;
       ctx_.pending_move_dir   = -1;
@@ -467,6 +935,14 @@ bool BeginLayer(Composition* cp, int layer_idx) {
       ctx_.pending_move_layer = layer_idx;
       ctx_.pending_move_dir   = 1;
     }
+    if(ImGui::BeginMenu("行の高さ")) {
+      if(ImGui::MenuItem("小 (S)", nullptr, ctx_.row_scale < 0.9f)) ctx_.row_scale = 0.8f;
+      if(ImGui::MenuItem("中 (M)", nullptr, ctx_.row_scale >= 0.9f && ctx_.row_scale < 1.15f)) ctx_.row_scale = 1.0f;
+      if(ImGui::MenuItem("大 (L)", nullptr, ctx_.row_scale >= 1.15f)) ctx_.row_scale = 1.4f;
+      ImGui::EndMenu();
+    }
+    ImGui::Separator();
+    if(ImGui::MenuItem(ICON_FA_TRASH " 削除")) ctx_.pending_delete_layer = layer_idx;
     ImGui::EndPopup();
   }
   return true;
@@ -475,7 +951,7 @@ bool BeginLayer(Composition* cp, int layer_idx) {
 void EndLayer() { ctx_.hidx++; }
 
 bool IsTimeline_LineHovered() {
-  auto dh   = ImGui::GetTextLineHeightWithSpacing();
+  auto dh   = (float)ctx_.height;
   auto h    = dh * (ctx_.hidx - 1);
   auto all  = ctx_.all_area;
   all.y     = all.y.shift(h);
@@ -489,6 +965,45 @@ bool IsTimelineKeyHovered() { return ctx_.last_entt_hov; }
 
 bool IsTimelineClickedLeftButton() { return ctx_.last_entt_hov; }
 
+// 色を明るさ倍率で調整する(アルファは保持)
+static ImU32 scale_color(ImU32 c, float k) {
+  ImVec4 v = ImGui::ColorConvertU32ToFloat4(c);
+  v.x      = std::clamp(v.x * k, 0.0f, 1.0f);
+  v.y      = std::clamp(v.y * k, 0.0f, 1.0f);
+  v.z      = std::clamp(v.z * k, 0.0f, 1.0f);
+  return ImGui::ColorConvertFloat4ToU32(v);
+}
+
+// 他クリップの端/プレイヤヘッド/コンポ範囲などスナップ先候補を集める
+static void collect_snap_points(Entity* self) {
+  ctx_.snap_points.clear();
+  ctx_.snap_points.push_back(ctx_.cur_frame);
+  if(ctx_.start_ptr) ctx_.snap_points.push_back(*ctx_.start_ptr);
+  if(ctx_.end_ptr) ctx_.snap_points.push_back(*ctx_.end_ptr);
+  if(!ctx_.active_comp) return;
+  for(const auto& e : ctx_.active_comp->get_all_entities()) {
+    if(e.get() == self) continue;
+    bool moving = false;
+    for(auto& [o, ofs, ofe] : ctx_.drag_group_orig) moving |= (o == e.get());
+    if(moving) continue;
+    ctx_.snap_points.push_back(e->fstart_);
+    ctx_.snap_points.push_back(e->fend_);
+  }
+}
+
+// frame_candidatesの中でtargetに最も近いスナップ点(閾値内)を返す。無ければfalse
+static bool nearest_snap(int target, int thr_frames, int* out) {
+  int best = INT_MAX;
+  for(int p : ctx_.snap_points) {
+    int d = std::abs(p - target);
+    if(d <= thr_frames && d < best) {
+      best = d;
+      *out = p;
+    }
+  }
+  return best != INT_MAX;
+}
+
 bool BeginTrack(const Ref<Entity>& entity) {
   MU_ASSERT(entity);
   const char* name = entity->name.c_str();
@@ -501,57 +1016,110 @@ bool BeginTrack(const Ref<Entity>& entity) {
   int fs = ctx_.f2view(*start);
   int fe = ctx_.f2view(*end);
   ImRect rect(ImVec2(fs, htop), ImVec2(fe, htop + ctx_.height));
-  bool hovered = ImGui::IsMouseHoveringRect(rect.Min, rect.Max);
-  if(hovered)
-    ctx_.last_entt_hov = entity.get();
-  else
-    ctx_.last_entt_hov = nullptr;
-
-  auto mouse_x    = ImGui::GetMousePos().x;
-  bool near_left  = hovered && (mouse_x - rect.Min.x) <= kEdgeW;
-  bool near_right = hovered && (rect.Max.x - mouse_x) <= kEdgeW;
-
-  bool is_selected = false;
-  for(const auto& e : get_selected_entts()) {
-    if(e.get() == entity.get()) {
-      is_selected = true;
-      break;
-    }
+  const auto inside_hit = ctx_.tl_area();
+  auto mouse_x          = ImGui::GetMousePos().x;
+  // レイヤー名カラムやウィンドウ外にはみ出した部分ではホバー扱いにしない
+  bool hovered = ImGui::IsMouseHoveringRect(rect.Min, rect.Max) && mouse_x >= inside_hit.left() && mouse_x < inside_hit.right() && !ImGui::IsPopupOpen("tl_clip_ctx");
+  if(hovered) {
+    ctx_.last_entt_hov    = entity.get();
+    ctx_.any_clip_hovered = true;
   }
+  ctx_.clips.push_back({entity, rect});
 
-  if(!is_exporting() && ctx_.dragging_entt == nullptr && hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-    if(near_left)
-      ctx_.drag_mode = 2;
-    else if(near_right)
-      ctx_.drag_mode = 3;
-    else if(is_selected)
-      ctx_.drag_mode = 1;
-    if(ctx_.drag_mode != 0) {
+  bool near_left      = hovered && (mouse_x - rect.Min.x) <= kEdgeW;
+  bool near_right     = hovered && (rect.Max.x - mouse_x) <= kEdgeW;
+  const bool can_edit = !is_exporting();
+
+  bool is_selected = is_selected_entt(entity.get());
+
+  // クリックで選択(Ctrl/Shiftで追加・解除)。選択済み/選択された直後ならそのままドラッグ操作を開始する
+  if(can_edit && ctx_.dragging_entt == nullptr && !ctx_.rb_active && hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+    const bool additive = ImGui::GetIO().KeyCtrl || ImGui::GetIO().KeyShift;
+    if(additive) {
+      auto sel = get_selected_entts();
+      auto it  = std::find(sel.begin(), sel.end(), entity);
+      if(it != sel.end())
+        sel.erase(it);
+      else
+        sel.push_back(entity);
+      select_entts(sel);
+    } else if(!is_selected) {
+      clear_selected_entts();
+      select_entt(entity);
+    }
+    set_selected_cache();
+    is_selected = is_selected_entt(entity.get());
+
+    if(is_selected) {
+      if(near_left)
+        ctx_.drag_mode = 2;
+      else if(near_right)
+        ctx_.drag_mode = 3;
+      else
+        ctx_.drag_mode = 1;
       ctx_.dragging_entt    = entity.get();
       ctx_.drag_orig_fstart = *start;
       ctx_.drag_orig_fend   = *end;
       ctx_.drag_start_frame = ctx_.view2f((int)mouse_x);
 
       ctx_.drag_group_orig.clear();
-      if(ctx_.drag_mode == 1 && entity->group_guid_ != 0) {
-        if(auto* comp = entity->get_comp()) {
-          for(auto& other : comp->get_all_entities()) {
-            if(other.get() == entity.get() || other->group_guid_ != entity->group_guid_) continue;
-            ctx_.drag_group_orig.push_back({other.get(), other->fstart_, other->fend_});
-          }
-        }
+      if(ctx_.drag_mode == 1) {
+        auto add_other = [&](Entity* other) {
+          if(other == entity.get()) return;
+          for(auto& t : ctx_.drag_group_orig)
+            if(std::get<0>(t) == other) return;
+          ctx_.drag_group_orig.push_back({other, other->fstart_, other->fend_});
+        };
+        if(entity->group_guid_ != 0)
+          if(auto* comp = entity->get_comp())
+            for(auto& other : comp->get_all_entities())
+              if(other->group_guid_ == entity->group_guid_) add_other(other.get());
+        for(auto* other : ctx_.selected) add_other(other); // 複数選択は一緒に動かす
       }
+      collect_snap_points(entity.get());
     }
   }
 
+  // 右クリックメニュー(未選択なら先にそのクリップだけを選択)
+  if(can_edit && hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+    if(!is_selected) {
+      clear_selected_entts();
+      select_entt(entity);
+      set_selected_cache();
+      is_selected = true;
+    }
+    ctx_.ctx_entt  = entity;
+    ctx_.ctx_frame = ctx_.view2f((int)mouse_x);
+    ImGui::OpenPopup("tl_clip_ctx");
+  }
+
   if(ctx_.dragging_entt == entity.get()) {
-    if(!is_exporting() && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+    if(can_edit && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
       // ワーカースレッドがrender中はentity->mtxを長時間保持するため、ここはブロックせずtry_lockする(取れなければ次フレームで再試行)
       std::unique_lock<std::mutex> lock(entity->mtx, std::try_to_lock);
       if(lock.owns_lock()) {
-        int delta_f  = ctx_.view2f((int)mouse_x) - ctx_.drag_start_frame;
-        auto nframes = (int)entity->get_info().nframes; // 素材の総フレーム数(動画/音声のみ>0)
+        int delta_f     = ctx_.view2f((int)mouse_x) - ctx_.drag_start_frame;
+        auto nframes    = (int)entity->get_info().nframes; // 素材の総フレーム数(動画/音声のみ>0)
+        const float ppf = (ctx_.vis_end > ctx_.vis_start) ? (float)ctx_.tl_w() / (float)(ctx_.vis_end - ctx_.vis_start) : 1.0f;
+        const int thr   = std::max(1, (int)std::round(6.0f / std::max(ppf, 0.001f))); // スナップ吸着距離(約6px)
+        const bool snap = ctx_.snap && !ImGui::GetIO().KeyAlt;                        // Alt押下中はスナップ無効
+        ctx_.snap_line  = INT_MIN;
+        int snapped     = 0;
         if(ctx_.drag_mode == 1) {
+          if(snap) {
+            int a, b;
+            bool ha = nearest_snap(ctx_.drag_orig_fstart + delta_f, thr, &a);
+            bool hb = nearest_snap(ctx_.drag_orig_fend + delta_f, thr, &b);
+            int da  = ha ? a - (ctx_.drag_orig_fstart + delta_f) : 0;
+            int db  = hb ? b - (ctx_.drag_orig_fend + delta_f) : 0;
+            if(ha && (!hb || std::abs(da) <= std::abs(db))) {
+              delta_f += da;
+              ctx_.snap_line = a;
+            } else if(hb) {
+              delta_f += db;
+              ctx_.snap_line = b;
+            }
+          }
           *start = ctx_.drag_orig_fstart + delta_f;
           *end   = ctx_.drag_orig_fend + delta_f;
           for(auto& [other, ofs, ofe] : ctx_.drag_group_orig) {
@@ -559,27 +1127,43 @@ bool BeginTrack(const Ref<Entity>& entity) {
             other->fend_   = ofe + delta_f;
           }
         } else if(ctx_.drag_mode == 2) {
-          int new_start = std::min(ctx_.drag_orig_fstart + delta_f, *end - 1);
+          int new_start = ctx_.drag_orig_fstart + delta_f;
+          if(snap && nearest_snap(new_start, thr, &snapped)) {
+            new_start      = snapped;
+            ctx_.snap_line = snapped;
+          }
+          new_start = std::min(new_start, *end - 1);
           // 素材内オフセット管理は未実装のため、尺が素材の総フレーム数を超えないようclampするに留める
           if(nframes > 0 && (*end - new_start) > nframes) new_start = *end - nframes;
           *start = new_start;
         } else if(ctx_.drag_mode == 3) {
-          int new_end = std::max(ctx_.drag_orig_fend + delta_f, *start + 1);
+          int new_end = ctx_.drag_orig_fend + delta_f;
+          if(snap && nearest_snap(new_end, thr, &snapped)) {
+            new_end        = snapped;
+            ctx_.snap_line = snapped;
+          }
+          new_end = std::max(new_end, *start + 1);
           if(nframes > 0 && (new_end - *start) > nframes) new_end = *start + nframes;
           *end = new_end;
         }
         fs   = ctx_.f2view(*start);
         fe   = ctx_.f2view(*end);
         rect = ImRect(ImVec2(fs, htop), ImVec2(fe, htop + ctx_.height));
+        ImGui::SetTooltip("開始 %d  終了 %d  長さ %d f", *start, *end, *end - *start);
       }
     } else {
       if(auto* comp = entity->get_comp()) {
         int f0 = std::min({ctx_.drag_orig_fstart, ctx_.drag_orig_fend, *start, *end});
         int f1 = std::max({ctx_.drag_orig_fstart, ctx_.drag_orig_fend, *start, *end});
+        for(auto& [other, ofs, ofe] : ctx_.drag_group_orig) {
+          f0 = std::min({f0, ofs, ofe, other->fstart_, other->fend_});
+          f1 = std::max({f1, ofs, ofe, other->fstart_, other->fend_});
+        }
         comp->invalidate_cache_range(f0, f1);
       }
       ctx_.dragging_entt = nullptr;
       ctx_.drag_mode     = 0;
+      ctx_.snap_line     = INT_MIN;
     }
   }
 
@@ -587,23 +1171,61 @@ bool BeginTrack(const Ref<Entity>& entity) {
     ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
   }
 
+  // ---- 描画 ----
   auto col = entity->custom_color_ ? (ImU32)entity->custom_color_ : get_entt_color(entity);
-  // 非アクティブなEntity/レイヤーはクリップを暗く表示する
-  bool dim_track = !entity->active_ || !ctx_.cur_layer_active;
+  // 非アクティブなEntity/レイヤーはクリップを暗く表示する(斜線の網掛け付き)
+  const bool dim_track = !entity->active_ || !ctx_.cur_layer_active;
   if(dim_track) {
     ImVec4 c4 = ImGui::ColorConvertU32ToFloat4(col);
     c4.w *= 0.35f;
     col = ImGui::ColorConvertFloat4ToU32(c4);
+  } else if(hovered && !is_selected) {
+    col = scale_color(col, 1.12f);
+  } else if(is_selected) {
+    col = scale_color(col, 1.25f);
   }
   auto dl     = ImGui::GetWindowDrawList();
   auto inside = ctx_.tl_area(); // レイヤー名カラムへのはみ出し描画を防ぐためこの範囲でクリップする
   dl->PushClipRect(ImVec2(inside.left(), ctx_.all_area.top()), ImVec2(inside.right(), ctx_.all_area.bottom()), true);
-  dl->AddRect(rect.Min, rect.Max, col_.border);
-  dl->AddRectFilled(rect.Min, rect.Max, col);
+
+  // 隣接クリップと区別できるよう上下1pxの余白を取る
+  ImRect body(ImVec2(rect.Min.x, rect.Min.y + 1), ImVec2(std::max(rect.Max.x, rect.Min.x + 2), rect.Max.y - 1));
+  dl->AddRectFilled(body.Min, body.Max, col, 3.0f);
+  dl->AddRect(body.Min, body.Max, scale_color(col, 0.55f) | 0xFF000000, 3.0f);
+
+  if(dim_track) { // 網掛け
+    dl->PushClipRect(body.Min, body.Max, true);
+    for(float hx = body.Min.x - body.GetHeight(); hx < body.Max.x; hx += 6.0f) dl->AddLine(ImVec2(hx, body.Max.y), ImVec2(hx + body.GetHeight(), body.Min.y), IM_COL32(0, 0, 0, 90));
+    dl->PopClipRect();
+  }
+
+  // 端ハンドル(ホバー/選択時に見えるようにする)
+  if(hovered || is_selected) {
+    const float hw = std::min(4.0f, body.GetWidth() / 3.0f);
+    if(hw >= 2.0f) {
+      const ImU32 hc = IM_COL32(255, 255, 255, (near_left || near_right) ? 130 : 70);
+      dl->AddRectFilled(body.Min, ImVec2(body.Min.x + hw, body.Max.y), (near_left ? IM_COL32(255, 255, 255, 170) : hc), 3.0f, ImDrawFlags_RoundCornersLeft);
+      dl->AddRectFilled(ImVec2(body.Max.x - hw, body.Min.y), body.Max, (near_right ? IM_COL32(255, 255, 255, 170) : hc), 3.0f, ImDrawFlags_RoundCornersRight);
+    }
+  }
+
+  // 名前: アイコン+名前を矩形内でクリップ。画面左端で切れていても見える範囲の左端に張り付かせ、収まらなければ省略記号
   {
-    auto tsz = ImGui::CalcTextSize(name);
-    float ty = htop + (ctx_.height - tsz.y) / 2.0f;
-    dl->AddText(ImVec2(fs + 2, ty), dim_track ? IM_COL32(255, 255, 255, 40) : IM_COL32(255, 255, 255, 100), name);
+    const float vis_l = std::max(body.Min.x, (float)inside.left()) + 4.0f;
+    const float vis_r = std::min(body.Max.x, (float)inside.right()) - 3.0f;
+    const float avail = vis_r - vis_l;
+    if(avail > 10.0f) {
+      const std::string label = std::string(get_entt_icon(entity)) + " " + name;
+      const std::string shown = ellipsize(label.c_str(), avail);
+      if(!shown.empty()) {
+        auto tsz = ImGui::CalcTextSize(shown.c_str());
+        float ty = htop + (ctx_.height - tsz.y) / 2.0f;
+        dl->PushClipRect(body.Min, body.Max, true);
+        dl->AddText(ImVec2(vis_l + 1, ty + 1), IM_COL32(0, 0, 0, dim_track ? 40 : 110), shown.c_str()); // 影で判読性を確保
+        dl->AddText(ImVec2(vis_l, ty), dim_track ? IM_COL32(255, 255, 255, 70) : IM_COL32(255, 255, 255, 240), shown.c_str());
+        dl->PopClipRect();
+      }
+    }
   }
 
   if(entity->getType() == EntityType_Audio) {
@@ -620,16 +1242,47 @@ bool BeginTrack(const Ref<Entity>& entity) {
         int idx = wf.index_for_second((f - *start) / (double)fps);
         if(idx < 0 || idx >= (int)wf.levels.size()) continue;
         int len = (int)(half * (wf.levels[idx] / 255.0f));
-        if(len > 0) dl->AddLine(ImVec2((float)x, (float)(mid - len)), ImVec2((float)x, (float)(mid + len)), IM_COL32(255, 255, 255, 200)); // トラック背景(緑系)とのコントラストを確保するため白系にする
+        if(len > 0) dl->AddLine(ImVec2((float)x, (float)(mid - len)), ImVec2((float)x, (float)(mid + len)), IM_COL32(255, 255, 255, 200)); // トラック背景(緑系)とのコントラストを確保するため白系に
       }
     }
   }
 
+  // 中間点(キーフレーム)マーカー: フィルタのアニメーションキーをクリップ下端に菱形で表示する
+  {
+    dl->PushClipRect(body.Min, body.Max, true);
+    const int cy = (int)body.Max.y - 4;
+    for(const auto& f : entity->filters_) {
+      for(const auto& clip : f.props.props) {
+        std::visit(
+          [&](auto&& c) {
+            if(!c.has_animation()) return;
+            for(const auto& k : c.keys) {
+              int kx = ctx_.f2view((FrameT)k.frame_);
+              if(kx < body.Min.x || kx > body.Max.x) continue;
+              draw_diamond(kx, cy, 7.0f, IM_COL32(255, 240, 120, 235), dl);
+            }
+          },
+          clip);
+      }
+    }
+    dl->PopClipRect();
+  }
+
+  // 選択の強調枠
+  if(is_selected) dl->AddRect(body.Min, body.Max, IM_COL32(255, 235, 130, 255), 3.0f, 0, 2.0f);
   dl->PopClipRect();
+
+  // ホバーのツールチップ(ドラッグ中・メニュー表示中は出さない)
+  if(hovered && ctx_.dragging_entt == nullptr && !ImGui::IsPopupOpen("tl_clip_ctx")) {
+    const float fps = ctx_.fps > 0 ? ctx_.fps : 30.0f;
+    ImGui::SetTooltip("%s\n種別: %s%s\n開始 %d  終了 %d  長さ %d f (%.2f 秒)", name, entt_type_label(entity.get()), entity->active_ ? "" : "  (無効)", *start, *end, *end - *start, (*end - *start) / fps);
+  }
   return hovered;
 }
 
 void EndTrack() {}
+
+void SetTimelineRightStripWidth(int w) { ctx_.right_strip_w = std::max(0, w); }
 
 void SetTimelineViewRange(FrameT start, FrameT end) {
   ctx_.vis_start = start;
