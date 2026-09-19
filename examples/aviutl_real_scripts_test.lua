@@ -2,11 +2,11 @@
 movutl.Project.New(240, 240, 30)
 
 local photo = movutl.add_new_image_track("photo", "../assets/textures/warning.jpeg", 0, 10)
-photo.pos = movutl.Vec3(10 - photo.width / 2, 60 - photo.height / 2, 0)
+photo.pos_ = movutl.Vec3(10 - 120, 60 - 120, 0) -- 中心原点(コンポ240x240)
 print("add softfocus filter:", movutl.add_filter_to_image(photo, "aviutl_real_softfocus"))
 
 local dot = movutl.add_new_image_track("dot", "../assets/textures/warning.jpeg", 0, 30)
-dot.pos = movutl.Vec3(170 - dot.width / 2, 120 - dot.height / 2, 0)
+dot.pos_ = movutl.Vec3(170 - 120, 120 - 120, 0)
 print("add auto_circle filter:", movutl.add_filter_to_image(dot, "円運動"))
 movutl.set_image_filter_param(dot, "円運動", "半径", 40)
 movutl.set_image_filter_param(dot, "円運動", "速度", 30)
