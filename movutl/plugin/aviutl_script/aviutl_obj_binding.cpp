@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <cstring>
@@ -99,6 +100,20 @@ int l_obj_getpixel(lua_State* L) {
   }
   for(int i = 0; i < 4; i++) lua_pushinteger(L, c[i]);
   return 4;
+}
+
+// obj.putpixel(x,y,r,g,b[,a]): 0始まりの画素を書き換える(範囲外は無視、aの既定は255)。putpixeldata同様、暗黙drawの対象外にする
+int l_obj_putpixel(lua_State* L) {
+  auto* ctx  = get_ctx(L);
+  Image* img = ctx->fpip->img;
+  if(!img) return 0;
+  int x = (int)std::floor(luaL_checknumber(L, 1));
+  int y = (int)std::floor(luaL_checknumber(L, 2));
+  if(x < 0 || y < 0 || x >= (int)img->width || y >= (int)img->height) return 0;
+  auto ch      = [&](int i, double def) { return (uint8_t)std::clamp(luaL_optnumber(L, i, def), 0.0, 255.0); };
+  (*img)(x, y) = Vec4b(ch(3, 0), ch(4, 0), ch(5, 0), ch(6, 255));
+  ctx->drawn   = true;
+  return 0;
 }
 
 // AviUtl正規のキーのみ対応。未対応キーはnilを返す(旧独自キーimage_w/image_h/screen_w/screen_h/framerateはobj.w/h/screen_w/screen_h/framerate変数へ移行済み)
@@ -367,6 +382,7 @@ void setup_obj_table(lua_State* L, AviUtlObjContext* ctx) {
   reg_fn("getpixeldata", l_obj_getpixeldata);
   reg_fn("putpixeldata", l_obj_putpixeldata);
   reg_fn("getpixel", l_obj_getpixel);
+  reg_fn("putpixel", l_obj_putpixel);
   reg_fn("getinfo", l_obj_getinfo);
   reg_fn("effect", l_obj_effect);
   reg_fn("draw", l_obj_draw);

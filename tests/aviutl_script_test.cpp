@@ -173,6 +173,23 @@ TEST_CASE("obj.getpixel(x,y): 画素をr,g,b,aまたはcol,aで取得できる(�
   CHECK(v[5] == 0);  // 範囲外は0
 }
 
+TEST_CASE("obj.putpixel: 指定画素だけを書き換え、範囲外は無視する") {
+  std::string text       = "@putpixelテスト\n"
+                           "obj.putpixel(1, 0, 255, 128, 64)\n"
+                           "obj.putpixel(0, 1, 1, 2, 3, 4)\n"
+                           "obj.putpixel(9, 9, 255, 255, 255)\n";
+  FilterPluginTable* plg = register_test_script(text, "putpixelテスト");
+  REQUIRE(plg != nullptr);
+  Image img(2, 2);
+  img.fill_rgba(Vec4b(0, 0, 0, 0));
+  FilterInData fin;
+  fin.img = &img;
+  CHECK(plg->fn_proc(plg, &fin, cutil::Prop{}));
+  CHECK(img(1, 0) == Vec4b(255, 128, 64, 255)); // aの既定は255
+  CHECK(img(0, 1) == Vec4b(1, 2, 3, 4));
+  CHECK(img(0, 0) == Vec4b(0, 0, 0, 0));
+}
+
 TEST_CASE("register_aviutl_scripts: 2値化スクリプトをフォルダスキャン経由でフィルタとして登録・実行できる") {
   std::string text = "--track0:しきい値,0,255,128,1\n"
                      "@AviUtlテスト2値化\n"
