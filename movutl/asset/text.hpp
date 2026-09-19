@@ -31,7 +31,7 @@ enum TextDecoration : int32_t {
 class TextEntt final : public Entity {
 private:
   std::string last_key_; // 再描画が必要かの判定用。img_を作った時のパラメータを連結した文字列
-  int32_t pad_       = 0; // img_の四辺に足した装飾用の余白(px)。揃えの基準は余白を除いた文字ブロック
+  int32_t pad_ = 0;      // img_の四辺に足した装飾用の余白(px)。揃えの基準は余白を除いた文字ブロック
 
   void re_render_image();
 
@@ -41,21 +41,21 @@ public:
   ~TextEntt() = default;
 
   Ref<Image> img_;
-  int32_t dirty_ = 0;                                // MPROPERTY(name="更新フラグ", hidden=true)
-  float speed    = 100.0;                            // MPROPERTY(name="再生速度")
-  std::string font;                                  // MPROPERTY(name="フォント", type="font")
-  std::string text;                                  // MPROPERTY(name="テキスト")
-  bool separate         = false;                     // MPROPERTY(name="個別オブジェクト")
-  int32_t font_size_    = 34;                        // MPROPERTY(name="サイズ", min=1, max=1000)
-  bool bold_            = false;                     // MPROPERTY(name="太字")
-  bool italic_          = false;                     // MPROPERTY(name="斜体")
-  int32_t spacing_x_    = 0;                         // MPROPERTY(name="字間")
-  int32_t spacing_y_    = 0;                         // MPROPERTY(name="行間")
-  bool monospace_       = false;                     // MPROPERTY(name="等間隔")
-  int32_t align_        = TextAlign_CenterMiddle;    // MPROPERTY(name="揃え(0-8: 左上,中央上,右上,左中,中央,右中,左下,中央下,右下)", hidden_inspector=true)
-  int32_t deco_         = TextDeco_Plain;            // MPROPERTY(name="文字装飾(0:標準 1:影 2:影(薄) 3:縁取り 4:縁取り(細))", hidden_inspector=true)
-  Vec4b color_          = Vec4b(255, 255, 255, 255); // MPROPERTY(name="文字色")
-  Vec4b deco_color_     = Vec4b(0, 0, 0, 255);       // MPROPERTY(name="装飾色")
+  int32_t dirty_ = 0;                             // MPROPERTY(name="更新フラグ", hidden=true)
+  float speed    = 100.0;                         // MPROPERTY(name="再生速度")
+  std::string font;                               // MPROPERTY(name="フォント", type="font")
+  std::string text;                               // MPROPERTY(name="テキスト")
+  bool separate      = false;                     // MPROPERTY(name="個別オブジェクト")
+  int32_t font_size_ = 34;                        // MPROPERTY(name="サイズ", min=1, max=1000)
+  bool bold_         = false;                     // MPROPERTY(name="太字")
+  bool italic_       = false;                     // MPROPERTY(name="斜体")
+  int32_t spacing_x_ = 0;                         // MPROPERTY(name="字間")
+  int32_t spacing_y_ = 0;                         // MPROPERTY(name="行間")
+  bool monospace_    = false;                     // MPROPERTY(name="等間隔")
+  int32_t align_     = TextAlign_CenterMiddle;    // MPROPERTY(name="揃え(0-8: 左上,中央上,右上,左中,中央,右中,左下,中央下,右下)", hidden_inspector=true)
+  int32_t deco_      = TextDeco_Plain;            // MPROPERTY(name="文字装飾(0:標準 1:影 2:影(薄) 3:縁取り 4:縁取り(細))", hidden_inspector=true)
+  Vec4b color_       = Vec4b(255, 255, 255, 255); // MPROPERTY(name="文字色")
+  Vec4b deco_color_  = Vec4b(0, 0, 0, 255);       // MPROPERTY(name="装飾色")
 
   // 揃え位置の基点が、画像中心からどれだけずれているか(px)。Entity::compositeのorigin_offsetに渡す
   Vec2 align_origin_offset() const;

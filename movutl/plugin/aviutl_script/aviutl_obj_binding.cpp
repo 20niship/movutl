@@ -35,7 +35,7 @@ ObjEntityInfo query_entity_info(const AviUtlObjContext* ctx) {
   Entity* e  = ctx->fpip->entt;
   info.frame = ctx->frame;
   if(!e) return info;
-  info.id          = e->guid_;
+  info.id = e->guid_;
   info.x = e->pos_[0], info.y = e->pos_[1], info.z = e->pos_[2];
   info.frame       = ctx->frame - e->fstart_;
   info.total_frame = e->fend_ - e->fstart_;
@@ -265,7 +265,7 @@ void perform_draw(lua_State* L, AviUtlObjContext* ctx, double x, double y, doubl
   pl.x = x, pl.y = y;
   pl.anchor_x = obj_field_or_arg(L, 999, "cx", 0.0), pl.anchor_y = obj_field_or_arg(L, 999, "cy", 0.0);
   pl.scale_x = pl.scale_y = zoom;
-  pl.aspect = std::clamp(obj_field_or_arg(L, 999, "aspect", 0.0), -1.0, 1.0);
+  pl.aspect               = std::clamp(obj_field_or_arg(L, 999, "aspect", 0.0), -1.0, 1.0);
   pl.rot_x = rx, pl.rot_y = ry, pl.rot_z = rz;
   pl.alpha = (float)alpha;
   Image tmp(img->width, img->height);

@@ -19,13 +19,13 @@ namespace detail {
 
 // テキスト描画のスタイル。sizeはピクセル単位のフォントサイズ
 struct TextStyle {
-  int size        = 34;
-  bool bold       = false;
-  bool italic     = false;
-  int spacing_x   = 0;     // 字間(px)
-  int spacing_y   = 0;     // 行間(px)
-  bool monospace  = false; // 等間隔(半角=size/2, 全角=size)
-  int line_align  = 0;     // 複数行のときの行内揃え。0:左 1:中央 2:右
+  int size       = 34;
+  bool bold      = false;
+  bool italic    = false;
+  int spacing_x  = 0;     // 字間(px)
+  int spacing_y  = 0;     // 行間(px)
+  bool monospace = false; // 等間隔(半角=size/2, 全角=size)
+  int line_align = 0;     // 複数行のときの行内揃え。0:左 1:中央 2:右
 };
 
 struct FontRenderManager {

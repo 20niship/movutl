@@ -33,14 +33,15 @@ bool TextEntt::render(Composition* cmp, Image* target, int frame) {
 
 Vec2 TextEntt::align_origin_offset() const {
   if(!img_) return Vec2(0, 0);
-  const int a = std::clamp((int)align_, 0, 8);
+  const int a    = std::clamp((int)align_, 0, 8);
   const float bw = (float)img_->width - 2 * pad_, bh = (float)img_->height - 2 * pad_;
   return Vec2((a % 3 - 1) * bw / 2.0f, (a / 3 - 1) * bh / 2.0f);
 }
 
 void TextEntt::re_render_image() {
   std::string key = text + '\x1f' + font;
-  for(int v : {(int)font_size_, (int)spacing_x_, (int)spacing_y_, (int)align_, (int)deco_, (int)bold_, (int)italic_, (int)monospace_, (int)color_[0], (int)color_[1], (int)color_[2], (int)color_[3], (int)deco_color_[0], (int)deco_color_[1], (int)deco_color_[2], (int)deco_color_[3]}) key += '\x1f' + std::to_string(v);
+  for(int v : {(int)font_size_, (int)spacing_x_, (int)spacing_y_, (int)align_, (int)deco_, (int)bold_, (int)italic_, (int)monospace_, (int)color_[0], (int)color_[1], (int)color_[2], (int)color_[3], (int)deco_color_[0], (int)deco_color_[1], (int)deco_color_[2], (int)deco_color_[3]})
+    key += '\x1f' + std::to_string(v);
   if(!last_key_.empty() && key == last_key_) return;
   if(font.empty()) {
     LOG_F(ERROR, "TextEntt: no font available");
@@ -58,7 +59,7 @@ void TextEntt::re_render_image() {
   st.line_align = std::clamp((int)align_, 0, 8) % 3; // 複数行の行内揃えは揃えの左/中央/右と同じ
   if(!FontRenderManager::renderText(img_.get(), text.c_str(), font.c_str(), st, color_)) return;
   last_key_ = key;
-  pad_          = 0;
+  pad_      = 0;
 
   // 装飾のために四辺へ同じ余白pad_を足した画像にする(揃えの基準になる文字ブロックの位置が余白で偏らないように対称にする)
   int outline_w = 0, shadow_d = 0;

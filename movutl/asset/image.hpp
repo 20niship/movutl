@@ -16,9 +16,9 @@ struct Placement {
   double x = 0, y = 0;
   double anchor_x = 0, anchor_y = 0;
   double scale_x = 1, scale_y = 1; // 倍率(1.0=等倍)
-  double aspect  = 0;              // -1〜1。正で横が縮み(縦長)、負で縦が縮む
+  double aspect = 0;               // -1〜1。正で横が縮み(縦長)、負で縦が縮む
   double rot_x = 0, rot_y = 0, rot_z = 0;
-  float alpha    = 1.0f;
+  float alpha     = 1.0f;
   BlendType blend = Blend_Alpha;
 };
 

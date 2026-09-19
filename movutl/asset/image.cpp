@@ -137,9 +137,9 @@ bool Image::transform_to(Image* dst, double cx, double cy, double sx, double sy,
   MU_ASSERT(dst);
   if(this->width <= 0 || this->height <= 0 || dst->width <= 0 || dst->height <= 0) return false;
   if(sx == 0 || sy == 0) return true;
-  const double rad   = angle_deg * M_PI / 180.0;
-  const double cos_a = std::cos(rad);
-  const double sin_a = std::sin(rad);
+  const double rad    = angle_deg * M_PI / 180.0;
+  const double cos_a  = std::cos(rad);
+  const double sin_a  = std::sin(rad);
   const double src_cx = this->width / 2.0;
   const double src_cy = this->height / 2.0;
 
@@ -166,8 +166,8 @@ bool Image::transform_to(Image* dst, double cx, double cy, double sx, double sy,
   for(int y = bbox_y0; y < bbox_y1; ++y) {
     for(int x = bbox_x0; x < bbox_x1; ++x) {
       // dst上のこのピクセルが、画像中心を軸とした逆回転・逆拡大でsrcのどこに対応するか
-      const double dx    = x - cx;
-      const double dy    = y - cy;
+      const double dx     = x - cx;
+      const double dy     = y - cy;
       const int src_x_int = (int)std::floor(src_cx + (dx * cos_a + dy * sin_a) / sx);
       if(src_x_int < 0 || src_x_int >= (int)this->width) continue;
       const int src_y_int = (int)std::floor(src_cy + (-dx * sin_a + dy * cos_a) / sy);
@@ -183,8 +183,10 @@ bool Image::place(Image* dst, const Placement& pl) const {
   MU_ASSERT(dst);
   if(empty() || dst->empty()) return false;
   double sx = pl.scale_x, sy = pl.scale_y;
-  if(pl.aspect > 0) sx *= 1.0 - pl.aspect;
-  else sy *= 1.0 + pl.aspect;
+  if(pl.aspect > 0)
+    sx *= 1.0 - pl.aspect;
+  else
+    sy *= 1.0 + pl.aspect;
   // 基点を拡大したもの。これがplの位置に来るよう画像を置く
   const double px = pl.anchor_x * sx, py = pl.anchor_y * sy;
   const double ox = dst->width / 2.0 + pl.x, oy = dst->height / 2.0 + pl.y;
@@ -209,9 +211,9 @@ bool Image::place(Image* dst, const Placement& pl) const {
   Vec2 quad[4];
   for(int i = 0; i < 4; i++) {
     const double x = cxs[i] - px, y = cys[i] - py;
-    const double y1 = y * cax, z1 = y * sax;                     // Rx(z=0の平面)
+    const double y1 = y * cax, z1 = y * sax;                        // Rx(z=0の平面)
     const double x2 = x * cay + z1 * say, z2 = -x * say + z1 * cay; // Ry
-    const double x3 = x2 * c - y1 * sn, y3 = x2 * sn + y1 * c;   // Rz
+    const double x3 = x2 * c - y1 * sn, y3 = x2 * sn + y1 * c;      // Rz
     const double persp = kCameraDistance / std::max(kCameraDistance + z2, 1.0);
     quad[i]            = Vec2((float)(ox + x3 * persp), (float)(oy + y3 * persp));
   }

@@ -41,7 +41,7 @@ bool fuzzy_match(const char* src, const char* filter) {
 
 // テキストの揃え位置(3x3)と文字装飾。数値プロパティ(サイズ/太字/字間など)は汎用のプロパティ欄が担当する
 bool draw_text_style_ui(TextEntt* t) {
-  bool changed = false;
+  bool changed                       = false;
   static const char* kAlignLabels[9] = {"左上", "上", "右上", "左", "中央", "右", "左下", "下", "右下"};
   ImGui::TextUnformatted("揃え");
   for(int i = 0; i < 9; i++) {

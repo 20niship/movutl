@@ -328,6 +328,27 @@ TEST_CASE("register_aviutl_scripts: obj.draw()を明示的に呼ばなくてもo
   CHECK(img(5, 5)[0] == 255); // obj.draw()の呼び出しが無くてもox=3の移動が反映される
 }
 
+TEST_CASE("register_aviutl_scripts: obj.aspect(縦横比)とobj.ryが暗黙drawに反映される") {
+  auto count_row = [](const Image& img, int y) {
+    int n = 0;
+    for(size_t x = 0; x < img.width; x++) n += img(x, y)[3] > 0;
+    return n;
+  };
+  auto run = [&](const char* script, const char* name) {
+    FilterPluginTable* plg = register_test_script(script, name);
+    REQUIRE(plg != nullptr);
+    Image img(20, 20);
+    for(size_t i = 0; i < img.size(); i++) img[i] = Vec4b(255, 0, 0, 255);
+    FilterInData fin;
+    fin.img = &img;
+    REQUIRE(plg->fn_proc(plg, &fin, cutil::Prop{}));
+    return count_row(img, 10);
+  };
+  CHECK(run("@縦横比0\nobj.oy = 0\n", "縦横比0") == 20);
+  CHECK(run("@縦横比テスト\nobj.aspect = 0.5\n", "縦横比テスト") == 10); // 正で横が縮む
+  CHECK(run("@Y軸回転テスト\nobj.ry = 60\n", "Y軸回転テスト") < 20);
+}
+
 TEST_CASE("register_aviutl_scripts: obj.cx(基点)は画像中心からのオフセットとして暗黙drawに反映される") {
   FilterPluginTable* plg = register_test_script("@基点テスト\nobj.cx = 2\n", "基点テスト");
   REQUIRE(plg != nullptr);

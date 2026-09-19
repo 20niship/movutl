@@ -1,9 +1,9 @@
+#include <algorithm>
 #include <codecvt>
 #include <iostream>
 #include <locale>
 #include <math.h>
 #include <stdio.h>
-#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -111,8 +111,10 @@ void FontRenderManager::FontFace::render_text(const char* text, const TextStyle&
   std::vector<std::u32string> lines(1);
   for(char32_t ch : u32) {
     if(ch == U'\r') continue;
-    if(ch == U'\n') lines.emplace_back();
-    else lines.back() += ch;
+    if(ch == U'\n')
+      lines.emplace_back();
+    else
+      lines.back() += ch;
   }
 
   // 1パス目: 各行の幅
@@ -137,7 +139,7 @@ void FontRenderManager::FontFace::render_text(const char* text, const TextStyle&
 
   // 2パス目: 描画
   for(size_t i = 0; i < lines.size(); i++) {
-    int x = st.line_align == 1 ? (max_w - widths[i]) / 2 : st.line_align == 2 ? max_w - widths[i] : 0;
+    int x              = st.line_align == 1 ? (max_w - widths[i]) / 2 : st.line_align == 2 ? max_w - widths[i] : 0;
     const int baseline = (int)i * (line_h + st.spacing_y) + ascender;
     for(char32_t ch : lines[i]) {
       if(!load_glyph(face, ch, st)) continue;

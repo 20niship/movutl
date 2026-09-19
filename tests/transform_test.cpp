@@ -26,8 +26,8 @@ int opaque_in_row(const Image& img, int y) {
 } // namespace
 
 TEST_CASE("Entity::composite: 拡大率のX/Yを別々に反映する") {
-  auto src = make_src(4, 4);
-  auto ent = cutil::make_ref<Image>();
+  auto src    = make_src(4, 4);
+  auto ent    = cutil::make_ref<Image>();
   ent->scale_ = Vec2(200, 100); // 幅2倍・高さ等倍
   auto t      = make_target(20, 20);
   REQUIRE(ent->composite(src, &t));
@@ -36,8 +36,8 @@ TEST_CASE("Entity::composite: 拡大率のX/Yを別々に反映する") {
 }
 
 TEST_CASE("Entity::composite: 縦横比aspectが正だと横が縮み、負だと縦が縮む") {
-  auto src = make_src(8, 8);
-  auto ent = cutil::make_ref<Image>();
+  auto src     = make_src(8, 8);
+  auto ent     = cutil::make_ref<Image>();
   ent->aspect_ = 0.5f;
   auto t       = make_target(20, 20);
   REQUIRE(ent->composite(src, &t));
@@ -65,8 +65,8 @@ TEST_CASE("Entity::composite: Y軸回転で見かけの幅が狭まる") {
 }
 
 TEST_CASE("Entity::composite: 位置は整数に丸められず小数の回転中心でも欠けない") {
-  auto src = make_src(10, 10);
-  auto ent = cutil::make_ref<Image>();
+  auto src       = make_src(10, 10);
+  auto ent       = cutil::make_ref<Image>();
   ent->rotation_ = 30.f;
   ent->pos_      = Vec3(0.5f, 0.5f, 0);
   auto t         = make_target(40, 40);

@@ -91,7 +91,7 @@ Ref<Image> render_style(const char* text, const detail::TextStyle& st) {
 TEST_CASE("FontRenderManager::renderText: スタイルがサイズに反映される") {
   if(!fs_exists(bundled_font())) return;
   detail::TextStyle base;
-  base.size = 20;
+  base.size  = 20;
   auto plain = render_style("ABCD", base);
   REQUIRE(plain->width > 0);
 
@@ -147,8 +147,8 @@ TEST_CASE("TextEntt: 文字装飾の余白は揃えの基準(文字ブロック)
   Image target(200, 200);
   t->render(comp.get(), &target, 0);
   const int plain_w = t->img_->width;
-  t->deco_   = TextDeco_Outline;
-  t->align_  = TextAlign_LeftMiddle;
+  t->deco_          = TextDeco_Outline;
+  t->align_         = TextAlign_LeftMiddle;
   t->render(comp.get(), &target, 0);
   CHECK((int)t->img_->width > plain_w);
   const float block_w = (float)t->img_->width - 2 * std::max(1, t->font_size_ / 12);
