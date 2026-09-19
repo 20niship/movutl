@@ -72,7 +72,7 @@ class PropsWriter:
 
     def register_class(self, cls: MClass):
         prefixes = {m.group(1) for f in cls.funcs if (m := PROPS_INFO_NAME_RE.match(f.name))}
-        for prefix in prefixes:
+        for prefix in sorted(prefixes):  # setの反復順はPYTHONHASHSEEDで変わるため、生成物が環境で揺れないよう名前順に固定する
             if self._should_write(cls, f"get{prefix}PropsInfo"):
                 self._write_getPropsInfo_fn(cls, prefix)
             if self._should_write(cls, f"get{prefix}Props"):
