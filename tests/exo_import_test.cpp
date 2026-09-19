@@ -9,6 +9,7 @@
 #include <movutl/asset/shape.hpp>
 #include <movutl/asset/text.hpp>
 #include <movutl/command/exo/exo_import.hpp>
+#include <movutl/command/exo/exo_report.hpp>
 #include <movutl/core/command.hpp>
 #include <set>
 
@@ -242,4 +243,28 @@ TEST_CASE("exo: 既存Entityと重ならない位置までレイヤーを下げ�
       for(size_t j = i + 1; j < l.entts.size(); j++) CHECK((l.entts[i]->fend_ < l.entts[j]->fstart_ || l.entts[j]->fend_ < l.entts[i]->fstart_));
   CHECK(comp->fend == 500);
   fs::remove_all(dir);
+}
+
+namespace {
+// 一時ディレクトリにexo(ASCIIのみ)を書き出して取り込む。日本語のキーが要るテストは16進エスケープで書く
+int import_exo_text(const std::string& body) {
+  auto path = std::filesystem::temp_directory_path() / "movutl_test_ascii.exo";
+  {
+    std::ofstream ofs(path, std::ios::binary);
+    ofs << body;
+  }
+  return import_exo_file(path.string().c_str());
+}
+} // namespace
+
+TEST_CASE("exo: 未対応オブジェクトは取り込み結果レポートに記録される") {
+  Project::New();
+  auto n = import_exo_text("[exedit]\r\nwidth=640\r\nheight=360\r\nrate=30\r\nscale=1\r\n"
+                           "[0]\r\nstart=1\r\nend=10\r\nlayer=1\r\n[0.0]\r\n_name=Unknown\r\n"
+                           "[1]\r\nstart=1\r\nend=10\r\nlayer=2\r\n[1.0]\r\n_name=Unknown\r\n");
+  CHECK(n == 0);
+  auto& rep = exo_import_report();
+  CHECK(rep.imported == 0);
+  REQUIRE(rep.items.size() == 1);
+  CHECK(rep.items[0].count == 2);
 }
