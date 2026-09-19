@@ -67,6 +67,33 @@ const char* ease_name(AniInterpType t) {
     if(o.type == t) return o.name;
   return "Linear";
 }
+
+// イージング曲線のサムネイル(名前+曲線)。クリックされたらtrue
+bool draw_ease_thumb(AniInterpType type, const char* name, bool selected) {
+  const ImVec2 size(96, 84);
+  ImVec2 o = ImGui::GetCursorScreenPos();
+  ImGui::PushID((int)type);
+  bool clicked = ImGui::InvisibleButton("##ease_thumb", size);
+  ImGui::PopID();
+  bool hovered   = ImGui::IsItemHovered();
+  ImDrawList* dl = ImGui::GetWindowDrawList();
+  ImVec2 mx(o.x + size.x, o.y + size.y);
+  dl->AddRectFilled(o, mx, hovered ? IM_COL32(90, 90, 100, 255) : IM_COL32(60, 60, 66, 255));
+  if(selected) dl->AddRect(o, mx, IM_COL32(80, 150, 255, 255), 0.0f, 0, 2.0f);
+  dl->AddText(ImVec2(o.x + 4, o.y + 2), IM_COL32(230, 230, 230, 255), name);
+  const float x0 = o.x + 12, x1 = mx.x - 12, y0 = mx.y - 12, y1 = o.y + 28; // y0=値0, y1=値1(オーバーシュート用に上下へ余白)
+  dl->PushClipRect(ImVec2(o.x, o.y + 16), mx, true);
+  ImVec2 prev;
+  for(int i = 0; i <= 40; i++) {
+    float t = i / 40.0f;
+    float v = (float)detail::apply_ease(type, t);
+    ImVec2 pt(x0 + (x1 - x0) * t, y0 + (y1 - y0) * v);
+    if(i > 0) dl->AddLine(prev, pt, IM_COL32(90, 160, 255, 255), 1.5f);
+    prev = pt;
+  }
+  dl->PopClipRect();
+  return clicked;
+}
 } // namespace
 
 bool wd_bezier_handle_editor(std::array<float, 4>& v, float size) {
@@ -205,8 +232,15 @@ bool wd_animatable_row(const cutil::PropInfo::Field& f, AnimProps& anim, int idx
     for(auto& pr : kPresets)
       if(ImGui::MenuItem(pr.name, nullptr, animated && cur == pr.type)) pick(pr.type);
     if(ImGui::BeginMenu("easing")) {
-      for(auto& opt : kEaseOptions)
-        if(ImGui::MenuItem(opt.name, nullptr, animated && cur == opt.type)) pick(opt.type);
+      int n = 0;
+      for(auto& opt : kEaseOptions) {
+        if(opt.type == AniInterpType::Custom) continue; // ベジエは「曲線移動」から
+        if(n++ % 4 != 0) ImGui::SameLine();
+        if(draw_ease_thumb(opt.type, opt.name, animated && cur == opt.type)) {
+          pick(opt.type);
+          ImGui::CloseCurrentPopup();
+        }
+      }
       ImGui::EndMenu();
     }
     ImGui::Separator();
