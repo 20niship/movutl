@@ -78,12 +78,27 @@ int l_obj_putpixeldata(lua_State* L) {
   return 0;
 }
 
+// obj.getpixel(): (w,h)を返す。obj.getpixel(x,y[,"col"]): 0始まりの画素を(r,g,b,a)、"col"指定時は(0xRRGGBB,a)で返す。範囲外は全て0
 int l_obj_getpixel(lua_State* L) {
   auto* ctx  = get_ctx(L);
   Image* img = ctx->fpip->img;
-  lua_pushinteger(L, img ? img->width : 0);
-  lua_pushinteger(L, img ? img->height : 0);
-  return 2;
+  if(lua_gettop(L) < 2) {
+    lua_pushinteger(L, img ? img->width : 0);
+    lua_pushinteger(L, img ? img->height : 0);
+    return 2;
+  }
+  int x       = (int)std::floor(luaL_checknumber(L, 1));
+  int y       = (int)std::floor(luaL_checknumber(L, 2));
+  bool col    = lua_isstring(L, 3) && std::string(lua_tostring(L, 3)) == "col";
+  bool inside = img && x >= 0 && y >= 0 && x < (int)img->width && y < (int)img->height;
+  Vec4b c     = inside ? (*img)(x, y) : Vec4b(0, 0, 0, 0);
+  if(col) {
+    lua_pushinteger(L, (c[0] << 16) | (c[1] << 8) | c[2]);
+    lua_pushinteger(L, c[3]);
+    return 2;
+  }
+  for(int i = 0; i < 4; i++) lua_pushinteger(L, c[i]);
+  return 4;
 }
 
 // AviUtl正規のキーのみ対応。未対応キーはnilを返す(旧独自キーimage_w/image_h/screen_w/screen_h/framerateはobj.w/h/screen_w/screen_h/framerate変数へ移行済み)

@@ -161,6 +161,18 @@ TEST_CASE("obj.getinfo: AviUtl正規キーのみ対応し旧独自キーはnil�
   CHECK(v[5] == 60);
 }
 
+TEST_CASE("obj.getpixel(x,y): 画素をr,g,b,aまたはcol,aで取得できる(引数なしは従来どおりw,h)") {
+  Image img;
+  FilterInData fin;
+  // probeは2x2に作り直すため、事前に画素を仕込めない。putpixeldataで直前に書いた画素を読み戻して検証する
+  auto v = probe("obj.putpixeldata(string.char(10,20,30,40, 0,0,0,0, 0,0,0,0, 0,0,0,0)) or 0, select(2, obj.getpixel()), obj.getpixel(0, 0, 'col') == 0x0A141E and 1 or 0, (select(2, obj.getpixel(0, 0, 'col'))), (select(3, obj.getpixel(0, 0))), obj.getpixel(5, 5)", fin, img);
+  CHECK(v[1] == 2);  // 引数なしのgetpixel()は(w,h)
+  CHECK(v[2] == 1);  // "col"は0xRRGGBB
+  CHECK(v[3] == 40); // 2値目はa
+  CHECK(v[4] == 30); // 3値目はb
+  CHECK(v[5] == 0);  // 範囲外は0
+}
+
 TEST_CASE("register_aviutl_scripts: 2値化スクリプトをフォルダスキャン経由でフィルタとして登録・実行できる") {
   std::string text = "--track0:しきい値,0,255,128,1\n"
                      "@AviUtlテスト2値化\n"
