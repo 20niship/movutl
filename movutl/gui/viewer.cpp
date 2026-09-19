@@ -164,17 +164,69 @@ void ViewerWindow::Update() {
     }
   }
 
-  if(hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-    ImVec2 comp_pt = screen_to_comp(ImGui::GetMousePos(), img_min, disp_size, cmp_w, cmp_h);
-    Ref<Entity> hit = hit_test_entity(*comp, GizmoPt{comp_pt.x, comp_pt.y});
-    if(hit) {
-      clear_selected_entts();
-      select_entt(hit);
+  const GizmoPt comp_size{cmp_w, cmp_h};
+  const float scale_px = disp_size.x / cmp_w; // コンポ1pxあたりの画面px
+  const GizmoPt mouse_comp = [&] {
+    ImVec2 c = screen_to_comp(ImGui::GetMousePos(), img_min, disp_size, cmp_w, cmp_h);
+    return GizmoPt{c.x, c.y};
+  }();
+
+  if(drag_.part != GizmoPart::None) {
+    if(!ImGui::IsMouseDown(ImGuiMouseButton_Left) || !drag_.entt) {
+      drag_ = {};
+    } else {
+      EntityGizmo g0;
+      entity_gizmo_of(*drag_.entt, comp_size, g0); // src_size/origin_offsetの取得用(変換は開始時のs0を使う)
+      const bool shift = ImGui::GetIO().KeyShift, alt = ImGui::GetIO().KeyAlt;
+      GizmoXform x     = drag_.s0;
+      switch(drag_.part) {
+      case GizmoPart::Body: x = gizmo_drag_move(drag_.s0, drag_.m0, mouse_comp); break;
+      case GizmoPart::Scale: {
+        const double hw = g0.src_size.x / 2, hh = g0.src_size.y / 2;
+        const GizmoPt corners[4] = {{-hw, -hh}, {hw, -hh}, {hw, hh}, {-hw, hh}};
+        x                        = gizmo_drag_scale(drag_.s0, g0.origin_offset, comp_size, corners[drag_.corner], mouse_comp, shift);
+        break;
+      }
+      case GizmoPart::Rotate: x = gizmo_drag_rotate(drag_.s0, comp_size, drag_.m0, mouse_comp); break;
+      case GizmoPart::Anchor: {
+        const GizmoPt local = gizmo_comp_to_local(drag_.s0, g0.origin_offset, comp_size, mouse_comp);
+        x                   = gizmo_set_anchor(drag_.s0, local - g0.origin_offset, !alt); // Altで見た目の補正を無効化
+        break;
+      }
+      default: break;
+      }
+      {
+        std::lock_guard<std::mutex> lock(drag_.entt->mtx);
+        entity_apply_xform(*drag_.entt, x);
+      }
+      comp->invalidate_cache_range(drag_.entt->fstart_, drag_.entt->fend_);
     }
+  } else if(hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+    GizmoHit hit;
+    Ref<Entity> target;
+    EntityGizmo g;
+    // 選択中のEntityのハンドルを最優先(重なる他のEntityを選び直さない)
+    for(auto& e : get_selected_entts()) {
+      if(!e->visible(comp->frame) || !entity_gizmo_of(*e, comp_size, g)) continue;
+      hit = gizmo_hit_test(g.quad, g.anchor_pt, mouse_comp, (kHandleHalf + 3.0f) / scale_px, kRotHandleGap / scale_px);
+      if(hit.part != GizmoPart::None) {
+        target = e;
+        break;
+      }
+    }
+    if(!target) {
+      target = hit_test_entity(*comp, mouse_comp);
+      if(target) {
+        clear_selected_entts();
+        select_entt(target);
+        entity_gizmo_of(*target, comp_size, g);
+        hit = {GizmoPart::Body, -1};
+      }
+    }
+    if(target && hit.part != GizmoPart::None) drag_ = {hit.part, hit.corner, mouse_comp, g.xform, target};
   }
 
   {
-    const GizmoPt comp_size{cmp_w, cmp_h};
     for(auto& e : get_selected_entts()) {
       EntityGizmo g;
       if(!e->visible(comp->frame) || !entity_gizmo_of(*e, comp_size, g)) continue;
