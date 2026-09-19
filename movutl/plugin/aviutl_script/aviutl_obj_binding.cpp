@@ -155,6 +155,26 @@ int l_obj_rand(lua_State* L) {
   return 1;
 }
 
+// obj.interpolation(time,x0,y0,z0,x1,y1,z1,x2,y2,z2,x3,y3,z3): 4点のCatmull-Romスプラインで、p1→p2間をtime(0-1)で補間した(x,y,z)を返す
+int l_obj_interpolation(lua_State* L) {
+  double t = luaL_checknumber(L, 1);
+  double p[4][3];
+  for(int i = 0; i < 4; i++)
+    for(int k = 0; k < 3; k++) p[i][k] = luaL_checknumber(L, 2 + i * 3 + k);
+  double t2 = t * t, t3 = t2 * t;
+  for(int k = 0; k < 3; k++) lua_pushnumber(L, 0.5 * ((2 * p[1][k]) + (-p[0][k] + p[2][k]) * t + (2 * p[0][k] - 5 * p[1][k] + 4 * p[2][k] - p[3][k]) * t2 + (-p[0][k] + 3 * p[1][k] - 3 * p[2][k] + p[3][k]) * t3));
+  return 3;
+}
+
+// obj.getvalue(target[,time]): 現在のobj変数("x","ox","zoom","rz"等)またはトラックバー("track0"-"track3")の値を返す。未知のtargetはnil
+// ponytail: 他フレームの値(time指定)は保持していないので無視して現在値を返す
+int l_obj_getvalue(lua_State* L) {
+  std::string key = luaL_checkstring(L, 1);
+  lua_getglobal(L, "obj");
+  lua_getfield(L, -1, key.c_str());
+  return lua_isnumber(L, -1) ? 1 : (lua_pushnil(L), 1);
+}
+
 // AviUtl正規のキーのみ対応。未対応キーはnilを返す(旧独自キーimage_w/image_h/screen_w/screen_h/framerateはobj.w/h/screen_w/screen_h/framerate変数へ移行済み)
 // ponytail: saving/editing/multi_object/camera_modeはmovutlに対応する状態が無いので固定値。versionはAviUtl 1.10相当の値
 int l_obj_getinfo(lua_State* L) {
@@ -380,9 +400,23 @@ int l_obj_setoption(lua_State* L) {
   return 0;
 }
 
-// obj.load(type, ...): "tempbuffer"/"obj"は現在のバッファをそのまま使うno-op、それ以外(画像/動画/図形/テキスト読み込み)は今回未対応で警告のみ
+// obj.load("image",path): 画像ファイルで描画バッファを置き換える。"tempbuffer"/"obj"は現在のバッファをそのまま使うno-op。他(movie/figure/text等)は未対応で警告のみ
 int l_obj_load(lua_State* L) {
+  auto* ctx        = get_ctx(L);
   std::string type = lua_isstring(L, 1) ? lua_tostring(L, 1) : "";
+  if(type == "image" && lua_isstring(L, 2) && ctx->fpip->img) {
+    Image loaded;
+    if(!loaded.load_file(lua_tostring(L, 2))) {
+      LOG_F(WARNING, "obj.load: 画像を読み込めません: %s", lua_tostring(L, 2));
+      return 0;
+    }
+    Image* img = ctx->fpip->img;
+    img->resize(loaded.width, loaded.height);
+    img->has_alpha = loaded.has_alpha;
+    std::memcpy(img->data(), loaded.data(), img->size_in_bytes());
+    sync_obj_size(L, img);
+    return 0;
+  }
   if(type != "tempbuffer" && type != "obj") LOG_F(WARNING, "obj.load: 未対応の読み込み種別 '%s' をスキップしました", type.c_str());
   return 0;
 }
@@ -424,6 +458,8 @@ void setup_obj_table(lua_State* L, AviUtlObjContext* ctx) {
   reg_fn("putpixel", l_obj_putpixel);
   reg_fn("copypixel", l_obj_copypixel);
   reg_fn("rand", l_obj_rand);
+  reg_fn("interpolation", l_obj_interpolation);
+  reg_fn("getvalue", l_obj_getvalue);
   reg_fn("getinfo", l_obj_getinfo);
   reg_fn("effect", l_obj_effect);
   reg_fn("draw", l_obj_draw);

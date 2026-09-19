@@ -224,6 +224,15 @@ TEST_CASE("obj.rand: 範囲内の整数を返し、seed指定時は同じ(seed,f
   CHECK(differs);
 }
 
+TEST_CASE("obj.interpolation/getvalue: スプライン補間と現在値取得") {
+  Image img;
+  FilterInData fin;
+  auto v = probe("obj.getvalue('zoom') * 10, obj.getvalue('nothing') == nil and 1 or 0, obj.interpolation(0, 0,0,0, 10,20,30, 20,40,60, 30,60,90), obj.interpolation(1, 0,0,0, 10,20,30, 20,40,60, 30,60,90)", fin, img);
+  CHECK(v[0] == 10); // zoom既定1
+  CHECK(v[1] == 1);
+  CHECK(v[2] == 10); // t=0でp1
+}
+
 TEST_CASE("register_aviutl_scripts: 2値化スクリプトをフォルダスキャン経由でフィルタとして登録・実行できる") {
   std::string text = "--track0:しきい値,0,255,128,1\n"
                      "@AviUtlテスト2値化\n"
