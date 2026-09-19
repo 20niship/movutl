@@ -9,8 +9,11 @@
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
+#include <libavutil/version.h>
 #include <libswresample/swresample.h>
 }
+// ch_layout(AVChannelLayout)はFFmpeg 5.1+(libavutil>=57.24)のみ持つため分岐する
+#define MU_FFMPEG_NEW_CHLAYOUT (LIBAVUTIL_VERSION_MAJOR > 57 || (LIBAVUTIL_VERSION_MAJOR == 57 && LIBAVUTIL_VERSION_MINOR >= 24))
 
 namespace mu::detail {
 
@@ -94,7 +97,12 @@ static void* fn_open(const char* path, int, int, float, int audio_sample_rate, i
   h->enc_ctx->sample_fmt  = codec->sample_fmts ? codec->sample_fmts[0] : AV_SAMPLE_FMT_S16;
   h->enc_ctx->bit_rate    = (int64_t)cutil::get_or<int32_t>(props, "bitrate_kbps", 192) * 1000;
   h->enc_ctx->time_base   = AVRational{1, audio_sample_rate};
+#if MU_FFMPEG_NEW_CHLAYOUT
   av_channel_layout_default(&h->enc_ctx->ch_layout, audio_channels);
+#else
+  h->enc_ctx->channel_layout = av_get_default_channel_layout(audio_channels);
+  h->enc_ctx->channels       = audio_channels;
+#endif
   if(h->fmt_ctx->oformat->flags & AVFMT_GLOBALHEADER) h->enc_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
   if(avcodec_open2(h->enc_ctx, codec, nullptr) < 0) {
@@ -106,11 +114,20 @@ static void* fn_open(const char* path, int, int, float, int audio_sample_rate, i
   avcodec_parameters_from_context(h->stream->codecpar, h->enc_ctx);
   h->stream->time_base = h->enc_ctx->time_base;
 
+#if MU_FFMPEG_NEW_CHLAYOUT
   if(swr_alloc_set_opts2(&h->swr, &h->enc_ctx->ch_layout, h->enc_ctx->sample_fmt, audio_sample_rate, &h->enc_ctx->ch_layout, AV_SAMPLE_FMT_S16, audio_sample_rate, 0, nullptr) < 0 || h->swr == nullptr || swr_init(h->swr) < 0) {
     close_and_free(h);
     delete h;
     return nullptr;
   }
+#else
+  h->swr = swr_alloc_set_opts(nullptr, h->enc_ctx->channel_layout, h->enc_ctx->sample_fmt, audio_sample_rate, h->enc_ctx->channel_layout, AV_SAMPLE_FMT_S16, audio_sample_rate, 0, nullptr);
+  if(h->swr == nullptr || swr_init(h->swr) < 0) {
+    close_and_free(h);
+    delete h;
+    return nullptr;
+  }
+#endif
 
   h->frame = av_frame_alloc();
   h->pkt   = av_packet_alloc();
@@ -121,7 +138,12 @@ static void* fn_open(const char* path, int, int, float, int audio_sample_rate, i
   }
   h->frame->format      = h->enc_ctx->sample_fmt;
   h->frame->sample_rate = audio_sample_rate;
+#if MU_FFMPEG_NEW_CHLAYOUT
   av_channel_layout_copy(&h->frame->ch_layout, &h->enc_ctx->ch_layout);
+#else
+  h->frame->channel_layout = h->enc_ctx->channel_layout;
+  h->frame->channels       = h->enc_ctx->channels;
+#endif
   // frame_size==0(PCM等、固定フレームサイズを持たないコーデック)は1024サンプル単位で適当に区切って送る
   h->frame->nb_samples = h->enc_ctx->frame_size > 0 ? h->enc_ctx->frame_size : 1024;
   if(av_frame_get_buffer(h->frame, 0) < 0) {

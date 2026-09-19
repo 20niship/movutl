@@ -69,7 +69,7 @@ ViewerCursor& viewer_cursor() {
 void ViewerWindow::Update() {
   MOVUTL_ZONE_SCOPED_N("ViewerWindow::Update");
   viewer_cursor().valid = false;
-  ImGui::Begin("Viewer");
+  ImGui::Begin("Viewer", &open);
   auto comp = Composition::GetActiveComp();
   if(!comp) {
     ImGui::Text("No active composition");
@@ -359,7 +359,7 @@ void ViewerWindow::Update() {
     ImGui::EndPopup();
   }
   ImGui::SameLine();
-  const ImVec2 wmin = ImGui::GetCursorScreenPos();
+  const ImVec2 wmin  = ImGui::GetCursorScreenPos();
   const float wave_w = ImGui::GetContentRegionAvail().x;
   if(wave_w > 40.0f) draw_audio_wave(ImGui::GetWindowDrawList(), wmin, ImVec2(wmin.x + wave_w, wmin.y + ImGui::GetFrameHeight()), comp);
   ImGui::EndChild();

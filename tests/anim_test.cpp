@@ -98,3 +98,200 @@ TEST_CASE("AnimProps::get(frame): frameに応じて補間された値がcutil::P
   auto p_end = props.get(10);
   CHECK(p_end.get<float>("x") == doctest::Approx(100.0f));
 }
+
+TEST_CASE("PAniClip::has_key_at/erase_keyframe/move_keyframe: 中間点の追加/削除/移動") {
+  PAniClip<float> clip;
+  clip.clear();
+  clip.add_keyframe(0, 0.0f);
+  clip.add_keyframe(10, 100.0f);
+
+  CHECK(clip.has_key_at(0));
+  CHECK(clip.has_key_at(10));
+  CHECK_FALSE(clip.has_key_at(5));
+
+  CHECK(clip.move_keyframe(10, 20));
+  CHECK(clip.has_key_at(20));
+  CHECK_FALSE(clip.has_key_at(10));
+
+  CHECK(clip.erase_keyframe(20));
+  REQUIRE(clip.keys.size() == 1);
+  CHECK_FALSE(clip.erase_keyframe(0)); // 最後の1個は削除できない
+}
+
+TEST_CASE("detail::apply_ease: Pennerイージングの境界値/既知値") {
+  using namespace mu::detail;
+  CHECK(apply_ease(EaseInQuad, 0.0) == doctest::Approx(0.0));
+  CHECK(apply_ease(EaseInQuad, 1.0) == doctest::Approx(1.0));
+  CHECK(apply_ease(EaseInQuad, 0.5) == doctest::Approx(0.25));
+
+  CHECK(apply_ease(EaseInSine, 0.0) == doctest::Approx(0.0));
+  CHECK(apply_ease(EaseInSine, 1.0) == doctest::Approx(1.0));
+  CHECK(apply_ease(EaseOutBounce, 0.0) == doctest::Approx(0.0));
+  CHECK(apply_ease(EaseOutBounce, 1.0) == doctest::Approx(1.0));
+  CHECK(apply_ease(EaseInOutElastic, 0.0) == doctest::Approx(0.0));
+  CHECK(apply_ease(EaseInOutElastic, 1.0) == doctest::Approx(1.0));
+}
+
+TEST_CASE("detail::eval_cubic_bezier: cubic-bezier(0,0,1,1)は線形、対称ベジエはt=0.5で0.5") {
+  using namespace mu::detail;
+  CHECK(eval_cubic_bezier(0, 0, 1, 1, 0.0) == doctest::Approx(0.0));
+  CHECK(eval_cubic_bezier(0, 0, 1, 1, 1.0) == doctest::Approx(1.0));
+  CHECK(eval_cubic_bezier(0, 0, 1, 1, 0.5) == doctest::Approx(0.5).epsilon(0.01));
+  CHECK(eval_cubic_bezier(0.42, 0.0, 0.58, 1.0, 0.5) == doctest::Approx(0.5).epsilon(0.01));
+}
+
+TEST_CASE("PAniClip::save/load: ease3/ease4がラウンドトリップする") {
+  PAniClip<float> clip;
+  clip.clear();
+  clip.add_keyframe(0, 0.0f);
+  clip.add_keyframe(10, 100.0f, AniInterpType::Custom);
+  clip.keys[1].ease_  = 0.1f;
+  clip.keys[1].ease2_ = 0.2f;
+  clip.keys[1].ease3_ = 0.3f;
+  clip.keys[1].ease4_ = 0.4f;
+
+  auto saved = clip.save();
+  PAniClip<float> restored;
+  restored.load(saved);
+  REQUIRE(restored.keys.size() == 2);
+  CHECK(restored.keys[1].type == AniInterpType::Custom);
+  CHECK(restored.keys[1].ease_ == doctest::Approx(0.1f));
+  CHECK(restored.keys[1].ease2_ == doctest::Approx(0.2f));
+  CHECK(restored.keys[1].ease3_ == doctest::Approx(0.3f));
+  CHECK(restored.keys[1].ease4_ == doctest::Approx(0.4f));
+}
+
+TEST_CASE("AnimProps::get_ease_type/set_ease_type/get_ease_bezier/set_ease_bezier: キーフレーム単位のイージング編集") {
+  AnimProps props;
+  props.add_prop<float>("x", 0.0f);
+  auto& clip = std::get<PAniClip<float>>(props[0]);
+  clip.add_keyframe(0, 0.0f);
+  clip.add_keyframe(10, 100.0f);
+
+  CHECK(props.get_ease_type(0, 0) == AniInterpType::LINEAR);
+  props.set_ease_type(0, 0, AniInterpType::EaseInOutBack);
+  CHECK(props.get_ease_type(0, 0) == AniInterpType::EaseInOutBack);
+
+  auto bez = props.get_ease_bezier(0, 10);
+  CHECK(bez[0] == doctest::Approx(0.42f));
+  props.set_ease_bezier(0, 10, {0.1f, 0.2f, 0.3f, 0.4f});
+  auto bez2 = props.get_ease_bezier(0, 10);
+  CHECK(bez2[0] == doctest::Approx(0.1f));
+  CHECK(bez2[3] == doctest::Approx(0.4f));
+
+  // 存在しないframeは既定値のまま、何も壊さない
+  props.set_ease_type(0, 999, AniInterpType::Custom);
+  CHECK(props.get_ease_type(0, 999) == AniInterpType::LINEAR);
+}
+
+TEST_CASE("AnimProps::add_prop<bool>/get<bool>: is_integral_v<bool>もtrueなのでint型と誤判定しない") {
+  AnimProps props;
+  props.add_prop<bool>("flag", true);
+  CHECK(props.get_type(0) == cutil::prop_info_of<bool>());
+  CHECK(props.get<bool>(0, 0) == true);
+}
+
+TEST_CASE("PAniClip::neighbor_frames: 単一キー/キーちょうど上/中間/前後クランプ") {
+  PAniClip<float> clip;
+  clip.clear();
+  clip.add_keyframe(10, 10.0f);
+  CHECK(clip.neighbor_frames(10) == std::pair<uint32_t, uint32_t>(10, 10));
+  CHECK(clip.neighbor_frames(999) == std::pair<uint32_t, uint32_t>(10, 10));
+
+  clip.add_keyframe(20, 20.0f);
+  clip.add_keyframe(30, 30.0f);
+  CHECK(clip.neighbor_frames(20) == std::pair<uint32_t, uint32_t>(20, 30));  // キーちょうど上はそのキーと次のキー
+  CHECK(clip.neighbor_frames(25) == std::pair<uint32_t, uint32_t>(20, 30));  // 中間
+  CHECK(clip.neighbor_frames(0) == std::pair<uint32_t, uint32_t>(10, 10));   // 前方クランプ
+  CHECK(clip.neighbor_frames(999) == std::pair<uint32_t, uint32_t>(30, 30)); // 後方クランプ
+}
+
+TEST_CASE("PAniClip::collapse_to_single: 補間値を保持したまま単一キーへ畳む") {
+  PAniClip<float> clip;
+  clip.clear();
+  clip.add_keyframe(0, 0.0f);
+  clip.add_keyframe(10, 100.0f);
+
+  clip.collapse_to_single(5);
+  REQUIRE(clip.keys.size() == 1);
+  CHECK(clip.keys[0].value_ == doctest::Approx(50.0f));
+  CHECK_FALSE(clip.has_animation());
+}
+
+TEST_CASE("AnimProps::neighbor_frames/collapse_to_single: 型消去ラッパー経由でも同じ挙動になる") {
+  AnimProps props;
+  props.add_prop<float>("x", 0.0f);
+  auto& clip = std::get<PAniClip<float>>(props[0]);
+  clip.add_keyframe(0, 0.0f);
+  clip.add_keyframe(10, 100.0f);
+
+  CHECK(props.neighbor_frames(0, 5) == std::pair<uint32_t, uint32_t>(0, 10));
+  props.collapse_to_single(0, 5);
+  CHECK_FALSE(props.has_animation(0));
+  CHECK(props.get<float>(0, 999) == doctest::Approx(50.0f));
+}
+
+TEST_CASE("AnimProps::save/load_keys: キーフレーム列を保存し名前一致で復元する") {
+  AnimProps src;
+  src.add_prop<float>("x", 0.0f);
+  src.add_prop<bool>("visible", true);
+  auto& clip = std::get<PAniClip<float>>(src[0]);
+  clip.add_keyframe(0, 1.0f);
+  clip.add_keyframe(10, 100.0f);
+  clip.add_keyframe(20, 50.0f);
+
+  auto saved = src.save();
+
+  AnimProps dst;
+  dst.add_prop<float>("x", -1.0f);
+  dst.add_prop<bool>("visible", false);
+  dst.load_keys(saved);
+
+  CHECK(dst.get<float>(0, 0) == doctest::Approx(1.0f));
+  CHECK(dst.get<float>(0, 10) == doctest::Approx(100.0f));
+  CHECK(dst.get<float>(0, 20) == doctest::Approx(50.0f));
+  CHECK(dst.has_animation(0));
+}
+
+TEST_CASE("PAniClip<Vec4b>::get: 値が減少する方向(白→黒)でも補間できる") {
+  PAniClip<Vec4b> clip;
+  clip.clear();
+  clip.add_keyframe(0, Vec4b(255, 255, 255, 255));
+  clip.add_keyframe(10, Vec4b(0, 0, 0, 255));
+  auto v = clip.get(5);
+  CHECK((int)v[0] == doctest::Approx(127.5).epsilon(0.02));
+  CHECK((int)v[3] == 255);
+}
+
+TEST_CASE("PAniClip::shift_frames: 開始が後ろへずれると範囲外キーを境界の補間値キーに置き換える") {
+  PAniClip<float> clip;
+  clip.clear();
+  clip.add_keyframe(0, 0.0f);
+  clip.add_keyframe(100, 100.0f);
+
+  clip.shift_frames(40); // 先頭40frameを切り落とす
+  REQUIRE(clip.keys.size() == 2);
+  CHECK(clip.keys[0].frame_ == 0);
+  CHECK(clip.keys[0].value_ == doctest::Approx(40.0f)); // 元frame40の値
+  CHECK(clip.keys[1].frame_ == 60);
+  CHECK(clip.get(30) == doctest::Approx(70.0f)); // 元frame70
+
+  clip.shift_frames(-10); // 前へ伸ばすと全キーが後ろへずれるだけ
+  CHECK(clip.keys[0].frame_ == 10);
+  CHECK(clip.keys[1].frame_ == 70);
+}
+
+TEST_CASE("PAniClip::trim_end: 範囲外キーを捨て、境界に補間値キーを補う") {
+  PAniClip<float> clip;
+  clip.clear();
+  clip.add_keyframe(0, 0.0f);
+  clip.add_keyframe(100, 100.0f);
+
+  clip.trim_end(60);
+  REQUIRE(clip.keys.size() == 2);
+  CHECK(clip.keys[1].frame_ == 60);
+  CHECK(clip.keys[1].value_ == doctest::Approx(60.0f));
+
+  clip.trim_end(200); // 延長では何も変わらない
+  CHECK(clip.keys.size() == 2);
+}

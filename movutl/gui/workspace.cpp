@@ -47,12 +47,18 @@ void apply_workspace_impl(const Workspace& workspace) {
   }
   ImGui::DockBuilderSetNodeSize(root, ImGui::GetMainViewport()->WorkSize);
 
-  // entriesを順番に適用し、残り領域からdir方向へratio分ずつ確保していく
-  // 最後のentryは残り領域すべてにドッキングされる
-  ImGuiID remaining = root;
+  // 最後のentryは残り領域全部、それ以外でdir==Noneのentryは直前entryと同ノードへタブとして重ねる
+  ImGuiID remaining  = root;
+  ImGuiID last_taken = root;
+  bool have_last     = false;
   for(size_t i = 0; i < workspace.entries.size(); i++) {
     const auto& entry = workspace.entries[i];
-    if(i + 1 == workspace.entries.size()) {
+    bool is_last      = (i + 1 == workspace.entries.size());
+    if(!is_last && entry.dir == ImGuiDir_None && have_last) {
+      ImGui::DockBuilderDockWindow(entry.window_name.c_str(), last_taken);
+      continue;
+    }
+    if(is_last) {
       ImGui::DockBuilderDockWindow(entry.window_name.c_str(), remaining);
       break;
     }
@@ -62,6 +68,8 @@ void apply_workspace_impl(const Workspace& workspace) {
     }
     ImGuiID taken = ImGui::DockBuilderSplitNode(remaining, static_cast<ImGuiDir>(entry.dir), entry.ratio, nullptr, &remaining);
     ImGui::DockBuilderDockWindow(entry.window_name.c_str(), taken);
+    last_taken = taken;
+    have_last  = true;
   }
 
   ImGui::DockBuilderFinish(root);

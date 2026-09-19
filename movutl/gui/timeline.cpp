@@ -121,6 +121,10 @@ struct TimelineContext {
   int drag_orig_fend   = 0;
   int drag_start_frame = 0;
 
+  // 集約キーフレーム行のドラッグ移動(BeginTrack下端のダイヤ)。dragging_entt/drag_modeとは別状態にして衝突を避ける
+  Entity* dragging_kf_entt    = nullptr;
+  uint32_t drag_kf_orig_frame = 0;
+
   cutil::Rect tl_area() {
     auto r = all_area;
     r.y.min += header_h;
@@ -1026,6 +1030,24 @@ bool BeginTrack(const Ref<Entity>& entity) {
   }
   ctx_.clips.push_back({entity, rect});
 
+  // 中間点(キーフレーム)の集約ダイヤのヒット判定。クリップ本体move/resizeドラッグより優先させる
+  constexpr int kKfHitR = 4; // ダイヤのヒット半径(px)
+  auto animated_frames  = entity->collect_animated_frames();
+  bool kf_hit           = false;
+  uint32_t kf_hit_frame = 0;
+  if(hovered && !is_exporting()) {
+    float ky = rect.Max.y - kKfHitR;
+    for(uint32_t f : animated_frames) {
+      if((int)f < *start || (int)f > *end) continue;
+      float x = (float)ctx_.f2view((int)f);
+      if(std::abs(mouse_x - x) <= kKfHitR && std::abs(ImGui::GetMousePos().y - ky) <= kKfHitR) {
+        kf_hit       = true;
+        kf_hit_frame = f;
+        break;
+      }
+    }
+  }
+
   bool near_left      = hovered && (mouse_x - rect.Min.x) <= kEdgeW;
   bool near_right     = hovered && (rect.Max.x - mouse_x) <= kEdgeW;
   const bool can_edit = !is_exporting();
@@ -1033,7 +1055,7 @@ bool BeginTrack(const Ref<Entity>& entity) {
   bool is_selected = is_selected_entt(entity.get());
 
   // クリックで選択(Ctrl/Shiftで追加・解除)。選択済み/選択された直後ならそのままドラッグ操作を開始する
-  if(can_edit && ctx_.dragging_entt == nullptr && !ctx_.rb_active && hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+  if(can_edit && ctx_.dragging_entt == nullptr && ctx_.dragging_kf_entt == nullptr && !ctx_.rb_active && hovered && !kf_hit && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
     const bool additive = ImGui::GetIO().KeyCtrl || ImGui::GetIO().KeyShift;
     if(additive) {
       auto sel = get_selected_entts();
@@ -1081,7 +1103,7 @@ bool BeginTrack(const Ref<Entity>& entity) {
   }
 
   // 右クリックメニュー(未選択なら先にそのクリップだけを選択)
-  if(can_edit && hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+  if(can_edit && hovered && !kf_hit && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
     if(!is_selected) {
       clear_selected_entts();
       select_entt(entity);
@@ -1091,6 +1113,27 @@ bool BeginTrack(const Ref<Entity>& entity) {
     ctx_.ctx_entt  = entity;
     ctx_.ctx_frame = ctx_.view2f((int)mouse_x);
     ImGui::OpenPopup("tl_clip_ctx");
+  }
+
+  if(!is_exporting() && ctx_.dragging_entt == nullptr && ctx_.dragging_kf_entt == nullptr && kf_hit && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+    ctx_.dragging_kf_entt   = entity.get();
+    ctx_.drag_kf_orig_frame = kf_hit_frame;
+  } else if(hovered && kf_hit && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+    if(entity->erase_keyframes_at(kf_hit_frame)) {
+      if(auto* comp = entity->get_comp()) comp->invalidate_cache_range(*start, *end);
+    }
+  }
+
+  if(ctx_.dragging_kf_entt == entity.get()) {
+    if(!is_exporting() && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+      ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
+    } else {
+      int new_frame = std::clamp(ctx_.view2f((int)ImGui::GetMousePos().x), *start, *end);
+      if((uint32_t)new_frame != ctx_.drag_kf_orig_frame && entity->move_keyframes_at(ctx_.drag_kf_orig_frame, (uint32_t)new_frame)) {
+        if(auto* comp = entity->get_comp()) comp->invalidate_cache_range(*start, *end);
+      }
+      ctx_.dragging_kf_entt = nullptr;
+    }
   }
 
   if(ctx_.dragging_entt == entity.get()) {
@@ -1152,6 +1195,12 @@ bool BeginTrack(const Ref<Entity>& entity) {
         ImGui::SetTooltip("開始 %d  終了 %d  長さ %d f", *start, *end, *end - *start);
       }
     } else {
+      if(ctx_.drag_mode == 2 || ctx_.drag_mode == 3) {
+        std::lock_guard<std::mutex> lock(entity->mtx);
+        // 長さ変更が確定した時点で、範囲外になった中間点の整理(ドラッグ中は連続変化するため放した時に1回だけ行う)
+        // 左端ドラッグ(2)は開始位置が動いた分、右端ドラッグ(3)は末尾のみ
+        entity->on_len_change_done(ctx_.drag_orig_fstart);
+      }
       if(auto* comp = entity->get_comp()) {
         int f0 = std::min({ctx_.drag_orig_fstart, ctx_.drag_orig_fend, *start, *end});
         int f1 = std::max({ctx_.drag_orig_fstart, ctx_.drag_orig_fend, *start, *end});
@@ -1247,26 +1296,17 @@ bool BeginTrack(const Ref<Entity>& entity) {
     }
   }
 
-  // 中間点(キーフレーム)マーカー: フィルタのアニメーションキーをクリップ下端に菱形で表示する
-  {
-    dl->PushClipRect(body.Min, body.Max, true);
-    const int cy = (int)body.Max.y - 4;
-    for(const auto& f : entity->filters_) {
-      for(const auto& clip : f.props.props) {
-        std::visit(
-          [&](auto&& c) {
-            if(!c.has_animation()) return;
-            for(const auto& k : c.keys) {
-              int kx = ctx_.f2view((FrameT)k.frame_);
-              if(kx < body.Min.x || kx > body.Max.x) continue;
-              draw_diamond(kx, cy, 7.0f, IM_COL32(255, 240, 120, 235), dl);
-            }
-          },
-          clip);
-      }
+  { // 中間点(キーフレーム)の集約表示: Entity帯下端にダイヤを重ね描きする(AviUtl方式、frame単位で全プロパティ横断)
+    float ky = body.Max.y - kKfHitR;
+    for(uint32_t f : animated_frames) {
+      if((int)f < *start || (int)f > *end) continue;
+      float x    = (float)ctx_.f2view((int)f);
+      bool cur   = ctx_.dragging_kf_entt == entity.get() && f == ctx_.drag_kf_orig_frame;
+      ImU32 kcol = cur ? IM_COL32(255, 255, 255, 255) : IM_COL32(255, 190, 40, 255);
+      dl->AddQuadFilled(ImVec2(x, ky - kKfHitR), ImVec2(x + kKfHitR, ky), ImVec2(x, ky + kKfHitR), ImVec2(x - kKfHitR, ky), kcol);
     }
-    dl->PopClipRect();
   }
+
 
   // 選択の強調枠
   if(is_selected) dl->AddRect(body.Min, body.Max, IM_COL32(255, 235, 130, 255), 3.0f, 0, 2.0f);

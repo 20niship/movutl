@@ -9,9 +9,12 @@
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
+#include <libavutil/version.h>
 #include <libswresample/swresample.h>
 #include <libswscale/swscale.h>
 }
+// ch_layout(AVChannelLayout)はFFmpeg 5.1+(libavutil>=57.24)のみ持つため分岐する
+#define MU_FFMPEG_NEW_CHLAYOUT (LIBAVUTIL_VERSION_MAJOR > 57 || (LIBAVUTIL_VERSION_MAJOR == 57 && LIBAVUTIL_VERSION_MINOR >= 24))
 
 namespace mu::detail {
 
@@ -86,14 +89,23 @@ static bool setup_audio_stream(VideoExportHandle* h, int sample_rate, int channe
   h->audio_enc_ctx->sample_fmt  = codec->sample_fmts ? codec->sample_fmts[0] : AV_SAMPLE_FMT_FLTP;
   h->audio_enc_ctx->bit_rate    = 192000;
   h->audio_enc_ctx->time_base   = AVRational{1, sample_rate};
+#if MU_FFMPEG_NEW_CHLAYOUT
   av_channel_layout_default(&h->audio_enc_ctx->ch_layout, channels);
+#else
+  h->audio_enc_ctx->channel_layout = av_get_default_channel_layout(channels);
+  h->audio_enc_ctx->channels       = channels;
+#endif
   if(h->fmt_ctx->oformat->flags & AVFMT_GLOBALHEADER) h->audio_enc_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
   if(avcodec_open2(h->audio_enc_ctx, codec, nullptr) < 0) return false;
   avcodec_parameters_from_context(h->audio_stream->codecpar, h->audio_enc_ctx);
   h->audio_stream->time_base = h->audio_enc_ctx->time_base;
 
+#if MU_FFMPEG_NEW_CHLAYOUT
   if(swr_alloc_set_opts2(&h->audio_swr, &h->audio_enc_ctx->ch_layout, h->audio_enc_ctx->sample_fmt, sample_rate, &h->audio_enc_ctx->ch_layout, AV_SAMPLE_FMT_S16, sample_rate, 0, nullptr) < 0) return false;
+#else
+  h->audio_swr = swr_alloc_set_opts(nullptr, h->audio_enc_ctx->channel_layout, h->audio_enc_ctx->sample_fmt, sample_rate, h->audio_enc_ctx->channel_layout, AV_SAMPLE_FMT_S16, sample_rate, 0, nullptr);
+#endif
   if(h->audio_swr == nullptr || swr_init(h->audio_swr) < 0) return false;
 
   h->audio_frame = av_frame_alloc();
@@ -101,7 +113,12 @@ static bool setup_audio_stream(VideoExportHandle* h, int sample_rate, int channe
   if(h->audio_frame == nullptr || h->audio_pkt == nullptr) return false;
   h->audio_frame->format      = h->audio_enc_ctx->sample_fmt;
   h->audio_frame->sample_rate = sample_rate;
+#if MU_FFMPEG_NEW_CHLAYOUT
   av_channel_layout_copy(&h->audio_frame->ch_layout, &h->audio_enc_ctx->ch_layout);
+#else
+  h->audio_frame->channel_layout = h->audio_enc_ctx->channel_layout;
+  h->audio_frame->channels       = h->audio_enc_ctx->channels;
+#endif
   h->audio_frame->nb_samples = h->audio_enc_ctx->frame_size > 0 ? h->audio_enc_ctx->frame_size : 1024;
   if(av_frame_get_buffer(h->audio_frame, 0) < 0) return false;
 

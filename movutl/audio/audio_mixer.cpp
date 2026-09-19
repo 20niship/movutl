@@ -119,7 +119,7 @@ void mix_audio_range(Composition* comp, int64_t start_sample, int n, int16_t* ou
       fin.audio_ch = ch;
       fin.compo    = comp;
       fin.entt     = e.get();
-      f.plg_->fn_proc(&f.instance_state, &fin, f.props.get(frame));
+      f.plg_->fn_proc(&f.instance_state, &fin, f.props.get(e->rel_frame(frame)));
     }
 
     for(int i = 0; i < n * ch; i++) out[i] = (int16_t)std::clamp((int32_t)out[i] + (int32_t)track_buf[i], -32768, 32767);

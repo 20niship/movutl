@@ -15,6 +15,7 @@
 #include <movutl/asset/project.hpp>
 #include <movutl/asset/text.hpp>
 #include <movutl/core/logger.hpp>
+#include <movutl/gui/graph_editor_window.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/gui/inspector.hpp>
 #include <movutl/gui/vst_edit_ui.hpp>
@@ -67,7 +68,7 @@ bool section(const char* label) { return ImGui::CollapsingHeader(label, ImGuiTre
 } // namespace
 
 void InspectorWindow::Update() {
-  ImGui::Begin(ICON_FA_PLUG " エフェクト制御");
+  ImGui::Begin(ICON_FA_PLUG " エフェクト制御", &open);
   auto entts = get_selected_entts();
   if(entts.empty()) {
     ImGui::TextDisabled("オブジェクトが選択されていません");
@@ -78,6 +79,12 @@ void InspectorWindow::Update() {
   auto invalidate = [&]() {
     if(auto* comp = e->get_comp()) comp->invalidate_cache_range(e->fstart_, e->fend_);
   };
+  auto get_cur_frame = [&]() -> uint32_t {
+    Composition* comp = e->get_comp();
+    return (uint32_t)(comp ? std::max(comp->get_frame(), 0) : 0);
+  };
+  uint32_t cur_frame = get_cur_frame();
+  if(wd_entity_keyframe_overview(e.get(), cur_frame)) cur_frame = get_cur_frame(); // Entity全体の中間点分布バー(クリック/ドラッグでシーク)
 
   {
     // アクティブ(目アイコン): このEntityの表示/非表示を切り替える(音声はミュートも兼ねる)
@@ -91,7 +98,7 @@ void InspectorWindow::Update() {
     ImGui::TextUnformatted(str.c_str());
   }
 
-  if(e->has_transform() && section("トランスフォーム")) wd_entt_transform_editor(e.get());
+  if(e->has_transform() && section("トランスフォーム")) wd_entt_transform_editor(e.get(), cur_frame);
 
   if(section("オブジェクト")) {
     if(wd_table_begin("##obj_common")) { // 合成モード(BlendType): Entityのトラック共通属性のため専用UIとして扱う
@@ -157,7 +164,7 @@ void InspectorWindow::Update() {
       wd_table_end();
     }
 
-    wd_entt_props_editor(e.get());
+    wd_entt_props_editor(e.get(), cur_frame);
 
     // カスタムオブジェクト(Luaスクリプト)のtrack0-3/check0-3相当のパラメータはgetPropsInfo()を持たない(動的なcutil::Propで保持している)ため専用UIで編集する
     if(auto* custom = dynamic_cast<CustomObjectEntt*>(e.get())) {
@@ -235,67 +242,32 @@ void InspectorWindow::Update() {
       if(card_open) {
         bool props_changed = false;
         int size_          = std::min<int>(f.props.size(), (int)e->filters_[i].plg_->props.fields.size());
-        if(wd_table_begin("##fx_props")) {
-          for(int k = 0; k < size_; k++) {
-            const auto& info = f.plg_->props.fields[k];
-            if(cutil::has_flag(info.flags, cutil::PropFlags::Hidden)) continue;
-            ImGui::PushID(k);
-            { // animation props editor
-              const char* label = info.label[0] ? info.label : info.name;
-              if(f.props.get_type(k) != info.type) {
-                LOG_F(ERROR, "Invalid type: %s", info.name);
-              } else {
-                wd_row(label, info.desc);
-                if(info.type == cutil::prop_info_of<float>()) {
-                  float value = f.props.get<float>(k);
-                  if(ImGui::DragFloat("##v", &value, info.drag_speed, info.min_value, info.max_value)) {
-                    f.props.set_value(k, 0, value);
-                    props_changed = true;
-                  }
-                } else if(info.type == cutil::prop_info_of<int32_t>()) {
-                  int value = f.props.get<int>(k);
-                  if(ImGui::DragInt("##v", &value, info.drag_speed)) {
-                    f.props.set_value(k, 0, value);
-                    props_changed = true;
-                  }
-                } else if(info.type == cutil::prop_info_of<std::string>()) {
-                  std::string value = f.props.get<std::string>(k);
-                  static char buf[256];
-                  strncpy(buf, value.c_str(), 256);
-                  if(ImGui::InputText("##v", &buf[0], 256)) {
-                    f.props.set_value(k, 0, std::string(buf));
-                    props_changed = true;
-                  }
-                } else if(info.type == cutil::prop_info_of<bool>()) {
-                  bool value = f.props.get<bool>(k);
-                  if(ImGui::Checkbox("##v", &value)) {
-                    f.props.set_value(k, 0, value);
-                    props_changed = true;
-                  }
-                } else if(info.type == cutil::prop_info_of<Vec2>()) {
-                  Vec2 value = f.props.get<Vec2>(k);
-                  if(ImGui::DragFloat2("##v", value.value, info.drag_speed)) {
-                    f.props.set_value(k, 0, value);
-                    props_changed = true;
-                  }
-                } else if(info.type == cutil::prop_info_of<Vec3>()) {
-                  Vec3 value = f.props.get<Vec3>(k);
-                  if(ImGui::DragFloat3("##v", value.value, info.drag_speed)) {
-                    f.props.set_value(k, 0, value);
-                    props_changed = true;
-                  }
-                } else if(info.type == cutil::prop_info_of<Vec4>()) {
-                  Vec4 value = f.props.get<Vec4>(k);
-                  if(ImGui::DragFloat4("##v", value.value, info.drag_speed)) {
-                    f.props.set_value(k, 0, value);
-                    props_changed = true;
-                  }
-                }
+        // アニメーション可能な型は「左右=直前/直後の中間点値+中央=名前ボタン」のトラックバー行(フル幅)、文字列は「ラベル左・値右」の表で編集する
+        for(int k = 0; k < size_; k++) {
+          const auto& info = f.plg_->props.fields[k];
+          if(cutil::has_flag(info.flags, cutil::PropFlags::Hidden)) continue;
+          ImGui::PushID(k);
+          bool value_changed = false;
+          if(f.props.get_type(k) != info.type) {
+            LOG_F(ERROR, "Invalid type: %s", info.name);
+          } else if(info.type == cutil::prop_info_of<std::string>()) {
+            if(wd_table_begin("##fx_str")) {
+              wd_row(info.label[0] ? info.label : info.name, info.desc);
+              std::string value = f.props.get<std::string>(k);
+              static char buf[256];
+              strncpy(buf, value.c_str(), 256);
+              if(ImGui::InputText("##v", &buf[0], 256)) {
+                f.props.set_value(k, e->rel_frame((int)cur_frame), std::string(buf));
+                value_changed = true;
               }
+              wd_table_end();
             }
-            ImGui::PopID();
+          } else if(info.type == cutil::prop_info_of<float>() || info.type == cutil::prop_info_of<int32_t>() || info.type == cutil::prop_info_of<bool>() || info.type == cutil::prop_info_of<Vec2>() || info.type == cutil::prop_info_of<Vec3>() || info.type == cutil::prop_info_of<Vec4>() ||
+                    info.type == cutil::prop_info_of<Vec4b>()) {
+            if(wd_animatable_row(info, f.props, k, e->rel_frame((int)cur_frame), e->guid_, i, e->fend_ - e->fstart_)) value_changed = true;
           }
-          wd_table_end();
+          if(value_changed) props_changed = true;
+          ImGui::PopID();
         }
         if(props_changed) invalidate();
         ImGui::TreePop();

@@ -40,12 +40,51 @@ TEST_CASE("SplitCommand: 選択中クリップを現在フレームで分割す�
   CHECK(img->fend_ == 40); // 前半は現在フレームまで短縮される
 
   bool found_second_half = false;
-  for(auto& layer : cmp->layers) {
-    for(auto& e : layer.entts) {
-      if(e && e.get() != img.get() && e->fstart_ == 40 && e->fend_ == 100) found_second_half = true;
+  int orig_layer = -1, clone_layer = -1;
+  for(int li = 0; li < (int)cmp->layers.size(); li++) {
+    for(auto& e : cmp->layers[li].entts) {
+      if(e.get() == img.get()) orig_layer = li;
+      if(e && e.get() != img.get() && e->fstart_ == 40 && e->fend_ == 100) {
+        found_second_half = true;
+        clone_layer       = li;
+      }
     }
   }
   CHECK(found_second_half);
+  CHECK(clone_layer == orig_layer); // 後半は元と同じレイヤーに残る
+}
+
+TEST_CASE("ToggleKeyframeCommand: 選択中エンティティの現在フレームの中間点を一括トグルし、undo/redoできる") {
+  Project::New();
+  detail::register_default_commands();
+  auto* cmp = Project::GetActiveCompo();
+  REQUIRE(cmp != nullptr);
+
+  auto img = Image::Create("kf_toggle_clip", 64, 64);
+  REQUIRE(img != nullptr);
+  img->fstart_ = 0;
+  img->fend_   = 100;
+  cmp->insert_entity(img);
+  cmp->frame = 20;
+
+  clear_selected_entts();
+  select_entt(img);
+
+  // 追加モード: まだどのプロパティにもframe=20のキーが無い状態からトグル
+  CHECK(run_command("toggle_keyframe"));
+  int pos_idx = img->anim_props_.index_of("pos_");
+  REQUIRE(pos_idx >= 0);
+  CHECK(img->anim_props_.has_key_at(pos_idx, 20));
+
+  // 削除モード: 同フレームでもう一度トグルすると消える
+  CHECK(run_command("toggle_keyframe"));
+  CHECK_FALSE(img->anim_props_.has_key_at(pos_idx, 20));
+
+  CHECK(undo_command()); // 削除トグルを取り消す→キーが戻る
+  CHECK(img->anim_props_.has_key_at(pos_idx, 20));
+
+  CHECK(redo_command()); // 削除トグルをやり直す→また消える
+  CHECK_FALSE(img->anim_props_.has_key_at(pos_idx, 20));
 }
 
 TEST_CASE("duplicate_asset: Entityを複製できる") {

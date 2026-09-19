@@ -74,12 +74,8 @@ void draw_timeline_toolbar(Composition* cp) {
 void TimelineWindow::header() {}
 
 void TimelineWindow::Update() {
-  ImGuiWindowClass window_class;
-  window_class.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_NoTabBar;
-  ImGui::SetNextWindowClass(&window_class);
-
   constexpr auto flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
-  ImGui::Begin("MOVUTL TIMELINE WINDOW", nullptr, flags);
+  ImGui::Begin("タイムライン", &open, flags);
   auto pj                    = Project::Get();
   auto cp                    = Project::GetActiveCompo();
   uint32_t close_guid        = 0;

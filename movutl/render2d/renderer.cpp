@@ -33,6 +33,7 @@ bool CPURenderer::render_frame(Composition* comp, int frame, Ref<Image>& out, bo
   for(auto& [layer_i, e] : layered) {
     std::lock_guard<std::mutex> lock(e->mtx);
     if(!e->visible(frame)) continue;
+    e->apply_animated_props(frame); // 中間点アニメーションをframe時点の値へ評価してメンバ変数に反映する
 
     // このEntityへ効くグループ制御を上のレイヤーから順に畳み込み、親変換として描画中のスレッドに与える(入れ子は外側から合成)
     GroupXform parent;

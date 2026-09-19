@@ -100,7 +100,7 @@ AniInterpType exo_track_interp(int mode, bool* exact) {
     case 3: return LINEAR; // 瞬間移動は呼び出し側で終点直前まで開始値を保持するキーフレームにする
     case 7:
       if(exact) *exact = false;
-      return EaseInOut;
+      return EaseInOutSine;
     default:
       if(exact) *exact = false;
       return LINEAR;

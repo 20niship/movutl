@@ -1,8 +1,8 @@
 #include <IconsFontAwesome6.h>
 #include <imgui.h>
-#include <imgui_internal.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
+#include <imgui_internal.h>
 // --
 #include <movutl/app/app_impl.hpp>
 #include <movutl/app/export_state.hpp>
@@ -12,6 +12,7 @@
 #include <movutl/gui/composition_settings.hpp>
 #include <movutl/gui/export_window.hpp>
 #include <movutl/gui/fft_window.hpp>
+#include <movutl/gui/graph_editor_window.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/gui/inspector.hpp>
 #include <movutl/gui/piano_roll.hpp>
@@ -25,13 +26,22 @@ namespace detail {
 void init_gui_panels() {
   auto g    = GUIManager::Get();
   g->panels = {
-    cutil::make_ref<InspectorWindow>(), cutil::make_ref<TimelineWindow>(), cutil::make_ref<ViewerWindow>(), cutil::make_ref<CompositionSettingsWindow>(), cutil::make_ref<DeveloperWindow>(), cutil::make_ref<ExportWindow>(), cutil::make_ref<FFTWindow>(), cutil::make_ref<PianoRollWindow>(),
+    cutil::make_ref<InspectorWindow>(),           //
+    cutil::make_ref<TimelineWindow>(),            //
+    cutil::make_ref<ViewerWindow>(),              //
+    cutil::make_ref<CompositionSettingsWindow>(), //
+    cutil::make_ref<DeveloperWindow>(),           //
+    cutil::make_ref<ExportWindow>(),              //
+    cutil::make_ref<FFTWindow>(),                 //
+    cutil::make_ref<GraphEditorWindow>(),         //
+    cutil::make_ref<PianoRollWindow>(),           // MIDIトラック選択中のみ自前で表示する
   };
 
-  // デフォルトワークスペース(初回起動時に適用される)
+  // デフォルトワークスペース(初回起動時に適用される)。dir==Noneのentry(最後を除く)は直前entryと同タブになる
   Workspace default_workspace;
   default_workspace.name = "Default";
-  default_workspace.add_entry("MOVUTL TIMELINE WINDOW", ImGuiDir_Down, 0.40f);
+  default_workspace.add_entry("タイムライン", ImGuiDir_Down, 0.40f);
+  default_workspace.add_entry(ICON_FA_CHART_LINE " グラフエディタ", ImGuiDir_None, 0.0f);
   default_workspace.add_entry("ツール", ImGuiDir_Left, 0.2f);
   default_workspace.add_entry(ICON_FA_PLUG " エフェクト制御", ImGuiDir_Right, 0.25f);
   default_workspace.add_entry(ICON_FA_KEYBOARD " ピアノロール", ImGuiDir_Down, 0.5f);
@@ -43,6 +53,7 @@ void update_gui_panels() {
   MOVUTL_ZONE_SCOPED_N("update_gui_panels");
   auto a = GUIManager::Get();
   for(auto& panel : a->panels) {
+    if(!panel->open) continue;
     const bool disable = is_exporting() && !panel->always_enabled_during_export();
     if(disable) ImGui::BeginDisabled();
     // ドックタブ左の▼(ウィンドウメニュー)と×は使わないので隠して見出しを軽くする(タイムラインは自前のクラス指定で上書きされる)
