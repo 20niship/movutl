@@ -212,13 +212,14 @@ public:
   virtual ~Entity();
 
   // 旧TrackObject::getPropsInfo/getProps/setPropsの移行先。上記のトラック共通属性のみを対象とする
-  const cutil::PropInfo* getTransformPropsInfo() const; // MUFUNC_AUTOGEN
-  cutil::Prop getTransformProps() const;                // MUFUNC_AUTOGEN
-  void setTransformProps(const cutil::Prop& props);     // MUFUNC_AUTOGEN
-
+  // (pygenの出力順が環境で変わらないよう、名前順(Track→Transform)で宣言する)
   const cutil::PropInfo* getTrackPropsInfo() const; // MUFUNC_AUTOGEN
   cutil::Prop getTrackProps() const;                // MUFUNC_AUTOGEN
   void setTrackProps(const cutil::Prop& props);     // MUFUNC_AUTOGEN
+
+  const cutil::PropInfo* getTransformPropsInfo() const; // MUFUNC_AUTOGEN
+  cutil::Prop getTransformProps() const;                // MUFUNC_AUTOGEN
+  void setTransformProps(const cutil::Prop& props);     // MUFUNC_AUTOGEN
 
   virtual const cutil::PropInfo* getPropsInfo() const { return nullptr; }
   virtual cutil::Prop getProps() const { return {}; }
