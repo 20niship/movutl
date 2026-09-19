@@ -408,7 +408,10 @@ bool BeginLayer(Composition* cp, int layer_idx) {
   bool eye_hovered     = ImGui::IsMouseHoveringRect(eye_rect.Min, eye_rect.Max);
   bool sidebar_hovered = ImGui::IsMouseHoveringRect(sidebar.Min, sidebar.Max) && !eye_hovered;
 
-  if(!is_exporting() && eye_hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) layer->active = !layer->active;
+  if(!is_exporting() && eye_hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+    layer->active = !layer->active;
+    if(ctx_.active_comp) ctx_.active_comp->invalidate_cache_all();
+  }
   if(eye_hovered) ImGui::SetTooltip(layer->active ? "レイヤーを非表示にする" : "レイヤーを表示する");
 
   bool editing = ctx_.editing_layer_idx == layer_idx;
