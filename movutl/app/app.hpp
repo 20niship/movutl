@@ -67,6 +67,8 @@ bool set_image_filter_param(const Ref<Image>& entt, const char* filter_name, con
 bool export_current_frame_png(const char* path);
 // GLFWウィンドウの現在の画面(ImGui UI込み)をキャプチャしPNGへ書き出す(GUIの動作確認用)
 bool export_screen_png(const char* path);
+// アクティブCompositionのEntityをレイヤー順(上のレイヤーから、レイヤー内は並び順)に数えたindex番目(0始まり)だけを選択する(GUIの動作確認スクリプト用)。存在しなければfalse
+bool select_entt_by_index(int index);
 
 std::vector<Ref<Entity>> get_selected_entts();
 void clear_selected_entts();

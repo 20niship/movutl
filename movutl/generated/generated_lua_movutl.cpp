@@ -482,6 +482,7 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("save_project", static_cast<void (*)()>(&save_project))
     .addFunction("save_project_as", static_cast<void (*)(const char*)>(&save_project_as))
     .addFunction("select_entt", static_cast<void (*)(const Ref<Entity>&)>(&select_entt))
+    .addFunction("select_entt_by_index", static_cast<bool (*)(int)>(&select_entt_by_index))
     .addFunction("select_entts", static_cast<void (*)(const std::vector<Ref<Entity> >&)>(&select_entts))
     .addFunction("set_image_filter_param", static_cast<bool (*)(const Ref<Image>&, const char*, const char*, float)>(&set_image_filter_param))
     .addFunction("set_shape_filter_param", static_cast<bool (*)(const Ref<ShapeEntt>&, const char*, const char*, float)>(&set_shape_filter_param))

@@ -32,6 +32,17 @@ struct LuaUIPanel final : UIPanel {
   LuaIntf::LuaRef def_;
 };
 
+// ウィンドウを作らず毎フレームfnを呼ぶだけのパネル(スクショ撮影などの自動化スクリプト用)
+struct LuaFrameHook final : UIPanel {
+  explicit LuaFrameHook(LuaIntf::LuaRef fn) : fn_(std::move(fn)) {}
+  void Update() override {
+    if(fn_.isFunction()) fn_.call<void>();
+  }
+  LuaIntf::LuaRef fn_;
+};
+
+void lua_register_frame_hook(LuaIntf::LuaRef fn) { GUIManager::Get()->panels.push_back(cutil::make_ref<LuaFrameHook>(std::move(fn))); }
+
 void lua_register_window(const std::string& title, LuaIntf::LuaRef def) { GUIManager::Get()->panels.push_back(cutil::make_ref<LuaUIPanel>(title, def)); }
 
 // LuaIntfはstd::vector<std::string>の戻り値を自動変換できないため、LuaRefのテーブルを手で組み立てる
@@ -46,7 +57,7 @@ LuaIntf::LuaRef lua_list_custom_objects(lua_State* L) {
 
 namespace detail {
 
-void bind_lua_ui_panel_api(lua_State* L) { LuaIntf::LuaBinding(L).beginModule("movutl").addFunction("register_window", &lua_register_window).addFunction("list_custom_objects", &lua_list_custom_objects).endModule(); }
+void bind_lua_ui_panel_api(lua_State* L) { LuaIntf::LuaBinding(L).beginModule("movutl").addFunction("register_window", &lua_register_window).addFunction("register_frame_hook", &lua_register_frame_hook).addFunction("list_custom_objects", &lua_list_custom_objects).endModule(); }
 
 struct LuaBindingContext {
 public:

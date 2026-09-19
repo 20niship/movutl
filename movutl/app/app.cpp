@@ -2,13 +2,13 @@
 #include <cstdlib>
 #include <filesystem>
 #include <movutl/app/app.hpp>
-#include <movutl/core/status_log.hpp>
 #include <movutl/app/app_impl.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/project.hpp>
 #include <movutl/core/filesystem.hpp>
 #include <movutl/core/logger.hpp>
 #include <movutl/core/profiler.hpp>
+#include <movutl/core/status_log.hpp>
 #include <movutl/core/time.hpp>
 #include <movutl/gui/gui.hpp>
 
@@ -211,6 +211,22 @@ bool export_current_frame_png(const char* path) {
 bool export_screen_png(const char* path) {
   auto img = capture_screen();
   return save_image_png(img, path, 30.0f);
+}
+
+bool select_entt_by_index(int index) {
+  auto cmp = Composition::GetActiveComp();
+  if(!cmp || index < 0) return false;
+  std::lock_guard<std::mutex> lock(cmp->mtx);
+  for(auto& layer : cmp->layers) {
+    for(auto& e : layer.entts) {
+      if(!e) continue;
+      if(index-- > 0) continue;
+      clear_selected_entts();
+      select_entt(e);
+      return true;
+    }
+  }
+  return false;
 }
 
 Ref<Entity> duplicate_asset(const Ref<Entity>& src) {

@@ -851,6 +851,10 @@ function movutl.save_project_as( path, )end
 ---@return nil
 function movutl.select_entt( entt, )end
 
+---@param index number
+---@return boolean
+function movutl.select_entt_by_index( index, )end
+
 ---@param entts table
 ---@return nil
 function movutl.select_entts( entts, )end
