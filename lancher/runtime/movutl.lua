@@ -91,6 +91,26 @@ movutl.ImageFormat = {}
 ---@field ShapeType_Custom number
 movutl.ShapeType = {}
 
+---@class TextAlign
+---@field TextAlign_LeftTop number
+---@field TextAlign_CenterTop number
+---@field TextAlign_RightTop number
+---@field TextAlign_LeftMiddle number
+---@field TextAlign_CenterMiddle number
+---@field TextAlign_RightMiddle number
+---@field TextAlign_LeftBottom number
+---@field TextAlign_CenterBottom number
+---@field TextAlign_RightBottom number
+movutl.TextAlign = {}
+
+---@class TextDecoration
+---@field TextDeco_Plain number
+---@field TextDeco_Shadow number
+---@field TextDeco_ShadowLight number
+---@field TextDeco_Outline number
+---@field TextDeco_OutlineThin number
+movutl.TextDecoration = {}
+
 ---@class AudioEntt
 ---@field offset_sec_ number
 ---@field speed number
@@ -412,6 +432,43 @@ function movutl.Movie:getType( ) end
 ---@return nil
 function movutl.Movie:reload_asset( ) end
 
+---@class Placement
+---@field x number
+---@field x number
+---@field x number
+---@field anchor_x number
+---@field anchor_x number
+---@field anchor_x number
+---@field scale_x number
+---@field scale_x number
+---@field scale_x number
+---@field aspect number
+---@field rot_x number
+---@field rot_x number
+---@field rot_x number
+---@field rot_x number
+---@field rot_x number
+---@field alpha number
+---@field blend BlendType
+movutl.Placement = {}
+movutl.Placement.x = 0
+movutl.Placement.x = y
+movutl.Placement.x = 0
+movutl.Placement.anchor_x = 0
+movutl.Placement.anchor_x = anchor_y
+movutl.Placement.anchor_x = 0
+movutl.Placement.scale_x = 1
+movutl.Placement.scale_x = scale_y
+movutl.Placement.scale_x = 1
+movutl.Placement.aspect = 0
+movutl.Placement.rot_x = 0
+movutl.Placement.rot_x = rot_y
+movutl.Placement.rot_x = 0
+movutl.Placement.rot_x = rot_z
+movutl.Placement.rot_x = 0
+movutl.Placement.alpha = 1.0 f
+movutl.Placement.blend = Blend_Alpha
+
 ---@class Project
 ---@field path string
 ---@field output_path string
@@ -489,18 +546,35 @@ function movutl.ShapeEntt:getType( ) end
 ---@field font string
 ---@field text string
 ---@field separate boolean
+---@field font_size_ number
+---@field bold_ boolean
+---@field italic_ boolean
+---@field spacing_x_ number
+---@field spacing_y_ number
+---@field monospace_ boolean
+---@field align_ number
+---@field deco_ number
 ---@field color_ Vec4b
----@field border_color_ Vec4b
----@field border_width_ number
+---@field deco_color_ Vec4b
 movutl.TextEntt = {}
 movutl.TextEntt.dirty_ = 0
 movutl.TextEntt.speed = 100.0
 movutl.TextEntt.font = ""
 movutl.TextEntt.text = ""
 movutl.TextEntt.separate = false
+movutl.TextEntt.font_size_ = 34
+movutl.TextEntt.bold_ = false
+movutl.TextEntt.italic_ = false
+movutl.TextEntt.spacing_x_ = 0
+movutl.TextEntt.spacing_y_ = 0
+movutl.TextEntt.monospace_ = false
+movutl.TextEntt.align_ = TextAlign_CenterMiddle
+movutl.TextEntt.deco_ = TextDeco_Plain
 movutl.TextEntt.color_ = Vec4b ( 255 , 255 , 255 , 255 )
-movutl.TextEntt.border_color_ = Vec4b ( 0 , 0 , 0 , 255 )
-movutl.TextEntt.border_width_ = 0
+movutl.TextEntt.deco_color_ = Vec4b ( 0 , 0 , 0 , 255 )
+
+---@return Vec2
+function movutl.TextEntt:align_origin_offset( ) end
 
 ---@param text string
 ---@param font string

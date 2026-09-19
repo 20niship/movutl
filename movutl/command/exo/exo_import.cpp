@@ -297,7 +297,15 @@ int import_exo_file(const char* path) {
     } else if(kind == "テキスト") {
       auto t           = TextEntt::Create(utf16le_hex_to_utf8(get(src, "text")).c_str(), get(src, "font").c_str());
       t->color_        = parse_color(get(src, "color"), t->color_);
-      t->border_color_ = parse_color(get(src, "color2"), t->border_color_);
+      t->deco_color_   = parse_color(get(src, "color2"), t->deco_color_);
+      t->font_size_    = std::max(1, geti(src, "サイズ", t->font_size_));
+      t->bold_         = geti(src, "B") != 0;
+      t->italic_       = geti(src, "I") != 0;
+      t->spacing_x_    = geti(src, "spacing_x");
+      t->spacing_y_    = geti(src, "spacing_y");
+      t->monospace_    = geti(src, "monospace") != 0;
+      t->align_        = std::clamp(geti(src, "align"), 0, 8); // ponytail: 9以降(縦書き)は未対応なので左上〜右下の9通りへ丸める
+      t->deco_         = std::clamp(geti(src, "type"), 0, 4);
       apply_standard_draw(*t, draw, ext);
       // TextEntt::CreateはProject::entitiesへ登録もguid採番もしないため自前で行う
       Project::Get()->entities.push_back(t);

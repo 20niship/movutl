@@ -3,7 +3,9 @@
 #include <locale>
 #include <math.h>
 #include <stdio.h>
+#include <algorithm>
 #include <string>
+#include <vector>
 
 #include <movutl/asset/image.hpp>
 #include <movutl/core/assert.hpp>
@@ -13,6 +15,8 @@
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
+#include FT_OUTLINE_H
+#include FT_SYNTHESIS_H
 #include <opencv2/opencv.hpp>
 
 #define WIDTH 500
@@ -42,7 +46,7 @@ void FontRenderManager::shutdown() {
   initialized = false;
 }
 
-FontRenderManager::FontFace::FontFace(const std::string& path, int width) {
+FontRenderManager::FontFace::FontFace(const std::string& path) {
   this->path = path;
   if(!fs_exists(path)) {
     LOG_F(ERROR, "Font file not found: %s", path.c_str());
@@ -53,138 +57,114 @@ FontRenderManager::FontFace::FontFace(const std::string& path, int width) {
   auto error = FT_New_Face(library, path.c_str(), 0, &face);
   if(error == FT_Err_Unknown_File_Format) {
     LOG_F(ERROR, "Font format is unsupported: %s", path.c_str());
-    return;
+    face = nullptr;
   } else if(error) {
     LOG_F(ERROR, "Failed to open font file: %d %s", error, path.c_str());
-    return;
+    face = nullptr;
   }
-  set_fontsize(width);
 }
 
 FontRenderManager::FontFace::~FontFace() {
   /// FT_Done_Face(face);
 }
 
-Vec2d FontRenderManager::FontFace::get_size(const char* text) {
-  if(face == nullptr || slot == nullptr) return Vec2d(0, 0);
-  std::u32string u32str = std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t>().from_bytes(text);
+namespace {
+// グリフを(必要なら太字・斜体を合成して)ラスタライズする。成功でtrue
+bool load_glyph(FT_Face face, char32_t ch, const TextStyle& st) {
+  if(FT_Load_Char(face, ch, FT_LOAD_DEFAULT | FT_LOAD_NO_BITMAP)) return false;
+  FT_GlyphSlot slot = face->glyph;
+  if(slot->format == FT_GLYPH_FORMAT_OUTLINE) {
+    if(st.bold) FT_Outline_Embolden(&slot->outline, std::max(1, st.size / 24) * 64);
+    if(st.italic) FT_GlyphSlot_Oblique(slot);
+  }
+  return FT_Render_Glyph(slot, FT_RENDER_MODE_NORMAL) == 0;
+}
 
-  int curPosX     = 0;
-  int curPosY     = 60;          // 現在のカーソル位置
-  int last_height = 0;           // 最後に文字を書いたときの文字の大きさ
-  slot            = face->glyph; // グリフへのショートカット
+int glyph_advance(FT_Face face, char32_t ch, const TextStyle& st) {
+  if(st.monospace) return ch < 0x80 ? st.size / 2 : st.size;
+  return (int)(face->glyph->advance.x >> 6) + (st.bold ? std::max(1, st.size / 24) : 0);
+}
 
-  for(int n = 0; n < u32str.size(); n++) {
-    if(u32str[n] == '\n') {
-      curPosX = 0;
-      curPosY += last_height + 20;
-    } else {
-      if(FT_Load_Char(face, u32str[n], FT_LOAD_RENDER)) continue; // 一文字レンダリング
+// グリフの縁が重なる箇所はアルファが大きい方を残す(小さい方で上書きしない)
+void draw_bitmap(Image* img, FT_GlyphSlot slot, int x, int y, const Vec4b& color) {
+  const auto& bm = slot->bitmap;
+  for(unsigned q = 0; q < bm.rows; q++) {
+    for(unsigned p = 0; p < bm.width; p++) {
+      const int i = x + (int)p, j = y + (int)q;
+      if(i < 0 || j < 0 || i >= (int)img->width || j >= (int)img->height) continue;
+      const unsigned char coverage = bm.buffer[q * bm.pitch + p];
+      if(coverage == 0) continue;
+      Vec4b& px = img->data()[j * img->width + i];
+      if(coverage > px[3]) px = Vec4b(color[0], color[1], color[2], coverage);
     }
-    last_height = (slot->bitmap).rows;
-
-    curPosX += slot->advance.x >> 6;
-    curPosY += slot->advance.y >> 6;
   }
-  return Vec2d(curPosX, curPosY);
 }
+} // namespace
 
-void FontRenderManager::FontFace::set_fontsize(int size) {
-  if(fontsize_ == size) return;
-  if(face == nullptr) {
-    LOG_F(ERROR, "set_fontsize: font face is not loaded: %s", path.c_str());
-    return;
-  }
-  auto error = FT_Set_Pixel_Sizes(face, 0, 48);
-  if(error) {
-    LOG_F(ERROR, "Failed to set font size: %d", error);
-  }
-  fontsize_ = size;
-  slot      = face->glyph; // グリフへのショートカット
-}
+void FontRenderManager::FontFace::render_text(const char* text, const TextStyle& st, Image* img, const Vec4b& color) {
+  if(face == nullptr || img == nullptr) return;
+  FT_Set_Pixel_Sizes(face, 0, std::max(1, st.size));
+  const int ascender = (int)(face->size->metrics.ascender >> 6);
+  const int line_h   = std::max(1, (int)(face->size->metrics.height >> 6));
 
-void FontRenderManager::FontFace::render_text(const char* text, int space_x, int space_y, Image* img, const Vec4b& color) {
-  if(face == nullptr || slot == nullptr || img == nullptr) return;
-  auto size = get_size(text);
-  img->resize(size[0], size[1]);
+  std::u32string u32 = std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t>().from_bytes(text);
+  std::vector<std::u32string> lines(1);
+  for(char32_t ch : u32) {
+    if(ch == U'\r') continue;
+    if(ch == U'\n') lines.emplace_back();
+    else lines.back() += ch;
+  }
+
+  // 1パス目: 各行の幅
+  std::vector<int> widths;
+  int max_w = 1;
+  for(auto& ln : lines) {
+    int w = 0;
+    for(char32_t ch : ln) {
+      if(!load_glyph(face, ch, st)) continue;
+      w += glyph_advance(face, ch, st) + st.spacing_x;
+    }
+    w = std::max(0, w - (ln.empty() ? 0 : st.spacing_x));
+    widths.push_back(w);
+    max_w = std::max(max_w, w);
+  }
+  const int slack = st.italic ? st.size / 4 : 0; // 斜体の右端はadvanceからはみ出す
+  const int W     = max_w + slack;
+  const int H     = (int)lines.size() * line_h + ((int)lines.size() - 1) * st.spacing_y;
+  img->resize(W, H);
+  img->has_alpha = true;
   img->fill(0);
 
-  std::u32string u32str = std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t>().from_bytes(text);
-
-  int curPosX     = 0;
-  int curPosY     = 60; // 現在のカーソル位置
-  int last_height = 0;  // 最後に文字を書いたときの文字の大きさ
-
-  for(int n = 0; n < u32str.size(); n++) {
-    if(u32str[n] == '\n') {
-      curPosX = 0;
-      curPosY += last_height + 20;
-    } else {
-      if(FT_Load_Char(face, u32str[n], FT_LOAD_RENDER)) continue; // 一文字レンダリング
-      // int yMax = face->bbox.yMax;
-      // int yMin = face->bbox.yMin;
-      // int baseline = bitmap->rows * yMax / (yMax - yMin);
-      draw_bitmap(img, curPosX, curPosY - slot->bitmap_top, color); // imageにslot->bitmapの中身をコピーする
-    }
-    last_height = (slot->bitmap).rows;
-
-    curPosX += slot->advance.x >> 6;
-    curPosY += slot->advance.y >> 6;
-    curPosX += space_x;
-  }
-};
-
-// 生成された位置も自分の画像データをimageにコピーする
-void FontRenderManager::FontFace::draw_bitmap(Image* img, int x, int y, const Vec4b& color) {
-  int i, j, p, q;
-  const int x_max = x + (slot->bitmap).width;
-  const int y_max = y + (slot->bitmap).rows;
-
-  for(j = y, q = 0; j < y_max; j++, q++) {
-    Vec4b* image = img->data();
-    for(i = x, p = 0; i < x_max; i++, p++) {
-      if(i < 0 || j < 0 || i >= img->width || j >= img->height) continue;
-      unsigned char coverage = (slot->bitmap).buffer[q * (slot->bitmap).width + p];
-      if(coverage == 0) continue;
-      Vec4b* pixel = &image[j * img->width + i];
-      // グリフの縁が重なる箇所はアルファが大きい方を残す(小さい方で上書きしない)
-      if(coverage > (*pixel)[3]) {
-        (*pixel)[0] = color[0];
-        (*pixel)[1] = color[1];
-        (*pixel)[2] = color[2];
-        (*pixel)[3] = coverage;
-      }
+  // 2パス目: 描画
+  for(size_t i = 0; i < lines.size(); i++) {
+    int x = st.line_align == 1 ? (max_w - widths[i]) / 2 : st.line_align == 2 ? max_w - widths[i] : 0;
+    const int baseline = (int)i * (line_h + st.spacing_y) + ascender;
+    for(char32_t ch : lines[i]) {
+      if(!load_glyph(face, ch, st)) continue;
+      const int adv = glyph_advance(face, ch, st);
+      // 等間隔のときはグリフをセルの中央に置く
+      const int cell_off = st.monospace ? std::max(0, (adv - (int)(face->glyph->advance.x >> 6)) / 2) : 0;
+      draw_bitmap(img, face->glyph, x + cell_off + face->glyph->bitmap_left, baseline - face->glyph->bitmap_top, color);
+      x += adv + st.spacing_x;
     }
   }
 }
 
-bool FontRenderManager::renderText(Image* img, const char* text, int size, int sace_x, int space_y, const char* font_name, const Vec4b& color) {
+bool FontRenderManager::renderText(Image* img, const char* text, const char* font_name, const TextStyle& style, const Vec4b& color) {
   auto manager = FontRenderManager::Get();
   if(!manager->initialized) {
     LOG_F(ERROR, "FontRenderManager is not initialized");
     return false;
   }
-
   if(!img) return false;
-  for(auto& [name, font_face] : manager->font_faces) {
-    if(name == font_name) {
-      if(font_face.face == nullptr) return false;
-      font_face.set_fontsize(size);
-      font_face.render_text(text, sace_x, space_y, img, color);
-      return true;
-    }
+  auto it = manager->font_faces.find(font_name);
+  if(it == manager->font_faces.end()) it = manager->font_faces.emplace(font_name, FontFace(font_name)).first;
+  if(it->second.face == nullptr) {
+    LOG_F(ERROR, "Failed to load font: %s", font_name);
+    return false;
   }
-  {
-    manager->font_faces[font_name] = FontFace(font_name, size);
-    auto& font_face                = manager->font_faces[font_name];
-    if(font_face.face == nullptr) {
-      LOG_F(ERROR, "Failed to load font: %s", font_name);
-      return false;
-    }
-    font_face.render_text(text, sace_x, space_y, img, color);
-    return true;
-  }
-  return false;
+  it->second.render_text(text, style, img, color);
+  return true;
 }
 
 FontRenderManager* FontRenderManager::singleton_ = nullptr;

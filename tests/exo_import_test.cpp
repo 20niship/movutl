@@ -176,6 +176,9 @@ TEST_CASE("exo: comprehensive.exo (動画/画像/音声/テキスト/図形を�
     CHECK(t1->text == "こんにちは世界");
     CHECK(t1->color_[0] == 255);
     CHECK(t1->color_[1] == 0);
+    CHECK(t1->font_size_ == 34);
+    CHECK(t1->align_ == TextAlign_LeftTop); // exoのalign=0
+    CHECK(t1->deco_ == TextDeco_Plain);
     CHECK(t1->pos_[0] == doctest::Approx(-199.f));
     CHECK(t1->pos_[1] == doctest::Approx(118.f));
     CHECK(t2->text == "Hello, exo! \xF0\x9F\x98\x80\xF0\xA0\xAE\xB7");

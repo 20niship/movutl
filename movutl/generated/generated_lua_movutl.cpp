@@ -108,6 +108,24 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addConstant("ShapeType_Circle", ShapeType::ShapeType_Circle)
     .addConstant("ShapeType_Custom", ShapeType::ShapeType_Custom)
     .endModule()
+    .beginModule("TextAlign")
+    .addConstant("TextAlign_LeftTop", TextAlign::TextAlign_LeftTop)
+    .addConstant("TextAlign_CenterTop", TextAlign::TextAlign_CenterTop)
+    .addConstant("TextAlign_RightTop", TextAlign::TextAlign_RightTop)
+    .addConstant("TextAlign_LeftMiddle", TextAlign::TextAlign_LeftMiddle)
+    .addConstant("TextAlign_CenterMiddle", TextAlign::TextAlign_CenterMiddle)
+    .addConstant("TextAlign_RightMiddle", TextAlign::TextAlign_RightMiddle)
+    .addConstant("TextAlign_LeftBottom", TextAlign::TextAlign_LeftBottom)
+    .addConstant("TextAlign_CenterBottom", TextAlign::TextAlign_CenterBottom)
+    .addConstant("TextAlign_RightBottom", TextAlign::TextAlign_RightBottom)
+    .endModule()
+    .beginModule("TextDecoration")
+    .addConstant("TextDeco_Plain", TextDecoration::TextDeco_Plain)
+    .addConstant("TextDeco_Shadow", TextDecoration::TextDeco_Shadow)
+    .addConstant("TextDeco_ShadowLight", TextDecoration::TextDeco_ShadowLight)
+    .addConstant("TextDeco_Outline", TextDecoration::TextDeco_Outline)
+    .addConstant("TextDeco_OutlineThin", TextDecoration::TextDeco_OutlineThin)
+    .endModule()
     .beginClass<AudioEntt>("AudioEntt")
     .addStaticFunction("Create", &AudioEntt::Create)
     .addFunction("load_file", &AudioEntt::load_file)
@@ -136,6 +154,9 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addVariable("anchor_", static_cast<Vec3 CompoRefEntt::*>(&Entity::anchor_))      // Vec3
     .addVariable("scale_", static_cast<Vec2 CompoRefEntt::*>(&Entity::scale_))        // Vec2
     .addVariable("rotation_", static_cast<float CompoRefEntt::*>(&Entity::rotation_)) // float
+    .addVariable("rot_x_", static_cast<float CompoRefEntt::*>(&Entity::rot_x_))       // float
+    .addVariable("rot_y_", static_cast<float CompoRefEntt::*>(&Entity::rot_y_))       // float
+    .addVariable("aspect_", static_cast<float CompoRefEntt::*>(&Entity::aspect_))     // float
     .addVariable("alpha_", static_cast<float CompoRefEntt::*>(&Entity::alpha_))       // float
     .endClass()
     .beginClass<Composition>("Composition")
@@ -199,6 +220,9 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addVariable("anchor_", &Entity::anchor_)             // Vec3
     .addVariable("scale_", &Entity::scale_)               // Vec2
     .addVariable("rotation_", &Entity::rotation_)         // float
+    .addVariable("rot_x_", &Entity::rot_x_)               // float
+    .addVariable("rot_y_", &Entity::rot_y_)               // float
+    .addVariable("aspect_", &Entity::aspect_)             // float
     .addVariable("alpha_", &Entity::alpha_)               // float
     .endClass()
     .beginClass<EntityInfo>("EntityInfo")
@@ -223,6 +247,9 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addVariable("anchor_", static_cast<Vec3 FramebufferEntt::*>(&Entity::anchor_))      // Vec3
     .addVariable("scale_", static_cast<Vec2 FramebufferEntt::*>(&Entity::scale_))        // Vec2
     .addVariable("rotation_", static_cast<float FramebufferEntt::*>(&Entity::rotation_)) // float
+    .addVariable("rot_x_", static_cast<float FramebufferEntt::*>(&Entity::rot_x_))       // float
+    .addVariable("rot_y_", static_cast<float FramebufferEntt::*>(&Entity::rot_y_))       // float
+    .addVariable("aspect_", static_cast<float FramebufferEntt::*>(&Entity::aspect_))     // float
     .addVariable("alpha_", static_cast<float FramebufferEntt::*>(&Entity::alpha_))       // float
     .endClass()
     .beginClass<Image>("Image")
@@ -254,6 +281,9 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addVariable("anchor_", static_cast<Vec3 Image::*>(&Entity::anchor_))      // Vec3
     .addVariable("scale_", static_cast<Vec2 Image::*>(&Entity::scale_))        // Vec2
     .addVariable("rotation_", static_cast<float Image::*>(&Entity::rotation_)) // float
+    .addVariable("rot_x_", static_cast<float Image::*>(&Entity::rot_x_))       // float
+    .addVariable("rot_y_", static_cast<float Image::*>(&Entity::rot_y_))       // float
+    .addVariable("aspect_", static_cast<float Image::*>(&Entity::aspect_))     // float
     .addVariable("alpha_", static_cast<float Image::*>(&Entity::alpha_))       // float
     .endClass()
     .beginClass<MidiEntt>("MidiEntt")
@@ -284,7 +314,29 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addVariable("anchor_", static_cast<Vec3 Movie::*>(&Entity::anchor_))      // Vec3
     .addVariable("scale_", static_cast<Vec2 Movie::*>(&Entity::scale_))        // Vec2
     .addVariable("rotation_", static_cast<float Movie::*>(&Entity::rotation_)) // float
+    .addVariable("rot_x_", static_cast<float Movie::*>(&Entity::rot_x_))       // float
+    .addVariable("rot_y_", static_cast<float Movie::*>(&Entity::rot_y_))       // float
+    .addVariable("aspect_", static_cast<float Movie::*>(&Entity::aspect_))     // float
     .addVariable("alpha_", static_cast<float Movie::*>(&Entity::alpha_))       // float
+    .endClass()
+    .beginClass<Placement>("Placement")
+    .addVariable("x", &Placement::x)               // double
+    .addVariable("x", &Placement::x)               // double
+    .addVariable("x", &Placement::x)               // double
+    .addVariable("anchor_x", &Placement::anchor_x) // double
+    .addVariable("anchor_x", &Placement::anchor_x) // double
+    .addVariable("anchor_x", &Placement::anchor_x) // double
+    .addVariable("scale_x", &Placement::scale_x)   // double
+    .addVariable("scale_x", &Placement::scale_x)   // double
+    .addVariable("scale_x", &Placement::scale_x)   // double
+    .addVariable("aspect", &Placement::aspect)     // double
+    .addVariable("rot_x", &Placement::rot_x)       // double
+    .addVariable("rot_x", &Placement::rot_x)       // double
+    .addVariable("rot_x", &Placement::rot_x)       // double
+    .addVariable("rot_x", &Placement::rot_x)       // double
+    .addVariable("rot_x", &Placement::rot_x)       // double
+    .addVariable("alpha", &Placement::alpha)       // float
+    .addVariable("blend", &Placement::blend)       // BlendType
     .endClass()
     .beginClass<Project>("Project")
     .addStaticFunction("New", &Project::New)
@@ -314,9 +366,13 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addVariable("anchor_", static_cast<Vec3 ShapeEntt::*>(&Entity::anchor_))      // Vec3
     .addVariable("scale_", static_cast<Vec2 ShapeEntt::*>(&Entity::scale_))        // Vec2
     .addVariable("rotation_", static_cast<float ShapeEntt::*>(&Entity::rotation_)) // float
+    .addVariable("rot_x_", static_cast<float ShapeEntt::*>(&Entity::rot_x_))       // float
+    .addVariable("rot_y_", static_cast<float ShapeEntt::*>(&Entity::rot_y_))       // float
+    .addVariable("aspect_", static_cast<float ShapeEntt::*>(&Entity::aspect_))     // float
     .addVariable("alpha_", static_cast<float ShapeEntt::*>(&Entity::alpha_))       // float
     .endClass()
     .beginClass<TextEntt>("TextEntt")
+    .addFunction("align_origin_offset", &TextEntt::align_origin_offset)
     .addStaticFunction("Create", &TextEntt::Create)
     .addFunction("getType", &TextEntt::getType)
     .addVariable("dirty_", &TextEntt::dirty_)                                     // int32_t
@@ -324,13 +380,23 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addVariable("font", &TextEntt::font)                                         // std::string
     .addVariable("text", &TextEntt::text)                                         // std::string
     .addVariable("separate", &TextEntt::separate)                                 // bool
+    .addVariable("font_size_", &TextEntt::font_size_)                             // int32_t
+    .addVariable("bold_", &TextEntt::bold_)                                       // bool
+    .addVariable("italic_", &TextEntt::italic_)                                   // bool
+    .addVariable("spacing_x_", &TextEntt::spacing_x_)                             // int32_t
+    .addVariable("spacing_y_", &TextEntt::spacing_y_)                             // int32_t
+    .addVariable("monospace_", &TextEntt::monospace_)                             // bool
+    .addVariable("align_", &TextEntt::align_)                                     // int32_t
+    .addVariable("deco_", &TextEntt::deco_)                                       // int32_t
     .addVariable("color_", &TextEntt::color_)                                     // Vec4b
-    .addVariable("border_color_", &TextEntt::border_color_)                       // Vec4b
-    .addVariable("border_width_", &TextEntt::border_width_)                       // int32_t
+    .addVariable("deco_color_", &TextEntt::deco_color_)                           // Vec4b
     .addVariable("pos_", static_cast<Vec3 TextEntt::*>(&Entity::pos_))            // Vec3
     .addVariable("anchor_", static_cast<Vec3 TextEntt::*>(&Entity::anchor_))      // Vec3
     .addVariable("scale_", static_cast<Vec2 TextEntt::*>(&Entity::scale_))        // Vec2
     .addVariable("rotation_", static_cast<float TextEntt::*>(&Entity::rotation_)) // float
+    .addVariable("rot_x_", static_cast<float TextEntt::*>(&Entity::rot_x_))       // float
+    .addVariable("rot_y_", static_cast<float TextEntt::*>(&Entity::rot_y_))       // float
+    .addVariable("aspect_", static_cast<float TextEntt::*>(&Entity::aspect_))     // float
     .addVariable("alpha_", static_cast<float TextEntt::*>(&Entity::alpha_))       // float
     .endClass()
     .beginClass<TrackLayer>("TrackLayer")
