@@ -405,10 +405,10 @@ public:
     if(index < 0 || index >= (int)props.size()) return T();
 
     // clang-format off
-    if constexpr(std::is_same_v<T, float> || std::is_same_v<T, double>) return std::get<PAniClip<float>>(props[index]).get(frame);
+    if constexpr(std::is_same_v<T, bool>) return (bool)std::get<PAniClip<bool>>(props[index]).get(frame); // is_integral_v<bool>もtrueなのでintegral判定より先に置く
+    else if constexpr(std::is_same_v<T, float> || std::is_same_v<T, double>) return std::get<PAniClip<float>>(props[index]).get(frame);
     else if constexpr(std::is_integral_v<T>) return (int)std::get<PAniClip<int>>(props[index]).get(frame);
     else if constexpr(std::is_same_v<T, std::string>) return (std::string)std::get<PAniClip<std::string>>(props[index]).get(frame);
-    else if constexpr(std::is_same_v<T, bool>) return (bool)std::get<PAniClip<bool>>(props[index]).get(frame);
     else if constexpr(std::is_same_v<T, Vec2>) return std::get<PAniClip<Vec2>>(props[index]).get(frame);
     else if constexpr(std::is_same_v<T, Vec3>) return std::get<PAniClip<Vec3>>(props[index]).get(frame);
     else if constexpr(std::is_same_v<T, Vec4>) return std::get<PAniClip<Vec4>>(props[index]).get(frame);
@@ -493,10 +493,10 @@ public:
   size_t size() const { return props.size(); }
   template <typename T> void add_prop(const std::string& name, T value) {
     // clang-format off
-    if constexpr(std::is_same_v<T, float> || std::is_same_v<T, double>) props.push_back(PAniClip<float>(name, value));
+    if constexpr(std::is_same_v<T, bool>) props.push_back(PAniClip<bool>(name, value)); // is_integral_v<bool>もtrueなのでintegral判定より先に置く
+    else if constexpr(std::is_same_v<T, float> || std::is_same_v<T, double>) props.push_back(PAniClip<float>(name, value));
     else if constexpr(std::is_integral_v<T>) props.push_back(PAniClip<int>(name, value));
     else if constexpr(std::is_same_v<T, std::string>) props.push_back(PAniClip<std::string>(name, value));
-    else if constexpr(std::is_same_v<T, bool>) props.push_back(PAniClip<bool>(name, value));
     else if constexpr(std::is_same_v<T, Vec2>) props.push_back(PAniClip<Vec2>(name, value));
     else if constexpr(std::is_same_v<T, Vec3>) props.push_back(PAniClip<Vec3>(name, value));
     else if constexpr(std::is_same_v<T, Vec4b>) props.push_back(PAniClip<Vec4b>(name, value));

@@ -184,6 +184,13 @@ TEST_CASE("AnimProps::get_ease_type/set_ease_type/get_ease_bezier/set_ease_bezie
   CHECK(props.get_ease_type(0, 999) == AniInterpType::LINEAR);
 }
 
+TEST_CASE("AnimProps::add_prop<bool>/get<bool>: is_integral_v<bool>もtrueなのでint型と誤判定しない") {
+  AnimProps props;
+  props.add_prop<bool>("flag", true);
+  CHECK(props.get_type(0) == cutil::prop_info_of<bool>());
+  CHECK(props.get<bool>(0, 0) == true);
+}
+
 TEST_CASE("PAniClip::neighbor_frames: 単一キー/キーちょうど上/中間/前後クランプ") {
   PAniClip<float> clip;
   clip.clear();
