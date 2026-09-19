@@ -363,6 +363,7 @@ int import_exo_file(const char* path) {
     comp->invalidate_cache_all();
   }
   exo_import_report().imported = count;
+  if(!exo_import_report().items.empty()) exo_import_report_request_dialog();
   LOG_F(INFO, "import_exo_file: %s -> %d objects (range %d-%d)", path, count, comp->fstart, comp->fend);
   return count;
 }

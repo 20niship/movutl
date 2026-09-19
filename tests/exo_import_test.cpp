@@ -1,5 +1,6 @@
 #include <doctest/doctest.h>
 #include <filesystem>
+#include <imgui.h>
 #include <fstream>
 #include <movutl/app/app_impl.hpp>
 #include <movutl/asset/audio.hpp>
@@ -269,6 +270,25 @@ TEST_CASE("exo: 未対応オブジェクトは取り込み結果レポートに�
   CHECK(rep.imported == 0);
   REQUIRE(rep.items.size() == 1);
   CHECK(rep.items[0].count == 2);
+}
+
+TEST_CASE("exo: 取り込み結果ダイアログはImGuiコンテキスト上で描画しても落ちない") {
+  Project::New();
+  import_exo_text("[exedit]\r\nwidth=640\r\nheight=360\r\nrate=30\r\nscale=1\r\n[0]\r\nstart=1\r\nend=10\r\nlayer=1\r\n[0.0]\r\n_name=Unknown\r\n");
+  CHECK_FALSE(exo_import_report().items.empty());
+  ImGui::CreateContext();
+  ImGuiIO& io    = ImGui::GetIO();
+  io.DisplaySize = ImVec2(800, 600);
+  unsigned char* pixels;
+  int w, h;
+  io.Fonts->GetTexDataAsRGBA32(&pixels, &w, &h);
+  for(int i = 0; i < 2; i++) { // 1フレーム目でポップアップを開き、2フレーム目でモーダル本体を描画する
+    io.DeltaTime = 1.0f / 60.0f;
+    ImGui::NewFrame();
+    draw_exo_import_report_dialog();
+    ImGui::EndFrame();
+  }
+  ImGui::DestroyContext();
 }
 
 TEST_CASE("exo: 標準描画のblendがEntity::blend_へ変換される") {

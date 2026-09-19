@@ -3,6 +3,7 @@
 #include <movutl/app/export_state.hpp>
 #include <movutl/asset/config.hpp>
 #include <movutl/asset/project.hpp>
+#include <movutl/command/exo/exo_report.hpp>
 #include <movutl/core/command.hpp>
 #include <movutl/gui/export_window.hpp>
 #include <movutl/gui/gui.hpp>
@@ -80,5 +81,6 @@ void render_main_menu_bar() {
     if(ImGui::Button("Cancel")) ImGui::CloseCurrentPopup();
     ImGui::EndPopup();
   }
+  draw_exo_import_report_dialog();
 }
 } // namespace mu
