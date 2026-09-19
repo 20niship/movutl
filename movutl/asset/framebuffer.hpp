@@ -14,11 +14,7 @@ public:
   FramebufferEntt()  = default;
   ~FramebufferEntt() = default;
 
-  bool clear_original_ = false;          // MPROPERTY(name="元のバッファをクリア", desc="キャプチャ後に合成先バッファを透明でクリアする")
-  Vec3 pos_            = Vec3(0, 0, 0);  // MPROPERTY(name="位置", viewer_anchor=true)
-  Vec2 scale_          = Vec2(100, 100); // MPROPERTY(name="拡大率", scale=true)
-  float rotation_      = 0;              // MPROPERTY(name="回転")
-  uint8_t alpha_       = 255;            // MPROPERTY(name="透明度")
+  bool clear_original_ = false; // MPROPERTY(name="元のバッファをクリア", desc="キャプチャ後に合成先バッファを透明でクリアする")
 
   static Ref<FramebufferEntt> Create(const char* name);
   virtual EntityType getType() const override { return EntityType_Framebuffer; }
