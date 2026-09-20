@@ -43,3 +43,6 @@
 [submodule "ext/uapmd"]
 	path = ext/uapmd
 	url = https://github.com/atsushieno/uapmd.git
+[submodule "plugins/scripts/Aodaruma-AviUtl-Script"]
+	path = plugins/scripts/Aodaruma-AviUtl-Script
+	url = https://github.com/Aodaruma/Aodaruma-AviUtl-Script
