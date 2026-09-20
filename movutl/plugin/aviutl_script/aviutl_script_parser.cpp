@@ -1,3 +1,4 @@
+#include <movutl/asset/config.hpp>
 #include <movutl/core/logger.hpp>
 #include <movutl/plugin/aviutl_script/aviutl_script_parser.hpp>
 #include <regex>
@@ -31,6 +32,11 @@ float parse_float_or(const std::string& s, float def) {
 } // namespace
 
 std::vector<AviUtlScriptDef> parse_aviutl_script(const std::string& text) {
+  static const std::regex require_re(R"(\brequire\s*[\("'\[])");
+  if(Config::Get()->ignore_scripts_with_require && std::regex_search(text, require_re)) {
+    LOG_F(1, "parse_aviutl_script: require()を含むためスキップ");
+    return {};
+  }
   static const std::regex track_re(R"(^--track(\d):(.*)$)");
   static const std::regex check_re(R"(^--check(\d):(.*)$)");
   static const std::regex at_re(R"(^@(.*)$)");

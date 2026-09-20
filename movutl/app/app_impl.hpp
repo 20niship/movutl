@@ -17,6 +17,17 @@ public:
   AppMain()  = default;
   ~AppMain() = default;
 
+  // 同名フィルタは後から登録されたもので上書きする(deque内アドレスは維持するので既存のplg_参照は有効なまま)
+  FilterPluginTable* add_filter(const FilterPluginTable& t) {
+    for(auto& f : filters) {
+      if(std::string(f.name.c_str()) == t.name.c_str()) {
+        f = t;
+        return &f;
+      }
+    }
+    filters.push_back(t);
+    return &filters.back();
+  }
   std::deque<FilterPluginTable> filters; // push_backでアドレスが変わらない(FilterParam::plg_やAviUtlスクリプト状態がポインタで参照する)
   std::vector<InputPluginTable> input_plugins;
   std::vector<OutputPluginTable> output_plugins;

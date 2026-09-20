@@ -33,7 +33,7 @@ struct AviUtlFilterState {
   }
 };
 
-// fn_procのfp引数(=vector内FilterPluginTable*)をキーに状態を引く。vector<FilterPluginTable>はfiltersはdequeでアドレスが安定。
+// fn_procのfp引数(=deque内FilterPluginTable*)をキーに状態を引く。filtersはdequeでアドレスが安定。
 std::unordered_map<const FilterPluginTable*, std::unique_ptr<AviUtlFilterState>>& state_registry() {
   static std::unordered_map<const FilterPluginTable*, std::unique_ptr<AviUtlFilterState>> m;
   return m;
@@ -138,10 +138,8 @@ bool register_aviutl_filter(AviUtlScriptDef def) {
   FilterPluginTable table = build_table(def);
   state->def              = std::move(def);
 
-  auto& filters = AppMain::Get()->filters;
-  filters.push_back(table);
-  FilterPluginTable* stored = &filters.back();
-  state_registry()[stored]  = std::move(state);
+  FilterPluginTable* stored = AppMain::Get()->add_filter(table);
+  state_registry()[stored]  = std::move(state); // 上書き時は旧状態もここで置き換わる
   return true;
 }
 

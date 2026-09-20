@@ -52,7 +52,7 @@ bool abi_register_input_plugin(const InputPluginTable* t) {
 
 bool abi_register_filter_plugin(const FilterPluginTable* t) {
   if(t == nullptr) return false;
-  AppMain::Get()->filters.push_back(*t);
+  AppMain::Get()->add_filter(*t);
   return true;
 }
 

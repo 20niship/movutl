@@ -310,7 +310,10 @@ void InspectorWindow::Update() {
       if(((*filters)[i].flag == FilterAudioOnly) != is_audio_entt) continue;
       const char* name = (*filters)[i].name.c_str();
       if(!fuzzy_match(name, search_buffer)) continue;
-      if(ImGui::Selectable(name)) {
+      ImGui::PushID(i);
+      bool clicked = ImGui::Selectable(name);
+      ImGui::PopID();
+      if(clicked) {
         FilterParam fp;
         fp.plg_ = &(*filters)[i];
         fp.props.add_props((*filters)[i].defaults);
