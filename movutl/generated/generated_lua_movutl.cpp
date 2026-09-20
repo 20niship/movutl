@@ -230,6 +230,7 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("getTransformProps", &Entity::getTransformProps)
     .addFunction("setTransformProps", &Entity::setTransformProps)
     .addFunction("apply_animated_props", &Entity::apply_animated_props)
+    .addFunction("store_xform_to_anim", &Entity::store_xform_to_anim)
     .addFunction("on_len_change_done", &Entity::on_len_change_done)
     .addFunction("rel_frame", &Entity::rel_frame)
     .addFunction("ensure_anim_props", &Entity::ensure_anim_props)
