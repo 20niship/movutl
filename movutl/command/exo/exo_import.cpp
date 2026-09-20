@@ -169,7 +169,7 @@ std::string resolve_media_path(const std::string& raw, const std::filesystem::pa
 std::string stem_of(const std::string& p) { return std::filesystem::path(p).stem().string(); }
 
 void set_range(const Ref<Entity>& e, int start, int end) {
-  e->fstart_ = start - 1; // exoは1始まり
+  e->fstart_ = start - 1;                // exoは1始まり
   e->fend_   = std::max(end - 1, start); // 終了フレームも含む。start-1==fend_を避ける
 }
 
