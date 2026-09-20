@@ -219,7 +219,8 @@ FilterPluginTable* find_filter_by_name(const char* name) {
 
 // AviUtl内蔵エフェクトとmovutl内蔵フィルタは日本語名が一致するものが多いため、名前一致検索のみ行う(見つからなければベストエフォートでスキップ)
 int l_obj_effect(lua_State* L) {
-  auto* ctx              = get_ctx(L);
+  auto* ctx = get_ctx(L);
+  if(lua_gettop(L) == 0) return 0; // 引数なしobj.effect()はAviUtlでは保留中のobj値の確定。ponytail: 確定は未対応のno-op
   std::string name       = luaL_checkstring(L, 1);
   FilterPluginTable* plg = find_filter_by_name(name.c_str());
   if(!plg) {

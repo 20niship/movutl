@@ -462,10 +462,10 @@ void edit_props(Entity* e, const cutil::PropInfo* info, const cutil::Prop& p, ui
     const bool is_path_field = std::string(f.name) == "path" || std::string(f.name) == "path_";
     const int anim_idx       = e->anim_props_.index_of(f.name);
     const bool is_animatable = anim_idx >= 0;
-    const bool is_enum       = std::string(f.name) == "shape_type_"; // Comboで選ぶ列挙なのでトラックバーUIの対象外
+    const bool is_bool       = f.type == cutil::prop_info_of<bool>(); // チェックボックスは他の型と同じ「ラベル左・値右」の表で編集する
+    const bool is_enum       = std::string(f.name) == "shape_type_";  // Comboで選ぶ列挙なのでトラックバーUIの対象外
     const bool use_trackbar =
-      is_animatable && !is_enum &&
-      (f.type == cutil::prop_info_of<bool>() || f.type == cutil::prop_info_of<float>() || f.type == cutil::prop_info_of<int32_t>() || f.type == cutil::prop_info_of<Vec2>() || f.type == cutil::prop_info_of<Vec3>() || f.type == cutil::prop_info_of<Vec4>() || f.type == cutil::prop_info_of<Vec4b>());
+      is_animatable && !is_enum && (f.type == cutil::prop_info_of<float>() || f.type == cutil::prop_info_of<int32_t>() || f.type == cutil::prop_info_of<Vec2>() || f.type == cutil::prop_info_of<Vec3>() || f.type == cutil::prop_info_of<Vec4>() || f.type == cutil::prop_info_of<Vec4b>());
 
     ensure_table(!use_trackbar); // 表の開閉はPushIDの外で行う(ID stackが食い違うとEndTableでassertする)
     ImGui::PushID(f.name);
@@ -481,6 +481,15 @@ void edit_props(Entity* e, const cutil::PropInfo* info, const cutil::Prop& p, ui
             e->anim_props_.set_value<int>(anim_idx, rel_frame, idx);
           else
             newp.set<int32_t>(f.name, idx);
+          changed = true;
+        }
+      } else if(is_bool) {
+        bool v = p.get<bool>(f.name);
+        if(ImGui::Checkbox(name_, &v)) {
+          if(is_animatable)
+            e->anim_props_.set_value<bool>(anim_idx, rel_frame, v);
+          else
+            newp.set<bool>(f.name, v);
           changed = true;
         }
       } else if(f.type == cutil::prop_info_of<uint8_t>()) {
@@ -514,7 +523,7 @@ void edit_props(Entity* e, const cutil::PropInfo* info, const cutil::Prop& p, ui
     if(changed) {
       {
         std::lock_guard<std::mutex> lock(e->mtx);
-        if(is_animatable && (use_trackbar || is_enum))
+        if(is_animatable && (use_trackbar || is_enum || is_bool))
           e->apply_animated_props((int)cur_frame); // anim_props_の編集結果をメンバ変数へ反映する
         else
           apply(newp);

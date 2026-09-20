@@ -2,16 +2,18 @@
 #include <cutil/prop.hpp>
 #include <movutl/app/app.hpp>
 #include <movutl/asset/audio.hpp>
+#include <movutl/asset/entity.hpp>
+#include <movutl/asset/image.hpp>
+#include <movutl/asset/movie.hpp>
+#include <movutl/asset/text.hpp>
+#ifdef MOVUTL_DAW
+#include <movutl/asset/midi.hpp>
+#endif
 #include <movutl/asset/compo_audio_ref.hpp>
 #include <movutl/asset/compo_ref.hpp>
 #include <movutl/asset/composition.hpp>
-#include <movutl/asset/entity.hpp>
 #include <movutl/asset/framebuffer.hpp>
 #include <movutl/asset/group.hpp>
-#include <movutl/asset/image.hpp>
-#include <movutl/asset/midi.hpp>
-#include <movutl/asset/movie.hpp>
-#include <movutl/asset/text.hpp>
 #include <movutl/core/anim.hpp>
 #include <movutl/core/prop_types.hpp>
 namespace mu {
@@ -219,6 +221,7 @@ cutil::Prop Image::getProps() const {
   return p;
 }
 void Image::setProps(const cutil::Prop& p) { (void)p.load_to(this, getPropsInfo()); }
+#ifdef MOVUTL_DAW
 const cutil::PropInfo* MidiEntt::getPropsInfo() const {
   static const cutil::PropInfo info = [] {
     cutil::PropInfo p;
@@ -234,6 +237,7 @@ cutil::Prop MidiEntt::getProps() const {
   return p;
 }
 void MidiEntt::setProps(const cutil::Prop& p) { (void)p.load_to(this, getPropsInfo()); }
+#endif
 const cutil::PropInfo* Movie::getPropsInfo() const {
   static const cutil::PropInfo info = [] {
     cutil::PropInfo p;

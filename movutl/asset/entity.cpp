@@ -132,7 +132,10 @@ Ref<Entity> Entity::fromSaveProps(const cutil::Prop& p) {
     }
   }
 
+  const int fstart = e->fstart_, fend = e->fend_;
   e->reload_asset(); // pathはsetProps()でコピーされるだけなので、ここで独立した読み込みプラグインのインスタンスを持たせる
+  e->fstart_ = fstart; // load_file()が尺(fend_)を素材長で上書きするため、保存されたトラック範囲へ戻す
+  e->fend_   = fend;
   return e;
 }
 

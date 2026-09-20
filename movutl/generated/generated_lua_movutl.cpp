@@ -6,24 +6,26 @@
 #include <lua.hpp>
 #include <movutl/app/app.hpp>
 #include <movutl/asset/audio.hpp>
+#include <movutl/asset/image.hpp>
+#include <movutl/asset/movie.hpp>
+#include <movutl/asset/project.hpp>
+#include <movutl/asset/text.hpp>
+#include <movutl/plugin/filter.hpp>
+#include <movutl/plugin/input.hpp>
+#include <movutl/plugin/plugin.hpp>
+#ifdef MOVUTL_DAW
+#include <movutl/asset/midi.hpp>
+#endif
 #include <movutl/asset/compo_audio_ref.hpp>
 #include <movutl/asset/compo_ref.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/entity.hpp>
 #include <movutl/asset/framebuffer.hpp>
 #include <movutl/asset/group.hpp>
-#include <movutl/asset/image.hpp>
-#include <movutl/asset/midi.hpp>
-#include <movutl/asset/movie.hpp>
-#include <movutl/asset/project.hpp>
 #include <movutl/asset/shape.hpp>
-#include <movutl/asset/text.hpp>
 #include <movutl/binding/imgui_binding.hpp>
 #include <movutl/core/anim.hpp>
 #include <movutl/gui/gui.hpp>
-#include <movutl/plugin/filter.hpp>
-#include <movutl/plugin/input.hpp>
-#include <movutl/plugin/plugin.hpp>
 extern "C" {
 #include <lauxlib.h>
 #include <lua.h>
@@ -336,6 +338,7 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addVariable("aspect_", static_cast<float Image::*>(&Entity::aspect_))     // float
     .addVariable("alpha_", static_cast<float Image::*>(&Entity::alpha_))       // float
     .endClass()
+#ifdef MOVUTL_DAW
     .beginClass<MidiEntt>("MidiEntt")
     .addStaticFunction("Create", &MidiEntt::Create)
     .addFunction("assign_instrument", &MidiEntt::assign_instrument)
@@ -344,12 +347,15 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("getType", &MidiEntt::getType)
     .addVariable("instrument_plugin_id_", &MidiEntt::instrument_plugin_id_) // std::string
     .endClass()
+#endif
+#ifdef MOVUTL_DAW
     .beginClass<MidiNote>("MidiNote")
     .addVariable("pitch", &MidiNote::pitch)               // uint8_t
     .addVariable("velocity", &MidiNote::velocity)         // uint8_t
     .addVariable("start_sample", &MidiNote::start_sample) // int64_t
     .addVariable("dur_samples", &MidiNote::dur_samples)   // int64_t
     .endClass()
+#endif
     .beginClass<Movie>("Movie")
     .addStaticFunction("Create", &Movie::Create)
     .addFunction("load_file", &Movie::load_file)

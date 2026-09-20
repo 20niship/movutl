@@ -67,8 +67,6 @@ bool draw_text_style_ui(TextEntt* t) {
   return changed;
 }
 
-// セクション見出し(折りたたみ)。既定は開く。閉じていればfalse
-bool section(const char* label) { return ImGui::CollapsingHeader(label, ImGuiTreeNodeFlags_DefaultOpen); }
 } // namespace
 
 void InspectorWindow::Update() {
@@ -102,9 +100,9 @@ void InspectorWindow::Update() {
     ImGui::TextUnformatted(str.c_str());
   }
 
-  if(e->has_transform() && section("トランスフォーム")) wd_entt_transform_editor(e.get(), cur_frame);
+  if(e->has_transform()) wd_entt_transform_editor(e.get(), cur_frame);
 
-  if(section("オブジェクト")) {
+  {
     if(wd_table_begin("##obj_common")) { // 合成モード(BlendType): Entityのトラック共通属性のため専用UIとして扱う
       static const char* kBlendNames[] = {"通常", "加算", "減算", "乗算", "除算", "スクリーン", "オーバーレイ", "比較(暗)", "比較(明)", "ハードライト"};
       int idx                          = std::clamp((int)e->blend_, 0, (int)IM_ARRAYSIZE(kBlendNames) - 1);

@@ -37,7 +37,7 @@ void init_gui_panels() {
     cutil::make_ref<FFTWindow>(),                 //
     cutil::make_ref<GraphEditorWindow>(),         //
 #ifdef MOVUTL_DAW
-    cutil::make_ref<PianoRollWindow>(),           // MIDIトラック選択中のみ自前で表示する
+    cutil::make_ref<PianoRollWindow>(), // MIDIトラック選択中のみ自前で表示する
 #endif
   };
 
