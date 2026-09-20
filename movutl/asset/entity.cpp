@@ -180,6 +180,7 @@ GroupXform Entity::world_xform() const {
 }
 
 bool Entity::composite(const Image& src, Image* target, const Vec2& origin_offset) const {
+  MOVUTL_ZONE_SCOPED_N("Entity::composite");
   MU_ASSERT(target);
   Placement pl;
   const GroupXform w = world_xform(); // 親グループ変換込みの実効変換

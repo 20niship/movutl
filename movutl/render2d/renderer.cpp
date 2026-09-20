@@ -3,6 +3,7 @@
 #include <movutl/core/logger.hpp>
 #include <movutl/core/profiler.hpp>
 #include <movutl/render2d/renderer.hpp>
+#include <string>
 
 namespace mu {
 
@@ -18,7 +19,7 @@ bool CPURenderer::render_frame(Composition* comp, int frame, Ref<Image>& out, bo
   }
 
   {
-    MOVUTL_ZONE_SCOPED_N("CPURenderer::resize");
+    MOVUTL_ZONE_SCOPED_N("CPURenderer::fill_bg");
     if(transparent_bg) {
       // ネストされたCompositionはAfter Effectsのプリコンポジション同様、常に透明背景で合成する
       out->fill_rgba(Vec4b(0, 0, 0, 0));
@@ -29,11 +30,26 @@ bool CPURenderer::render_frame(Composition* comp, int frame, Ref<Image>& out, bo
   }
 
   // comp->mtxはget_all_entities()内で短時間lockするのみ。Entity個々のレンダリング中はe->mtxだけをlockする
-  const auto layered = comp->get_layered_entities();
+  const auto layered = [&] {
+    MOVUTL_ZONE_SCOPED_N("CPURenderer::get_layered_entities");
+    return comp->get_layered_entities();
+  }();
   for(auto& [layer_i, e] : layered) {
-    std::lock_guard<std::mutex> lock(e->mtx);
+    MOVUTL_ZONE_SCOPED_N("CPURenderer::entity");
+    {
+      const std::string zn = "layer" + std::to_string(layer_i) + ":" + std::string(e->name.c_str());
+      MOVUTL_ZONE_NAME(zn.c_str(), zn.size());
+    }
+    std::unique_lock<std::mutex> lock_try(e->mtx, std::defer_lock);
+    {
+      MOVUTL_ZONE_SCOPED_N("CPURenderer::entity_lock_wait"); // 他ワーカーがEntityを描画中だと待たされる
+      lock_try.lock();
+    }
     if(!e->visible(frame)) continue;
-    e->apply_animated_props(frame); // 中間点アニメーションをframe時点の値へ評価してメンバ変数に反映する
+    {
+      MOVUTL_ZONE_SCOPED_N("CPURenderer::apply_animated_props");
+      e->apply_animated_props(frame); // 中間点アニメーションをframe時点の値へ評価してメンバ変数に反映する
+    }
 
     // このEntityへ効くグループ制御を上のレイヤーから順に畳み込み、親変換として描画中のスレッドに与える(入れ子は外側から合成)
     GroupXform parent;
@@ -50,6 +66,7 @@ bool CPURenderer::render_frame(Composition* comp, int frame, Ref<Image>& out, bo
 
     if(e->clipping_up_) {
       // ponytail: 単一共有バッファ逐次合成のため未描画の上レイヤーは参照不可。既に合成済みの下側アルファをマスクに使う近似実装(真の上レイヤークリッピングには2パスレンダリングが必要)
+      MOVUTL_ZONE_SCOPED_N("CPURenderer::clipping_up");
       Image scratch(out->width, out->height);
       scratch.fill_rgba(Vec4b(0, 0, 0, 0));
       e->render(comp, &scratch, frame);
@@ -63,10 +80,14 @@ bool CPURenderer::render_frame(Composition* comp, int frame, Ref<Image>& out, bo
         d[3] = (unsigned char)(a * 255.0f + d[3] * (1.0f - a));
       }
     } else {
+      MOVUTL_ZONE_SCOPED_N("CPURenderer::entity_render");
       e->render(comp, out.get(), frame);
     }
   }
-  out->dirty();
+  {
+    MOVUTL_ZONE_SCOPED_N("CPURenderer::dirty");
+    out->dirty();
+  }
   return true;
 }
 

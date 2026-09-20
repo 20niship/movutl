@@ -180,6 +180,7 @@ bool Image::transform_to(Image* dst, double cx, double cy, double sx, double sy,
 }
 
 bool Image::place(Image* dst, const Placement& pl) const {
+  MOVUTL_ZONE_SCOPED_N("Image::place");
   MU_ASSERT(dst);
   if(empty() || dst->empty()) return false;
   double sx = pl.scale_x, sy = pl.scale_y;
