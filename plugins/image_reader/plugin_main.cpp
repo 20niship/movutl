@@ -56,7 +56,7 @@ static bool fn_info_get(InputHandle ih, EntityInfo* iip) {
   auto h         = (StbImageHandle*)ih;
   iip->flag      = EntityType_Image;
   iip->framerate = 1;
-  iip->nframes   = 1;
+  iip->nframes   = 0; // 0=尺の制限なし
   iip->width     = (uint16_t)h->width;
   iip->height    = (uint16_t)h->height;
   iip->format    = ImageFormatRGBA;

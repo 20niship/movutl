@@ -163,17 +163,20 @@ bool Image::transform_to(Image* dst, double cx, double cy, double sx, double sy,
   const int bbox_y0 = std::max(0, (int)std::floor(min_y));
   const int bbox_y1 = std::min((int)dst->height, (int)std::ceil(max_y));
 
+  // dst上の画素(x,y)に対応するsrc座標は、x方向に1進むと(cos/sx, -sin/sy)ずつ変わる線形式なので、行頭で求めて増分更新する
+  const double du = cos_a / sx, dv = -sin_a / sy;
+  const int src_w = (int)this->width, src_h = (int)this->height;
   for(int y = bbox_y0; y < bbox_y1; ++y) {
-    for(int x = bbox_x0; x < bbox_x1; ++x) {
-      // dst上のこのピクセルが、画像中心を軸とした逆回転・逆拡大でsrcのどこに対応するか
-      const double dx     = x - cx;
-      const double dy     = y - cy;
-      const int src_x_int = (int)std::floor(src_cx + (dx * cos_a + dy * sin_a) / sx);
-      if(src_x_int < 0 || src_x_int >= (int)this->width) continue;
-      const int src_y_int = (int)std::floor(src_cy + (-dx * sin_a + dy * cos_a) / sy);
-      if(src_y_int < 0 || src_y_int >= (int)this->height) continue;
-
-      blend_pixel(dst->data_[y * dst->width + x], data_[src_y_int * width + src_x_int], alpha_mul, blend);
+    const double dx0 = bbox_x0 - cx, dy = y - cy;
+    double u       = src_cx + (dx0 * cos_a + dy * sin_a) / sx;
+    double v       = src_cy + (-dx0 * sin_a + dy * cos_a) / sy;
+    Vec4b* dst_row = &dst->data_[(size_t)y * dst->width];
+    for(int x = bbox_x0; x < bbox_x1; ++x, u += du, v += dv) {
+      const int src_x_int = (int)std::floor(u);
+      if(src_x_int < 0 || src_x_int >= src_w) continue;
+      const int src_y_int = (int)std::floor(v);
+      if(src_y_int < 0 || src_y_int >= src_h) continue;
+      blend_pixel(dst_row[x], data_[(size_t)src_y_int * width + src_x_int], alpha_mul, blend);
     }
   }
   return true;
