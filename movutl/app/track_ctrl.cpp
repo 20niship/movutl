@@ -49,7 +49,7 @@ Ref<ShapeEntt> add_new_shape_track(const char* name, int start, int end, ShapeTy
   Composition* main_comp = Composition::GetActiveComp();
   MU_ASSERT(main_comp);
   shp->fstart_ = start;
-  shp->fend_   = end;
+  shp->fend_   = std::max(end, start + 1);
   main_comp->insert_entity(shp);
   return shp;
 }
@@ -65,7 +65,7 @@ Ref<Image> add_new_image_track(const char* name, const char* path, int start, in
   Composition* main_comp = Composition::GetActiveComp();
   MU_ASSERT(main_comp);
   img->fstart_ = start;
-  img->fend_   = end;
+  img->fend_   = std::max(end, start + 1);
   main_comp->insert_entity(img);
   return img;
 }
@@ -78,7 +78,7 @@ Ref<TextEntt> add_new_text_track(const char* name, int start, int end) {
   Composition* main_comp = Composition::GetActiveComp();
   MU_ASSERT(main_comp);
   txt->fstart_ = start;
-  txt->fend_   = end;
+  txt->fend_   = std::max(end, start + 1);
   main_comp->insert_entity(txt);
   return txt;
 }
@@ -89,7 +89,7 @@ Ref<Entity> add_new_custom_object_track(const std::string& script_name, int star
   Composition* main_comp = Composition::GetActiveComp();
   MU_ASSERT(main_comp);
   e->fstart_ = start;
-  e->fend_   = end;
+  e->fend_   = std::max(end, start + 1);
   main_comp->insert_entity(e);
   return e;
 }
@@ -155,7 +155,7 @@ bool add_new_track(const char* name, EntityType type, int start, int end) {
       Composition* main_comp = Composition::GetActiveComp();
       MU_ASSERT(main_comp);
       img->fstart_ = start;
-      img->fend_   = end;
+      img->fend_   = std::max(end, start + 1);
       main_comp->insert_entity(img);
       break;
     }
@@ -164,7 +164,7 @@ bool add_new_track(const char* name, EntityType type, int start, int end) {
       Composition* main_comp = Composition::GetActiveComp();
       MU_ASSERT(main_comp);
       mov->fstart_ = start;
-      mov->fend_   = end;
+      mov->fend_   = std::max(end, start + 1);
       main_comp->insert_entity(mov);
       break;
     }
@@ -173,7 +173,7 @@ bool add_new_track(const char* name, EntityType type, int start, int end) {
       Composition* main_comp = Composition::GetActiveComp();
       MU_ASSERT(main_comp);
       txt->fstart_ = start;
-      txt->fend_   = end;
+      txt->fend_   = std::max(end, start + 1);
       main_comp->insert_entity(txt);
       break;
     }
@@ -182,7 +182,7 @@ bool add_new_track(const char* name, EntityType type, int start, int end) {
       Composition* main_comp = Composition::GetActiveComp();
       MU_ASSERT(main_comp);
       shp->fstart_ = start;
-      shp->fend_   = end;
+      shp->fend_   = std::max(end, start + 1);
       main_comp->insert_entity(shp);
       break;
     }
@@ -191,7 +191,7 @@ bool add_new_track(const char* name, EntityType type, int start, int end) {
       Composition* main_comp = Composition::GetActiveComp();
       MU_ASSERT(main_comp);
       a->fstart_ = start;
-      a->fend_   = end;
+      a->fend_   = std::max(end, start + 1);
       main_comp->insert_entity(a);
       break;
     }
@@ -201,7 +201,7 @@ bool add_new_track(const char* name, EntityType type, int start, int end) {
       Composition* main_comp = Composition::GetActiveComp();
       MU_ASSERT(main_comp);
       m->fstart_ = start;
-      m->fend_   = end;
+      m->fend_   = std::max(end, start + 1);
       main_comp->insert_entity(m);
       break;
     }
@@ -211,7 +211,7 @@ bool add_new_track(const char* name, EntityType type, int start, int end) {
       Composition* main_comp = Composition::GetActiveComp();
       MU_ASSERT(main_comp);
       fb->fstart_ = start;
-      fb->fend_   = end;
+      fb->fend_   = std::max(end, start + 1);
       main_comp->insert_entity(fb);
       break;
     }
@@ -220,7 +220,7 @@ bool add_new_track(const char* name, EntityType type, int start, int end) {
       Composition* main_comp = Composition::GetActiveComp();
       MU_ASSERT(main_comp);
       g->fstart_ = start;
-      g->fend_   = end;
+      g->fend_   = std::max(end, start + 1);
       main_comp->insert_entity(g);
       break;
     }
@@ -230,7 +230,7 @@ bool add_new_track(const char* name, EntityType type, int start, int end) {
       Composition* main_comp = Composition::GetActiveComp();
       MU_ASSERT(main_comp);
       e->fstart_ = start;
-      e->fend_   = end;
+      e->fend_   = std::max(end, start + 1);
       main_comp->insert_entity(e);
       break;
     }
@@ -240,7 +240,7 @@ bool add_new_track(const char* name, EntityType type, int start, int end) {
       Composition* main_comp = Composition::GetActiveComp();
       MU_ASSERT(main_comp);
       e->fstart_ = start;
-      e->fend_   = end;
+      e->fend_   = std::max(end, start + 1);
       main_comp->insert_entity(e);
       break;
     }

@@ -170,7 +170,7 @@ std::string stem_of(const std::string& p) { return std::filesystem::path(p).stem
 
 void set_range(const Ref<Entity>& e, int start, int end) {
   e->fstart_ = start - 1; // exoは1始まり
-  e->fend_   = end - 1;   // 終了フレームも含む
+  e->fend_   = std::max(end - 1, start); // 終了フレームも含む。start-1==fend_を避ける
 }
 
 // 追加したEntity数を返す。ファイルが開けない場合は-1
