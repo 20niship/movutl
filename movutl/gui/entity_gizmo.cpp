@@ -29,6 +29,7 @@ void entity_apply_xform(Entity& e, const GizmoXform& x) {
   e.anchor_[1] = (float)x.anchor.y;
   e.scale_     = (float)x.scale;
   e.rotation_  = (float)x.rot;
+  if(auto* comp = e.get_comp()) e.store_xform_to_anim(comp->get_frame()); // anim_propsへも反映しないと次のレンダリングで元の値に戻る
 }
 
 Ref<Entity> hit_test_entity(const Composition& cmp, const GizmoPt& comp_pt) {

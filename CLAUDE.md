@@ -1,5 +1,11 @@
 # movutl 開発ルール
 
+## 動作検証をする際は:
+
+- ビルドしたい時はcmakeコマンドを叩かずに, `just build`を使用せよ。
+- movutl_mainを実行したい時は, `just run`を使用せよ。`just run ./examples/xxx.lua`と引数を追加することで.luaを読み込んだりプロジェクトファイルを開くことができる。
+
+
 ## 実装が終わったら(コミット・push・PR作成の前に必ず実行)
 ```
 just autogen

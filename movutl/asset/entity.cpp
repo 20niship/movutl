@@ -213,6 +213,16 @@ void Entity::apply_animated_props(int frame) {
   if(has_transform()) setTransformProps(p);
 }
 
+void Entity::store_xform_to_anim(int frame) {
+  if(!has_transform()) return;
+  ensure_anim_props();
+  const uint32_t rf = rel_frame(frame);
+  anim_props_.set_value<Vec3>(anim_props_.index_of("pos_"), rf, pos_);
+  anim_props_.set_value<Vec3>(anim_props_.index_of("anchor_"), rf, anchor_);
+  anim_props_.set_value<float>(anim_props_.index_of("scale_"), rf, scale_);
+  anim_props_.set_value<float>(anim_props_.index_of("rotation_"), rf, rotation_);
+}
+
 void Entity::on_len_change_done(int old_start) {
   const int shift = std::max(fstart_, 0) - std::max(old_start, 0);
   const int len   = std::max(fend_ - fstart_, 0);

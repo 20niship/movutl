@@ -228,6 +228,9 @@ public:
   // レンダリング直前に呼び、anim_props_をframe時点の値へ評価してsetProps()へ反映する(getPropsInfo()を持たないEntityは何もしない)
   void apply_animated_props(int frame);
 
+  // メンバ(pos_/anchor_/scale_/rotation_)の現在値をanim_props_のframe時点へ書き戻す。ギズモ等がメンバを直接書き換えた時、次のapply_animated_props()で古い値に戻されるのを防ぐ
+  void store_xform_to_anim(int frame);
+
   // トラックの長さ(fstart_/fend_)を変更した/splitした直後に呼ぶ。old_startは変更前のfstart_。
   // 中間点は開始からの相対frameなので、開始が動いた分だけキーを逆方向へ動かし、範囲(0〜fend_-fstart_)外のキーは境界の補間値キーに置き換える
   void on_len_change_done(int old_start);
