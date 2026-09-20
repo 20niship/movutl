@@ -11,6 +11,7 @@ class FrameCache {
 public:
   bool get(int frame, Ref<Image>* out) const;
   void insert(int frame, Ref<Image> img, int current_frame);
+  bool get_nearest(int frame, Ref<Image>* out, int* out_frame = nullptr) const;
   bool is_cached(int frame) const;
   size_t size() const;
 
