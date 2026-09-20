@@ -2,8 +2,10 @@
 #include <filesystem>
 #include <fstream>
 #include <movutl/app/app_impl.hpp>
+#include <movutl/asset/composition.hpp>
 #include <movutl/asset/config.hpp>
 #include <movutl/asset/image.hpp>
+#include <movutl/asset/shape.hpp>
 #include <movutl/plugin/aviutl_script/aviutl_script_parser.hpp>
 #include <movutl/plugin/plugin.hpp>
 
@@ -92,14 +94,151 @@ FilterPluginTable* register_test_script(const std::string& text, const char* fil
 
   return find_filter(filter_name);
 }
+
+// exprsのLua式(カンマ区切り、最大16個)を評価して2x2画像のバイト列へ書き出して読み返す。スクリプトから値を取り出す手段の代わり(値は0-255の整数)
+std::vector<int> probe(const std::string& exprs, FilterInData& fin, Image& img) {
+  static int counter     = 0;
+  std::string name       = "probe" + std::to_string(counter++);
+  std::string text       = "@" + name + "\nlocal t = {" + exprs + "}\nfor i = 1, #t do t[i] = math.floor(t[i]) end\nfor i = #t + 1, 16 do t[i] = 0 end\n" + "obj.putpixeldata(string.char((table.unpack or unpack)(t)))\n";
+  FilterPluginTable* plg = register_test_script(text, name.c_str());
+  REQUIRE(plg != nullptr);
+  img.resize(2, 2);
+  fin.img = &img;
+  REQUIRE(plg->fn_proc(plg, &fin, cutil::Prop{}));
+  std::vector<int> out;
+  for(size_t i = 0; i < 4; i++)
+    for(int c = 0; c < 4; c++) out.push_back(img[i][c]);
+  return out;
+}
 } // namespace
+
+TEST_CASE("obj変数: w/h/screen_w/screen_h/frame/totalframe/id/index/numが実値で提供される") {
+  auto comp    = cutil::make_ref<Composition>("objvar_comp", 100, 60, 30);
+  auto shp     = ShapeEntt::Create("s", ShapeType_Rect);
+  shp->fstart_ = 10;
+  shp->fend_   = 40;
+  shp->guid_   = 7;
+  comp->insert_entity(shp, 0);
+  comp->insert_entity(ShapeEntt::Create("s2", ShapeType_Rect), 1);
+  auto shp2 = comp->layers[1].entts[0];
+
+  Image img;
+  FilterInData fin;
+  fin.compo = comp.get();
+  fin.entt  = shp.get();
+  fin.frame = 15;
+  auto v    = probe("obj.w, obj.h, obj.screen_w, obj.screen_h, obj.frame, obj.totalframe, obj.id, obj.layer, obj.index, obj.num", fin, img);
+  CHECK(v[0] == 2);
+  CHECK(v[1] == 2);
+  CHECK(v[2] == 100);
+  CHECK(v[3] == 60);
+  CHECK(v[4] == 5);  // オブジェクト先頭(fstart_=10)からの相対フレーム
+  CHECK(v[5] == 30); // fend_-fstart_
+  CHECK(v[6] == 7);
+  CHECK(v[7] == 0);
+  CHECK(v[8] == 0);
+  CHECK(v[9] == 1);
+
+  fin.entt = shp2.get(); // 2レイヤー目のEntity
+  auto v2  = probe("obj.layer, obj.cz, obj.aspect", fin, img);
+  CHECK(v2[0] == 1);
+  CHECK(v2[1] == 0);
+  CHECK(v2[2] == 0);
+}
+
+TEST_CASE("obj.getinfo: AviUtl正規キーのみ対応し旧独自キーはnilを返す") {
+  auto comp = cutil::make_ref<Composition>("getinfo_comp", 100, 60, 30);
+  Image img;
+  FilterInData fin;
+  fin.compo = comp.get();
+  // 多値を返すimage_maxは最後に置く(テーブルコンストラクタは末尾以外の多値を1個に切り詰める)
+  auto v = probe("obj.getinfo('editing') and 1 or 0, obj.getinfo('saving') and 1 or 0, obj.getinfo('image_w') == nil and 1 or 0, obj.getinfo('clock') > 0 and 1 or 0, obj.getinfo('image_max')", fin, img);
+  CHECK(v[0] == 1);
+  CHECK(v[1] == 0);
+  CHECK(v[2] == 1); // 旧キーimage_wは廃止
+  CHECK(v[3] == 1);
+  CHECK(v[4] == 100); // image_maxはCompositionサイズ(w,hの2値)
+  CHECK(v[5] == 60);
+}
+
+TEST_CASE("obj.getpixel(x,y): 画素をr,g,b,aまたはcol,aで取得できる(引数なしは従来どおりw,h)") {
+  Image img;
+  FilterInData fin;
+  // probeは2x2に作り直すため、事前に画素を仕込めない。putpixeldataで直前に書いた画素を読み戻して検証する
+  auto v = probe("obj.putpixeldata(string.char(10,20,30,40, 0,0,0,0, 0,0,0,0, 0,0,0,0)) or 0, select(2, obj.getpixel()), obj.getpixel(0, 0, 'col') == 0x0A141E and 1 or 0, (select(2, obj.getpixel(0, 0, 'col'))), (select(3, obj.getpixel(0, 0))), obj.getpixel(5, 5)", fin, img);
+  CHECK(v[1] == 2);  // 引数なしのgetpixel()は(w,h)
+  CHECK(v[2] == 1);  // "col"は0xRRGGBB
+  CHECK(v[3] == 40); // 2値目はa
+  CHECK(v[4] == 30); // 3値目はb
+  CHECK(v[5] == 0);  // 範囲外は0
+}
+
+TEST_CASE("obj.putpixel: 指定画素だけを書き換え、範囲外は無視する") {
+  std::string text       = "@putpixelテスト\n"
+                           "obj.putpixel(1, 0, 255, 128, 64)\n"
+                           "obj.putpixel(0, 1, 1, 2, 3, 4)\n"
+                           "obj.putpixel(9, 9, 255, 255, 255)\n";
+  FilterPluginTable* plg = register_test_script(text, "putpixelテスト");
+  REQUIRE(plg != nullptr);
+  Image img(2, 2);
+  img.fill_rgba(Vec4b(0, 0, 0, 0));
+  FilterInData fin;
+  fin.img = &img;
+  CHECK(plg->fn_proc(plg, &fin, cutil::Prop{}));
+  CHECK(img(1, 0) == Vec4b(255, 128, 64, 255)); // aの既定は255
+  CHECK(img(0, 1) == Vec4b(1, 2, 3, 4));
+  CHECK(img(0, 0) == Vec4b(0, 0, 0, 0));
+}
+
+TEST_CASE("obj.copypixel: 画素を別位置へコピーし範囲外は無視する") {
+  std::string text       = "@copypixelテスト\n"
+                           "obj.copypixel(0, 0, 1, 1)\n"
+                           "obj.copypixel(1, 0, 5, 5)\n";
+  FilterPluginTable* plg = register_test_script(text, "copypixelテスト");
+  REQUIRE(plg != nullptr);
+  Image img(2, 2);
+  img.fill_rgba(Vec4b(0, 0, 0, 255));
+  img(1, 1) = Vec4b(9, 8, 7, 6);
+  FilterInData fin;
+  fin.img = &img;
+  CHECK(plg->fn_proc(plg, &fin, cutil::Prop{}));
+  CHECK(img(0, 0) == Vec4b(9, 8, 7, 6));
+  CHECK(img(1, 0) == Vec4b(0, 0, 0, 255)); // 範囲外のコピー元は無視
+}
+
+TEST_CASE("obj.rand: 範囲内の整数を返し、seed指定時は同じ(seed,frame)で同じ値・省略時は呼び出し毎に変わるが再実行で再現する") {
+  Image img;
+  FilterInData fin;
+  fin.frame = 3;
+  auto v1   = probe("obj.rand(10, 20, 1, 0), obj.rand(10, 20, 1, 0), obj.rand(10, 20, 2, 0), obj.rand(5, 5), obj.rand(0, 100), obj.rand(0, 100)", fin, img);
+  auto v2   = probe("obj.rand(10, 20, 1, 0), obj.rand(10, 20, 1, 0), obj.rand(10, 20, 2, 0), obj.rand(5, 5), obj.rand(0, 100), obj.rand(0, 100)", fin, img);
+  for(int i = 0; i < 3; i++) {
+    CHECK(v1[i] >= 10);
+    CHECK(v1[i] <= 20);
+  }
+  CHECK(v1[0] == v1[1]); // 同じseed/frameは同じ値
+  CHECK(v1[3] == 5);     // min==max
+  CHECK(v1 == v2);       // 同じフレームで再実行すると同じ結果(ctx毎に連番が0から)
+  bool differs = false;  // seed省略の連続呼び出し・別seed・別フレームで値が全て同じになることはない(決定的な固定入力なので偶然の一致で落ちることもない)
+  differs      = differs || v1[4] != v1[5] || v1[0] != v1[2];
+  CHECK(differs);
+}
+
+TEST_CASE("obj.interpolation/getvalue: スプライン補間と現在値取得") {
+  Image img;
+  FilterInData fin;
+  auto v = probe("obj.getvalue('zoom') * 10, obj.getvalue('nothing') == nil and 1 or 0, obj.interpolation(0, 0,0,0, 10,20,30, 20,40,60, 30,60,90), obj.interpolation(1, 0,0,0, 10,20,30, 20,40,60, 30,60,90)", fin, img);
+  CHECK(v[0] == 10); // zoom既定1
+  CHECK(v[1] == 1);
+  CHECK(v[2] == 10); // t=0でp1
+}
 
 TEST_CASE("register_aviutl_scripts: 2値化スクリプトをフォルダスキャン経由でフィルタとして登録・実行できる") {
   std::string text = "--track0:しきい値,0,255,128,1\n"
                      "@AviUtlテスト2値化\n"
                      "local unpack = table.unpack or unpack\n"
-                     "local w = obj.getinfo(\"image_w\")\n"
-                     "local h = obj.getinfo(\"image_h\")\n"
+                     "local w = obj.w\n"
+                     "local h = obj.h\n"
                      "local px = obj.getpixeldata()\n"
                      "local buf = {}\n"
                      "for i = 1, w*h do\n"
@@ -136,7 +275,7 @@ TEST_CASE("register_aviutl_scripts: 2値化スクリプトをフォルダスキ�
 
 TEST_CASE("register_aviutl_scripts: obj.drawpolyで台形変形を実行できる") {
   std::string text = "@あおりテスト\n"
-                     "local w, h = obj.getinfo(\"image_w\"), obj.getinfo(\"image_h\")\n"
+                     "local w, h = obj.w, obj.h\n"
                      "obj.drawpoly(-2, -h / 2, 0, 2, -h / 2, 0, -w / 2, h / 2, 0, w / 2, h / 2, 0)\n";
 
   FilterPluginTable* plg = register_test_script(text, "あおりテスト");
@@ -187,6 +326,62 @@ TEST_CASE("register_aviutl_scripts: obj.draw()を明示的に呼ばなくてもo
   CHECK(plg->fn_proc(plg, &fin, cutil::Prop{}));
 
   CHECK(img(5, 5)[0] == 255); // obj.draw()の呼び出しが無くてもox=3の移動が反映される
+}
+
+TEST_CASE("register_aviutl_scripts: obj.aspect(縦横比)とobj.ryが暗黙drawに反映される") {
+  auto count_row = [](const Image& img, int y) {
+    int n = 0;
+    for(size_t x = 0; x < img.width; x++) n += img(x, y)[3] > 0;
+    return n;
+  };
+  auto run = [&](const char* script, const char* name) {
+    FilterPluginTable* plg = register_test_script(script, name);
+    REQUIRE(plg != nullptr);
+    Image img(20, 20);
+    for(size_t i = 0; i < img.size(); i++) img[i] = Vec4b(255, 0, 0, 255);
+    FilterInData fin;
+    fin.img = &img;
+    REQUIRE(plg->fn_proc(plg, &fin, cutil::Prop{}));
+    return count_row(img, 10);
+  };
+  CHECK(run("@縦横比0\nobj.oy = 0\n", "縦横比0") == 20);
+  CHECK(run("@縦横比テスト\nobj.aspect = 0.5\n", "縦横比テスト") == 10); // 正で横が縮む
+  CHECK(run("@Y軸回転テスト\nobj.ry = 60\n", "Y軸回転テスト") < 20);
+}
+
+TEST_CASE("register_aviutl_scripts: obj.cx(基点)は画像中心からのオフセットとして暗黙drawに反映される") {
+  FilterPluginTable* plg = register_test_script("@基点テスト\nobj.cx = 2\n", "基点テスト");
+  REQUIRE(plg != nullptr);
+
+  Image img(10, 10);
+  for(size_t i = 0; i < img.size(); i++) img[i] = Vec4b(0, 0, 0, 0);
+  img(7, 5) = Vec4b(255, 0, 0, 255);
+  FilterInData fin;
+  fin.img = &img;
+  CHECK(plg->fn_proc(plg, &fin, cutil::Prop{}));
+
+  CHECK(img(5, 5)[0] == 255); // 基点が右へ2pxずれる分、基点をox=0に置くと画像は左へ2px動く
+}
+
+TEST_CASE("Entity::composite: 基点まわりに回転する(基点が画像中心なら位置は動かない、ずらすと画像中心が動く)") {
+  Image src(10, 10);
+  src.fill_rgba(Vec4b(255, 0, 0, 255));
+  auto mk = [] {
+    auto t = cutil::make_ref<Image>(100, 100);
+    t->fill_rgba(Vec4b(0, 0, 0, 0));
+    return t;
+  };
+  auto ent       = cutil::make_ref<Image>();
+  ent->rotation_ = 90.f;
+  auto a         = mk();
+  REQUIRE(ent->composite(src, a.get()));
+  CHECK(a->rgba(50, 50)[0] == 255); // 基点=中心: 中央に残る
+
+  ent->anchor_ = Vec3(20, 0, 0); // 基点を右へ20px。基点は中心(50,50)に固定され、90度回転で画像中心は基点の上(50,30)へ回る
+  auto b       = mk();
+  REQUIRE(ent->composite(src, b.get()));
+  CHECK(b->rgba(50, 50)[0] == 0);
+  CHECK(b->rgba(50, 30)[0] == 255);
 }
 
 TEST_CASE("register_aviutl_scripts: obj.copybufferで画像バッファを退避・復元できる") {

@@ -18,6 +18,7 @@ std::vector<cv::Point2f> polygon_points(int32_t type, float w, float h) {
     case ShapeType_Triangle: return {{w / 2, 0}, {w, h}, {0, h}};
     case ShapeType_Hexagon: {
       std::vector<cv::Point2f> pts;
+      Vec2 top_left(0, 0); // 画像左上に対応するパス座標(customのみ非0)
       for(int i = 0; i < 6; i++) {
         float a = (float)i / 6.0f * 2.0f * (float)M_PI - (float)M_PI / 2.0f;
         pts.push_back({w / 2 + w / 2 * std::cos(a), h / 2 + h / 2 * std::sin(a)});
@@ -59,9 +60,9 @@ void ShapeEntt::re_render_image() {
   last_path_         = custom_path;
   last_border_color_ = border_color_;
   last_border_width_ = border_width_;
-  shape_offset_      = Vec2(0, 0);
 
   std::vector<cv::Point2f> pts;
+  Vec2 top_left(0, 0); // 画像左上に対応するパス座標(customのみ非0)
   float canvas_w, canvas_h;
 
   if(shape_type_ == ShapeType_Custom) {
@@ -78,9 +79,9 @@ void ShapeEntt::re_render_image() {
       miny = std::min(miny, p.y);
       maxy = std::max(maxy, p.y);
     }
-    shape_offset_ = Vec2(minx, miny);
-    canvas_w      = std::max(1.0f, maxx - minx);
-    canvas_h      = std::max(1.0f, maxy - miny);
+    top_left = Vec2(minx, miny);
+    canvas_w = std::max(1.0f, maxx - minx);
+    canvas_h = std::max(1.0f, maxy - miny);
     for(auto& p : pts) {
       p.x -= minx;
       p.y -= miny;
@@ -97,11 +98,10 @@ void ShapeEntt::re_render_image() {
     p.x += pad;
     p.y += pad;
   }
-  shape_offset_[0] -= pad;
-  shape_offset_[1] -= pad;
 
   if(!img_) img_ = cutil::make_ref<Image>();
   img_->resize((int)std::ceil(canvas_w) + pad * 2, (int)std::ceil(canvas_h) + pad * 2);
+  origin_offset_  = shape_type_ == ShapeType_Custom ? Vec2(-(top_left[0] - pad + img_->width / 2.0f), -(top_left[1] - pad + img_->height / 2.0f)) : Vec2(0, 0);
   img_->has_alpha = true;
   img_->fill(0);
 
@@ -127,9 +127,7 @@ bool ShapeEntt::render(Composition* cmp, Image* target, int frame) {
   re_render_image();
   if(!img_ || img_->empty() || !cmp || !target) return false;
   render_filters(cmp, img_.get(), frame);
-  Vec2d pmin(pos_[0] + shape_offset_[0], pos_[1] + shape_offset_[1]);
-  float rot_deg = rot_ * 180.0f / (float)M_PI;
-  img_->copyto(target, pmin, 1.0f, rot_deg, alpha_ / 255.0f, blend_);
+  composite(*img_, target, origin_offset_);
   return true;
 }
 

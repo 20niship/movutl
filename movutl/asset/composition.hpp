@@ -6,6 +6,7 @@
 #include <movutl/asset/image.hpp>
 #include <movutl/render2d/frame_cache.hpp>
 #include <mutex>
+#include <utility>
 
 namespace mu {
 
@@ -96,6 +97,8 @@ public:
 
   // アクティブなレイヤーに乗っている全Entityのスナップショットを返す(mtxを短時間だけlockする)
   std::vector<Ref<Entity>> get_all_entities() const;
+  // get_all_entities()と同じ順序で、各Entityが乗っているレイヤー番号も併せて返す
+  std::vector<std::pair<int, Ref<Entity>>> get_layered_entities() const;
 
   // 現在フレームをバックグラウンドキューを使わずその場で同期レンダリングして取得する(キャッシュ済みならそれを返す)。transparent_bg=trueはネスト参照時の透明背景描画用
   Ref<Image> render_current_frame_main_thread(bool transparent_bg = false);

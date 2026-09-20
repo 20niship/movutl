@@ -29,7 +29,7 @@ local shape_types = {
 }
 for i = 1, 5 do
   local shp = movutl.add_new_shape_track("shape_" .. i, FSTART, FEND, shape_types[i])
-  shp.pos_   = movutl.Vec3(100 + (i - 1) * 200, 800, 0)
+  shp.pos_   = movutl.Vec3(100 + (i - 1) * 200 + 75 - W / 2, 800 + 75 - H / 2, 0)
   shp.size_  = movutl.Vec2(150, 150)
   shp.color_ = movutl.Vec4b(255, 255, 255, 255)
   if shp.shape_type_ == movutl.ShapeType.ShapeType_Custom then

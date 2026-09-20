@@ -1,4 +1,5 @@
 #include <cstring>
+#include <filesystem>
 #include <imgui.h>
 #include <movutl/app/app_impl.hpp>
 #include <movutl/app/export_state.hpp>
@@ -6,6 +7,7 @@
 #include <movutl/asset/composition.hpp>
 #include <movutl/audio/audio_mixer.hpp>
 #include <movutl/core/filesystem.hpp>
+#include <movutl/core/status_log.hpp>
 #include <movutl/gui/export_window.hpp>
 #include <movutl/render2d/renderer.hpp>
 #include <thread>
@@ -53,6 +55,13 @@ void export_thread_func(OutputPluginTable* plugin, Composition* comp, std::strin
       prog.current_frame = f - fstart + 1;
     }
     plugin->fn_close(handle);
+    const std::string fname = std::filesystem::path(path).filename().string();
+    if(prog.cancel_requested.load())
+      push_status_log(StatusLevel::Warning, "書き出しをキャンセルしました: " + fname);
+    else
+      push_status_log(StatusLevel::Success, "書き出しが完了しました: " + fname);
+  } else {
+    push_status_log(StatusLevel::Error, "書き出しを開始できませんでした: " + std::filesystem::path(path).filename().string());
   }
   prog.running = false;
 }

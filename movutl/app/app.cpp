@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cstdlib>
+#include <filesystem>
 #include <movutl/app/app.hpp>
 #include <movutl/app/app_impl.hpp>
 #include <movutl/asset/composition.hpp>
@@ -7,6 +8,7 @@
 #include <movutl/core/filesystem.hpp>
 #include <movutl/core/logger.hpp>
 #include <movutl/core/profiler.hpp>
+#include <movutl/core/status_log.hpp>
 #include <movutl/core/time.hpp>
 #include <movutl/gui/gui.hpp>
 
@@ -116,11 +118,27 @@ void reset() { detail::AppMain::Get()->reset(); }
 void goto_frame(int frame) { detail::AppMain::Get()->goto_frame(frame); }
 bool is_playing() { return detail::AppMain::Get()->is_playing(); }
 
-void new_project() { Project::New(); }
-void save_project() { Project::Save(); }
-void save_project_as(const char* path) { Project::Save(path); }
+void new_project() {
+  Project::New();
+  status_log_set_dirty(false);
+  push_status_log(StatusLevel::Info, "新規プロジェクトを作成しました");
+}
+void save_project() {
+  Project::Save();
+  status_log_set_dirty(false);
+  push_status_log(StatusLevel::Success, "保存しました: " + std::filesystem::path(Project::Get()->path).filename().string());
+}
+void save_project_as(const char* path) {
+  Project::Save(path);
+  status_log_set_dirty(false);
+  push_status_log(StatusLevel::Success, "保存しました: " + std::filesystem::path(path).filename().string());
+}
 
-void open_project(const char* path) { Project::Load(path); }
+void open_project(const char* path) {
+  Project::Load(path);
+  status_log_set_dirty(false);
+  push_status_log(StatusLevel::Success, "プロジェクトを開きました: " + std::filesystem::path(path).filename().string());
+}
 
 // Projectはpygen上シングルトンインスタンスをLuaへ公開していない(beginClassはインスタンス変数アクセサのみ)ため、保存先の有無をLuaから判定するためのヘルパー
 bool has_project_path() { return !Project::Get()->path.empty(); }
@@ -193,6 +211,27 @@ bool export_current_frame_png(const char* path) {
 bool export_screen_png(const char* path) {
   auto img = capture_screen();
   return save_image_png(img, path, 30.0f);
+}
+
+bool select_entt_by_index(int index) {
+  auto cmp = Composition::GetActiveComp();
+  if(!cmp || index < 0) return false;
+  std::lock_guard<std::mutex> lock(cmp->mtx);
+  for(auto& layer : cmp->layers) {
+    for(auto& e : layer.entts) {
+      if(!e) continue;
+      if(index-- > 0) continue;
+      clear_selected_entts();
+      select_entt(e);
+      return true;
+    }
+  }
+  return false;
+}
+
+bool add_filter_to_selected_entt(const char* filter_name) {
+  auto sel = get_selected_entts();
+  return !sel.empty() && add_filter_to_entity(sel[0], filter_name);
 }
 
 Ref<Entity> duplicate_asset(const Ref<Entity>& src) {

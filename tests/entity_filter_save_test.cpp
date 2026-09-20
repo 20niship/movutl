@@ -64,23 +64,23 @@ TEST_CASE("Entity::anim_props_: 位置(Vec3)の中間点アニメーションが
   img->fend_   = 20;
 
   img->ensure_anim_props();
-  int pos_idx = img->anim_props_.index_of("pos");
+  int pos_idx = img->anim_props_.index_of("pos_");
   REQUIRE(pos_idx >= 0);
   auto& clip = std::get<PAniClip<Vec3>>(img->anim_props_[pos_idx]);
   clip.add_keyframe(0, Vec3(0, 0, 0));
   clip.add_keyframe(10, Vec3(100, 0, 0));
 
   img->apply_animated_props(5);
-  CHECK(img->getProps().get<Vec3>("pos")[0] == doctest::Approx(50.0f));
+  CHECK(img->getTransformProps().get<Vec3>("pos_")[0] == doctest::Approx(50.0f));
 
   auto saved  = img->getSaveProps();
   auto loaded = Entity::fromSaveProps(saved);
   REQUIRE(loaded != nullptr);
-  int loaded_idx = loaded->anim_props_.index_of("pos");
+  int loaded_idx = loaded->anim_props_.index_of("pos_");
   REQUIRE(loaded_idx >= 0);
   CHECK(loaded->anim_props_.has_animation(loaded_idx));
   loaded->apply_animated_props(10);
-  CHECK(loaded->getProps().get<Vec3>("pos")[0] == doctest::Approx(100.0f));
+  CHECK(loaded->getTransformProps().get<Vec3>("pos_")[0] == doctest::Approx(100.0f));
 }
 
 TEST_CASE("Entity::collect_animated_frames/move_keyframes_at/erase_keyframes_at: 本体+フィルタ横断の集約操作") {
@@ -93,8 +93,8 @@ TEST_CASE("Entity::collect_animated_frames/move_keyframes_at/erase_keyframes_at:
   img->fend_   = 50;
 
   img->ensure_anim_props();
-  int pos_idx   = img->anim_props_.index_of("pos");
-  int alpha_idx = img->anim_props_.index_of("alpha");
+  int pos_idx   = img->anim_props_.index_of("pos_");
+  int alpha_idx = img->anim_props_.index_of("alpha_");
   REQUIRE(pos_idx >= 0);
   REQUIRE(alpha_idx >= 0);
   auto& pos_clip = std::get<PAniClip<Vec3>>(img->anim_props_[pos_idx]);
@@ -134,10 +134,8 @@ TEST_CASE("Entity::collect_animated_frames/move_keyframes_at/erase_keyframes_at:
   CHECK_FALSE(pos_clip.has_key_at(30));
   CHECK_FALSE(alpha_clip.has_key_at(30));
   CHECK_FALSE(hue_clip.has_key_at(30));
-  // 各clipとも frame=0 の1個目のキーは"残り1個未満にはできない"制約で残る
-  auto remaining = img->collect_animated_frames();
-  REQUIRE(remaining.size() == 1);
-  CHECK(remaining[0] == 0);
+  // 各clipとも frame=0 の1個目のキーは残るが、単一キーはアニメーションではないため中間点として集計されない
+  CHECK(img->collect_animated_frames().empty());
 }
 
 TEST_CASE("Entity::getSaveProps/fromSaveProps: フィルタが無ければ空のまま復元される") {
@@ -172,15 +170,15 @@ TEST_CASE("Entity: 中間点はトラック開始(fstart_)からの相対frame�
   img->fstart_ = 50;
   img->fend_   = 200;
   img->ensure_anim_props();
-  int idx = img->anim_props_.index_of("alpha");
+  int idx = img->anim_props_.index_of("alpha_");
   REQUIRE(idx >= 0);
   img->anim_props_.add_keyframe<float>(idx, 0, 0.0f);
   img->anim_props_.add_keyframe<float>(idx, 100, 1.0f);
 
   img->apply_animated_props(100); // 絶対100 = 相対50
-  CHECK(img->alpha == doctest::Approx(0.5f));
+  CHECK(img->alpha_ == doctest::Approx(0.5f));
   img->apply_animated_props(10); // 開始より前は相対0
-  CHECK(img->alpha == doctest::Approx(0.0f));
+  CHECK(img->alpha_ == doctest::Approx(0.0f));
 
   auto frames = img->collect_animated_frames(); // コンポジション絶対frameで返る
   REQUIRE(frames.size() == 2);
@@ -200,7 +198,7 @@ TEST_CASE("Entity::on_len_change_done: split相当の長さ変更で範囲外の
   img->fstart_ = 0;
   img->fend_   = 100;
   img->ensure_anim_props();
-  int idx = img->anim_props_.index_of("alpha");
+  int idx = img->anim_props_.index_of("alpha_");
   img->anim_props_.add_keyframe<float>(idx, 0, 0.0f);
   img->anim_props_.add_keyframe<float>(idx, 100, 1.0f);
 

@@ -112,6 +112,26 @@ movutl.ImageFormat = {}
 ---@field ShapeType_Custom number
 movutl.ShapeType = {}
 
+---@class TextAlign
+---@field TextAlign_LeftTop number
+---@field TextAlign_CenterTop number
+---@field TextAlign_RightTop number
+---@field TextAlign_LeftMiddle number
+---@field TextAlign_CenterMiddle number
+---@field TextAlign_RightMiddle number
+---@field TextAlign_LeftBottom number
+---@field TextAlign_CenterBottom number
+---@field TextAlign_RightBottom number
+movutl.TextAlign = {}
+
+---@class TextDecoration
+---@field TextDeco_Plain number
+---@field TextDeco_Shadow number
+---@field TextDeco_ShadowLight number
+---@field TextDeco_Outline number
+---@field TextDeco_OutlineThin number
+movutl.TextDecoration = {}
+
 ---@class AudioEntt
 ---@field offset_sec_ number
 ---@field speed number
@@ -158,18 +178,10 @@ movutl.CompoAudioEntt.target_comp_guid = 0
 function movutl.CompoAudioEntt:getType( ) end
 
 ---@class CompoRefEntt
----@field pos Vec3
----@field scale Vec2
----@field rotation number
----@field alpha number
 ---@field start_frame number
 ---@field speed number
 ---@field target_comp_guid number
 movutl.CompoRefEntt = {}
-movutl.CompoRefEntt.pos = Vec3()
-movutl.CompoRefEntt.scale = Vec2 ( 1.0 , 1.0 )
-movutl.CompoRefEntt.rotation = 0.0
-movutl.CompoRefEntt.alpha = 1.0
 movutl.CompoRefEntt.start_frame = 0
 movutl.CompoRefEntt.speed = 1.0 f
 movutl.CompoRefEntt.target_comp_guid = 0
@@ -284,16 +296,8 @@ function movutl.EntityInfo:str( ) end
 
 ---@class FramebufferEntt
 ---@field clear_original_ boolean
----@field pos_ Vec3
----@field scale_ Vec2
----@field rotation_ number
----@field alpha_ number
 movutl.FramebufferEntt = {}
 movutl.FramebufferEntt.clear_original_ = false
-movutl.FramebufferEntt.pos_ = Vec3 ( 0 , 0 , 0 )
-movutl.FramebufferEntt.scale_ = Vec2 ( 100 , 100 )
-movutl.FramebufferEntt.rotation_ = 0
-movutl.FramebufferEntt.alpha_ = 255
 
 ---@param name string
 ---@return Ref<FramebufferEntt>
@@ -302,8 +306,33 @@ function movutl.FramebufferEntt:Create( name, ) end
 ---@return EntityType
 function movutl.FramebufferEntt:getType( ) end
 
+---@param size Vec2 
+---@param origin_offset Vec2 
+---@return boolean
+function movutl.FramebufferEntt:source_size( size, origin_offset, ) end
+
 ---@return Ref<Image> 
 function movutl.FramebufferEntt:captured_image( ) end
+
+---@class GroupEntt
+---@field target_layers_ number
+movutl.GroupEntt = {}
+movutl.GroupEntt.target_layers_ = 0
+
+---@param name string
+---@return Ref<GroupEntt>
+function movutl.GroupEntt:Create( name, ) end
+
+---@return EntityType
+function movutl.GroupEntt:getType( ) end
+
+---@return GroupXform
+function movutl.GroupEntt:local_xform( ) end
+
+---@param group_layer number
+---@param layer_i number
+---@return boolean
+function movutl.GroupEntt:affects( group_layer, layer_i, ) end
 
 ---@class Image
 ---@field width number
@@ -311,10 +340,6 @@ function movutl.FramebufferEntt:captured_image( ) end
 ---@field dirty_ number
 ---@field has_alpha boolean
 ---@field fmt ImageFormat
----@field pos Vec3
----@field scale Vec2
----@field rotation number
----@field alpha number
 ---@field path string
 movutl.Image = {}
 movutl.Image.width = 0
@@ -322,10 +347,6 @@ movutl.Image.height = 0
 movutl.Image.dirty_ = 1
 movutl.Image.has_alpha = true
 movutl.Image.fmt = ImageFormatRGBA
-movutl.Image.pos = Vec3()
-movutl.Image.scale = Vec2 ( 1.0 , 1.0 )
-movutl.Image.rotation = 0.0
-movutl.Image.alpha = 1.0
 movutl.Image.path = ""
 
 ---@return nil
@@ -386,6 +407,11 @@ function movutl.Image:empty( ) end
 ---@return number
 function movutl.Image:channels( ) end
 
+---@param size Vec2 
+---@param origin_offset Vec2 
+---@return boolean
+function movutl.Image:source_size( size, origin_offset, ) end
+
 ---@return EntityType
 function movutl.Image:getType( ) end
 
@@ -430,22 +456,14 @@ movutl.MidiNote.start_sample = 0
 movutl.MidiNote.dur_samples = 0
 
 ---@class Movie
----@field pos Vec3
----@field scale Vec2
----@field rotation number
 ---@field start_frame_ number
 ---@field speed number
----@field alpha_ number
 ---@field loop_ boolean
 ---@field with_alpha_ boolean
 ---@field path_ string
 movutl.Movie = {}
-movutl.Movie.pos = Vec3 ( 0 , 0 , 0 )
-movutl.Movie.scale = Vec2 ( 100 , 100 )
-movutl.Movie.rotation = 0
 movutl.Movie.start_frame_ = 0
 movutl.Movie.speed = 100.0
-movutl.Movie.alpha_ = 255
 movutl.Movie.loop_ = false
 movutl.Movie.with_alpha_ = false
 movutl.Movie.path_ = ""
@@ -462,8 +480,50 @@ function movutl.Movie:load_file( path, ) end
 ---@return EntityType
 function movutl.Movie:getType( ) end
 
+---@param size Vec2 
+---@param origin_offset Vec2 
+---@return boolean
+function movutl.Movie:source_size( size, origin_offset, ) end
+
 ---@return nil
 function movutl.Movie:reload_asset( ) end
+
+---@class Placement
+---@field x number
+---@field x number
+---@field x number
+---@field anchor_x number
+---@field anchor_x number
+---@field anchor_x number
+---@field scale_x number
+---@field scale_x number
+---@field scale_x number
+---@field aspect number
+---@field rot_x number
+---@field rot_x number
+---@field rot_x number
+---@field rot_x number
+---@field rot_x number
+---@field alpha number
+---@field blend BlendType
+movutl.Placement = {}
+movutl.Placement.x = 0
+movutl.Placement.x = y
+movutl.Placement.x = 0
+movutl.Placement.anchor_x = 0
+movutl.Placement.anchor_x = anchor_y
+movutl.Placement.anchor_x = 0
+movutl.Placement.scale_x = 1
+movutl.Placement.scale_x = scale_y
+movutl.Placement.scale_x = 1
+movutl.Placement.aspect = 0
+movutl.Placement.rot_x = 0
+movutl.Placement.rot_x = rot_y
+movutl.Placement.rot_x = 0
+movutl.Placement.rot_x = rot_z
+movutl.Placement.rot_x = 0
+movutl.Placement.alpha = 1.0 f
+movutl.Placement.blend = Blend_Alpha
 
 ---@class Project
 ---@field path string
@@ -514,20 +574,14 @@ function movutl.Project:SetActiveCompo( idx, ) end
 function movutl.Project:RemoveComposition( guid, ) end
 
 ---@class ShapeEntt
----@field pos_ Vec3
 ---@field size_ Vec2
----@field rot_ number
----@field alpha_ number
 ---@field color_ Vec4b
 ---@field shape_type_ number
 ---@field custom_path string
 ---@field border_color_ Vec4b
 ---@field border_width_ number
 movutl.ShapeEntt = {}
-movutl.ShapeEntt.pos_ = Vec3()
 movutl.ShapeEntt.size_ = Vec2 ( 200 , 200 )
-movutl.ShapeEntt.rot_ = 0.0 f
-movutl.ShapeEntt.alpha_ = 255
 movutl.ShapeEntt.color_ = Vec4b ( 255 , 255 , 255 , 255 )
 movutl.ShapeEntt.shape_type_ = ShapeType_Rect
 movutl.ShapeEntt.custom_path = ""
@@ -542,34 +596,46 @@ function movutl.ShapeEntt:Create( name, type, ) end
 ---@return EntityType
 function movutl.ShapeEntt:getType( ) end
 
+---@param size Vec2 
+---@param origin_offset Vec2 
+---@return boolean
+function movutl.ShapeEntt:source_size( size, origin_offset, ) end
+
 ---@class TextEntt
 ---@field dirty_ number
----@field pos_ Vec3
----@field scale_x_ number
----@field scale_y_ number
----@field rot_ number
 ---@field speed number
----@field alpha_ number
 ---@field font string
 ---@field text string
 ---@field separate boolean
+---@field font_size_ number
+---@field bold_ boolean
+---@field italic_ boolean
+---@field spacing_x_ number
+---@field spacing_y_ number
+---@field monospace_ boolean
+---@field align_ number
+---@field deco_ number
 ---@field color_ Vec4b
----@field border_color_ Vec4b
----@field border_width_ number
+---@field deco_color_ Vec4b
 movutl.TextEntt = {}
 movutl.TextEntt.dirty_ = 0
-movutl.TextEntt.pos_ = Vec3()
-movutl.TextEntt.scale_x_ = 1.0
-movutl.TextEntt.scale_y_ = 1.0
-movutl.TextEntt.rot_ = 0
 movutl.TextEntt.speed = 100.0
-movutl.TextEntt.alpha_ = 255
 movutl.TextEntt.font = ""
 movutl.TextEntt.text = ""
 movutl.TextEntt.separate = false
+movutl.TextEntt.font_size_ = 34
+movutl.TextEntt.bold_ = false
+movutl.TextEntt.italic_ = false
+movutl.TextEntt.spacing_x_ = 0
+movutl.TextEntt.spacing_y_ = 0
+movutl.TextEntt.monospace_ = false
+movutl.TextEntt.align_ = TextAlign_CenterMiddle
+movutl.TextEntt.deco_ = TextDeco_Plain
 movutl.TextEntt.color_ = Vec4b ( 255 , 255 , 255 , 255 )
-movutl.TextEntt.border_color_ = Vec4b ( 0 , 0 , 0 , 255 )
-movutl.TextEntt.border_width_ = 0
+movutl.TextEntt.deco_color_ = Vec4b ( 0 , 0 , 0 , 255 )
+
+---@return Vec2
+function movutl.TextEntt:align_origin_offset( ) end
 
 ---@param text string
 ---@param font string
@@ -578,6 +644,11 @@ function movutl.TextEntt:Create( text, font, ) end
 
 ---@return EntityType
 function movutl.TextEntt:getType( ) end
+
+---@param size Vec2 
+---@param origin_offset Vec2 
+---@return boolean
+function movutl.TextEntt:source_size( size, origin_offset, ) end
 
 ---@class TrackLayer
 ---@field active boolean
@@ -630,6 +701,10 @@ function movutl.add_filter_to_entity( entt, filter_name, )end
 ---@param filter_name string
 ---@return boolean
 function movutl.add_filter_to_image( entt, filter_name, )end
+
+---@param filter_name string
+---@return boolean
+function movutl.add_filter_to_selected_entt( filter_name, )end
 
 ---@param entt Ref<ShapeEntt> 
 ---@param filter_name string
@@ -800,6 +875,10 @@ function movutl.save_project_as( path, )end
 ---@param entt Ref<Entity> 
 ---@return nil
 function movutl.select_entt( entt, )end
+
+---@param index number
+---@return boolean
+function movutl.select_entt_by_index( index, )end
 
 ---@param entts table
 ---@return nil

@@ -45,17 +45,8 @@ bool Movie::render(Composition* cmp, Image* target, int frame) {
   MU_ASSERT(in_plg_->fn_read_video);
   if(in_plg_->fn_read_video(in_handle_, tlocal, img_->data()) <= 0) return false;
 
-  int cw = cmp->size[0];
-  int ch = cmp->size[1];
-  if(cw <= 0 || ch <= 0) return false;
-
   render_filters(cmp, img_.get(), frame);
-
-  MU_ASSERT(img_);
-  int base_x  = anchor_[0] + (cw - img_->width) / 2 + pos[0];
-  int base_y  = anchor_[1] + (ch - img_->height) / 2 + pos[1];
-  Vec2 center = Vec2(base_x, base_y) + anchor_;
-  img_->copyto(target, center, this->scale.avg() / 100, this->rotation, 1.0f, blend_);
+  composite(*img_, target);
 
   return true;
 }

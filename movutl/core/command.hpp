@@ -23,6 +23,7 @@ public:
   virtual ~mCommand() = default;
 
   std::string arg;
+  std::string name; // 表示名(CommandInfo::name)。run_command()が設定し、操作ログ/Undo表示に使う
 
   // run_command()から呼ばれる。Runningを返すとtick()が毎フレーム呼ばれ続ける
   virtual CommandStatus on_start() { return CommandStatus::Finished; }

@@ -4,13 +4,16 @@
 #include <imgui_impl_opengl3.h>
 // --
 #include <cstring>
+#include <filesystem>
 #include <movutl/app/app.hpp>
 #include <movutl/app/app_impl.hpp>
 #include <movutl/asset/image.hpp>
+#include <movutl/asset/project.hpp>
 #include <movutl/core/command.hpp>
 #include <movutl/core/filesystem.hpp>
 #include <movutl/core/logger.hpp>
 #include <movutl/core/profiler.hpp>
+#include <movutl/core/status_log.hpp>
 #include <movutl/core/vector.hpp>
 #include <movutl/gui/gui.hpp>
 #include <stdio.h>
@@ -66,7 +69,7 @@ void GUIManager::init() {
   io.ConfigDockingWithShift = false;
   io.ConfigDockingNoSplit   = false;
 
-  glfw_window = glfwCreateWindow(1280, 720, "ImGui OpenGL3 example", NULL, NULL);
+  glfw_window = glfwCreateWindow(1280, 720, "movutl", NULL, NULL);
   glfwMakeContextCurrent(glfw_window);
 
   glewInit();
@@ -117,6 +120,17 @@ void gui_new_frame() {
   GUIManager::Get()->should_close = should_close;
 
   glfwPollEvents();
+  {
+    // タイトルは変化したときだけ更新する(毎フレームのglfwSetWindowTitleを避ける)
+    static std::string last_title;
+    auto pj           = Project::Get();
+    std::string title = "movutl - " + ((pj && !pj->path.empty()) ? std::filesystem::path(pj->path).filename().string() : std::string("(無題)"));
+    if(status_log_dirty()) title += " *";
+    if(title != last_title) {
+      glfwSetWindowTitle(window, title.c_str());
+      last_title = title;
+    }
+  }
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();

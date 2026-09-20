@@ -34,8 +34,9 @@ public:
   std::string log_filename        = "log.txt";
   LogLevel log_level              = LogLevel::DEBUG;
   bool show_viewer_ruler          = false; // Viewportにルーラー(目盛り)を表示するか
+  bool viewer_ruler_center_origin = true;  // ルーラー/カーソル座標の原点をコンポ中央にする(false=左上)。Entityのpos_と同じ座標系
   int default_image_frames        = 150;   // 画像トラック追加時の長さ(フレーム数)。画像自体には長さが無いため既定値をここで持つ
-  float viewer_wave_footer_height = 40.0f; // Viewerフッタの波形+L/Rメーター部分の高さ(px)
+  float master_volume             = 1.0f;  // プレビュー再生のマスター音量(線形ゲイン、1.0=0dB)
 
   // 以下 movutl/core/sys_info.hpp より統合
   int sys_flag = 0;                  // システムフラグ (kSysFlagEdit 等)
@@ -47,6 +48,9 @@ public:
   int vram_line_size = 0;            // 編集用画像領域の幅のバイト数
   void* font_handle  = nullptr;      // フィルタ設定ウィンドウで使用しているフォントのハンドル (Windows HFONT)
   int build_number   = 0;            // ビルド番号 (新しいバージョンになるほど大きな値になります)
+
+  bool show_developer_window = false; // 開発者ウィンドウの表示(既定は非表示。表示メニューで切替)
+  bool show_fft_window       = false; // FFTウィンドウの表示(同上)
 
   static void Load();
   static void Save();

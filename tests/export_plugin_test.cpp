@@ -50,8 +50,8 @@ void verify_scene_frame(const cv::Mat& frame, const mu::test::VisualTestScene& s
   cv::Rect rect_bbox = cv::boundingRect(rect_contour);
   double rect_extent = cv::contourArea(rect_contour) / (double)(rect_bbox.width * rect_bbox.height);
   CHECK(rect_extent > 0.75);
-  CHECK(std::abs(rect_bbox.x - (int)scene.rect->pos_[0]) < 20);
-  CHECK(std::abs(rect_bbox.y - (int)scene.rect->pos_[1]) < 20);
+  CHECK(std::abs(rect_bbox.x - (int)(mu::test::kSceneWidth * 0.05)) < 20);
+  CHECK(std::abs(rect_bbox.y - (int)(mu::test::kSceneHeight * 0.05)) < 20);
 
   // 緑の円が円形として検出できること(円形度4πA/P^2が1に近いほど円らしい)
   auto circ_contour = largest_contour_matching_color(frame, cv::Scalar(0, 255, 0));
@@ -62,7 +62,7 @@ void verify_scene_frame(const cv::Mat& frame, const mu::test::VisualTestScene& s
   CHECK(circularity > 0.6);
 
   // テキスト領域に背景と異なるエッジ(文字の輪郭)が存在すること
-  cv::Rect text_roi((int)scene.text->pos_[0], (int)scene.text->pos_[1], (int)(mu::test::kSceneWidth * 0.4), (int)(mu::test::kSceneHeight * 0.2));
+  cv::Rect text_roi((int)(mu::test::kSceneWidth * 0.05), (int)(mu::test::kSceneHeight * 0.75), (int)(mu::test::kSceneWidth * 0.4), (int)(mu::test::kSceneHeight * 0.2));
   cv::Mat text_gray, text_edges;
   cv::cvtColor(frame(text_roi), text_gray, cv::COLOR_BGR2GRAY);
   cv::Canny(text_gray, text_edges, 50, 150);

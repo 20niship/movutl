@@ -6,14 +6,32 @@ namespace mu {
 
 class Image;
 
+// 文字の揃え位置(AviUtlの揃え0-8と同じ並び)。posが置かれる基点は、文字ブロックのこの位置になる
+enum TextAlign : int32_t {
+  TextAlign_LeftTop      = 0,
+  TextAlign_CenterTop    = 1,
+  TextAlign_RightTop     = 2,
+  TextAlign_LeftMiddle   = 3,
+  TextAlign_CenterMiddle = 4,
+  TextAlign_RightMiddle  = 5,
+  TextAlign_LeftBottom   = 6,
+  TextAlign_CenterBottom = 7,
+  TextAlign_RightBottom  = 8,
+};
+
+// 文字装飾(AviUtlのtype 0-4と同じ並び)。装飾の色はdeco_color_
+enum TextDecoration : int32_t {
+  TextDeco_Plain       = 0,
+  TextDeco_Shadow      = 1,
+  TextDeco_ShadowLight = 2,
+  TextDeco_Outline     = 3,
+  TextDeco_OutlineThin = 4,
+};
+
 class TextEntt final : public Entity {
 private:
-  std::string last_text_;
-  std::string last_font_;
-  Vec4b last_color_;
-  Vec4b last_border_color_;
-  int32_t last_border_width_ = -1;
-  Vec2 text_offset_; // 枠線用に余白を足した分、表示位置を補正するオフセット
+  std::string last_key_; // 再描画が必要かの判定用。img_を作った時のパラメータを連結した文字列
+  int32_t pad_ = 0;      // img_の四辺に足した装飾用の余白(px)。揃えの基準は余白を除いた文字ブロック
 
   void re_render_image();
 
@@ -23,23 +41,29 @@ public:
   ~TextEntt() = default;
 
   Ref<Image> img_;
-  int32_t dirty_ = 0;                                // MPROPERTY(name="更新フラグ", hidden=true)
-  Vec3 pos_;                                         // MPROPERTY(name="位置" viewer_anchor=true, position=true)
-  float scale_x_ = 1.0;                              // MPROPERTY(name="拡大率X, scale_x")
-  float scale_y_ = 1.0;                              // MPROPERTY(name="拡大率Y, scale_y")
-  float rot_;                                        // MPROPERTY(name="回転", angle=true, radians=true)
-  float speed    = 100.0;                            // MPROPERTY(name="再生速度")
-  uint8_t alpha_ = 255;                              // MPROPERTY(name="透明度")
-  std::string font;                                  // MPROPERTY(name="フォント", type="font")
-  std::string text;                                  // MPROPERTY(name="テキスト")
-  bool separate         = false;                     // MPROPERTY(name="個別オブジェクト")
-  Vec4b color_          = Vec4b(255, 255, 255, 255); // MPROPERTY(name="文字色")
-  Vec4b border_color_   = Vec4b(0, 0, 0, 255);       // MPROPERTY(name="枠線の色")
-  int32_t border_width_ = 0;                         // MPROPERTY(name="枠線の太さ(0で非表示)")
+  int32_t dirty_ = 0;                             // MPROPERTY(name="更新フラグ", hidden=true)
+  float speed    = 100.0;                         // MPROPERTY(name="再生速度")
+  std::string font;                               // MPROPERTY(name="フォント", type="font")
+  std::string text;                               // MPROPERTY(name="テキスト")
+  bool separate      = false;                     // MPROPERTY(name="個別オブジェクト")
+  int32_t font_size_ = 34;                        // MPROPERTY(name="サイズ", min=1, max=1000)
+  bool bold_         = false;                     // MPROPERTY(name="太字")
+  bool italic_       = false;                     // MPROPERTY(name="斜体")
+  int32_t spacing_x_ = 0;                         // MPROPERTY(name="字間")
+  int32_t spacing_y_ = 0;                         // MPROPERTY(name="行間")
+  bool monospace_    = false;                     // MPROPERTY(name="等間隔")
+  int32_t align_     = TextAlign_CenterMiddle;    // MPROPERTY(name="揃え(0-8: 左上,中央上,右上,左中,中央,右中,左下,中央下,右下)", hidden_inspector=true)
+  int32_t deco_      = TextDeco_Plain;            // MPROPERTY(name="文字装飾(0:標準 1:影 2:影(薄) 3:縁取り 4:縁取り(細))", hidden_inspector=true)
+  Vec4b color_       = Vec4b(255, 255, 255, 255); // MPROPERTY(name="文字色")
+  Vec4b deco_color_  = Vec4b(0, 0, 0, 255);       // MPROPERTY(name="装飾色")
+
+  // 揃え位置の基点が、画像中心からどれだけずれているか(px)。Entity::compositeのorigin_offsetに渡す
+  Vec2 align_origin_offset() const;
 
   static Ref<TextEntt> Create(const char* text, const char* font = nullptr);
   virtual EntityType getType() const override { return EntityType_3DText; }
   virtual bool render(Composition* cmp, Image* target, int frame) override;
+  virtual bool source_size(Vec2& size, Vec2& origin_offset) const override;
 
   virtual const cutil::PropInfo* getPropsInfo() const override; // MUFUNC_AUTOGEN
   virtual cutil::Prop getProps() const override;                // MUFUNC_AUTOGEN

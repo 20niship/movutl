@@ -7,6 +7,7 @@
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/entity.hpp>
 #include <movutl/asset/framebuffer.hpp>
+#include <movutl/asset/group.hpp>
 #include <movutl/asset/image.hpp>
 #include <movutl/asset/midi.hpp>
 #include <movutl/asset/movie.hpp>
@@ -70,14 +71,6 @@ void CompoAudioEntt::setProps(const cutil::Prop& p) { (void)p.load_to(this, getP
 const cutil::PropInfo* CompoRefEntt::getPropsInfo() const {
   static const cutil::PropInfo info = [] {
     cutil::PropInfo p;
-    p.fields.push_back(cutil::PropInfo::Field("pos", offsetof(CompoRefEntt, pos), cutil::prop_info_of<Vec3>()));
-    p.fields.back().set_label("位置");
-    p.fields.push_back(cutil::PropInfo::Field("scale", offsetof(CompoRefEntt, scale), cutil::prop_info_of<Vec2>()));
-    p.fields.back().set_label("拡大率");
-    p.fields.push_back(cutil::PropInfo::Field("rotation", offsetof(CompoRefEntt, rotation), cutil::prop_info_of<float>()));
-    p.fields.back().set_label("回転");
-    p.fields.push_back(cutil::PropInfo::Field("alpha", offsetof(CompoRefEntt, alpha), cutil::prop_info_of<float>()));
-    p.fields.back().set_label("透明度");
     p.fields.push_back(cutil::PropInfo::Field("start_frame", offsetof(CompoRefEntt, start_frame), cutil::prop_info_of<int>()));
     p.fields.back().set_label("開始フレーム");
     p.fields.back().set_desc("参照先コンポジションの再生開始フレーム位置");
@@ -105,8 +98,6 @@ const cutil::PropInfo* Entity::getTrackPropsInfo() const {
     p.fields.back().set_label("開始位置(frame)");
     p.fields.push_back(cutil::PropInfo::Field("fend_", offsetof(Entity, fend_), cutil::prop_info_of<int>()));
     p.fields.back().set_label("終了位置(frame)");
-    p.fields.push_back(cutil::PropInfo::Field("anchor_", offsetof(Entity, anchor_), cutil::prop_info_of<Vec2>()));
-    p.fields.back().set_label("アンカー");
     // blend_ has an unsupported type (BlendType)
     p.fields.push_back(cutil::PropInfo::Field("group_guid_", offsetof(Entity, group_guid_), cutil::prop_info_of<uint32_t>()));
     p.fields.back().set_label("グループID");
@@ -135,20 +126,51 @@ cutil::Prop Entity::getTrackProps() const {
   return p;
 }
 void Entity::setTrackProps(const cutil::Prop& p) { (void)p.load_to(this, getTrackPropsInfo()); }
+const cutil::PropInfo* Entity::getTransformPropsInfo() const {
+  static const cutil::PropInfo info = [] {
+    cutil::PropInfo p;
+    p.fields.push_back(cutil::PropInfo::Field("pos_", offsetof(Entity, pos_), cutil::prop_info_of<Vec3>()));
+    p.fields.back().set_label("位置(px)");
+    p.fields.push_back(cutil::PropInfo::Field("anchor_", offsetof(Entity, anchor_), cutil::prop_info_of<Vec3>()));
+    p.fields.back().set_label("基点(px)");
+    p.fields.back().set_desc("画像中心からの基点オフセット。回転・拡大の中心");
+    p.fields.push_back(cutil::PropInfo::Field("scale_", offsetof(Entity, scale_), cutil::prop_info_of<float>()));
+    p.fields.back().set_label("拡大率(%)");
+    p.fields.back().min_value  = 0.0;
+    p.fields.back().drag_speed = 1.0;
+    p.fields.push_back(cutil::PropInfo::Field("rotation_", offsetof(Entity, rotation_), cutil::prop_info_of<float>()));
+    p.fields.back().set_label("回転(度)");
+    p.fields.push_back(cutil::PropInfo::Field("rot_x_", offsetof(Entity, rot_x_), cutil::prop_info_of<float>()));
+    p.fields.back().set_label("X軸回転(度)");
+    p.fields.push_back(cutil::PropInfo::Field("rot_y_", offsetof(Entity, rot_y_), cutil::prop_info_of<float>()));
+    p.fields.back().set_label("Y軸回転(度)");
+    p.fields.push_back(cutil::PropInfo::Field("aspect_", offsetof(Entity, aspect_), cutil::prop_info_of<float>()));
+    p.fields.back().set_label("縦横比");
+    p.fields.back().set_desc("-1〜1。正で横が縮み(縦長)、負で縦が縮む(横長)");
+    p.fields.back().min_value  = -1.0;
+    p.fields.back().max_value  = 1.0;
+    p.fields.back().drag_speed = 0.01;
+    p.fields.push_back(cutil::PropInfo::Field("alpha_", offsetof(Entity, alpha_), cutil::prop_info_of<float>()));
+    p.fields.back().set_label("不透明度(%)");
+    p.fields.back().min_value  = 0.0;
+    p.fields.back().max_value  = 1.0;
+    p.fields.back().drag_speed = 0.01;
+    return p;
+  }();
+  return &info;
+}
+cutil::Prop Entity::getTransformProps() const {
+  cutil::Prop p;
+  p.dump(this, getTransformPropsInfo());
+  return p;
+}
+void Entity::setTransformProps(const cutil::Prop& p) { (void)p.load_to(this, getTransformPropsInfo()); }
 const cutil::PropInfo* FramebufferEntt::getPropsInfo() const {
   static const cutil::PropInfo info = [] {
     cutil::PropInfo p;
     p.fields.push_back(cutil::PropInfo::Field("clear_original_", offsetof(FramebufferEntt, clear_original_), cutil::prop_info_of<bool>()));
     p.fields.back().set_label("元のバッファをクリア");
     p.fields.back().set_desc("キャプチャ後に合成先バッファを透明でクリアする");
-    p.fields.push_back(cutil::PropInfo::Field("pos_", offsetof(FramebufferEntt, pos_), cutil::prop_info_of<Vec3>()));
-    p.fields.back().set_label("位置");
-    p.fields.push_back(cutil::PropInfo::Field("scale_", offsetof(FramebufferEntt, scale_), cutil::prop_info_of<Vec2>()));
-    p.fields.back().set_label("拡大率");
-    p.fields.push_back(cutil::PropInfo::Field("rotation_", offsetof(FramebufferEntt, rotation_), cutil::prop_info_of<float>()));
-    p.fields.back().set_label("回転");
-    p.fields.push_back(cutil::PropInfo::Field("alpha_", offsetof(FramebufferEntt, alpha_), cutil::prop_info_of<uint8_t>()));
-    p.fields.back().set_label("透明度");
     return p;
   }();
   return &info;
@@ -159,6 +181,23 @@ cutil::Prop FramebufferEntt::getProps() const {
   return p;
 }
 void FramebufferEntt::setProps(const cutil::Prop& p) { (void)p.load_to(this, getPropsInfo()); }
+const cutil::PropInfo* GroupEntt::getPropsInfo() const {
+  static const cutil::PropInfo info = [] {
+    cutil::PropInfo p;
+    p.fields.push_back(cutil::PropInfo::Field("target_layers_", offsetof(GroupEntt, target_layers_), cutil::prop_info_of<int32_t>()));
+    p.fields.back().set_label("対象レイヤー数");
+    p.fields.back().set_desc("自身より下の何レイヤーに効かせるか。0なら以降すべて");
+    p.fields.back().min_value = 0;
+    return p;
+  }();
+  return &info;
+}
+cutil::Prop GroupEntt::getProps() const {
+  cutil::Prop p;
+  p.dump(this, getPropsInfo());
+  return p;
+}
+void GroupEntt::setProps(const cutil::Prop& p) { (void)p.load_to(this, getPropsInfo()); }
 const cutil::PropInfo* Image::getPropsInfo() const {
   static const cutil::PropInfo info = [] {
     cutil::PropInfo p;
@@ -168,14 +207,6 @@ const cutil::PropInfo* Image::getPropsInfo() const {
     p.fields.push_back(cutil::PropInfo::Field("has_alpha", offsetof(Image, has_alpha), cutil::prop_info_of<bool>()));
     p.fields.back().set_label("bool");
     // fmt has an unsupported type (ImageFormat)
-    p.fields.push_back(cutil::PropInfo::Field("pos", offsetof(Image, pos), cutil::prop_info_of<Vec3>()));
-    p.fields.back().set_label("位置 viewer_anchor");
-    p.fields.push_back(cutil::PropInfo::Field("scale", offsetof(Image, scale), cutil::prop_info_of<Vec2>()));
-    p.fields.back().set_label("拡大率X");
-    p.fields.push_back(cutil::PropInfo::Field("rotation", offsetof(Image, rotation), cutil::prop_info_of<float>()));
-    p.fields.back().set_label("回転");
-    p.fields.push_back(cutil::PropInfo::Field("alpha", offsetof(Image, alpha), cutil::prop_info_of<float>()));
-    p.fields.back().set_label("透明度");
     p.fields.push_back(cutil::PropInfo::Field("path", offsetof(Image, path), cutil::prop_info_of<std::string>()));
     p.fields.back().set_label("ファイル");
     return p;
@@ -206,12 +237,6 @@ void MidiEntt::setProps(const cutil::Prop& p) { (void)p.load_to(this, getPropsIn
 const cutil::PropInfo* Movie::getPropsInfo() const {
   static const cutil::PropInfo info = [] {
     cutil::PropInfo p;
-    p.fields.push_back(cutil::PropInfo::Field("pos", offsetof(Movie, pos), cutil::prop_info_of<Vec3>()));
-    p.fields.back().set_label("位置");
-    p.fields.push_back(cutil::PropInfo::Field("scale", offsetof(Movie, scale), cutil::prop_info_of<Vec2>()));
-    p.fields.back().set_label("拡大率");
-    p.fields.push_back(cutil::PropInfo::Field("rotation", offsetof(Movie, rotation), cutil::prop_info_of<float>()));
-    p.fields.back().set_label("回転");
     p.fields.push_back(cutil::PropInfo::Field("start_frame_", offsetof(Movie, start_frame_), cutil::prop_info_of<int>()));
     p.fields.back().set_label("開始フレーム");
     p.fields.push_back(cutil::PropInfo::Field("speed", offsetof(Movie, speed), cutil::prop_info_of<float>()));
@@ -219,8 +244,6 @@ const cutil::PropInfo* Movie::getPropsInfo() const {
     p.fields.back().min_value  = 0.0;
     p.fields.back().max_value  = 10000.0;
     p.fields.back().drag_speed = 5.0;
-    p.fields.push_back(cutil::PropInfo::Field("alpha_", offsetof(Movie, alpha_), cutil::prop_info_of<uint8_t>()));
-    p.fields.back().set_label("透明度");
     p.fields.push_back(cutil::PropInfo::Field("loop_", offsetof(Movie, loop_), cutil::prop_info_of<bool>()));
     p.fields.back().set_label("ループ再生");
     p.fields.push_back(cutil::PropInfo::Field("with_alpha_", offsetof(Movie, with_alpha_), cutil::prop_info_of<bool>()));
@@ -240,14 +263,8 @@ void Movie::setProps(const cutil::Prop& p) { (void)p.load_to(this, getPropsInfo(
 const cutil::PropInfo* ShapeEntt::getPropsInfo() const {
   static const cutil::PropInfo info = [] {
     cutil::PropInfo p;
-    p.fields.push_back(cutil::PropInfo::Field("pos_", offsetof(ShapeEntt, pos_), cutil::prop_info_of<Vec3>()));
-    p.fields.back().set_label("位置");
     p.fields.push_back(cutil::PropInfo::Field("size_", offsetof(ShapeEntt, size_), cutil::prop_info_of<Vec2>()));
     p.fields.back().set_label("サイズ");
-    p.fields.push_back(cutil::PropInfo::Field("rot_", offsetof(ShapeEntt, rot_), cutil::prop_info_of<float>()));
-    p.fields.back().set_label("回転");
-    p.fields.push_back(cutil::PropInfo::Field("alpha_", offsetof(ShapeEntt, alpha_), cutil::prop_info_of<uint8_t>()));
-    p.fields.back().set_label("透明度");
     p.fields.push_back(cutil::PropInfo::Field("color_", offsetof(ShapeEntt, color_), cutil::prop_info_of<Vec4b>()));
     p.fields.back().set_label("色");
     p.fields.push_back(cutil::PropInfo::Field("shape_type_", offsetof(ShapeEntt, shape_type_), cutil::prop_info_of<int32_t>()));
@@ -273,30 +290,36 @@ const cutil::PropInfo* TextEntt::getPropsInfo() const {
     cutil::PropInfo p;
     p.fields.push_back(cutil::PropInfo::Field("dirty_", offsetof(TextEntt, dirty_), cutil::prop_info_of<int32_t>()));
     p.fields.back().set_label("更新フラグ");
-    p.fields.push_back(cutil::PropInfo::Field("pos_", offsetof(TextEntt, pos_), cutil::prop_info_of<Vec3>()));
-    p.fields.back().set_label("位置 viewer_anchor");
-    p.fields.push_back(cutil::PropInfo::Field("scale_x_", offsetof(TextEntt, scale_x_), cutil::prop_info_of<float>()));
-    p.fields.back().set_label("拡大率X");
-    p.fields.push_back(cutil::PropInfo::Field("scale_y_", offsetof(TextEntt, scale_y_), cutil::prop_info_of<float>()));
-    p.fields.back().set_label("拡大率Y");
-    p.fields.push_back(cutil::PropInfo::Field("rot_", offsetof(TextEntt, rot_), cutil::prop_info_of<float>()));
-    p.fields.back().set_label("回転");
     p.fields.push_back(cutil::PropInfo::Field("speed", offsetof(TextEntt, speed), cutil::prop_info_of<float>()));
     p.fields.back().set_label("再生速度");
-    p.fields.push_back(cutil::PropInfo::Field("alpha_", offsetof(TextEntt, alpha_), cutil::prop_info_of<uint8_t>()));
-    p.fields.back().set_label("透明度");
     p.fields.push_back(cutil::PropInfo::Field("font", offsetof(TextEntt, font), cutil::prop_info_of<std::string>()));
     p.fields.back().set_label("フォント");
     p.fields.push_back(cutil::PropInfo::Field("text", offsetof(TextEntt, text), cutil::prop_info_of<std::string>()));
     p.fields.back().set_label("テキスト");
     p.fields.push_back(cutil::PropInfo::Field("separate", offsetof(TextEntt, separate), cutil::prop_info_of<bool>()));
     p.fields.back().set_label("個別オブジェクト");
+    p.fields.push_back(cutil::PropInfo::Field("font_size_", offsetof(TextEntt, font_size_), cutil::prop_info_of<int32_t>()));
+    p.fields.back().set_label("サイズ");
+    p.fields.back().min_value = 1;
+    p.fields.back().max_value = 1000;
+    p.fields.push_back(cutil::PropInfo::Field("bold_", offsetof(TextEntt, bold_), cutil::prop_info_of<bool>()));
+    p.fields.back().set_label("太字");
+    p.fields.push_back(cutil::PropInfo::Field("italic_", offsetof(TextEntt, italic_), cutil::prop_info_of<bool>()));
+    p.fields.back().set_label("斜体");
+    p.fields.push_back(cutil::PropInfo::Field("spacing_x_", offsetof(TextEntt, spacing_x_), cutil::prop_info_of<int32_t>()));
+    p.fields.back().set_label("字間");
+    p.fields.push_back(cutil::PropInfo::Field("spacing_y_", offsetof(TextEntt, spacing_y_), cutil::prop_info_of<int32_t>()));
+    p.fields.back().set_label("行間");
+    p.fields.push_back(cutil::PropInfo::Field("monospace_", offsetof(TextEntt, monospace_), cutil::prop_info_of<bool>()));
+    p.fields.back().set_label("等間隔");
+    p.fields.push_back(cutil::PropInfo::Field("align_", offsetof(TextEntt, align_), cutil::prop_info_of<int32_t>()));
+    p.fields.back().set_label("揃え(0-8: 左上");
+    p.fields.push_back(cutil::PropInfo::Field("deco_", offsetof(TextEntt, deco_), cutil::prop_info_of<int32_t>()));
+    p.fields.back().set_label("文字装飾(0:標準 1:影 2:影(薄) 3:縁取り 4:縁取り(細))");
     p.fields.push_back(cutil::PropInfo::Field("color_", offsetof(TextEntt, color_), cutil::prop_info_of<Vec4b>()));
     p.fields.back().set_label("文字色");
-    p.fields.push_back(cutil::PropInfo::Field("border_color_", offsetof(TextEntt, border_color_), cutil::prop_info_of<Vec4b>()));
-    p.fields.back().set_label("枠線の色");
-    p.fields.push_back(cutil::PropInfo::Field("border_width_", offsetof(TextEntt, border_width_), cutil::prop_info_of<int32_t>()));
-    p.fields.back().set_label("枠線の太さ(0で非表示)");
+    p.fields.push_back(cutil::PropInfo::Field("deco_color_", offsetof(TextEntt, deco_color_), cutil::prop_info_of<Vec4b>()));
+    p.fields.back().set_label("装飾色");
     return p;
   }();
   return &info;

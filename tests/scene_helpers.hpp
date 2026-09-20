@@ -32,7 +32,7 @@ inline Ref<Movie> make_fullscreen_movie(const char* name, const char* path, int 
   const float native_w = (float)mov->get_info().width;
   const float native_h = (float)mov->get_info().height;
   const float cover    = std::max((float)kSceneWidth / native_w, (float)kSceneHeight / native_h) * 100.0f;
-  mov->scale           = Vec2(cover, cover);
+  mov->scale_          = cover;
   return mov;
 }
 
@@ -45,21 +45,21 @@ inline VisualTestScene make_visual_test_scene(int nframes) {
   constexpr float h = (float)kSceneHeight;
 
   s.rect          = ShapeEntt::Create("rect", ShapeType_Rect);
-  s.rect->pos_    = Vec3(w * 0.05f, h * 0.05f, 0);
+  s.rect->pos_    = Vec3(w * 0.05f + w * 0.1f - w / 2, h * 0.05f + h * 0.1f - h / 2, 0);
   s.rect->size_   = Vec2(w * 0.2f, h * 0.2f);
   s.rect->color_  = Vec4b(0, 0, 255, 255); // BGRA順: 赤
   s.rect->fstart_ = 0;
   s.rect->fend_   = nframes - 1;
 
   s.circle          = ShapeEntt::Create("circ", ShapeType_Circle);
-  s.circle->pos_    = Vec3(w * 0.5f, h * 0.4f, 0);
+  s.circle->pos_    = Vec3(w * 0.5f + w * 0.1f - w / 2, h * 0.4f + h * 0.1f - h / 2, 0);
   s.circle->size_   = Vec2(w * 0.2f, h * 0.2f);
   s.circle->color_  = Vec4b(0, 255, 0, 255); // BGRA順: 緑
   s.circle->fstart_ = 0;
   s.circle->fend_   = nframes - 1;
 
   s.text          = TextEntt::Create("HI");
-  s.text->pos_    = Vec3(w * 0.05f, h * 0.75f, 0);
+  s.text->pos_    = Vec3(w * 0.05f + w * 0.2f - w / 2, h * 0.75f + h * 0.1f - h / 2, 0);
   s.text->color_  = Vec4b(255, 255, 255, 255);
   s.text->fstart_ = 0;
   s.text->fend_   = nframes - 1;

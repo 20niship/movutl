@@ -1,6 +1,9 @@
 #include <IconsFontAwesome6.h>
 #include <algorithm>
+#include <cfloat>
+#include <cmath>
 #include <filesystem>
+#include <functional>
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <movutl/asset/composition.hpp>
@@ -9,6 +12,7 @@
 #include <movutl/core/assert.hpp>
 #include <movutl/core/filesystem.hpp>
 #include <movutl/core/logger.hpp>
+#include <movutl/gui/entity_gizmo.hpp>
 #include <movutl/gui/graph_editor_window.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/gui/widgets.hpp>
@@ -141,7 +145,13 @@ template <typename T> bool draw_anim_value_widget(const char* id, const cutil::P
   bool edited;
   if constexpr(std::is_same_v<T, float>) {
     bool has_range = !(f.min_value == 0 && f.max_value == 0);
-    edited         = has_range ? ImGui::SliderFloat(id, &v, f.min_value, f.max_value) : ImGui::DragFloat(id, &v, f.drag_speed);
+    if(std::string(f.name) == "alpha_") { // 内部値は0-1だが表示・編集は%
+      float pct = v * 100.0f;
+      edited    = ImGui::DragFloat(id, &pct, 1.0f, 0.0f, 100.0f, "%.0f%%");
+      if(edited) v = std::clamp(pct, 0.0f, 100.0f) / 100.0f;
+    } else {
+      edited = has_range ? ImGui::SliderFloat(id, &v, f.min_value, f.max_value) : ImGui::DragFloat(id, &v, f.drag_speed);
+    }
   } else if constexpr(std::is_same_v<T, int>) {
     bool has_range = !(f.min_value == 0 && f.max_value == 0);
     edited         = has_range ? ImGui::SliderInt(id, &v, (int)f.min_value, (int)f.max_value) : ImGui::DragInt(id, &v, f.drag_speed);
@@ -353,81 +363,161 @@ bool wd_entity_keyframe_overview(Entity* e, uint32_t cur_frame) {
   return seeked;
 }
 
-// bool/int/float/Vec2/Vec3/Vec4/Vec4bはanim_props_(中間点)経由、それ以外(string/path/uint8_t)は従来通りgetProps/setProps経由で編集する
-void wd_entt_props_editor(Entity* e, uint32_t cur_frame) {
-  MU_ASSERT(e);
-  ImGui::PushID(e);
+bool wd_table_begin(const char* id) {
+  if(!ImGui::BeginTable(id, 2, ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_PadOuterX)) return false;
+  ImGui::TableSetupColumn("##label", ImGuiTableColumnFlags_WidthStretch, 0.4f);
+  ImGui::TableSetupColumn("##value", ImGuiTableColumnFlags_WidthStretch, 0.6f);
+  return true;
+}
 
-  const cutil::PropInfo* info = e->getPropsInfo();
-  if(!info) {
-    ImGui::PopID();
-    return;
+void wd_table_end() { ImGui::EndTable(); }
+
+void wd_row(const char* label, const char* desc) {
+  ImGui::TableNextRow();
+  ImGui::TableSetColumnIndex(0);
+  ImGui::AlignTextToFramePadding();
+  // 幅が足りないラベルは省略記号で切る(隣の値欄へはみ出さない)。全文はツールチップで見せる
+  const ImVec2 pos = ImGui::GetCursorScreenPos();
+  const float w    = std::max(1.0f, ImGui::GetContentRegionAvail().x);
+  const float h    = ImGui::GetTextLineHeight();
+  ImGui::RenderTextEllipsis(ImGui::GetWindowDrawList(), pos, ImVec2(pos.x + w, pos.y + h), pos.x + w, pos.x + w, label, nullptr, nullptr);
+  ImGui::Dummy(ImVec2(w, h));
+  if(ImGui::IsItemHovered() && (desc && desc[0] || ImGui::CalcTextSize(label).x > w)) {
+    ImGui::BeginTooltip();
+    ImGui::TextUnformatted(label);
+    if(desc && desc[0]) ImGui::TextDisabled("%s", desc);
+    ImGui::EndTooltip();
   }
+  ImGui::TableSetColumnIndex(1);
+  ImGui::SetNextItemWidth(-FLT_MIN);
+}
 
+bool wd_grid9(const char* id, int selected, int* picked, const char* const* tips) {
+  bool clicked           = false;
+  const float avail      = ImGui::GetContentRegionAvail().x;
+  const float sp         = 2.0f;
+  const float cell       = std::clamp((avail - sp * 2) / 3.0f, 16.0f, 30.0f);
+  const ImVec2 origin    = ImGui::GetCursorScreenPos();
+  auto* dl               = ImGui::GetWindowDrawList();
+  const ImU32 col_sel    = ImGui::GetColorU32(ImGuiCol_ButtonActive);
+  const ImU32 col_hov    = ImGui::GetColorU32(ImGuiCol_ButtonHovered);
+  const ImU32 col_bg     = ImGui::GetColorU32(ImGuiCol_FrameBg);
+  const ImU32 col_border = ImGui::GetColorU32(ImGuiCol_Border);
+  ImGui::PushID(id);
+  for(int i = 0; i < 9; i++) {
+    const int cx = i % 3, cy = i / 3;
+    const ImVec2 mn(origin.x + cx * (cell + sp), origin.y + cy * (cell * 0.75f + sp));
+    const ImVec2 mx(mn.x + cell, mn.y + cell * 0.75f);
+    ImGui::SetCursorScreenPos(mn);
+    ImGui::PushID(i);
+    ImGui::InvisibleButton("##c", ImVec2(cell, cell * 0.75f));
+    const bool hov = ImGui::IsItemHovered();
+    if(ImGui::IsItemClicked()) {
+      if(picked) *picked = i;
+      clicked = true;
+    }
+    if(hov && tips && tips[i]) ImGui::SetTooltip("%s", tips[i]);
+    ImGui::PopID();
+    dl->AddRectFilled(mn, mx, i == selected ? col_sel : (hov ? col_hov : col_bg), 3.0f);
+    dl->AddRect(mn, mx, col_border, 3.0f);
+    // 枠内の該当位置に点を打つ(左上/上/右上/左/中央/右/左下/下/右下)
+    const float pad = 4.0f, d = 3.0f;
+    const float px = cx == 0 ? mn.x + pad : cx == 1 ? (mn.x + mx.x) * 0.5f - d * 0.5f : mx.x - pad - d;
+    const float py = cy == 0 ? mn.y + pad : cy == 1 ? (mn.y + mx.y) * 0.5f - d * 0.5f : mx.y - pad - d;
+    dl->AddRectFilled(ImVec2(px, py), ImVec2(px + d, py + d), i == selected ? IM_COL32(255, 255, 255, 255) : IM_COL32(200, 200, 200, 180));
+  }
+  ImGui::PopID();
+  ImGui::SetCursorScreenPos(ImVec2(origin.x, origin.y + 3 * (cell * 0.75f + sp)));
+  return clicked;
+}
+
+namespace {
+// infoの各フィールドを編集UIとして描画し、変更があればapply(変更分のProp)で反映する。
+// bool/int/float/Vec2/Vec3/Vec4/Vec4bはanim_props_(中間点)経由でフル幅のトラックバー行(左右=直前/直後の中間点値、中央=名前ボタン)、
+// それ以外(string/path/uint8_t/列挙)は「ラベル左・値右」の表でapply(setProps/setTransformProps)経由で編集する
+void edit_props(Entity* e, const cutil::PropInfo* info, const cutil::Prop& p, uint32_t cur_frame, const std::function<void(const cutil::Prop&)>& apply) {
+  if(!info) return;
   e->ensure_anim_props();
   const uint32_t rel_frame = e->rel_frame((int)cur_frame); // anim_props_の中間点はトラック開始からの相対frame
-  const auto p             = e->getProps();
-  for(int idx = 0; idx < (int)info->fields.size(); idx++) {
-    const auto& f = info->fields[idx];
+  bool in_table            = false;
+  int table_seq            = 0;
+  auto ensure_table        = [&](bool want) {
+    if(want == in_table) return;
+    if(want) {
+      in_table = wd_table_begin(("##props" + std::to_string(table_seq++)).c_str());
+    } else {
+      wd_table_end();
+      in_table = false;
+    }
+  };
+  for(const auto& f : info->fields) {
     if(!p.contains(f.name)) {
       LOG_F(WARNING, "Property %s -> %s not found", e->name.c_str(), f.name);
       continue;
     }
-    ImGui::PushID(f.name);
     bool changed = false;
     cutil::Prop newp;
-    const char* name_        = f.label[0] ? f.label : f.name;
+    const char* label_       = f.label[0] ? f.label : f.name;
+    const char* name_        = "##v"; // ラベルは左の列(wd_row)に出すので、ウィジェット側のラベルは隠す
     const bool is_path_field = std::string(f.name) == "path" || std::string(f.name) == "path_";
     const int anim_idx       = e->anim_props_.index_of(f.name);
     const bool is_animatable = anim_idx >= 0;
+    const bool is_enum       = std::string(f.name) == "shape_type_"; // Comboで選ぶ列挙なのでトラックバーUIの対象外
+    const bool use_trackbar =
+      is_animatable && !is_enum &&
+      (f.type == cutil::prop_info_of<bool>() || f.type == cutil::prop_info_of<float>() || f.type == cutil::prop_info_of<int32_t>() || f.type == cutil::prop_info_of<Vec2>() || f.type == cutil::prop_info_of<Vec3>() || f.type == cutil::prop_info_of<Vec4>() || f.type == cutil::prop_info_of<Vec4b>());
 
-    if(is_animatable && f.type == cutil::prop_info_of<int32_t>() && std::string(f.name) == "shape_type_") {
-      // shape_type_はComboで選ぶ列挙なのでトラックバーUIの対象外(キーフレームUIなし、既存の直接編集のまま)
-      int32_t v                        = p.get<int32_t>(f.name);
-      static const char* kShapeNames[] = {"三角形", "四角形", "六角形", "円", "カスタムパス"};
-      int shape_idx                    = std::clamp(v, 0, 4);
-      if(ImGui::Combo(name_, &shape_idx, kShapeNames, IM_ARRAYSIZE(kShapeNames))) {
-        e->anim_props_.set_value<int>(anim_idx, rel_frame, shape_idx);
-        changed = true;
-      }
-    } else if(is_animatable && (f.type == cutil::prop_info_of<bool>() || f.type == cutil::prop_info_of<float>() || f.type == cutil::prop_info_of<int32_t>() || f.type == cutil::prop_info_of<Vec2>() || f.type == cutil::prop_info_of<Vec3>() || f.type == cutil::prop_info_of<Vec4>() ||
-                                f.type == cutil::prop_info_of<Vec4b>())) {
+    ensure_table(!use_trackbar); // 表の開閉はPushIDの外で行う(ID stackが食い違うとEndTableでassertする)
+    ImGui::PushID(f.name);
+    if(use_trackbar) {
       if(wd_animatable_row(f, e->anim_props_, anim_idx, rel_frame, e->guid_, -1, e->fend_ - e->fstart_)) changed = true;
-    } else if(f.type == cutil::prop_info_of<uint8_t>()) {
-      int v = p.get<uint8_t>(f.name);
-      if(ImGui::InputInt(name_, &v)) {
-        newp.set<uint8_t>(f.name, static_cast<uint8_t>(std::clamp(v, 0, 255)));
-        changed = true;
-      }
-    } else if(f.type == cutil::prop_info_of<std::string>()) {
-      std::string s = p.get<std::string>(f.name);
-      char buf[256];
-      strncpy(buf, s.c_str(), sizeof(buf) - 1);
-      buf[sizeof(buf) - 1] = '\0';
-      if(is_path_field) {
-        std::string label = s.empty() ? "ファイルを選択" : std::filesystem::path(s).filename().string();
-        std::string btn   = std::string(ICON_FA_FOLDER_OPEN " ") + label;
-        if(ImGui::Button(btn.c_str(), ImVec2(-1, 0))) {
-          std::string picked = select_file_dialog("ファイルを選択", {});
-          if(!picked.empty()) {
-            newp.set<std::string>(f.name, picked);
-            changed = true;
-          }
+    } else {
+      if(in_table) wd_row(label_, f.desc);
+      if(f.type == cutil::prop_info_of<int32_t>() && is_enum) {
+        static const char* kShapeNames[] = {"三角形", "四角形", "六角形", "円", "カスタムパス"};
+        int idx                          = std::clamp(p.get<int32_t>(f.name), 0, 4);
+        if(ImGui::Combo(name_, &idx, kShapeNames, IM_ARRAYSIZE(kShapeNames))) {
+          if(is_animatable)
+            e->anim_props_.set_value<int>(anim_idx, rel_frame, idx);
+          else
+            newp.set<int32_t>(f.name, idx);
+          changed = true;
         }
-      } else if(ImGui::InputText(name_, buf, sizeof(buf))) {
-        newp.set<std::string>(f.name, std::string(buf));
-        changed = true;
+      } else if(f.type == cutil::prop_info_of<uint8_t>()) {
+        int v = p.get<uint8_t>(f.name);
+        if(ImGui::InputInt(name_, &v)) {
+          newp.set<uint8_t>(f.name, static_cast<uint8_t>(std::clamp(v, 0, 255)));
+          changed = true;
+        }
+      } else if(f.type == cutil::prop_info_of<std::string>()) {
+        std::string s = p.get<std::string>(f.name);
+        char buf[256];
+        strncpy(buf, s.c_str(), sizeof(buf) - 1);
+        buf[sizeof(buf) - 1] = '\0';
+        if(is_path_field) {
+          std::string label = s.empty() ? "ファイルを選択" : std::filesystem::path(s).filename().string();
+          std::string btn   = std::string(ICON_FA_FOLDER_OPEN " ") + label;
+          if(ImGui::Button(btn.c_str(), ImVec2(-FLT_MIN, 0))) {
+            std::string picked = select_file_dialog("ファイルを選択", {});
+            if(!picked.empty()) {
+              newp.set<std::string>(f.name, picked);
+              changed = true;
+            }
+          }
+        } else if(ImGui::InputText(name_, buf, sizeof(buf))) {
+          newp.set<std::string>(f.name, std::string(buf));
+          changed = true;
+        }
       }
     }
 
     if(changed) {
       {
         std::lock_guard<std::mutex> lock(e->mtx);
-        if(is_animatable) {
+        if(is_animatable && (use_trackbar || is_enum))
           e->apply_animated_props((int)cur_frame); // anim_props_の編集結果をメンバ変数へ反映する
-        } else {
-          e->setProps(newp);
-        }
+        else
+          apply(newp);
         if(is_path_field) {
           e->reload_asset(); // パス変更時は新しいファイルを読み込み直す
           auto new_path = newp.get<std::string>(f.name);
@@ -439,6 +529,53 @@ void wd_entt_props_editor(Entity* e, uint32_t cur_frame) {
     }
     ImGui::PopID();
   }
+  ensure_table(false);
+}
+
+// 基点を画像枠上の9点(左上〜右下)へ置くプリセット。keep_visualなら見た目が動かないようposも補正する。現在の基点がいずれかの点と一致すれば選択表示にする
+void edit_anchor_presets(Entity* e) {
+  static bool keep_visual = true;
+  auto* comp              = e->get_comp();
+  if(!comp) return;
+  static const char* kTips[9] = {"左上", "上", "右上", "左", "中央", "右", "左下", "下", "右下"};
+  EntityGizmo g;
+  if(!entity_gizmo_of(*e, GizmoPt{(double)comp->size[0], (double)comp->size[1]}, g)) return;
+  int selected = -1;
+  for(int i = 0; i < 9; i++) {
+    const GizmoPt a = gizmo_anchor_preset(i % 3 - 1, i / 3 - 1, g.src_size, g.origin_offset);
+    if(std::abs(a.x - g.xform.anchor.x) < 0.5 && std::abs(a.y - g.xform.anchor.y) < 0.5) selected = i;
+  }
+  if(!wd_table_begin("##anchor_presets")) return;
+  wd_row("基点プリセット");
+  int picked = -1;
+  if(wd_grid9("##anchor_grid", selected, &picked, kTips)) {
+    const GizmoPt anchor = gizmo_anchor_preset(picked % 3 - 1, picked / 3 - 1, g.src_size, g.origin_offset);
+    {
+      std::lock_guard<std::mutex> lock(e->mtx);
+      entity_apply_xform(*e, gizmo_set_anchor(g.xform, anchor, keep_visual));
+    }
+    comp->invalidate_cache_range(e->fstart_, e->fend_);
+  }
+  wd_row("");
+  ImGui::Checkbox("位置を保持", &keep_visual);
+  if(ImGui::IsItemHovered()) ImGui::SetTooltip("基点を動かしても見た目の位置が変わらないよう位置を補正する");
+  wd_table_end();
+}
+} // namespace
+
+void wd_entt_transform_editor(Entity* e, uint32_t cur_frame) {
+  MU_ASSERT(e);
+  if(!e->has_transform()) return;
+  ImGui::PushID(e);
+  edit_props(e, e->getTransformPropsInfo(), e->getTransformProps(), cur_frame, [&](const cutil::Prop& np) { e->setTransformProps(np); });
+  edit_anchor_presets(e);
+  ImGui::PopID();
+}
+
+void wd_entt_props_editor(Entity* e, uint32_t cur_frame) {
+  MU_ASSERT(e);
+  ImGui::PushID(e);
+  edit_props(e, e->getPropsInfo(), e->getProps(), cur_frame, [&](const cutil::Prop& np) { e->setProps(np); });
   ImGui::PopID();
 }
 

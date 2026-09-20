@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cmath>
 #include <movutl/app/app.hpp>
 #include <movutl/app/app_impl.hpp>
 #include <movutl/asset/entity.hpp>
@@ -15,6 +16,7 @@
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/custom_object.hpp>
 #include <movutl/asset/framebuffer.hpp>
+#include <movutl/asset/group.hpp>
 #include <movutl/asset/image.hpp>
 #include <movutl/asset/midi.hpp>
 #include <movutl/asset/movie.hpp>
@@ -32,6 +34,7 @@ Ref<Entity> Entity::CreateEntity(const char* name, EntityType type) {
     case EntityType_3DText: e = cutil::make_ref<TextEntt>(); break;
     case EntityType_Audio: e = cutil::make_ref<AudioEntt>(); break;
     case EntityType_Framebuffer: e = cutil::make_ref<FramebufferEntt>(); break;
+    case EntityType_Group: e = cutil::make_ref<GroupEntt>(); break;
     case EntityType_Polygon: e = cutil::make_ref<ShapeEntt>(); break;
     case EntityType_Camera: e = cutil::make_ref<Camera3D>(); break;
     // 1個のフラグで複数のLuaスクリプトを表すため、実体はsetProps()内でscript_name経由でdef_を再解決する(ここではdef_未設定のまま生成するだけでよい)
@@ -65,7 +68,8 @@ cutil::Prop Entity::getSaveProps() const {
   p.set<int32_t>("guid", (int32_t)guid_);
   p.set_child("props", getProps());
   p.set_child("trk", getTrackProps());
-  if(getPropsInfo()) {
+  p.set_child("xform", getTransformProps());
+  if(getPropsInfo() || has_transform()) {
     ensure_anim_props();
     p.set_child("anim_props", anim_props_.save());
   }
@@ -93,7 +97,8 @@ Ref<Entity> Entity::fromSaveProps(const cutil::Prop& p) {
   e->guid_ = (uint64_t)cutil::get_or<int32_t>(p, "guid", (int32_t)e->guid_);
   if(p.contains("props")) e->setProps(p.get_child("props"));
   if(p.contains("trk")) e->setTrackProps(p.get_child("trk"));
-  if(e->getPropsInfo()) {
+  if(p.contains("xform")) e->setTransformProps(p.get_child("xform"));
+  if(e->getPropsInfo() || e->has_transform()) {
     e->ensure_anim_props(); // setProps()適用後の値を各プロパティの初期キーフレームにする
     if(p.contains("anim_props")) e->anim_props_.load_keys(p.get_child("anim_props"));
   }
@@ -149,9 +154,49 @@ std::string EntityInfo::str() const {
   return std::string(buf);
 }
 
+namespace {
+thread_local const GroupXform* tls_parent_xform = nullptr;
+}
+
+GroupXform GroupXform::compose(const GroupXform& child) const {
+  const double rad = rotation * M_PI / 180.0;
+  const double c = std::cos(rad), sn = std::sin(rad);
+  const double s  = scale / 100.0;
+  const double px = child.pos[0] * s, py = child.pos[1] * s;
+  GroupXform out;
+  out.pos      = Vec3((float)(pos[0] + px * c - py * sn), (float)(pos[1] + px * sn + py * c), pos[2] + child.pos[2]);
+  out.scale    = (float)(child.scale * s);
+  out.rotation = rotation + child.rotation;
+  out.alpha    = alpha * child.alpha;
+  return out;
+}
+
+GroupXformScope::GroupXformScope(const GroupXform* parent) : prev_(tls_parent_xform) { tls_parent_xform = parent; }
+GroupXformScope::~GroupXformScope() { tls_parent_xform = prev_; }
+
+GroupXform Entity::world_xform() const {
+  GroupXform local{pos_, scale_, rotation_, alpha_};
+  return tls_parent_xform ? tls_parent_xform->compose(local) : local;
+}
+
+bool Entity::composite(const Image& src, Image* target, const Vec2& origin_offset) const {
+  MU_ASSERT(target);
+  Placement pl;
+  const GroupXform w = world_xform(); // 親グループ変換込みの実効変換
+  pl.x = w.pos[0], pl.y = w.pos[1];
+  pl.anchor_x = anchor_[0] + origin_offset[0], pl.anchor_y = anchor_[1] + origin_offset[1];
+  pl.scale_x = pl.scale_y = w.scale / 100.0;
+  pl.aspect               = aspect_;
+  pl.rot_x = rot_x_, pl.rot_y = rot_y_, pl.rot_z = w.rotation;
+  pl.alpha = w.alpha;
+  pl.blend = blend_;
+  return src.place(target, pl);
+}
+
 void Entity::ensure_anim_props() const {
-  if(anim_props_.size() > 0 || !getPropsInfo()) return;
-  anim_props_.add_props(getProps());
+  if(anim_props_.size() > 0 || (!getPropsInfo() && !has_transform())) return;
+  if(getPropsInfo()) anim_props_.add_props(getProps());
+  if(has_transform()) anim_props_.add_props(getTransformProps()); // 位置/拡大率/回転/不透明度もキーフレームでアニメーションできる
   // 文字列(text/path等)はアニメーション不要。残すとapply_animated_props()が古い値で上書きして入力がリセットされる
   if(const auto* info = getPropsInfo()) {
     for(const auto& f : info->fields)
@@ -160,9 +205,11 @@ void Entity::ensure_anim_props() const {
 }
 
 void Entity::apply_animated_props(int frame) {
-  if(!getPropsInfo()) return;
+  if(!getPropsInfo() && !has_transform()) return;
   ensure_anim_props();
-  setProps(anim_props_.get(rel_frame(frame)));
+  const auto p = anim_props_.get(rel_frame(frame));
+  if(getPropsInfo()) setProps(p);
+  if(has_transform()) setTransformProps(p);
 }
 
 void Entity::on_len_change_done(int old_start) {
@@ -172,7 +219,7 @@ void Entity::on_len_change_done(int old_start) {
     a.shift_frames(shift);
     a.trim_end((uint32_t)len);
   };
-  if(getPropsInfo()) {
+  if(getPropsInfo() || has_transform()) {
     ensure_anim_props();
     apply(anim_props_);
   }
@@ -184,11 +231,15 @@ std::vector<uint32_t> Entity::collect_animated_frames() const {
   ensure_anim_props();
   std::set<uint32_t> frames;
   const uint32_t off = (uint32_t)std::max(fstart_, 0);
-  for(int i = 0; i < (int)anim_props_.props.size(); i++)
+  for(int i = 0; i < (int)anim_props_.props.size(); i++) {
+    if(!anim_props_.has_animation(i)) continue; // 単一キー(=アニメーションしていない初期値)は中間点として扱わない
     for(uint32_t f : anim_props_.keyframe_frames(i)) frames.insert(f + off);
+  }
   for(auto& filt : filters_)
-    for(int i = 0; i < (int)filt.props.props.size(); i++)
+    for(int i = 0; i < (int)filt.props.props.size(); i++) {
+      if(!filt.props.has_animation(i)) continue;
       for(uint32_t f : filt.props.keyframe_frames(i)) frames.insert(f + off);
+    }
   return std::vector<uint32_t>(frames.begin(), frames.end());
 }
 

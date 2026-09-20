@@ -61,6 +61,23 @@ TEST_CASE("Image::copyto: scale/angle指定時は画像自身の中心を軸に�
   CHECK(dst(10, 10)[0] == 0);
 }
 
+TEST_CASE("Image::transform_to: X/Y別の拡大率で幅だけ2倍にでき、中心座標は小数で指定できる") {
+  Image src(4, 4);
+  src.has_alpha = true;
+  for(size_t i = 0; i < src.size(); i++) src[i] = Vec4b(255, 0, 0, 255);
+  Image dst(20, 20);
+  dst.has_alpha = true;
+  for(size_t i = 0; i < dst.size(); i++) dst[i] = Vec4b(0, 0, 0, 0);
+  // 中心(10.5,10)、幅8(x:6.5..14.5)、高さ4(y:8..12)
+  CHECK(src.transform_to(&dst, 10.5, 10.0, 2.0, 1.0, 0.0));
+  CHECK(dst(7, 10)[3] == 255);
+  CHECK(dst(13, 10)[3] == 255);
+  CHECK(dst(5, 10)[3] == 0); // 幅の外
+  CHECK(dst(15, 10)[3] == 0);
+  CHECK(dst(10, 7)[3] == 0); // 高さ(1倍=4px)の外
+  CHECK(dst(10, 12)[3] == 0);
+}
+
 TEST_CASE("Image::drawpoly: 四隅を同一オフセットでずらすと単純平行移動と同じ結果になる") {
   Image dst(10, 10);
   for(size_t i = 0; i < dst.size(); i++) dst[i] = Vec4b(0, 0, 0, 255);

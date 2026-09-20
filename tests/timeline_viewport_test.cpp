@@ -72,7 +72,7 @@ TEST_CASE("ToggleKeyframeCommand: 選択中エンティティの現在フレー�
 
   // 追加モード: まだどのプロパティにもframe=20のキーが無い状態からトグル
   CHECK(run_command("toggle_keyframe"));
-  int pos_idx = img->anim_props_.index_of("pos");
+  int pos_idx = img->anim_props_.index_of("pos_");
   REQUIRE(pos_idx >= 0);
   CHECK(img->anim_props_.has_key_at(pos_idx, 20));
 

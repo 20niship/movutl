@@ -1,6 +1,6 @@
 @AviUtlグレースケール
-local w = obj.getinfo("image_w")
-local h = obj.getinfo("image_h")
+local w = obj.w
+local h = obj.h
 local px = obj.getpixeldata()
 local buf = {}
 for i = 1, w * h do

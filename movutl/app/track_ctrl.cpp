@@ -9,6 +9,7 @@
 #include <movutl/asset/custom_object.hpp>
 #include <movutl/asset/entity.hpp>
 #include <movutl/asset/framebuffer.hpp>
+#include <movutl/asset/group.hpp>
 #include <movutl/asset/image.hpp>
 #include <movutl/asset/midi.hpp>
 #include <movutl/asset/movie.hpp>
@@ -18,6 +19,7 @@
 #include <movutl/core/command.hpp>
 #include <movutl/core/filesystem.hpp>
 #include <movutl/core/logger.hpp>
+#include <movutl/core/status_log.hpp>
 #include <movutl/plugin/input.hpp>
 #include <movutl/plugin/plugin.hpp>
 
@@ -209,6 +211,15 @@ bool add_new_track(const char* name, EntityType type, int start, int end) {
       main_comp->insert_entity(fb);
       break;
     }
+    case EntityType_Group: {
+      auto g                 = GroupEntt::Create(name);
+      Composition* main_comp = Composition::GetActiveComp();
+      MU_ASSERT(main_comp);
+      g->fstart_ = start;
+      g->fend_   = end;
+      main_comp->insert_entity(g);
+      break;
+    }
     case EntityType_Scene: {
       auto e                 = cutil::make_ref<CompoRefEntt>();
       e->name                = name;
@@ -266,7 +277,14 @@ bool open_file(const char* path) {
     open_project(path);
     return true;
   }
-  return import_media_file(path) != nullptr;
+  const bool ok = import_media_file(path) != nullptr;
+  if(ok) {
+    status_log_set_dirty(true);
+    push_status_log(StatusLevel::Success, "読み込みました: " + std::filesystem::path(path).filename().string());
+  } else {
+    push_status_log(StatusLevel::Error, "読み込めませんでした: " + std::filesystem::path(path).filename().string());
+  }
+  return ok;
 }
 
 } // namespace mu

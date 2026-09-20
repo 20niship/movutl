@@ -1,9 +1,12 @@
+#include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstring>
 #include <movutl/app/app_impl.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/core/logger.hpp>
 #include <movutl/plugin/aviutl_script/aviutl_obj_binding.hpp>
+#include <mutex>
 #include <string>
 
 extern "C" {
@@ -17,6 +20,43 @@ namespace mu::detail {
 namespace {
 
 AviUtlObjContext* get_ctx(lua_State* L) { return static_cast<AviUtlObjContext*>(lua_touserdata(L, lua_upvalueindex(1))); }
+
+// obj.x/y/z/layer/idなど「対象Entityから引く値」の取得口
+struct ObjEntityInfo {
+  double x = 0, y = 0, z = 0; // 対象Entityの位置(pos_、コンポ中心原点)
+  int layer       = 0;        // 0始まりのレイヤー番号(Compositionに属さない場合は0)
+  uint64_t id     = 0;
+  int frame       = 0; // オブジェクト先頭からの経過フレーム
+  int total_frame = 0;
+};
+
+ObjEntityInfo query_entity_info(const AviUtlObjContext* ctx) {
+  ObjEntityInfo info;
+  Entity* e  = ctx->fpip->entt;
+  info.frame = ctx->frame;
+  if(!e) return info;
+  info.id = e->guid_;
+  info.x = e->pos_[0], info.y = e->pos_[1], info.z = e->pos_[2];
+  info.frame       = ctx->frame - e->fstart_;
+  info.total_frame = e->fend_ - e->fstart_;
+  if(Composition* cmp = ctx->fpip->compo) {
+    std::lock_guard<std::mutex> lock(cmp->mtx); // レンダリング中はcomp->mtxを保持していない(Entity::mtxのみ)ためデッドロックしない
+    for(size_t i = 0; i < cmp->layers.size(); i++)
+      for(auto& o : cmp->layers[i].entts)
+        if(o.get() == e) info.layer = (int)i;
+  }
+  return info;
+}
+
+// objテーブルのw/hを現在の描画バッファのサイズに同期する(バッファを作り直す関数の後に呼ぶ)
+void sync_obj_size(lua_State* L, const Image* img) {
+  lua_getglobal(L, "obj");
+  lua_pushinteger(L, img ? img->width : 0);
+  lua_setfield(L, -2, "w");
+  lua_pushinteger(L, img ? img->height : 0);
+  lua_setfield(L, -2, "h");
+  lua_pop(L, 1);
+}
 
 // AviUtl仕様: (データ, 幅, 高さ)の3値を返す(第1引数"alloc"等は無視、常に現在のimgサイズを返す)
 int l_obj_getpixeldata(lua_State* L) {
@@ -40,38 +80,132 @@ int l_obj_putpixeldata(lua_State* L) {
   return 0;
 }
 
+// obj.getpixel(): (w,h)を返す。obj.getpixel(x,y[,"col"]): 0始まりの画素を(r,g,b,a)、"col"指定時は(0xRRGGBB,a)で返す。範囲外は全て0
 int l_obj_getpixel(lua_State* L) {
   auto* ctx  = get_ctx(L);
   Image* img = ctx->fpip->img;
-  lua_pushinteger(L, img ? img->width : 0);
-  lua_pushinteger(L, img ? img->height : 0);
-  return 2;
+  if(lua_gettop(L) < 2) {
+    lua_pushinteger(L, img ? img->width : 0);
+    lua_pushinteger(L, img ? img->height : 0);
+    return 2;
+  }
+  int x       = (int)std::floor(luaL_checknumber(L, 1));
+  int y       = (int)std::floor(luaL_checknumber(L, 2));
+  bool col    = lua_isstring(L, 3) && std::string(lua_tostring(L, 3)) == "col";
+  bool inside = img && x >= 0 && y >= 0 && x < (int)img->width && y < (int)img->height;
+  Vec4b c     = inside ? (*img)(x, y) : Vec4b(0, 0, 0, 0);
+  if(col) {
+    lua_pushinteger(L, (c[0] << 16) | (c[1] << 8) | c[2]);
+    lua_pushinteger(L, c[3]);
+    return 2;
+  }
+  for(int i = 0; i < 4; i++) lua_pushinteger(L, c[i]);
+  return 4;
 }
 
+// obj.putpixel(x,y,r,g,b[,a]): 0始まりの画素を書き換える(範囲外は無視、aの既定は255)。putpixeldata同様、暗黙drawの対象外にする
+int l_obj_putpixel(lua_State* L) {
+  auto* ctx  = get_ctx(L);
+  Image* img = ctx->fpip->img;
+  if(!img) return 0;
+  int x = (int)std::floor(luaL_checknumber(L, 1));
+  int y = (int)std::floor(luaL_checknumber(L, 2));
+  if(x < 0 || y < 0 || x >= (int)img->width || y >= (int)img->height) return 0;
+  auto ch      = [&](int i, double def) { return (uint8_t)std::clamp(luaL_optnumber(L, i, def), 0.0, 255.0); };
+  (*img)(x, y) = Vec4b(ch(3, 0), ch(4, 0), ch(5, 0), ch(6, 255));
+  ctx->drawn   = true;
+  return 0;
+}
+
+// obj.copypixel(dx,dy,sx,sy): (sx,sy)の画素を(dx,dy)へコピーする(どちらかが範囲外なら何もしない)
+int l_obj_copypixel(lua_State* L) {
+  auto* ctx  = get_ctx(L);
+  Image* img = ctx->fpip->img;
+  if(!img) return 0;
+  int dx  = (int)std::floor(luaL_checknumber(L, 1));
+  int dy  = (int)std::floor(luaL_checknumber(L, 2));
+  int sx  = (int)std::floor(luaL_checknumber(L, 3));
+  int sy  = (int)std::floor(luaL_checknumber(L, 4));
+  auto in = [&](int x, int y) { return x >= 0 && y >= 0 && x < (int)img->width && y < (int)img->height; };
+  if(!in(dx, dy) || !in(sx, sy)) return 0;
+  (*img)(dx, dy) = (*img)(sx, sy);
+  ctx->drawn     = true;
+  return 0;
+}
+
+uint64_t splitmix64(uint64_t x) {
+  x += 0x9e3779b97f4a7c15ULL;
+  x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9ULL;
+  x = (x ^ (x >> 27)) * 0x94d049bb133111ebULL;
+  return x ^ (x >> 31);
+}
+
+// obj.rand(min,max[,seed,frame]): [min,max]の整数を返す決定的乱数。seed指定時は(seed,frame)だけで値が決まり、省略時は(オブジェクトID,フレーム,呼び出し順)で決まる
+int l_obj_rand(lua_State* L) {
+  auto* ctx     = get_ctx(L);
+  lua_Integer a = (lua_Integer)luaL_checknumber(L, 1);
+  lua_Integer b = (lua_Integer)luaL_checknumber(L, 2);
+  if(a > b) std::swap(a, b);
+  ObjEntityInfo info = query_entity_info(ctx);
+  bool has_seed      = !lua_isnoneornil(L, 3);
+  uint64_t seed      = has_seed ? (uint64_t)(int64_t)luaL_checknumber(L, 3) : info.id;
+  uint64_t frame     = (uint64_t)(int64_t)luaL_optnumber(L, 4, info.frame);
+  uint64_t key       = splitmix64(seed) ^ splitmix64(frame + 0x1234567ULL);
+  if(!has_seed) key = splitmix64(key + (uint64_t)ctx->rand_counter++);
+  lua_pushinteger(L, a + (lua_Integer)(splitmix64(key) % (uint64_t)(b - a + 1)));
+  return 1;
+}
+
+// obj.interpolation(time,x0,y0,z0,x1,y1,z1,x2,y2,z2,x3,y3,z3): 4点のCatmull-Romスプラインで、p1→p2間をtime(0-1)で補間した(x,y,z)を返す
+int l_obj_interpolation(lua_State* L) {
+  double t = luaL_checknumber(L, 1);
+  double p[4][3];
+  for(int i = 0; i < 4; i++)
+    for(int k = 0; k < 3; k++) p[i][k] = luaL_checknumber(L, 2 + i * 3 + k);
+  double t2 = t * t, t3 = t2 * t;
+  for(int k = 0; k < 3; k++) lua_pushnumber(L, 0.5 * ((2 * p[1][k]) + (-p[0][k] + p[2][k]) * t + (2 * p[0][k] - 5 * p[1][k] + 4 * p[2][k] - p[3][k]) * t2 + (-p[0][k] + 3 * p[1][k] - 3 * p[2][k] + p[3][k]) * t3));
+  return 3;
+}
+
+// obj.getvalue(target[,time]): 現在のobj変数("x","ox","zoom","rz"等)またはトラックバー("track0"-"track3")の値を返す。未知のtargetはnil
+// ponytail: 他フレームの値(time指定)は保持していないので無視して現在値を返す
+int l_obj_getvalue(lua_State* L) {
+  std::string key = luaL_checkstring(L, 1);
+  lua_getglobal(L, "obj");
+  lua_getfield(L, -1, key.c_str());
+  return lua_isnumber(L, -1) ? 1 : (lua_pushnil(L), 1);
+}
+
+// AviUtl正規のキーのみ対応。未対応キーはnilを返す(旧独自キーimage_w/image_h/screen_w/screen_h/framerateはobj.w/h/screen_w/screen_h/framerate変数へ移行済み)
+// ponytail: saving/editing/multi_object/camera_modeはmovutlに対応する状態が無いので固定値。versionはAviUtl 1.10相当の値
 int l_obj_getinfo(lua_State* L) {
-  auto* ctx        = get_ctx(L);
-  std::string key  = luaL_checkstring(L, 1);
-  Image* img       = ctx->fpip->img;
-  Composition* cmp = ctx->fpip->compo;
-  if(key == "image_w") {
-    lua_pushinteger(L, img ? img->width : 0);
+  auto* ctx       = get_ctx(L);
+  std::string key = luaL_checkstring(L, 1);
+  if(key == "clock") {
+    lua_pushnumber(L, std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count());
     return 1;
   }
-  if(key == "image_h") {
-    lua_pushinteger(L, img ? img->height : 0);
+  if(key == "saving" || key == "multi_object" || key == "camera_mode") {
+    lua_pushboolean(L, 0);
     return 1;
   }
-  if(key == "screen_w") {
+  if(key == "editing") {
+    lua_pushboolean(L, 1);
+    return 1;
+  }
+  if(key == "script_path") {
+    lua_pushstring(L, "");
+    return 1;
+  }
+  if(key == "version") {
+    lua_pushinteger(L, 11000);
+    return 1;
+  }
+  if(key == "image_max") {
+    Composition* cmp = ctx->fpip->compo;
     lua_pushinteger(L, cmp ? (int)cmp->size[0] : 0);
-    return 1;
-  }
-  if(key == "screen_h") {
     lua_pushinteger(L, cmp ? (int)cmp->size[1] : 0);
-    return 1;
-  }
-  if(key == "framerate") {
-    lua_pushnumber(L, cmp ? cmp->framerate : 30.0);
-    return 1;
+    return 2;
   }
   lua_pushnil(L);
   return 1;
@@ -122,27 +256,30 @@ double obj_field_or_arg(lua_State* L, int argi, const char* field, double def) {
   return v;
 }
 
-// Image::copytoのcenter引数はpmin相当(内部でwidth/2が加算される)なので、AviUtlの中心原点オフセットx,yをそのまま渡す
-void perform_draw(AviUtlObjContext* ctx, double x, double y, double zoom, double alpha, double rz) {
+// 現在の描画バッファを、objテーブルの基点(cx/cy)・縦横比(aspect)を含む変換で描き直す
+// x,y,zoom,alpha,rx,ry,rzは呼び出し側が決めた値(obj.draw引数またはobjテーブル現在値)。ponytail: oz/czのZ方向は未対応
+void perform_draw(lua_State* L, AviUtlObjContext* ctx, double x, double y, double zoom, double alpha, double rx, double ry, double rz) {
   Image* img = ctx->fpip->img;
   if(!img || img->empty()) return;
+  Placement pl;
+  pl.x = x, pl.y = y;
+  pl.anchor_x = obj_field_or_arg(L, 999, "cx", 0.0), pl.anchor_y = obj_field_or_arg(L, 999, "cy", 0.0);
+  pl.scale_x = pl.scale_y = zoom;
+  pl.aspect               = std::clamp(obj_field_or_arg(L, 999, "aspect", 0.0), -1.0, 1.0);
+  pl.rot_x = rx, pl.rot_y = ry, pl.rot_z = rz;
+  pl.alpha = (float)alpha;
   Image tmp(img->width, img->height);
   tmp.has_alpha = true;
   std::memcpy(tmp.data(), img->data(), img->size_in_bytes());
   img->fill_rgba(Vec4b(0, 0, 0, 0));
-  tmp.copyto(img, Vec2d(x, y), (float)zoom, (float)rz, (float)alpha, Blend_Alpha);
+  tmp.place(img, pl);
   ctx->drawn = true;
 }
 
-// obj.draw(x,y,z,zoom,alpha,rx,ry,rz): 現在の描画済みバッファを中心原点で移動・拡縮・Z回転して描き直す(rx/ryの3D回転は非対応)
+// obj.draw(x,y,z,zoom,alpha,rx,ry,rz): 現在の描画済みバッファを中心原点で移動・拡縮・回転して描き直す(引数省略時はobjテーブルの現在値)
 int l_obj_draw(lua_State* L) {
-  auto* ctx    = get_ctx(L);
-  double x     = obj_field_or_arg(L, 1, "ox", 0.0);
-  double y     = obj_field_or_arg(L, 2, "oy", 0.0);
-  double zoom  = obj_field_or_arg(L, 4, "zoom", 1.0);
-  double alpha = obj_field_or_arg(L, 5, "alpha", 1.0);
-  double rz    = obj_field_or_arg(L, 8, "rz", 0.0);
-  perform_draw(ctx, x, y, zoom, alpha, rz);
+  auto* ctx = get_ctx(L);
+  perform_draw(L, ctx, obj_field_or_arg(L, 1, "ox", 0.0), obj_field_or_arg(L, 2, "oy", 0.0), obj_field_or_arg(L, 4, "zoom", 1.0), obj_field_or_arg(L, 5, "alpha", 1.0), obj_field_or_arg(L, 6, "rx", 0.0), obj_field_or_arg(L, 7, "ry", 0.0), obj_field_or_arg(L, 8, "rz", 0.0));
   return 0;
 }
 
@@ -232,6 +369,7 @@ int l_obj_copybuffer(lua_State* L) {
     img->has_alpha = buf.has_alpha;
     std::memcpy(img->data(), buf.data(), img->size_in_bytes());
     ctx->drawn = true;
+    sync_obj_size(L, img);
   } else {
     Image& buf = (*ctx->buffers)[dst];
     buf.resize(img->width, img->height);
@@ -262,12 +400,27 @@ int l_obj_setoption(lua_State* L) {
   img->resize(w, h);
   img->has_alpha = true;
   std::memcpy(img->data(), tmp.data(), img->size_in_bytes());
+  sync_obj_size(L, img);
   return 0;
 }
 
-// obj.load(type, ...): "tempbuffer"/"obj"は現在のバッファをそのまま使うno-op、それ以外(画像/動画/図形/テキスト読み込み)は今回未対応で警告のみ
+// obj.load("image",path): 画像ファイルで描画バッファを置き換える。"tempbuffer"/"obj"は現在のバッファをそのまま使うno-op。他(movie/figure/text等)は未対応で警告のみ
 int l_obj_load(lua_State* L) {
+  auto* ctx        = get_ctx(L);
   std::string type = lua_isstring(L, 1) ? lua_tostring(L, 1) : "";
+  if(type == "image" && lua_isstring(L, 2) && ctx->fpip->img) {
+    Image loaded;
+    if(!loaded.load_file(lua_tostring(L, 2))) {
+      LOG_F(WARNING, "obj.load: 画像を読み込めません: %s", lua_tostring(L, 2));
+      return 0;
+    }
+    Image* img = ctx->fpip->img;
+    img->resize(loaded.width, loaded.height);
+    img->has_alpha = loaded.has_alpha;
+    std::memcpy(img->data(), loaded.data(), img->size_in_bytes());
+    sync_obj_size(L, img);
+    return 0;
+  }
   if(type != "tempbuffer" && type != "obj") LOG_F(WARNING, "obj.load: 未対応の読み込み種別 '%s' をスキップしました", type.c_str());
   return 0;
 }
@@ -287,12 +440,8 @@ int l_global_RGB(lua_State* L) {
 
 void perform_implicit_draw(lua_State* L, AviUtlObjContext* ctx) {
   // 空スタック位置(999)を指定してobj_field_or_argを常にobjテーブルの現在値読み取りモードで動かす
-  double x     = obj_field_or_arg(L, 999, "ox", 0.0);
-  double y     = obj_field_or_arg(L, 999, "oy", 0.0);
-  double zoom  = obj_field_or_arg(L, 999, "zoom", 1.0);
-  double alpha = obj_field_or_arg(L, 999, "alpha", 1.0);
-  double rz    = obj_field_or_arg(L, 999, "rz", 0.0);
-  perform_draw(ctx, x, y, zoom, alpha, rz);
+  auto f = [&](const char* k, double d) { return obj_field_or_arg(L, 999, k, d); };
+  perform_draw(L, ctx, f("ox", 0.0), f("oy", 0.0), f("zoom", 1.0), f("alpha", 1.0), f("rx", 0.0), f("ry", 0.0), f("rz", 0.0));
 }
 
 void setup_obj_table(lua_State* L, AviUtlObjContext* ctx) {
@@ -306,6 +455,11 @@ void setup_obj_table(lua_State* L, AviUtlObjContext* ctx) {
   reg_fn("getpixeldata", l_obj_getpixeldata);
   reg_fn("putpixeldata", l_obj_putpixeldata);
   reg_fn("getpixel", l_obj_getpixel);
+  reg_fn("putpixel", l_obj_putpixel);
+  reg_fn("copypixel", l_obj_copypixel);
+  reg_fn("rand", l_obj_rand);
+  reg_fn("interpolation", l_obj_interpolation);
+  reg_fn("getvalue", l_obj_getvalue);
   reg_fn("getinfo", l_obj_getinfo);
   reg_fn("effect", l_obj_effect);
   reg_fn("draw", l_obj_draw);
@@ -338,21 +492,39 @@ void setup_obj_table(lua_State* L, AviUtlObjContext* ctx) {
   lua_setfield(L, -2, "cx");
   lua_pushnumber(L, 0);
   lua_setfield(L, -2, "cy");
+  lua_pushnumber(L, 0);
+  lua_setfield(L, -2, "cz");
+  lua_pushnumber(L, 0);
+  lua_setfield(L, -2, "aspect");
 
-  int total = 0;
-  if(ctx->fpip->entt) total = ctx->fpip->entt->fend_ - ctx->fpip->entt->fstart_;
-  double time_sec = 0.0;
-  if(ctx->fpip->compo && ctx->fpip->compo->framerate > 0) time_sec = ctx->frame / (double)ctx->fpip->compo->framerate;
-  lua_pushinteger(L, ctx->frame);
-  lua_setfield(L, -2, "frame");
-  lua_pushinteger(L, total);
-  lua_setfield(L, -2, "totalframe");
-  lua_pushnumber(L, time_sec);
-  lua_setfield(L, -2, "time");
-  lua_pushinteger(L, 0);
-  lua_setfield(L, -2, "layer");
-  lua_pushnumber(L, ctx->fpip->compo ? ctx->fpip->compo->framerate : 30.0);
-  lua_setfield(L, -2, "framerate");
+  auto set_int = [&](const char* name, lua_Integer v) {
+    lua_pushinteger(L, v);
+    lua_setfield(L, -2, name);
+  };
+  auto set_num = [&](const char* name, double v) {
+    lua_pushnumber(L, v);
+    lua_setfield(L, -2, name);
+  };
+
+  ObjEntityInfo info = query_entity_info(ctx);
+  double fps         = ctx->fpip->compo && ctx->fpip->compo->framerate > 0 ? ctx->fpip->compo->framerate : 30.0;
+  const Image* img   = ctx->fpip->img;
+  set_int("w", img ? img->width : 0);
+  set_int("h", img ? img->height : 0);
+  set_int("screen_w", ctx->fpip->compo ? (int)ctx->fpip->compo->size[0] : 0);
+  set_int("screen_h", ctx->fpip->compo ? (int)ctx->fpip->compo->size[1] : 0);
+  set_num("x", info.x);
+  set_num("y", info.y);
+  set_num("z", info.z);
+  set_int("frame", info.frame);
+  set_int("totalframe", info.total_frame);
+  set_num("time", info.frame / fps);
+  set_num("totaltime", info.total_frame / fps);
+  set_int("layer", info.layer);
+  set_int("index", 0); // 個別オブジェクト(テキストの文字毎など)は未対応のため常に単体扱い
+  set_int("num", 1);
+  set_int("id", (lua_Integer)info.id);
+  set_num("framerate", fps);
 
   for(int i = 0; i < 4; i++) {
     std::string tname = "track" + std::to_string(i);
@@ -364,6 +536,32 @@ void setup_obj_table(lua_State* L, AviUtlObjContext* ctx) {
   }
 
   lua_setglobal(L, "obj");
+}
+
+namespace {
+std::mutex g_snap_mtx;
+std::string g_snap_name;
+std::vector<std::pair<std::string, double>> g_snap_vars;
+} // namespace
+
+void store_obj_debug_snapshot(lua_State* L, const std::string& script_name) {
+  static const char* keys[] = {"ox", "oy", "oz", "rx", "ry", "rz", "cx", "cy", "cz", "zoom", "aspect", "alpha", "x", "y", "z", "w", "h", "frame", "totalframe", "time", "layer", "index", "num", "id"};
+  std::vector<std::pair<std::string, double>> vars;
+  lua_getglobal(L, "obj");
+  for(const char* k : keys) {
+    lua_getfield(L, -1, k);
+    if(lua_isnumber(L, -1)) vars.emplace_back(k, lua_tonumber(L, -1));
+    lua_pop(L, 1);
+  }
+  lua_pop(L, 1);
+  std::lock_guard<std::mutex> lock(g_snap_mtx);
+  g_snap_name = script_name;
+  g_snap_vars = std::move(vars);
+}
+
+std::pair<std::string, std::vector<std::pair<std::string, double>>> load_obj_debug_snapshot() {
+  std::lock_guard<std::mutex> lock(g_snap_mtx);
+  return {g_snap_name, g_snap_vars};
 }
 
 void setup_global_functions(lua_State* L) {

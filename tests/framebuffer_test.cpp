@@ -67,7 +67,7 @@ TEST_CASE("FramebufferEntt::render scale_を縮小すると貼り戻し範囲外
   target->fill_rgba(Vec4b(255, 0, 0, 255)); // 全面赤
   auto fb             = FramebufferEntt::Create("fb");
   fb->clear_original_ = true;
-  fb->scale_          = Vec2(50, 50); // 半分に縮小して中央に貼り戻す
+  fb->scale_          = 50.f; // 半分に縮小して中央に貼り戻す
   CHECK(fb->render(comp.get(), target.get(), 0));
 
   CHECK(target->rgba(29, 29) == Vec4b(255, 0, 0, 255)); // 縮小後の範囲内(中央)は元の赤が残る
@@ -91,7 +91,7 @@ TEST_CASE("FramebufferEntt: レイヤーをまたいでグループ化的に使�
   fb->fend_           = 10;
 
   auto top     = ShapeEntt::Create("top", ShapeType_Rect);
-  top->pos_    = Vec3(0, 0, 0);
+  top->pos_    = Vec3(-20, -20, 0);
   top->size_   = Vec2(20, 20);
   top->color_  = Vec4b(0, 255, 0, 255); // 緑
   top->fstart_ = 0;
@@ -121,20 +121,20 @@ Ref<Composition> build_scene(bool clear_original, Ref<FramebufferEntt>* fb_out) 
 
   auto movie = Movie::Create("bg_movie", "../assets/movies/big_buck_bunny_360_10s.mp4");
   REQUIRE(movie->get_input_plugin() != nullptr);
-  movie->pos     = Vec3(-W / 4.0f, 0, 0); // 左半分寄りに配置
-  movie->scale   = Vec2(20, 20);
+  movie->pos_    = Vec3(-W / 4.0f, 0, 0); // 左半分寄りに配置
+  movie->scale_  = 20.f;
   movie->fstart_ = 0;
   movie->fend_   = 10;
 
   auto rect     = ShapeEntt::Create("rect", ShapeType_Rect);
-  rect->pos_    = Vec3(10, 10, 0);
+  rect->pos_    = Vec3(-40, -10, 0);
   rect->size_   = Vec2(20, 20);
   rect->color_  = Vec4b(200, 50, 50, 255);
   rect->fstart_ = 0;
   rect->fend_   = 10;
 
   auto circ     = ShapeEntt::Create("circ", ShapeType_Circle);
-  circ->pos_    = Vec3(10, 35, 0);
+  circ->pos_    = Vec3(-40, 15, 0);
   circ->size_   = Vec2(20, 20);
   circ->color_  = Vec4b(50, 50, 200, 255);
   circ->fstart_ = 0;

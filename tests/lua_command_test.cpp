@@ -230,22 +230,22 @@ TEST_CASE("Lua API: movutl.add_keyframe/remove_keyframe でEntity本体プロパ
   lua_State* L = make_test_lua();
   LuaIntf::Lua::setGlobal(L, "e", static_cast<Entity*>(img.get())); // LuaIntfはbeginClass<Entity>()の型でしかEntity*引数を受け取れず、Image*のまま渡すと型不一致になる
 
-  REQUIRE(luaL_dostring(L, "return movutl.add_keyframe(e, 'alpha', 10, 0.5)") == 0);
+  REQUIRE(luaL_dostring(L, "return movutl.add_keyframe(e, 'alpha_', 10, 0.5)") == 0);
   CHECK(lua_toboolean(L, -1));
   lua_pop(L, 1);
 
-  int idx = img->anim_props_.index_of("alpha");
+  int idx = img->anim_props_.index_of("alpha_");
   REQUIRE(idx >= 0);
   CHECK(img->anim_props_.has_key_at(idx, 10));
   CHECK(img->anim_props_.get<float>(idx, 10) == doctest::Approx(0.5f));
 
-  REQUIRE(luaL_dostring(L, "return movutl.remove_keyframe(e, 'alpha', 10)") == 0);
+  REQUIRE(luaL_dostring(L, "return movutl.remove_keyframe(e, 'alpha_', 10)") == 0);
   CHECK(lua_toboolean(L, -1));
   lua_pop(L, 1);
   CHECK_FALSE(img->anim_props_.has_key_at(idx, 10));
 
   // 残り1個(frame=0の初期キー)は消せない
-  REQUIRE(luaL_dostring(L, "return movutl.remove_keyframe(e, 'alpha', 0)") == 0);
+  REQUIRE(luaL_dostring(L, "return movutl.remove_keyframe(e, 'alpha_', 0)") == 0);
   CHECK_FALSE(lua_toboolean(L, -1));
   lua_pop(L, 1);
 }
@@ -259,13 +259,13 @@ TEST_CASE("Lua API: movutl.set_keyframe_ease でキーフレームのイージ�
   lua_State* L = make_test_lua();
   LuaIntf::Lua::setGlobal(L, "e", static_cast<Entity*>(img.get()));
 
-  REQUIRE(luaL_dostring(L, "return movutl.set_keyframe_ease(e, 'alpha', 0, movutl.AniInterpType.EaseInOutQuad)") == 0);
+  REQUIRE(luaL_dostring(L, "return movutl.set_keyframe_ease(e, 'alpha_', 0, movutl.AniInterpType.EaseInOutQuad)") == 0);
   CHECK(lua_toboolean(L, -1));
   lua_pop(L, 1);
-  int idx = img->anim_props_.index_of("alpha");
+  int idx = img->anim_props_.index_of("alpha_");
   CHECK(img->anim_props_.get_ease_type(idx, 0) == AniInterpType::EaseInOutQuad);
 
-  REQUIRE(luaL_dostring(L, "return movutl.set_keyframe_ease(e, 'alpha', 999, movutl.AniInterpType.EaseInQuad)") == 0);
+  REQUIRE(luaL_dostring(L, "return movutl.set_keyframe_ease(e, 'alpha_', 999, movutl.AniInterpType.EaseInQuad)") == 0);
   CHECK_FALSE(lua_toboolean(L, -1)); // キーが無いframeはfalse
   lua_pop(L, 1);
 }

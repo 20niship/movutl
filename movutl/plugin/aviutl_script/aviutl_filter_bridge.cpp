@@ -91,6 +91,7 @@ bool aviutl_fn_proc(void* fp, FilterInData* fpip, const cutil::Prop& p) {
   }
   // AviUtl本体同様、明示的な描画操作が一度も無ければobjの現在値でdraw()相当を暗黙的に実行する
   if(!ctx.drawn) perform_implicit_draw(L, &ctx);
+  store_obj_debug_snapshot(L, state->def.name);
   return true;
 }
 

@@ -42,8 +42,6 @@ const char* pitch_name(int pitch) {
 } // namespace
 
 void PianoRollWindow::Update() {
-  ImGui::Begin(ICON_FA_KEYBOARD " ピアノロール", &open);
-
   MidiEntt* midi = nullptr;
   for(auto& e : get_selected_entts()) {
     if(e->getType() == EntityType_Midi) {
@@ -51,11 +49,8 @@ void PianoRollWindow::Update() {
       break;
     }
   }
-  if(!midi) {
-    ImGui::TextDisabled("MIDIトラックが選択されていません");
-    ImGui::End();
-    return;
-  }
+  if(!midi) return; // MIDIトラックが選択されている間だけウィンドウを出す
+  ImGui::Begin(ICON_FA_KEYBOARD " ピアノロール");
 
   { // 音源選択 + Edit(ネイティブGUI/汎用パラメータ一覧)
     auto plugins          = vst_host::plugin_list();

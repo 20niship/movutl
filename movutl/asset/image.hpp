@@ -10,6 +10,18 @@ class Mat;
 
 namespace mu {
 
+// 画像をdstへ置く時の変換。座標はdst中心原点・Y下向き、角度は度(時計回りが正)。
+// (x,y)は基点(anchor: 画像中心からのオフセット,px)が置かれる位置。回転・拡大は基点まわりに行う。
+struct Placement {
+  double x = 0, y = 0;
+  double anchor_x = 0, anchor_y = 0;
+  double scale_x = 1, scale_y = 1; // 倍率(1.0=等倍)
+  double aspect = 0;               // -1〜1。正で横が縮み(縦長)、負で縦が縮む
+  double rot_x = 0, rot_y = 0, rot_z = 0;
+  float alpha     = 1.0f;
+  BlendType blend = Blend_Alpha;
+};
+
 class Image final : public Entity {
 private:
   Vec<Vec4b> data_;
@@ -28,10 +40,6 @@ public:
   bool has_alpha      = true;
 
   ImageFormat fmt = ImageFormatRGBA; // MPROPERTY(name="フォーマット", readonly=true)
-  Vec3 pos;                          // MPROPERTY(name="位置" viewer_anchor=true, position=true)
-  Vec2 scale     = Vec2(1.0, 1.0);   // MPROPERTY(name="拡大率X, scale=true)
-  float rotation = 0.0;              // MPROPERTY(name="回転", angle=true, radians=true)
-  float alpha    = 1.0;              // MPROPERTY(name="透明度")
   std::string path;                  // MPROPERTY(name="ファイル", type="path")
 
   void dirty() { dirty_++; }
@@ -64,7 +72,12 @@ public:
   bool copyto(Image* dst, const Vec2d& pmin, float alpha_mul = 1.0f, BlendType blend = Blend_Alpha) const;
   bool copyto(Image* dst, const Vec2d& pmin, const Vec2d& pmax) const;
   bool copyto(Image* dst, const Vec2d& center, float scale, float angle, float alpha_mul = 1.0f, BlendType blend = Blend_Alpha) const;
+  // 画像中心をdst上の(cx,cy)(小数可)に置き、X/Y別の拡大率(倍率)と回転(度)を掛けて合成する
+  bool transform_to(Image* dst, double cx, double cy, double sx, double sy, double angle_deg, float alpha_mul = 1.0f, BlendType blend = Blend_Alpha) const;
+  // Placementに従ってdstへ合成する。rot_x/rot_yが0以外なら射影変換(遠近付き)、それ以外はアフィン変換
+  bool place(Image* dst, const Placement& pl) const;
   // 自身の四隅(左上,右上,左下,右下)をdst上の任意の4点corners[4]へ射影変換して合成する(AviUtl obj.drawpoly相当)
+  bool drawquad(Image* dst, const Vec2 corners[4], float alpha_mul = 1.0f, BlendType blend = Blend_Alpha) const;
   bool drawpoly(Image* dst, const Vec2d corners[4], float alpha_mul = 1.0f, BlendType blend = Blend_Alpha) const;
 
   // 現在の不透明部分の外側にborder_widthピクセル分border_colorで縁取りを描く(塗り部分は上書きしない)
@@ -123,6 +136,7 @@ public:
   }
 
   virtual bool render(Composition* cmp, Image* target, int frame) override;
+  virtual bool source_size(Vec2& size, Vec2& origin_offset) const override;
   virtual EntityType getType() const override { return EntityType_Image; }
 
   static Ref<Image> Create(const char* name, const char* path = "");

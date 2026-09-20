@@ -22,14 +22,15 @@ void Config::Load() {
   cutil::Prop js;
   cutil::prop_load_json(js, ss.str());
 
-  c->max_size                  = Vec2d(cutil::get_or<Vec2>(js, "max_size", Vec2(c->max_size)));
-  c->max_frame                 = cutil::get_or<int32_t>(js, "max_frame", c->max_frame);
-  c->cache_frames              = cutil::get_or<int32_t>(js, "cache_frames", c->cache_frames);
-  c->log_to_file               = cutil::get_or<bool>(js, "log_to_file", c->log_to_file);
-  c->log_filename              = cutil::get_or<std::string>(js, "log_filename", c->log_filename);
-  c->log_level                 = (LogLevel)cutil::get_or<int32_t>(js, "log_level", int(c->log_level));
-  c->show_viewer_ruler         = cutil::get_or<bool>(js, "show_viewer_ruler", c->show_viewer_ruler);
-  c->viewer_wave_footer_height = cutil::get_or<float>(js, "viewer_wave_footer_height", c->viewer_wave_footer_height);
+  c->max_size                   = Vec2d(cutil::get_or<Vec2>(js, "max_size", Vec2(c->max_size)));
+  c->max_frame                  = cutil::get_or<int32_t>(js, "max_frame", c->max_frame);
+  c->cache_frames               = cutil::get_or<int32_t>(js, "cache_frames", c->cache_frames);
+  c->log_to_file                = cutil::get_or<bool>(js, "log_to_file", c->log_to_file);
+  c->log_filename               = cutil::get_or<std::string>(js, "log_filename", c->log_filename);
+  c->log_level                  = (LogLevel)cutil::get_or<int32_t>(js, "log_level", int(c->log_level));
+  c->show_viewer_ruler          = cutil::get_or<bool>(js, "show_viewer_ruler", c->show_viewer_ruler);
+  c->viewer_ruler_center_origin = cutil::get_or<bool>(js, "viewer_ruler_center_origin", c->viewer_ruler_center_origin);
+  c->master_volume              = cutil::get_or<float>(js, "master_volume", c->master_volume);
 }
 
 void Config::Save() {
@@ -42,7 +43,8 @@ void Config::Save() {
   js.set<std::string>("log_filename", c->log_filename);
   js.set<int32_t>("log_level", int(c->log_level));
   js.set<bool>("show_viewer_ruler", c->show_viewer_ruler);
-  js.set<float>("viewer_wave_footer_height", c->viewer_wave_footer_height);
+  js.set<bool>("viewer_ruler_center_origin", c->viewer_ruler_center_origin);
+  js.set<float>("master_volume", c->master_volume);
 
   std::string out;
   cutil::prop_dump_json(js, out);
