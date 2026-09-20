@@ -18,7 +18,9 @@
 #include <movutl/asset/framebuffer.hpp>
 #include <movutl/asset/group.hpp>
 #include <movutl/asset/image.hpp>
+#ifdef MOVUTL_DAW
 #include <movutl/asset/midi.hpp>
+#endif
 #include <movutl/asset/movie.hpp>
 #include <movutl/asset/shape.hpp>
 #include <movutl/asset/text.hpp>
@@ -41,7 +43,9 @@ Ref<Entity> Entity::CreateEntity(const char* name, EntityType type) {
     case EntityType_Custom: e = cutil::make_ref<CustomObjectEntt>(); break;
     case EntityType_Scene: e = cutil::make_ref<CompoRefEntt>(); break;
     case EntityType_SceneAudio: e = cutil::make_ref<CompoAudioEntt>(); break;
+#ifdef MOVUTL_DAW
     case EntityType_Midi: e = cutil::make_ref<MidiEntt>(); break;
+#endif
     default: break;
   }
   if(!e) {

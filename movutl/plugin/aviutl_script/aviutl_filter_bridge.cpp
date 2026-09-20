@@ -33,7 +33,7 @@ struct AviUtlFilterState {
   }
 };
 
-// fn_procのfp引数(=vector内FilterPluginTable*)をキーに状態を引く。vector<FilterPluginTable>は値保持のためreallocでアドレスが変わりうる点に注意(register_default_filters側でreserve済み)。
+// fn_procのfp引数(=vector内FilterPluginTable*)をキーに状態を引く。vector<FilterPluginTable>はfiltersはdequeでアドレスが安定。
 std::unordered_map<const FilterPluginTable*, std::unique_ptr<AviUtlFilterState>>& state_registry() {
   static std::unordered_map<const FilterPluginTable*, std::unique_ptr<AviUtlFilterState>> m;
   return m;

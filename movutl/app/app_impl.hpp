@@ -1,4 +1,5 @@
 #pragma once
+#include <deque>
 #include <imgui.h>
 #include <map>
 #include <movutl/audio/audio_mixer.hpp>
@@ -16,7 +17,7 @@ public:
   AppMain()  = default;
   ~AppMain() = default;
 
-  std::vector<FilterPluginTable> filters;
+  std::deque<FilterPluginTable> filters; // push_backでアドレスが変わらない(FilterParam::plg_やAviUtlスクリプト状態がポインタで参照する)
   std::vector<InputPluginTable> input_plugins;
   std::vector<OutputPluginTable> output_plugins;
   std::vector<PluginData> plugins;

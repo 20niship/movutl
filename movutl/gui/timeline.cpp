@@ -510,7 +510,9 @@ bool TimelineAddEntityMenu(int frame, int layer) {
   if(ImGui::MenuItem(ICON_FA_IMAGE " 画像")) picked = add(EntityType_Image);
   if(ImGui::MenuItem(ICON_FA_VIDEO " 動画")) picked = add(EntityType_Movie);
   if(ImGui::MenuItem(ICON_FA_MUSIC " 音声")) picked = add(EntityType_Audio);
+#ifdef MOVUTL_DAW
   if(ImGui::MenuItem(ICON_FA_KEYBOARD " MIDI")) picked = add(EntityType_Midi);
+#endif
   if(ImGui::BeginMenu(ICON_FA_DRAW_POLYGON " 図形")) {
     static const char* names[]     = {"三角形", "四角形", "六角形", "円"};
     static const ShapeType types[] = {ShapeType_Triangle, ShapeType_Rect, ShapeType_Hexagon, ShapeType_Circle};

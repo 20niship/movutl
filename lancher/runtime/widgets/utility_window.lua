@@ -43,7 +43,9 @@ local function add_entities_ui()
   add(icons.ICON_FA_VIDEO, "動画", "動画を追加", "movie", movutl.EntityType.EntityType_Movie)
   add(icons.ICON_FA_IMAGE, "画像", "画像を追加", "image", movutl.EntityType.EntityType_Image)
   add(icons.ICON_FA_MUSIC, "音声", "音声を追加", "sound", movutl.EntityType.EntityType_Audio)
-  add(icons.ICON_FA_KEYBOARD, "MIDI", "MIDIを追加", "midi", movutl.EntityType.EntityType_Midi)
+  if movutl.MidiEntt then -- `just build --daw`でビルドした時のみMIDIが有効
+    add(icons.ICON_FA_KEYBOARD, "MIDI", "MIDIを追加", "midi", movutl.EntityType.EntityType_Midi)
+  end
 
   group("テキスト・図形")
   add(icons.ICON_FA_FONT, "テキスト", "テキストを追加", "text", movutl.EntityType.EntityType_3DText)

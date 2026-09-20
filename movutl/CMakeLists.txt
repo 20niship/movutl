@@ -129,6 +129,13 @@ set(MOVUTL_INCLUDES ${MOVUTL_INCLUDES} ${maximilian_SOURCE_DIR}/src)
 set(MOVUTL_MAXIMILIAN_SRC ${maximilian_SOURCE_DIR}/src/maximilian.cpp ${maximilian_SOURCE_DIR}/src/libs/maxiReverb.cpp)
 
 # --------------------------------------------------------------
+# ------------     DAW機能 (MIDI / VST3) -----------------------
+# --------------------------------------------------------------
+# `just build --daw`(-DMOVUTL_DAW=ON)の時だけ、uapmd(remidy)+vst3sdkの取得/ビルドとMIDI/VST関連ソースの取り込みを行う。
+# EQ/音量/パン等の自前実装エフェクトはこのオプションに関わらず常にビルドされる
+option(MOVUTL_DAW "MIDI/VST3ホスティング(DAW機能)を有効にしてビルドする" OFF)
+if(MOVUTL_DAW)
+# --------------------------------------------------------------
 # ------------     uapmd (remidy VST3ホスティング) ----------------
 # --------------------------------------------------------------
 # atsushieno/uapmd の source/CMakeLists.txt は remidy-gui/uapmd-engine等の
@@ -229,6 +236,7 @@ if(vst3sdk_SOURCE_DIR)
   add_subdirectory(${vst3sdk_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}/vst3sdk_examples EXCLUDE_FROM_ALL)
   set(CMAKE_CXX_FLAGS "${_MOVUTL_OLD_CXX_FLAGS}")
 endif()
+endif()
 
 file(GLOB DATA_FILES ${CMAKE_CURRENT_SOURCE_DIR}/data/*)
 file(COPY ${DATA_FILES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
@@ -280,6 +288,14 @@ file(GLOB MOVUTL_EXT_SRC
 
 include_directories(${MOVUTL_INCLUDES})
 
+if(NOT MOVUTL_DAW)
+  # DAW機能のソースを除外する(ソース一覧はGLOBなので、ここで名前ベースに取り除く)
+  list(FILTER MOVUTL_SOURCE_1 EXCLUDE REGEX "/midi\\.cpp$")
+  foreach(_v MOVUTL_SOURCE_2 MOVUTL_SOURCE_3 MOVUTL_SOURCE_4 MOVUTL_SOURCE_5)
+    list(FILTER ${_v} EXCLUDE REGEX "/(midi|piano_roll|vst_edit_ui)\\.cpp$|/plugin/vst/")
+  endforeach()
+endif()
+
 set(MOVUTL_SRC ${MOVUTL_SOURCE_1} ${MOVUTL_SOURCE_2} ${MOVUTL_SOURCE_3} ${MOVUTL_SOURCE_4} ${MOVUTL_EXT_SRC} ${MOVUTL_SOURCE_5} ${MOVUTL_MAXIMILIAN_SRC})
 if(APPLE)
   file(GLOB MOVUTL_SRC_MAC ${CMAKE_CURRENT_SOURCE_DIR}/core/*.mm)
@@ -290,6 +306,9 @@ endif()
 add_library(mucore ${MOVUTL_SRC})
 # export_png/export_video等の.so/.msoプラグインがmucoreを静的リンクするため、Linux/gccでも共有ライブラリへ組み込めるようPICを強制する
 set_target_properties(mucore PROPERTIES POSITION_INDEPENDENT_CODE ON)
+if(MOVUTL_DAW)
+  target_compile_definitions(mucore PUBLIC MOVUTL_DAW)
+endif()
 target_include_directories(mucore PUBLIC ${MOVUTL_INCLUDES})
 target_link_libraries(mucore ${MOVUTL_LIBRARIES})
 if(APPLE)

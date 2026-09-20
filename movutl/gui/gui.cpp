@@ -15,7 +15,9 @@
 #include <movutl/gui/graph_editor_window.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/gui/inspector.hpp>
+#ifdef MOVUTL_DAW
 #include <movutl/gui/piano_roll.hpp>
+#endif
 #include <movutl/gui/timeline.hpp>
 #include <movutl/gui/timeline_window.hpp>
 #include <movutl/gui/viewer.hpp>
@@ -34,7 +36,9 @@ void init_gui_panels() {
     cutil::make_ref<ExportWindow>(),              //
     cutil::make_ref<FFTWindow>(),                 //
     cutil::make_ref<GraphEditorWindow>(),         //
+#ifdef MOVUTL_DAW
     cutil::make_ref<PianoRollWindow>(),           // MIDIトラック選択中のみ自前で表示する
+#endif
   };
 
   // デフォルトワークスペース(初回起動時に適用される)。dir==Noneのentry(最後を除く)は直前entryと同タブになる

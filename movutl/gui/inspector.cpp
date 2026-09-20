@@ -11,18 +11,22 @@
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/custom_object.hpp>
 #include <movutl/asset/entity.hpp>
+#ifdef MOVUTL_DAW
 #include <movutl/asset/midi.hpp>
+#endif
 #include <movutl/asset/project.hpp>
 #include <movutl/asset/text.hpp>
 #include <movutl/core/logger.hpp>
 #include <movutl/gui/graph_editor_window.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/gui/inspector.hpp>
-#include <movutl/gui/vst_edit_ui.hpp>
 #include <movutl/gui/widgets.hpp>
 #include <movutl/plugin/plugin.hpp>
+#ifdef MOVUTL_DAW
+#include <movutl/gui/vst_edit_ui.hpp>
 #include <movutl/plugin/vst/vst_filter_bridge.hpp>
 #include <movutl/plugin/vst/vst_host.hpp>
+#endif
 #include <string>
 #include <vector>
 
@@ -145,6 +149,7 @@ void InspectorWindow::Update() {
       wd_table_end();
     }
 
+#ifdef MOVUTL_DAW
     if(e->getType() == EntityType_Midi && wd_table_begin("##midi_inst")) { // 音源選択(vst_host::plugin_list())+ Edit導線(vst_edit_ui)
       auto* midi            = static_cast<MidiEntt*>(e.get());
       auto plugins          = vst_host::plugin_list();
@@ -163,6 +168,7 @@ void InspectorWindow::Update() {
       draw_vst_edit_button("midi_instrument_edit", vst_host::get_instance(midi->instrument_instance_id()));
       wd_table_end();
     }
+#endif
 
     wd_entt_props_editor(e.get(), cur_frame);
 
@@ -235,10 +241,12 @@ void InspectorWindow::Update() {
         if(ImGui::SmallButton(ICON_FA_TRASH "##fx_del")) remove_idx = i;
         if(ImGui::IsItemHovered()) ImGui::SetTooltip("エフェクトを削除");
       }
+#ifdef MOVUTL_DAW
       if(detail::is_vst_filter_guid(f.plg_->guid)) {
         ImGui::SameLine();
         draw_vst_edit_button("vst_fx_edit", detail::vst_filter_instance(f.instance_state));
       }
+#endif
       if(card_open) {
         bool props_changed = false;
         int size_          = std::min<int>(f.props.size(), (int)e->filters_[i].plg_->props.fields.size());
