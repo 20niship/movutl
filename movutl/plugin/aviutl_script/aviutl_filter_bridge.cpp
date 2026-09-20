@@ -6,6 +6,7 @@
 #include <movutl/app/app_impl.hpp>
 #include <movutl/asset/config.hpp>
 #include <movutl/core/logger.hpp>
+#include <movutl/core/text_encoding.hpp>
 #include <movutl/plugin/aviutl_script/aviutl_obj_binding.hpp>
 #include <movutl/plugin/aviutl_script/aviutl_script_parser.hpp>
 #include <movutl/plugin/plugin.hpp>
@@ -145,14 +146,12 @@ bool register_aviutl_filter(AviUtlScriptDef def) {
 }
 
 void register_aviutl_scripts_from_file(const std::filesystem::path& path) {
-  std::ifstream ifs(path);
-  if(!ifs) {
+  std::string text;
+  if(!read_text_file_utf8(path, text)) {
     LOG_F(ERROR, "register_aviutl_scripts: ファイルを開けません: %s", path.string().c_str());
     return;
   }
-  std::ostringstream ss;
-  ss << ifs.rdbuf();
-  auto defs = parse_aviutl_script(ss.str());
+  auto defs = parse_aviutl_script(text);
   if(defs.empty()) return;
   std::string stem = path.stem().string();
   for(auto& def : defs) {

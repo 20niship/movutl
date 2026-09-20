@@ -48,7 +48,7 @@ bool Movie::render(Composition* cmp, Image* target, int frame) {
   /// フレーム指定でプラグインから直接読み込む (aviutl2 方針)
   MU_ASSERT(in_plg_->fn_read_video);
   {
-    MOVUTL_ZONE_SCOPED_N("Movie::read_video"); 
+    MOVUTL_ZONE_SCOPED_N("Movie::read_video");
     if(in_plg_->fn_read_video(in_handle_, tlocal, img_->data()) <= 0) return false;
   }
 

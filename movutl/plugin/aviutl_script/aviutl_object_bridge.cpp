@@ -3,6 +3,7 @@
 #include <movutl/asset/config.hpp>
 #include <movutl/asset/custom_object.hpp>
 #include <movutl/core/logger.hpp>
+#include <movutl/core/text_encoding.hpp>
 #include <movutl/plugin/aviutl_script/aviutl_script_parser.hpp>
 #include <movutl/plugin/plugin.hpp>
 #include <sstream>
@@ -12,14 +13,12 @@ namespace mu::detail {
 namespace {
 
 void register_custom_objects_from_file(const std::filesystem::path& path) {
-  std::ifstream ifs(path);
-  if(!ifs) {
+  std::string text;
+  if(!read_text_file_utf8(path, text)) {
     LOG_F(ERROR, "register_custom_objects: ファイルを開けません: %s", path.string().c_str());
     return;
   }
-  std::ostringstream ss;
-  ss << ifs.rdbuf();
-  auto defs = parse_aviutl_script(ss.str());
+  auto defs = parse_aviutl_script(text);
   if(defs.empty()) return;
   std::string stem = path.stem().string();
   for(auto& def : defs) {

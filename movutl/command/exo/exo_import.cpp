@@ -20,54 +20,13 @@
 #include <movutl/core/filesystem.hpp>
 #include <movutl/core/logger.hpp>
 #include <movutl/core/status_log.hpp>
+#include <movutl/core/text_encoding.hpp>
 #include <movutl/gui/timeline.hpp>
 #include <sstream>
 #include <vector>
 
-#ifdef _WIN32
-#include <windows.h>
-#else
-#include <iconv.h>
-#endif
-
 namespace mu {
 namespace {
-
-std::string cp932_to_utf8(const std::string& src) {
-  if(src.empty()) return {};
-#ifdef _WIN32
-  int wn = MultiByteToWideChar(932, 0, src.data(), (int)src.size(), nullptr, 0);
-  if(wn <= 0) return src;
-  std::wstring w(wn, L'\0');
-  MultiByteToWideChar(932, 0, src.data(), (int)src.size(), w.data(), wn);
-  int un = WideCharToMultiByte(CP_UTF8, 0, w.data(), wn, nullptr, 0, nullptr, nullptr);
-  std::string out(un, '\0');
-  WideCharToMultiByte(CP_UTF8, 0, w.data(), wn, out.data(), un, nullptr, nullptr);
-  return out;
-#else
-  iconv_t cd = iconv_open("UTF-8", "CP932");
-  if(cd == (iconv_t)-1) return src;
-  std::string out(src.size() * 4, '\0');
-  char* in       = const_cast<char*>(src.data());
-  size_t in_left = src.size();
-  char* op       = out.data();
-  size_t o_left  = out.size();
-  // 不正バイトは読み飛ばして変換を続ける
-  while(in_left > 0) {
-    if(iconv(cd, &in, &in_left, &op, &o_left) == (size_t)-1) {
-      if(errno == EILSEQ || errno == EINVAL) {
-        ++in;
-        --in_left;
-        continue;
-      }
-      break;
-    }
-  }
-  iconv_close(cd);
-  out.resize(op - out.data());
-  return out;
-#endif
-}
 
 static void append_utf8(std::string& out, uint32_t cp) {
   if(cp < 0x80) {

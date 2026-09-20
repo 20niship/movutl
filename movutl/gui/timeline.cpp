@@ -108,10 +108,12 @@ struct TimelineContext {
   char layer_search_buf[64] = {0};
 
   // レイヤーの削除/移動は破壊的操作のためEndTimeline()側で遅延適用する
-  Composition* active_comp = nullptr;
-  int pending_delete_layer = -1;
-  int pending_move_layer   = -1;
-  int pending_move_dir     = 0; // -1: 上へ, +1: 下へ
+  Composition* active_comp  = nullptr;
+  int pending_delete_layer  = -1;
+  int pending_move_layer    = -1;
+  Entity* pending_entt_move = nullptr; // ドラッグでレイヤー移動するEntity(フレーム末尾で適用)
+  int pending_entt_layer    = -1;
+  int pending_move_dir      = 0; // -1: 上へ, +1: 下へ
 
   // クリップのドラッグ移動/端リサイズ
   Entity* dragging_entt = nullptr;
@@ -627,6 +629,21 @@ static void apply_pending_ops(Composition* cp) {
       ctx_.solo_layer           = -1;
       changed                   = true;
     }
+    if(ctx_.pending_entt_move) {
+      int to = ctx_.pending_entt_layer;
+      if(to >= 0 && to < (int)cp->layers.size()) {
+        for(auto& l : cp->layers) {
+          auto it = std::find_if(l.entts.begin(), l.entts.end(), [&](const Ref<Entity>& e) { return e.get() == ctx_.pending_entt_move; });
+          if(it == l.entts.end()) continue;
+          auto ref = *it;
+          l.entts.erase(it);
+          cp->layers[to].entts.push_back(ref);
+          changed = true;
+          break;
+        }
+      }
+      ctx_.pending_entt_move = nullptr;
+    }
     if(ctx_.pending_move_layer >= 0 && ctx_.pending_move_layer < (int)cp->layers.size()) {
       int i = ctx_.pending_move_layer;
       int j = i + ctx_.pending_move_dir;
@@ -879,15 +896,12 @@ bool BeginLayer(Composition* cp, int layer_idx) {
   bool line_hovered = ImGui::IsMouseHoveringRect(R.Min, R.Max);
   if(line_hovered) dl->AddRectFilled(R.Min, R.Max, IM_COL32(255, 255, 255, 14));
 
-  // 選択中のグループ制御が効くレイヤー(かつグループの表示期間)を半透明でハイライトする
-  for(const auto& sel : get_selected_entts()) {
-    if(!sel || sel->getType() != EntityType_Group) continue;
-    int gl = -1;
-    for(int li = 0; li < (int)cp->layers.size() && gl < 0; li++)
-      for(const auto& e : cp->layers[li].entts)
-        if(e == sel) gl = li;
-    if(gl < 0 || !static_cast<GroupEntt*>(sel.get())->affects(gl, layer_idx)) continue;
-    dl->AddRectFilled(ImVec2(ctx_.f2view(sel->fstart_), htop), ImVec2(ctx_.f2view(sel->fend_), hbtm), IM_COL32(255, 200, 60, 40));
+  // グループ制御が効くレイヤー(かつグループの表示期間)を薄い半透明でハイライトする(選択の有無は問わない)
+  for(int gl = 0; gl < (int)cp->layers.size(); gl++) {
+    for(const auto& g : cp->layers[gl].entts) {
+      if(!g || g->getType() != EntityType_Group || !static_cast<GroupEntt*>(g.get())->affects(gl, layer_idx)) continue;
+      dl->AddRectFilled(ImVec2(ctx_.f2view(g->fstart_), htop), ImVec2(ctx_.f2view(g->fend_), hbtm), IM_COL32(255, 200, 60, 18));
+    }
   }
 
   // 見出し背景(選択行は少し明るく)とボタン
@@ -1163,11 +1177,39 @@ bool BeginTrack(const Ref<Entity>& entity) {
               ctx_.snap_line = b;
             }
           }
-          *start = ctx_.drag_orig_fstart + delta_f;
-          *end   = ctx_.drag_orig_fend + delta_f;
-          for(auto& [other, ofs, ofe] : ctx_.drag_group_orig) {
-            other->fstart_ = ofs + delta_f;
-            other->fend_   = ofe + delta_f;
+          const int ns = ctx_.drag_orig_fstart + delta_f;
+          const int ne = ctx_.drag_orig_fend + delta_f;
+          // 移動先レイヤー(複数同時移動中は縦移動しない)。他Entityと期間が被る位置へは動けない
+          auto* comp    = ctx_.active_comp;
+          const int cur = ctx_.hidx;
+          int tgt       = cur;
+          if(comp && ctx_.drag_group_orig.empty()) tgt = std::clamp((int)std::floor((ImGui::GetMousePos().y - (ctx_.all_area.y.min + ctx_.header_h)) / std::max(1, ctx_.height)), 0, (int)comp->layers.size() - 1);
+          auto is_free = [&](int layer) {
+            if(!comp) return true;
+            for(const auto& o : comp->layers[layer].entts) {
+              if(!o || o.get() == entity.get() || !(o->fstart_ < ne && ns < o->fend_)) continue;
+              bool moving = false;
+              for(auto& [m, ofs, ofe] : ctx_.drag_group_orig) moving |= (m == o.get());
+              if(!moving) return false;
+            }
+            return true;
+          };
+          int dst = -1;
+          if(is_free(tgt))
+            dst = tgt;
+          else if(is_free(cur))
+            dst = cur;
+          if(dst >= 0) {
+            *start = ns;
+            *end   = ne;
+            for(auto& [other, ofs, ofe] : ctx_.drag_group_orig) {
+              other->fstart_ = ofs + delta_f;
+              other->fend_   = ofe + delta_f;
+            }
+            if(dst != cur) {
+              ctx_.pending_entt_move  = entity.get();
+              ctx_.pending_entt_layer = dst;
+            }
           }
         } else if(ctx_.drag_mode == 2) {
           int new_start = ctx_.drag_orig_fstart + delta_f;

@@ -22,7 +22,7 @@ public:
   int max_frame                            = 320000;       // 編集出来る最大フレーム数
   int cache_frames                         = 1024;
   std::vector<std::string> plugin_paths    = {"plugins"};
-  std::vector<std::string> lua_script_dirs = {"plugins/scripts"}; // AviUtl互換.anmスクリプトを再帰的に探索するフォルダ
+  std::vector<std::string> lua_script_dirs = {"plugins/scripts", "../plugins/scripts"}; // AviUtl互換.anmスクリプトを再帰的に探索するフォルダ
 #if defined(_WIN32)
   std::vector<std::string> vst_plugin_dirs = {"C:\\Program Files\\Common Files\\VST3"}; // VST3プラグインを再帰的に探索するフォルダ
 #elif defined(__APPLE__)
