@@ -71,6 +71,7 @@ enum EntityType {
   EntityType_Camera      = 1 << 14,
   EntityType_Effect      = 1 << 15,
   EntityType_Midi        = 1 << 16, // VST音源で再生するMIDIノート列(MidiEntt)
+  EntityType_SceneChange = 1 << 17, // AviUtlのシーンチェンジ(SceneChangeEntt)
 };
 MOVUTL_DEFINE_ENUM_ATTR_BITFLAGS(EntityType);
 
@@ -149,8 +150,8 @@ public:
   uint32_t group_guid_  = 0;           // MPROPERTY(name="グループID", desc="グループ化されている時のグループID", hidden_inspector=true, group="track")
   bool active_          = true;        // MPROPERTY(name="アクティブ", desc="オブジェクトが有効かどうか", group="track")
   bool solo_            = false;       // MPROPERTY(name="ソロモード", desc="(音声のみ)他のレイヤを非表示にする", group="track")
-  bool clipping_up_     = false;       // MPROPERTY(name="上レイヤでクリッピング",  hidden_inspector=true, group="track")
-  bool camera_ctrl_     = false;       // MPROPERTY(name="カメラ制御", desc="カメラ制御の対象", hidden_inspector=true, group="track")
+  bool clipping_up_     = false;       // MPROPERTY(name="上レイヤでクリッピング", desc="1つ上のオブジェクトの形で切り抜く", group="track")
+  bool camera_ctrl_     = false;       // MPROPERTY(name="カメラ制御", desc="カメラ制御の対象", group="track")
   int32_t custom_color_ = 0;           // MPROPERTY(name="カスタム色", desc="0の場合メディア種別ごとの既定色を使う", group="track")
   std::vector<FilterParam> filters_;
 
@@ -181,7 +182,7 @@ public:
   virtual constexpr EntityType getType() const = 0;
 
   // pos_/anchor_/scale_/rotation_/alpha_による描画変換を持つ(=描画系の)Entityか。インスペクタの変換欄表示に使う
-  bool has_transform() const { return getType() & (EntityType_Movie | EntityType_Image | EntityType_3DText | EntityType_Polygon | EntityType_Framebuffer | EntityType_Scene | EntityType_Group); }
+  bool has_transform() const { return getType() & (EntityType_Movie | EntityType_Image | EntityType_3DText | EntityType_Polygon | EntityType_Framebuffer | EntityType_Scene | EntityType_Group | EntityType_Camera); }
 
   // composite()へ渡す元画像のサイズと基点の既定位置のずれ(画像中心基準)。ビューアのギズモが枠を求めるのに使う。画像が無い/不明ならfalse
   virtual bool source_size(Vec2& size, Vec2& origin_offset) const {
@@ -227,6 +228,9 @@ public:
 
   // レンダリング直前に呼び、anim_props_をframe時点の値へ評価してsetProps()へ反映する(getPropsInfo()を持たないEntityは何もしない)
   void apply_animated_props(int frame);
+
+  // メンバ(pos_/anchor_/scale_/rotation_)の現在値をanim_props_のframe時点へ書き戻す。ギズモ等がメンバを直接書き換えた時、次のapply_animated_props()で古い値に戻されるのを防ぐ
+  void store_xform_to_anim(int frame);
 
   // トラックの長さ(fstart_/fend_)を変更した/splitした直後に呼ぶ。old_startは変更前のfstart_。
   // 中間点は開始からの相対frameなので、開始が動いた分だけキーを逆方向へ動かし、範囲(0〜fend_-fstart_)外のキーは境界の補間値キーに置き換える

@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cstring>
 #include <opencv2/opencv.hpp>
+#include <type_traits>
 //
 #include <movutl/app/app.hpp>
 #include <movutl/asset/image.hpp>
@@ -56,41 +57,67 @@ void Image::to_cv_img(cv::Mat* cv_img) const {
 }
 
 namespace {
+inline int div255(int x) { return (x + 128 + ((x + 128) >> 8)) >> 8; } // x/255の四捨五入(x<=65535)、除算なし
+
 // BlendTypeに応じたチャンネル合成式(0-255域)。dはブレンド前の合成先(base)、sはブレンド元(blend)の値
-inline uint8_t blend_channel(BlendType mode, uint8_t d, uint8_t s) {
-  switch(mode) {
-    case Blend_Add: return (uint8_t)std::min(255, (int)d + (int)s);
-    case Blend_Sub: return (uint8_t)std::max(0, (int)d - (int)s);
-    case Blend_Mul: return (uint8_t)((int)d * (int)s / 255);
-    case Blend_Div: return s > 0 ? (uint8_t)std::min(255, (int)d * 255 / (int)s) : 255;
-    case Blend_Screen: return (uint8_t)(255 - (255 - d) * (255 - s) / 255);
-    case Blend_Overlay: return d < 128 ? (uint8_t)(2 * d * s / 255) : (uint8_t)(255 - 2 * (255 - d) * (255 - s) / 255);
-    case Blend_Darken: return std::min(d, s);
-    case Blend_Lighten: return std::max(d, s);
-    case Blend_HardLight: return s < 128 ? (uint8_t)(2 * d * s / 255) : (uint8_t)(255 - 2 * (255 - d) * (255 - s) / 255);
-    case Blend_Alpha:
-    default: return s;
-  }
+// BlendTypeをテンプレート引数にして、ピクセルごとのswitchを内側ループから外す(コンパイル時に式が確定する)
+template <BlendType B> inline int blend_channel(int d, int s) {
+  if constexpr(B == Blend_Add)
+    return std::min(255, d + s);
+  else if constexpr(B == Blend_Sub)
+    return std::max(0, d - s);
+  else if constexpr(B == Blend_Mul)
+    return div255(d * s);
+  else if constexpr(B == Blend_Div)
+    return s > 0 ? std::min(255, d * 255 / s) : 255;
+  else if constexpr(B == Blend_Screen)
+    return d + s - d * s / 255; // 255-(255-d)(255-s)/255(整数除算)と同値で乗算1回
+  else if constexpr(B == Blend_Overlay)
+    return d < 128 ? 2 * d * s / 255 : 255 - 2 * (255 - d) * (255 - s) / 255;
+  else if constexpr(B == Blend_Darken)
+    return std::min(d, s);
+  else if constexpr(B == Blend_Lighten)
+    return std::max(d, s);
+  else if constexpr(B == Blend_HardLight)
+    return s < 128 ? 2 * d * s / 255 : 255 - 2 * (255 - d) * (255 - s) / 255;
+  else
+    return s;
 }
 
-/// srcをdstへ合成する。alpha=255(かつalpha_mul=1、blend=Blend_Alpha)なら単純上書きと同じ結果になる
-inline void blend_pixel(Vec4b& d, const Vec4b& src, float alpha_mul, BlendType blend = Blend_Alpha) {
-  float a = (src[3] / 255.0f) * alpha_mul;
-  if(a <= 0.0f) return;
-  if(blend == Blend_Alpha) {
-    if(a >= 1.0f) {
+/// srcをdstへ合成する。am256=alpha_mul*256(固定小数)。整数演算のみ
+template <BlendType B> inline void blend_pixel_t(Vec4b& d, const Vec4b& src, int am256) {
+  int a = ((src[3] + (src[3] >> 7)) * am256) >> 8; // 0..256(src[3]=255を256へ写像し、不透明×alpha_mul=1が厳密に256になる)
+  if(a <= 0) return;
+  if constexpr(B == Blend_Alpha) {
+    if(a >= 256) {
       d = src;
       return;
     }
-    for(int c = 0; c < 3; c++) d[c] = (unsigned char)(src[c] * a + d[c] * (1.0f - a));
-    d[3] = (unsigned char)(a * 255.0f + d[3] * (1.0f - a));
-    return;
   }
   for(int c = 0; c < 3; c++) {
-    uint8_t blended = blend_channel(blend, d[c], src[c]);
-    d[c]            = (unsigned char)(blended * a + d[c] * (1.0f - a));
+    int dc = d[c];
+    int bl = blend_channel<B>(dc, src[c]);
+    d[c]   = (unsigned char)(dc + (((bl - dc) * a) >> 8));
   }
-  d[3] = (unsigned char)(a * 255.0f + d[3] * (1.0f - a));
+  d[3] = (unsigned char)(d[3] + (((255 - d[3]) * a) >> 8));
+}
+
+inline int alpha_to_256(float alpha_mul) { return (int)(std::clamp(alpha_mul, 0.0f, 1.0f) * 256.0f + 0.5f); }
+
+/// blendの種類を1回だけ分岐してfn(integral_constant<BlendType>)へ渡す
+template <typename F> inline void with_blend(BlendType blend, F&& fn) {
+  switch(blend) {
+    case Blend_Add: fn(std::integral_constant<BlendType, Blend_Add>{}); break;
+    case Blend_Sub: fn(std::integral_constant<BlendType, Blend_Sub>{}); break;
+    case Blend_Mul: fn(std::integral_constant<BlendType, Blend_Mul>{}); break;
+    case Blend_Div: fn(std::integral_constant<BlendType, Blend_Div>{}); break;
+    case Blend_Screen: fn(std::integral_constant<BlendType, Blend_Screen>{}); break;
+    case Blend_Overlay: fn(std::integral_constant<BlendType, Blend_Overlay>{}); break;
+    case Blend_Darken: fn(std::integral_constant<BlendType, Blend_Darken>{}); break;
+    case Blend_Lighten: fn(std::integral_constant<BlendType, Blend_Lighten>{}); break;
+    case Blend_HardLight: fn(std::integral_constant<BlendType, Blend_HardLight>{}); break;
+    default: fn(std::integral_constant<BlendType, Blend_Alpha>{}); break;
+  }
 }
 } // namespace
 
@@ -113,15 +140,21 @@ bool Image::copyto(Image* dst, const Vec2d& pmin, float alpha_mul, BlendType ble
   // alphaを考慮しない(不透明かつalpha_mul=1、通常合成)なら行単位memcpyで済む
   bool opaque_copy = !this->has_alpha && alpha_mul >= 1.0f && blend == Blend_Alpha;
   int row_w        = x1 - x0;
-  for(int y = y0; y < y1; y++) {
-    Vec4b* dst_row       = &dst->data_[(py + y) * cw + (px + x0)];
-    const Vec4b* src_row = &data_[y * width + x0];
-    if(opaque_copy) {
-      std::memcpy(dst_row, src_row, row_w * sizeof(Vec4b));
-    } else {
-      for(int x = 0; x < row_w; x++) blend_pixel(dst_row[x], src_row[x], alpha_mul, blend);
+  const int am256  = alpha_to_256(alpha_mul);
+  // 行ごとに独立なのでOpenCVのスレッドプールで並列化する
+  cv::parallel_for_(cv::Range(y0, y1), [&](const cv::Range& r) {
+    for(int y = r.start; y < r.end; y++) {
+      Vec4b* dst_row       = &dst->data_[(py + y) * cw + (px + x0)];
+      const Vec4b* src_row = &data_[y * width + x0];
+      if(opaque_copy) {
+        std::memcpy(dst_row, src_row, row_w * sizeof(Vec4b));
+      } else {
+        with_blend(blend, [&](auto B) {
+          for(int x = 0; x < row_w; x++) blend_pixel_t<decltype(B)::value>(dst_row[x], src_row[x], am256);
+        });
+      }
     }
-  }
+  });
   return true;
 }
 
@@ -163,23 +196,30 @@ bool Image::transform_to(Image* dst, double cx, double cy, double sx, double sy,
   const int bbox_y0 = std::max(0, (int)std::floor(min_y));
   const int bbox_y1 = std::min((int)dst->height, (int)std::ceil(max_y));
 
-  for(int y = bbox_y0; y < bbox_y1; ++y) {
-    for(int x = bbox_x0; x < bbox_x1; ++x) {
-      // dst上のこのピクセルが、画像中心を軸とした逆回転・逆拡大でsrcのどこに対応するか
-      const double dx     = x - cx;
-      const double dy     = y - cy;
-      const int src_x_int = (int)std::floor(src_cx + (dx * cos_a + dy * sin_a) / sx);
-      if(src_x_int < 0 || src_x_int >= (int)this->width) continue;
-      const int src_y_int = (int)std::floor(src_cy + (-dx * sin_a + dy * cos_a) / sy);
-      if(src_y_int < 0 || src_y_int >= (int)this->height) continue;
-
-      blend_pixel(dst->data_[y * dst->width + x], data_[src_y_int * width + src_x_int], alpha_mul, blend);
+  // dst上の画素(x,y)に対応するsrc座標は、x方向に1進むと(cos/sx, -sin/sy)ずつ変わる線形式なので、行頭で求めて増分更新する
+  const double du = cos_a / sx, dv = -sin_a / sy;
+  const int src_w = (int)this->width, src_h = (int)this->height;
+  const int am256 = alpha_to_256(alpha_mul);
+  with_blend(blend, [&](auto B) {
+    for(int y = bbox_y0; y < bbox_y1; ++y) {
+      const double dx0 = bbox_x0 - cx, dy = y - cy;
+      double u       = src_cx + (dx0 * cos_a + dy * sin_a) / sx;
+      double v       = src_cy + (-dx0 * sin_a + dy * cos_a) / sy;
+      Vec4b* dst_row = &dst->data_[(size_t)y * dst->width];
+      for(int x = bbox_x0; x < bbox_x1; ++x, u += du, v += dv) {
+        const int src_x_int = (int)std::floor(u);
+        if(src_x_int < 0 || src_x_int >= src_w) continue;
+        const int src_y_int = (int)std::floor(v);
+        if(src_y_int < 0 || src_y_int >= src_h) continue;
+        blend_pixel_t<decltype(B)::value>(dst_row[x], data_[(size_t)src_y_int * width + src_x_int], am256);
+      }
     }
-  }
+  });
   return true;
 }
 
 bool Image::place(Image* dst, const Placement& pl) const {
+  MOVUTL_ZONE_SCOPED_N("Image::place");
   MU_ASSERT(dst);
   if(empty() || dst->empty()) return false;
   double sx = pl.scale_x, sy = pl.scale_y;
@@ -232,7 +272,9 @@ bool Image::drawquad(Image* dst, const Vec2 corners[4], float alpha_mul, BlendTy
   if(this->width <= 0 || this->height <= 0 || dst->width <= 0 || dst->height <= 0) return false;
 
   // corners順は左上,右上,左下,右下(AviUtl obj.drawpolyの引数順に合わせる)。端点はtransform_toと同様ピクセル座標の右端/下端(width-1,height-1)を使う
-  cv::Point2f src_pts[4] = {{0, 0}, {(float)width - 1, 0}, {0, (float)height - 1}, {(float)width - 1, (float)height - 1}};
+  // 幅/高さ1の画像(obj.load("figure",..,1)の1x1ベタ塗り等)は端点が同一になり変換行列が特異になるため、最低1pxの広がりを持たせる
+  const float sw = std::max(1.0f, (float)width - 1), sh = std::max(1.0f, (float)height - 1);
+  cv::Point2f src_pts[4] = {{0, 0}, {sw, 0}, {0, sh}, {sw, sh}};
   cv::Point2f dst_pts[4];
   float min_x = std::numeric_limits<float>::max(), max_x = std::numeric_limits<float>::lowest();
   float min_y = std::numeric_limits<float>::max(), max_y = std::numeric_limits<float>::lowest();
@@ -254,18 +296,21 @@ bool Image::drawquad(Image* dst, const Vec2 corners[4], float alpha_mul, BlendTy
 
   // dst上の各画素から逆射影変換でsrc座標を求め、範囲内ならblend_pixelで合成する(既存BlendTypeに対応するためcv::warpPerspectiveは使わない)
   const double* m = inv.ptr<double>();
-  for(int y = bbox_y0; y < bbox_y1; ++y) {
-    for(int x = bbox_x0; x < bbox_x1; ++x) {
-      double w = m[6] * x + m[7] * y + m[8];
-      if(std::abs(w) < 1e-9) continue;
-      double src_x = (m[0] * x + m[1] * y + m[2]) / w;
-      double src_y = (m[3] * x + m[4] * y + m[5]) / w;
-      int sx       = (int)std::floor(src_x);
-      int sy       = (int)std::floor(src_y);
-      if(sx < 0 || sx >= (int)this->width || sy < 0 || sy >= (int)this->height) continue;
-      blend_pixel(dst->data_[y * dst->width + x], data_[sy * width + sx], alpha_mul, blend);
+  const int am256 = alpha_to_256(alpha_mul);
+  with_blend(blend, [&](auto B) {
+    for(int y = bbox_y0; y < bbox_y1; ++y) {
+      for(int x = bbox_x0; x < bbox_x1; ++x) {
+        double w = m[6] * x + m[7] * y + m[8];
+        if(std::abs(w) < 1e-9) continue;
+        double src_x = (m[0] * x + m[1] * y + m[2]) / w;
+        double src_y = (m[3] * x + m[4] * y + m[5]) / w;
+        int sx       = (int)std::floor(src_x);
+        int sy       = (int)std::floor(src_y);
+        if(sx < 0 || sx >= (int)this->width || sy < 0 || sy >= (int)this->height) continue;
+        blend_pixel_t<decltype(B)::value>(dst->data_[y * dst->width + x], data_[sy * width + sx], am256);
+      }
     }
-  }
+  });
   return true;
 }
 

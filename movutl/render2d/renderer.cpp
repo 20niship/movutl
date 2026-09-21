@@ -1,8 +1,12 @@
+#include <movutl/asset/camera.hpp>
 #include <movutl/asset/entity.hpp>
 #include <movutl/asset/group.hpp>
+#include <movutl/asset/scene_change.hpp>
 #include <movutl/core/logger.hpp>
 #include <movutl/core/profiler.hpp>
 #include <movutl/render2d/renderer.hpp>
+#include <set>
+#include <string>
 
 namespace mu {
 
@@ -18,7 +22,7 @@ bool CPURenderer::render_frame(Composition* comp, int frame, Ref<Image>& out, bo
   }
 
   {
-    MOVUTL_ZONE_SCOPED_N("CPURenderer::resize");
+    MOVUTL_ZONE_SCOPED_N("CPURenderer::fill_bg");
     if(transparent_bg) {
       // ネストされたCompositionはAfter Effectsのプリコンポジション同様、常に透明背景で合成する
       out->fill_rgba(Vec4b(0, 0, 0, 0));
@@ -29,11 +33,32 @@ bool CPURenderer::render_frame(Composition* comp, int frame, Ref<Image>& out, bo
   }
 
   // comp->mtxはget_all_entities()内で短時間lockするのみ。Entity個々のレンダリング中はe->mtxだけをlockする
-  const auto layered = comp->get_layered_entities();
+  const auto layered = [&] {
+    MOVUTL_ZONE_SCOPED_N("CPURenderer::get_layered_entities");
+    return comp->get_layered_entities();
+  }();
+  // クリッピング対象の1つ上のレイヤー番号(そのアルファをmaskへ保持する)
+  std::set<int> mask_needed;
+  for(auto& [li, ce] : layered)
+    if(ce->clipping_up_ && ce->visible(frame)) mask_needed.insert(li - 1);
+  Image mask;
+  int mask_layer = -1000;
   for(auto& [layer_i, e] : layered) {
-    std::lock_guard<std::mutex> lock(e->mtx);
+    MOVUTL_ZONE_SCOPED_N("CPURenderer::entity");
+    {
+      const std::string zn = "layer" + std::to_string(layer_i) + ":" + std::string(e->name.c_str());
+      MOVUTL_ZONE_NAME(zn.c_str(), zn.size());
+    }
+    std::unique_lock<std::mutex> lock_try(e->mtx, std::defer_lock);
+    {
+      MOVUTL_ZONE_SCOPED_N("CPURenderer::entity_lock_wait"); // 他ワーカーがEntityを描画中だと待たされる
+      lock_try.lock();
+    }
     if(!e->visible(frame)) continue;
-    e->apply_animated_props(frame); // 中間点アニメーションをframe時点の値へ評価してメンバ変数に反映する
+    {
+      MOVUTL_ZONE_SCOPED_N("CPURenderer::apply_animated_props");
+      e->apply_animated_props(frame); // 中間点アニメーションをframe時点の値へ評価してメンバ変数に反映する
+    }
 
     // このEntityへ効くグループ制御を上のレイヤーから順に畳み込み、親変換として描画中のスレッドに与える(入れ子は外側から合成)
     GroupXform parent;
@@ -46,27 +71,91 @@ bool CPURenderer::render_frame(Composition* comp, int frame, Ref<Image>& out, bo
       parent     = parent.compose(ge->local_xform());
       has_parent = true;
     }
+    // 「カメラ制御」ONのEntityには、上のレイヤーで最も近いカメラの視点変換を最外側の親として掛ける
+    if(e->camera_ctrl_) {
+      const Camera3D* cam = nullptr;
+      for(auto& [cl, c] : layered) {
+        if(cl >= layer_i) break;
+        if(c->getType() != EntityType_Camera || !c->visible(frame)) continue;
+        auto* ce = static_cast<Camera3D*>(c.get());
+        if(ce->affects(cl, layer_i)) cam = ce;
+      }
+      if(cam) {
+        parent     = cam->view_xform().compose(parent);
+        has_parent = true;
+      }
+    }
     GroupXformScope parent_scope(has_parent ? &parent : nullptr);
 
-    if(e->clipping_up_) {
-      // ponytail: 単一共有バッファ逐次合成のため未描画の上レイヤーは参照不可。既に合成済みの下側アルファをマスクに使う近似実装(真の上レイヤークリッピングには2パスレンダリングが必要)
-      Image scratch(out->width, out->height);
-      scratch.fill_rgba(Vec4b(0, 0, 0, 0));
-      e->render(comp, &scratch, frame);
-      for(size_t i = 0; i < out->size(); i++) {
-        Vec4b s    = scratch[i];
-        Vec4b& d   = (*out)[i];
-        float mask = d[3] / 255.0f; // 既存(下)のアルファをマスクにする
-        float a    = (s[3] / 255.0f) * mask;
-        if(a <= 0.0f) continue;
-        for(int c = 0; c < 3; c++) d[c] = (unsigned char)(s[c] * a + d[c] * (1.0f - a));
-        d[3] = (unsigned char)(a * 255.0f + d[3] * (1.0f - a));
+    // このEntityへ効くシーンチェンジ(直下=1つ上のレイヤーに置かれたもの)。同フレームに複数あれば先勝ち
+    const SceneChangeEntt* sc = nullptr;
+    for(auto& [sl, s] : layered) {
+      if(sl >= layer_i) break;
+      if(s->getType() != EntityType_SceneChange || !s->visible(frame)) continue;
+      auto* se = static_cast<SceneChangeEntt*>(s.get());
+      if(se->affects(sl, layer_i)) {
+        sc = se;
+        break;
       }
-    } else {
-      e->render(comp, out.get(), frame);
+    }
+    if(sc && e->getType() != EntityType_SceneChange) {
+      // outgoing A = 同レイヤーでeより前に終わった直前のオブジェクト(終端フレームを保持して描く)。無ければ透明(=フェードイン等に縮退)
+      // ponytail: Aは終端フレームで静止(動画の再生継続は無し)。継続再生は素材フレームをfend_超えで引く実装が要る
+      MOVUTL_ZONE_SCOPED_N("CPURenderer::scene_change");
+      Entity* a = nullptr;
+      for(auto& [al, ae] : layered)
+        if(al == layer_i && ae.get() != e.get() && ae->fend_ < e->fstart_ && (!a || ae->fend_ > a->fend_)) a = ae.get();
+      Image sa(out->width, out->height), sb(out->width, out->height);
+      sa.fill_rgba(Vec4b(0, 0, 0, 0));
+      sb.fill_rgba(Vec4b(0, 0, 0, 0));
+      if(a) {
+        std::lock_guard<std::mutex> la(a->mtx);
+        a->apply_animated_props(a->fend_);
+        a->render(comp, &sa, a->fend_);
+      }
+      e->render(comp, &sb, frame);
+      const float p = sc->progress(frame);
+      const int W = out->width, H = out->height;
+      for(size_t i = 0; i < out->size(); i++) {
+        const float w   = SceneChangeWeight(sc->type_, p, ((int)(i % W) + 0.5f) / W, ((int)(i / W) + 0.5f) / H, sc->invert_, sc->blur_);
+        const Vec4b &ca = sa[i], &cb = sb[i];
+        const float aa = ca[3] / 255.0f * (1.0f - w), ab = cb[3] / 255.0f * w, at = aa + ab;
+        if(at <= 0.0f) continue;
+        Vec4b& d = (*out)[i];
+        for(int c = 0; c < 3; c++) d[c] = (unsigned char)((ca[c] * aa + cb[c] * ab) + d[c] * (1.0f - at));
+        d[3] = (unsigned char)(at * 255.0f + d[3] * (1.0f - at));
+      }
+    } else
+      // AviUtl「上のオブジェクトでクリッピング」: 1つ上(layer_i-1)のオブジェクトの形(アルファ)で切り抜く。上に可視オブジェクトが無ければ通常描画
+      if(e->clipping_up_ && mask_layer == layer_i - 1) {
+        MOVUTL_ZONE_SCOPED_N("CPURenderer::clipping_up");
+        Image scratch(out->width, out->height);
+        scratch.fill_rgba(Vec4b(0, 0, 0, 0));
+        e->render(comp, &scratch, frame);
+        for(size_t i = 0; i < out->size(); i++) {
+          Vec4b s  = scratch[i];
+          Vec4b& d = (*out)[i];
+          float a  = (s[3] / 255.0f) * (mask[i][3] / 255.0f);
+          if(a <= 0.0f) continue;
+          for(int c = 0; c < 3; c++) d[c] = (unsigned char)(s[c] * a + d[c] * (1.0f - a));
+          d[3] = (unsigned char)(a * 255.0f + d[3] * (1.0f - a));
+        }
+      } else {
+        MOVUTL_ZONE_SCOPED_N("CPURenderer::entity_render");
+        e->render(comp, out.get(), frame);
+      }
+    if(mask_needed.count(layer_i)) {
+      // 直後のレイヤーのクリッピング用に、このオブジェクト単体のアルファを保持する
+      mask.resize(Vec2d(out->width, out->height));
+      mask.fill_rgba(Vec4b(0, 0, 0, 0));
+      e->render(comp, &mask, frame);
+      mask_layer = layer_i;
     }
   }
-  out->dirty();
+  {
+    MOVUTL_ZONE_SCOPED_N("CPURenderer::dirty");
+    out->dirty();
+  }
   return true;
 }
 

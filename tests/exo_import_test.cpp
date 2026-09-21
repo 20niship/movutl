@@ -4,6 +4,7 @@
 #include <imgui.h>
 #include <movutl/app/app_impl.hpp>
 #include <movutl/asset/audio.hpp>
+#include <movutl/asset/camera.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/group.hpp>
 #include <movutl/asset/image.hpp>
@@ -135,8 +136,7 @@ TEST_CASE("exo: comprehensive.exo (動画/画像/音声/テキスト/図形を�
   Project::New();
   auto* comp = Composition::GetActiveComp();
   REQUIRE(comp != nullptr);
-  // 20オブジェクト中、カメラ制御(未対応)1個を除く19個
-  CHECK(import_exo_file((dir / "comprehensive.exo").string().c_str()) == 19);
+  CHECK(import_exo_file((dir / "comprehensive.exo").string().c_str()) == 20);
 
   SUBCASE("Compositionの範囲が全Entityのmin/maxになる") {
     CHECK(comp->fstart == 0); // 最小のstart=1(0始まり換算で0)
@@ -235,8 +235,10 @@ TEST_CASE("exo: comprehensive.exo (動画/画像/音声/テキスト/図形を�
     }
   }
 
-  SUBCASE("素材が見つからなくてもトラックは作られる/カメラ制御はスキップ") {
-    CHECK(layer_entts(comp, 15).empty()); // layer=16 カメラ制御
+  SUBCASE("素材が見つからなくてもトラックは作られる/カメラ制御はCamera3Dになる") {
+    auto cam = layer_entts(comp, 15); // layer=16 カメラ制御
+    REQUIRE(cam.size() == 1);
+    CHECK(dynamic_cast<Camera3D*>(cam[0].get()) != nullptr);
     auto l = layer_entts(comp, 16);
     REQUIRE(l.size() == 1);
     auto* m = dynamic_cast<Movie*>(l[0].get());
@@ -248,7 +250,7 @@ TEST_CASE("exo: comprehensive.exo (動画/画像/音声/テキスト/図形を�
     std::set<uint64_t> guids;
     for(auto& l : comp->layers)
       for(auto& e : l.entts) CHECK(guids.insert(e->guid_).second);
-    CHECK(guids.size() == 19);
+    CHECK(guids.size() == 20);
   }
 
   fs::remove_all(dir);
@@ -266,13 +268,13 @@ TEST_CASE("exo: 既存Entityと重ならない位置までレイヤーを下げ�
   t->fend_   = 500;
   comp->insert_entity(t, 0);
 
-  REQUIRE(import_exo_file(exo.c_str()) == 19);
+  REQUIRE(import_exo_file(exo.c_str()) == 20);
   CHECK(comp->layers[0].entts.size() == 1); // 既存layer0にはexoのものが入らない
   CHECK(comp->layers[0].entts[0].get() == t.get());
   CHECK(comp->layers[1].entts.size() == 2); // exoのlayer1(動画2つ)が1つ下がる
 
   // もう一度取り込んでも、どのレイヤーでもフレーム範囲が重ならない
-  REQUIRE(import_exo_file(exo.c_str()) == 19);
+  REQUIRE(import_exo_file(exo.c_str()) == 20);
   for(auto& l : comp->layers)
     for(size_t i = 0; i < l.entts.size(); i++)
       for(size_t j = i + 1; j < l.entts.size(); j++) CHECK((l.entts[i]->fend_ < l.entts[j]->fstart_ || l.entts[j]->fend_ < l.entts[i]->fstart_));

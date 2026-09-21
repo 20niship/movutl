@@ -43,7 +43,9 @@ local function add_entities_ui()
   add(icons.ICON_FA_VIDEO, "動画", "動画を追加", "movie", movutl.EntityType.EntityType_Movie)
   add(icons.ICON_FA_IMAGE, "画像", "画像を追加", "image", movutl.EntityType.EntityType_Image)
   add(icons.ICON_FA_MUSIC, "音声", "音声を追加", "sound", movutl.EntityType.EntityType_Audio)
-  add(icons.ICON_FA_KEYBOARD, "MIDI", "MIDIを追加", "midi", movutl.EntityType.EntityType_Midi)
+  if movutl.MidiEntt then -- `just build --daw`でビルドした時のみMIDIが有効
+    add(icons.ICON_FA_KEYBOARD, "MIDI", "MIDIを追加", "midi", movutl.EntityType.EntityType_Midi)
+  end
 
   group("テキスト・図形")
   add(icons.ICON_FA_FONT, "テキスト", "テキストを追加", "text", movutl.EntityType.EntityType_3DText)
@@ -67,14 +69,17 @@ local function add_entities_ui()
 
   group("制御")
   add(icons.ICON_FA_LAYER_GROUP, "グループ", "グループ制御を追加", "group", movutl.EntityType.EntityType_Group)
+  add(icons.ICON_FA_VIDEO, "カメラ", "カメラ制御を追加", "camera", movutl.EntityType.EntityType_Camera)
+  add(icons.ICON_FA_SHUFFLE, "シーンチェンジ", "シーンチェンジを追加", "scene change", movutl.EntityType.EntityType_SceneChange)
   add(icons.ICON_FA_TV, "バッファ", "フレームバッファを追加", "framebuffer", movutl.EntityType.EntityType_Framebuffer)
   if tile(icons.ICON_FA_MAGNIFYING_GLASS, "カスタム", "カスタムオブジェクトを追加(検索して選択)") then imgui.OpenPopup("##ADD_CUSTOM_OBJECT_POPUP", 0) end
   if imgui.BeginPopup("##ADD_CUSTOM_OBJECT_POPUP", 0) then
     local _, new_text = imgui.InputText("##custom_obj_filter", filter_text, 0)
     filter_text = new_text
-    for _, name in ipairs(movutl.list_custom_objects()) do
+    for i, name in ipairs(movutl.list_custom_objects()) do
       if filter_text == "" or string.find(name, filter_text, 1, true) then
-        if imgui.Selectable(name, false, 0, imgui.ImVec2(0, 0)) then
+        -- 同名オブジェクトでIDが衝突しないよう連番を付ける(PushIDはLuaから1引数で呼べない)
+        if imgui.Selectable(name .. "##" .. i, false, 0, imgui.ImVec2(0, 0)) then
           movutl.add_new_custom_object_track(name, 0, 100)
           confirmed = true
         end

@@ -96,6 +96,7 @@ movutl.Composition::Flag = {}
 ---@field EntityType_Camera number
 ---@field EntityType_Effect number
 ---@field EntityType_Midi number
+---@field EntityType_SceneChange number
 movutl.EntityType = {}
 
 ---@class ImageFormat
@@ -103,6 +104,14 @@ movutl.EntityType = {}
 ---@field ImageFormatRGBA number
 ---@field ImageFormatGRAYSCALE number
 movutl.ImageFormat = {}
+
+---@class SceneChangeType
+---@field SceneChangeType_Fade number
+---@field SceneChangeType_WipeLR number
+---@field SceneChangeType_WipeUD number
+---@field SceneChangeType_Circle number
+---@field SceneChangeType_Count number
+movutl.SceneChangeType = {}
 
 ---@class ShapeType
 ---@field ShapeType_Triangle number
@@ -139,7 +148,7 @@ movutl.TextDecoration = {}
 ---@field loop_ boolean
 ---@field path_ string
 movutl.AudioEntt = {}
-movutl.AudioEntt.offset_sec_ = 0.0
+movutl.AudioEntt.offset_sec_ = 0.0 f
 movutl.AudioEntt.speed = 100.0 f
 movutl.AudioEntt.volume_ = 100.0 f
 movutl.AudioEntt.loop_ = false
@@ -162,6 +171,30 @@ function movutl.AudioEntt:reload_asset( ) end
 
 ---@return WaveformData 
 function movutl.AudioEntt:waveform( ) end
+
+---@class Camera3D
+---@field target_ Vec3
+---@field fov_ number
+---@field target_layers_ number
+movutl.Camera3D = {}
+movutl.Camera3D.target_ = Vec3 ( 0 , 0 , 0 )
+movutl.Camera3D.fov_ = 45.0 f
+movutl.Camera3D.target_layers_ = 0
+
+---@param name string
+---@return Ref<Camera3D>
+function movutl.Camera3D:Create( name, ) end
+
+---@return EntityType
+function movutl.Camera3D:getType( ) end
+
+---@param camera_layer number
+---@param layer_i number
+---@return boolean
+function movutl.Camera3D:affects( camera_layer, layer_i, ) end
+
+---@return GroupXform
+function movutl.Camera3D:view_xform( ) end
 
 ---@class CompoAudioEntt
 ---@field start_frame number
@@ -573,6 +606,31 @@ function movutl.Project:SetActiveCompo( idx, ) end
 ---@return nil
 function movutl.Project:RemoveComposition( guid, ) end
 
+---@class SceneChangeEntt
+---@field type_ number
+---@field invert_ boolean
+---@field blur_ number
+movutl.SceneChangeEntt = {}
+movutl.SceneChangeEntt.type_ = SceneChangeType_Fade
+movutl.SceneChangeEntt.invert_ = false
+movutl.SceneChangeEntt.blur_ = 0.0 f
+
+---@param name string
+---@return Ref<SceneChangeEntt>
+function movutl.SceneChangeEntt:Create( name, ) end
+
+---@return EntityType
+function movutl.SceneChangeEntt:getType( ) end
+
+---@param frame number
+---@return number
+function movutl.SceneChangeEntt:progress( frame, ) end
+
+---@param scene_layer number
+---@param layer_i number
+---@return boolean
+function movutl.SceneChangeEntt:affects( scene_layer, layer_i, ) end
+
 ---@class ShapeEntt
 ---@field size_ Vec2
 ---@field color_ Vec4b
@@ -691,6 +749,27 @@ movutl.WorkspaceEntry = {}
 movutl.WorkspaceEntry.window_name = ""
 movutl.WorkspaceEntry.dir = ImGuiDir_None
 movutl.WorkspaceEntry.ratio = 0.5 f
+
+---@param name std::string 
+---@param type number
+---@param invert bool 
+---@return boolean
+function movutl.SceneChangeFromExoName( name, type, invert, )end
+
+---@param frame number
+---@param fstart number
+---@param fend number
+---@return number
+function movutl.SceneChangeProgress( frame, fstart, fend, )end
+
+---@param type number
+---@param p number
+---@param nx number
+---@param ny number
+---@param invert boolean
+---@param blur number
+---@return number
+function movutl.SceneChangeWeight( type, p, nx, ny, invert, blur, )end
 
 ---@param entt Ref<Entity> 
 ---@param filter_name string

@@ -1,6 +1,7 @@
 from pygen_types import MFunction, MEnum, MClass, MArgument
 from typing import List
 from utils import write_if_different
+from config import daw_only_classes
 
 
 TRANSFORM_ENTITY_CLASSES = {"Movie", "Image", "TextEntt", "ShapeEntt", "FramebufferEntt", "CompoRefEntt", "GroupEntt"}
@@ -44,9 +45,13 @@ class LuaIntfWriter:
             "#include <movutl/asset/project.hpp>\n"
             "#include <movutl/asset/movie.hpp>\n"
             "#include <movutl/asset/audio.hpp>\n"
+            "#ifdef MOVUTL_DAW\n"
             "#include <movutl/asset/midi.hpp>\n"
+            "#endif\n"
             "#include <movutl/asset/framebuffer.hpp>\n"
             "#include <movutl/asset/group.hpp>\n"
+            "#include <movutl/asset/camera.hpp>\n"
+            "#include <movutl/asset/scene_change.hpp>\n"
             "#include <movutl/asset/shape.hpp>\n"
             "#include <movutl/asset/compo_ref.hpp>\n"
             "#include <movutl/asset/compo_audio_ref.hpp>\n"
@@ -115,6 +120,9 @@ class LuaIntfWriter:
         self.autogen_text += "  .endModule()\n"
 
     def register_class(self, cls: MClass):
+        daw = cls.name in daw_only_classes
+        if daw:
+            self.autogen_text += "#ifdef MOVUTL_DAW\n"
         self.autogen_text += "  .beginClass<" + cls.name + '>("' + cls.name + '")\n'
 
         for f in cls.funcs:
@@ -135,4 +143,6 @@ class LuaIntfWriter:
             for p in self.transform_props:
                 self.autogen_text += f'    .addVariable("{p.name}", static_cast<{p.c_type} {cls.name}::*>(&Entity::{p.name})) // {p.c_type}\n'
         self.autogen_text += "  .endClass()\n"
+        if daw:
+            self.autogen_text += "#endif\n"
 

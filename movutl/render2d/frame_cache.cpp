@@ -13,6 +13,23 @@ bool FrameCache::get(int frame, Ref<Image>* out) const {
   return true;
 }
 
+bool FrameCache::get_nearest(int frame, Ref<Image>* out, int* out_frame) const {
+  std::lock_guard<std::mutex> lock(mtx_);
+  auto best = frames_.end();
+  for(auto it = frames_.begin(); it != frames_.end(); ++it) {
+    if(best == frames_.end()) {
+      best = it;
+      continue;
+    }
+    const int d = std::abs(it->first - frame), bd = std::abs(best->first - frame);
+    if(d < bd || (d == bd && it->first < best->first)) best = it;
+  }
+  if(best == frames_.end()) return false;
+  if(out) *out = best->second;
+  if(out_frame) *out_frame = best->first;
+  return true;
+}
+
 void FrameCache::insert(int frame, Ref<Image> img, int current_frame) {
   std::lock_guard<std::mutex> lock(mtx_);
   frames_[frame] = std::move(img);

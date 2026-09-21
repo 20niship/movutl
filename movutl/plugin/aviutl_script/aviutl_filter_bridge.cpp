@@ -6,9 +6,11 @@
 #include <movutl/app/app_impl.hpp>
 #include <movutl/asset/config.hpp>
 #include <movutl/core/logger.hpp>
+#include <movutl/core/text_encoding.hpp>
 #include <movutl/plugin/aviutl_script/aviutl_obj_binding.hpp>
 #include <movutl/plugin/aviutl_script/aviutl_script_parser.hpp>
 #include <movutl/plugin/plugin.hpp>
+#include <set>
 #include <sstream>
 #include <unordered_map>
 
@@ -32,7 +34,7 @@ struct AviUtlFilterState {
   }
 };
 
-// fn_procのfp引数(=vector内FilterPluginTable*)をキーに状態を引く。vector<FilterPluginTable>は値保持のためreallocでアドレスが変わりうる点に注意(register_default_filters側でreserve済み)。
+// fn_procのfp引数(=deque内FilterPluginTable*)をキーに状態を引く。filtersはdequeでアドレスが安定。
 std::unordered_map<const FilterPluginTable*, std::unique_ptr<AviUtlFilterState>>& state_registry() {
   static std::unordered_map<const FilterPluginTable*, std::unique_ptr<AviUtlFilterState>> m;
   return m;
@@ -137,22 +139,18 @@ bool register_aviutl_filter(AviUtlScriptDef def) {
   FilterPluginTable table = build_table(def);
   state->def              = std::move(def);
 
-  auto& filters = AppMain::Get()->filters;
-  filters.push_back(table);
-  FilterPluginTable* stored = &filters.back();
-  state_registry()[stored]  = std::move(state);
+  FilterPluginTable* stored = AppMain::Get()->add_filter(table);
+  state_registry()[stored]  = std::move(state); // 上書き時は旧状態もここで置き換わる
   return true;
 }
 
 void register_aviutl_scripts_from_file(const std::filesystem::path& path) {
-  std::ifstream ifs(path);
-  if(!ifs) {
+  std::string text;
+  if(!read_text_file_utf8(path, text)) {
     LOG_F(ERROR, "register_aviutl_scripts: ファイルを開けません: %s", path.string().c_str());
     return;
   }
-  std::ostringstream ss;
-  ss << ifs.rdbuf();
-  auto defs = parse_aviutl_script(ss.str());
+  auto defs = parse_aviutl_script(text);
   if(defs.empty()) return;
   std::string stem = path.stem().string();
   for(auto& def : defs) {
@@ -165,10 +163,13 @@ void register_aviutl_scripts_from_file(const std::filesystem::path& path) {
 
 void register_aviutl_scripts() {
   namespace fs = std::filesystem;
+  // lua_script_dirsはビルドフォルダ内のコピーとリポジトリ直下の両方を指しうるので、フォルダからの相対パスが同じファイルは最初に見つかった方だけ登録する(二重登録の防止)
+  std::set<fs::path> seen;
   for(const auto& dir : Config::Get()->lua_script_dirs) {
     if(!fs::exists(dir) || !fs::is_directory(dir)) continue;
     for(const auto& entry : fs::recursive_directory_iterator(dir)) {
       if(!entry.is_regular_file() || entry.path().extension() != ".anm") continue;
+      if(!seen.insert(fs::relative(entry.path(), dir)).second) continue;
       LOG_F(1, "Loading AviUtl script: %s", entry.path().string().c_str());
       register_aviutl_scripts_from_file(entry.path());
     }

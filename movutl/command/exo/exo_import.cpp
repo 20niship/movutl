@@ -6,11 +6,13 @@
 #include <fstream>
 #include <map>
 #include <movutl/asset/audio.hpp>
+#include <movutl/asset/camera.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/group.hpp>
 #include <movutl/asset/image.hpp>
 #include <movutl/asset/movie.hpp>
 #include <movutl/asset/project.hpp>
+#include <movutl/asset/scene_change.hpp>
 #include <movutl/asset/shape.hpp>
 #include <movutl/asset/text.hpp>
 #include <movutl/command/exo/exo_effects.hpp>
@@ -20,54 +22,13 @@
 #include <movutl/core/filesystem.hpp>
 #include <movutl/core/logger.hpp>
 #include <movutl/core/status_log.hpp>
+#include <movutl/core/text_encoding.hpp>
 #include <movutl/gui/timeline.hpp>
 #include <sstream>
 #include <vector>
 
-#ifdef _WIN32
-#include <windows.h>
-#else
-#include <iconv.h>
-#endif
-
 namespace mu {
 namespace {
-
-std::string cp932_to_utf8(const std::string& src) {
-  if(src.empty()) return {};
-#ifdef _WIN32
-  int wn = MultiByteToWideChar(932, 0, src.data(), (int)src.size(), nullptr, 0);
-  if(wn <= 0) return src;
-  std::wstring w(wn, L'\0');
-  MultiByteToWideChar(932, 0, src.data(), (int)src.size(), w.data(), wn);
-  int un = WideCharToMultiByte(CP_UTF8, 0, w.data(), wn, nullptr, 0, nullptr, nullptr);
-  std::string out(un, '\0');
-  WideCharToMultiByte(CP_UTF8, 0, w.data(), wn, out.data(), un, nullptr, nullptr);
-  return out;
-#else
-  iconv_t cd = iconv_open("UTF-8", "CP932");
-  if(cd == (iconv_t)-1) return src;
-  std::string out(src.size() * 4, '\0');
-  char* in       = const_cast<char*>(src.data());
-  size_t in_left = src.size();
-  char* op       = out.data();
-  size_t o_left  = out.size();
-  // 不正バイトは読み飛ばして変換を続ける
-  while(in_left > 0) {
-    if(iconv(cd, &in, &in_left, &op, &o_left) == (size_t)-1) {
-      if(errno == EILSEQ || errno == EINVAL) {
-        ++in;
-        --in_left;
-        continue;
-      }
-      break;
-    }
-  }
-  iconv_close(cd);
-  out.resize(op - out.data());
-  return out;
-#endif
-}
 
 static void append_utf8(std::string& out, uint32_t cp) {
   if(cp < 0x80) {
@@ -210,8 +171,8 @@ std::string resolve_media_path(const std::string& raw, const std::filesystem::pa
 std::string stem_of(const std::string& p) { return std::filesystem::path(p).stem().string(); }
 
 void set_range(const Ref<Entity>& e, int start, int end) {
-  e->fstart_ = start - 1; // exoは1始まり
-  e->fend_   = end - 1;   // 終了フレームも含む
+  e->fstart_ = start - 1;                // exoは1始まり
+  e->fend_   = std::max(end - 1, start); // 終了フレームも含む。start-1==fend_を避ける
 }
 
 // 追加したEntity数を返す。ファイルが開けない場合は-1
@@ -268,6 +229,7 @@ int import_exo_file(const char* path) {
     auto play          = find_fx("標準再生");
 
     Ref<Entity> ent;
+    bool sc_invert = false;
     if(kind == "動画ファイル") {
       auto file = resolve_media_path(get(src, "file"), base_dir);
       auto mov  = Movie::Create(stem_of(file).c_str(), file.c_str());
@@ -327,6 +289,21 @@ int import_exo_file(const char* path) {
       g->alpha_         = parse_alpha(src);
       g->target_layers_ = geti(src, "対象レイヤー数");
       ent               = g;
+    } else if(kind == "カメラ制御") {
+      auto c            = Camera3D::Create("カメラ制御");
+      c->pos_           = Vec3(getf(src, "X"), getf(src, "Y"), getf(src, "Z", kCameraDefaultZ));
+      c->target_        = Vec3(getf(src, "目標X"), getf(src, "目標Y"), getf(src, "目標Z"));
+      c->rotation_      = getf(src, "傾き");
+      c->fov_           = getf(src, "視野角", c->fov_);
+      c->target_layers_ = geti(src, "対象レイヤー数");
+      ent               = c;
+    } else if(int sc_type = 0; SceneChangeFromExoName(kind, sc_type, sc_invert)) {
+      auto s   = SceneChangeEntt::Create(kind.c_str());
+      s->type_ = sc_type;
+      // ponytail: exoの「反転」は名前由来の方向と排他にせずXORで反映。「調整」は0〜100をぼかし幅0〜1へ対応させただけの近似(実機未検証)
+      s->invert_ = sc_invert != (geti(src, "反転") != 0);
+      s->blur_   = std::clamp(getf(src, "調整") / 100.f, 0.f, 1.f);
+      ent        = s;
     } else {
       LOG_F(WARNING, "import_exo_file: [%d] unsupported object '%s', skipped", n, kind.c_str());
       exo_import_report().add("未対応のオブジェクト「" + kind + "」をスキップしました");

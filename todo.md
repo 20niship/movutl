@@ -26,7 +26,7 @@ exoの`標準描画`/`拡張描画`にあるが、movutlのEntityに無い/使�
 | 拡大率の単位 | % | Movie/Shape=%、Image/Text=0-1と**不統一** | 単位・回転(deg/rad)・alpha(0-255/0-1)をEntity間で統一(または変換層を明記) |
 | Z座標 | 有り | Vec3のposはあるが2D合成で未使用の可能性 | 要確認 |
 | 合成モード | blend=0..N | `Entity::blend_`あり(Blend_Alpha..HardLight) | exoの`blend`番号→BlendType対応表が未実装(第4章) |
-| クリッピング/カメラ制御対象 | `camera=0`等 | `clipping_up_`, `camera_ctrl_`あり | exoインポートで未反映 |
+| クリッピング/カメラ制御対象 | `camera=0`等 | `clipping_up_`(1つ上のオブジェクトのalphaで切り抜き)、`camera_ctrl_`(Camera3Dの視点変換を2D近似で適用)、シーンチェンジ(SceneChangeEntt。フェード/ワイプ/円形) | exoの`カメラ制御`/`シーンチェンジ`オブジェクトは取込済み。3Dカメラ(目標/視野角/深度ぼけ)・動画のシーンチェンジ中再生継続は未対応 |
 
 ## 2. テキストオブジェクト(exo `テキスト`)
 

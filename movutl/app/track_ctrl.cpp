@@ -2,6 +2,7 @@
 #include <filesystem>
 #include <movutl/app/app.hpp>
 #include <movutl/asset/audio.hpp>
+#include <movutl/asset/camera.hpp>
 #include <movutl/asset/compo_audio_ref.hpp>
 #include <movutl/asset/compo_ref.hpp>
 #include <movutl/asset/composition.hpp>
@@ -11,7 +12,10 @@
 #include <movutl/asset/framebuffer.hpp>
 #include <movutl/asset/group.hpp>
 #include <movutl/asset/image.hpp>
+#include <movutl/asset/scene_change.hpp>
+#ifdef MOVUTL_DAW
 #include <movutl/asset/midi.hpp>
+#endif
 #include <movutl/asset/movie.hpp>
 #include <movutl/asset/project.hpp>
 #include <movutl/asset/shape.hpp>
@@ -47,7 +51,7 @@ Ref<ShapeEntt> add_new_shape_track(const char* name, int start, int end, ShapeTy
   Composition* main_comp = Composition::GetActiveComp();
   MU_ASSERT(main_comp);
   shp->fstart_ = start;
-  shp->fend_   = end;
+  shp->fend_   = std::max(end, start + 1);
   main_comp->insert_entity(shp);
   return shp;
 }
@@ -63,7 +67,7 @@ Ref<Image> add_new_image_track(const char* name, const char* path, int start, in
   Composition* main_comp = Composition::GetActiveComp();
   MU_ASSERT(main_comp);
   img->fstart_ = start;
-  img->fend_   = end;
+  img->fend_   = std::max(end, start + 1);
   main_comp->insert_entity(img);
   return img;
 }
@@ -76,7 +80,7 @@ Ref<TextEntt> add_new_text_track(const char* name, int start, int end) {
   Composition* main_comp = Composition::GetActiveComp();
   MU_ASSERT(main_comp);
   txt->fstart_ = start;
-  txt->fend_   = end;
+  txt->fend_   = std::max(end, start + 1);
   main_comp->insert_entity(txt);
   return txt;
 }
@@ -87,7 +91,7 @@ Ref<Entity> add_new_custom_object_track(const std::string& script_name, int star
   Composition* main_comp = Composition::GetActiveComp();
   MU_ASSERT(main_comp);
   e->fstart_ = start;
-  e->fend_   = end;
+  e->fend_   = std::max(end, start + 1);
   main_comp->insert_entity(e);
   return e;
 }
@@ -153,7 +157,7 @@ bool add_new_track(const char* name, EntityType type, int start, int end) {
       Composition* main_comp = Composition::GetActiveComp();
       MU_ASSERT(main_comp);
       img->fstart_ = start;
-      img->fend_   = end;
+      img->fend_   = std::max(end, start + 1);
       main_comp->insert_entity(img);
       break;
     }
@@ -162,7 +166,7 @@ bool add_new_track(const char* name, EntityType type, int start, int end) {
       Composition* main_comp = Composition::GetActiveComp();
       MU_ASSERT(main_comp);
       mov->fstart_ = start;
-      mov->fend_   = end;
+      mov->fend_   = std::max(end, start + 1);
       main_comp->insert_entity(mov);
       break;
     }
@@ -171,7 +175,7 @@ bool add_new_track(const char* name, EntityType type, int start, int end) {
       Composition* main_comp = Composition::GetActiveComp();
       MU_ASSERT(main_comp);
       txt->fstart_ = start;
-      txt->fend_   = end;
+      txt->fend_   = std::max(end, start + 1);
       main_comp->insert_entity(txt);
       break;
     }
@@ -180,7 +184,7 @@ bool add_new_track(const char* name, EntityType type, int start, int end) {
       Composition* main_comp = Composition::GetActiveComp();
       MU_ASSERT(main_comp);
       shp->fstart_ = start;
-      shp->fend_   = end;
+      shp->fend_   = std::max(end, start + 1);
       main_comp->insert_entity(shp);
       break;
     }
@@ -189,25 +193,27 @@ bool add_new_track(const char* name, EntityType type, int start, int end) {
       Composition* main_comp = Composition::GetActiveComp();
       MU_ASSERT(main_comp);
       a->fstart_ = start;
-      a->fend_   = end;
+      a->fend_   = std::max(end, start + 1);
       main_comp->insert_entity(a);
       break;
     }
+#ifdef MOVUTL_DAW
     case EntityType_Midi: {
       auto m                 = MidiEntt::Create(name);
       Composition* main_comp = Composition::GetActiveComp();
       MU_ASSERT(main_comp);
       m->fstart_ = start;
-      m->fend_   = end;
+      m->fend_   = std::max(end, start + 1);
       main_comp->insert_entity(m);
       break;
     }
+#endif
     case EntityType_Framebuffer: {
       auto fb                = FramebufferEntt::Create(name);
       Composition* main_comp = Composition::GetActiveComp();
       MU_ASSERT(main_comp);
       fb->fstart_ = start;
-      fb->fend_   = end;
+      fb->fend_   = std::max(end, start + 1);
       main_comp->insert_entity(fb);
       break;
     }
@@ -216,8 +222,26 @@ bool add_new_track(const char* name, EntityType type, int start, int end) {
       Composition* main_comp = Composition::GetActiveComp();
       MU_ASSERT(main_comp);
       g->fstart_ = start;
-      g->fend_   = end;
+      g->fend_   = std::max(end, start + 1);
       main_comp->insert_entity(g);
+      break;
+    }
+    case EntityType_Camera: {
+      auto c                 = Camera3D::Create(name);
+      Composition* main_comp = Composition::GetActiveComp();
+      MU_ASSERT(main_comp);
+      c->fstart_ = start;
+      c->fend_   = std::max(end, start + 1);
+      main_comp->insert_entity(c);
+      break;
+    }
+    case EntityType_SceneChange: {
+      auto s                 = SceneChangeEntt::Create(name);
+      Composition* main_comp = Composition::GetActiveComp();
+      MU_ASSERT(main_comp);
+      s->fstart_ = start;
+      s->fend_   = std::max(end, start + 1);
+      main_comp->insert_entity(s);
       break;
     }
     case EntityType_Scene: {
@@ -226,7 +250,7 @@ bool add_new_track(const char* name, EntityType type, int start, int end) {
       Composition* main_comp = Composition::GetActiveComp();
       MU_ASSERT(main_comp);
       e->fstart_ = start;
-      e->fend_   = end;
+      e->fend_   = std::max(end, start + 1);
       main_comp->insert_entity(e);
       break;
     }
@@ -236,7 +260,7 @@ bool add_new_track(const char* name, EntityType type, int start, int end) {
       Composition* main_comp = Composition::GetActiveComp();
       MU_ASSERT(main_comp);
       e->fstart_ = start;
-      e->fend_   = end;
+      e->fend_   = std::max(end, start + 1);
       main_comp->insert_entity(e);
       break;
     }

@@ -4,6 +4,7 @@
 #include <movutl/app/app_impl.hpp>
 #include <movutl/asset/entity.hpp>
 #include <movutl/asset/project.hpp>
+#include <movutl/core/logger.hpp>
 #include <movutl/core/profiler.hpp>
 #include <movutl/plugin/filter.hpp>
 #include <movutl/plugin/plugin.hpp>
@@ -18,8 +19,11 @@
 #include <movutl/asset/framebuffer.hpp>
 #include <movutl/asset/group.hpp>
 #include <movutl/asset/image.hpp>
+#ifdef MOVUTL_DAW
 #include <movutl/asset/midi.hpp>
+#endif
 #include <movutl/asset/movie.hpp>
+#include <movutl/asset/scene_change.hpp>
 #include <movutl/asset/shape.hpp>
 #include <movutl/asset/text.hpp>
 
@@ -37,11 +41,14 @@ Ref<Entity> Entity::CreateEntity(const char* name, EntityType type) {
     case EntityType_Group: e = cutil::make_ref<GroupEntt>(); break;
     case EntityType_Polygon: e = cutil::make_ref<ShapeEntt>(); break;
     case EntityType_Camera: e = cutil::make_ref<Camera3D>(); break;
+    case EntityType_SceneChange: e = cutil::make_ref<SceneChangeEntt>(); break;
     // 1個のフラグで複数のLuaスクリプトを表すため、実体はsetProps()内でscript_name経由でdef_を再解決する(ここではdef_未設定のまま生成するだけでよい)
     case EntityType_Custom: e = cutil::make_ref<CustomObjectEntt>(); break;
     case EntityType_Scene: e = cutil::make_ref<CompoRefEntt>(); break;
     case EntityType_SceneAudio: e = cutil::make_ref<CompoAudioEntt>(); break;
+#ifdef MOVUTL_DAW
     case EntityType_Midi: e = cutil::make_ref<MidiEntt>(); break;
+#endif
     default: break;
   }
   if(!e) {
@@ -68,6 +75,7 @@ cutil::Prop Entity::getSaveProps() const {
   p.set<int32_t>("guid", (int32_t)guid_);
   p.set_child("props", getProps());
   p.set_child("trk", getTrackProps());
+  p.set<int32_t>("blend", (int32_t)blend_); // BlendTypeはpygen非対応(getTrackProps対象外)のため個別に保存する
   p.set_child("xform", getTransformProps());
   if(getPropsInfo() || has_transform()) {
     ensure_anim_props();
@@ -97,6 +105,7 @@ Ref<Entity> Entity::fromSaveProps(const cutil::Prop& p) {
   e->guid_ = (uint64_t)cutil::get_or<int32_t>(p, "guid", (int32_t)e->guid_);
   if(p.contains("props")) e->setProps(p.get_child("props"));
   if(p.contains("trk")) e->setTrackProps(p.get_child("trk"));
+  e->blend_ = (BlendType)cutil::get_or<int32_t>(p, "blend", (int32_t)Blend_Alpha);
   if(p.contains("xform")) e->setTransformProps(p.get_child("xform"));
   if(e->getPropsInfo() || e->has_transform()) {
     e->ensure_anim_props(); // setProps()適用後の値を各プロパティの初期キーフレームにする
@@ -128,7 +137,10 @@ Ref<Entity> Entity::fromSaveProps(const cutil::Prop& p) {
     }
   }
 
-  e->reload_asset(); // pathはsetProps()でコピーされるだけなので、ここで独立した読み込みプラグインのインスタンスを持たせる
+  const int fstart = e->fstart_, fend = e->fend_;
+  e->reload_asset();   // pathはsetProps()でコピーされるだけなので、ここで独立した読み込みプラグインのインスタンスを持たせる
+  e->fstart_ = fstart; // load_file()が尺(fend_)を素材長で上書きするため、保存されたトラック範囲へ戻す
+  e->fend_   = fend;
   return e;
 }
 
@@ -180,6 +192,7 @@ GroupXform Entity::world_xform() const {
 }
 
 bool Entity::composite(const Image& src, Image* target, const Vec2& origin_offset) const {
+  MOVUTL_ZONE_SCOPED_N("Entity::composite");
   MU_ASSERT(target);
   Placement pl;
   const GroupXform w = world_xform(); // 親グループ変換込みの実効変換
@@ -210,6 +223,16 @@ void Entity::apply_animated_props(int frame) {
   const auto p = anim_props_.get(rel_frame(frame));
   if(getPropsInfo()) setProps(p);
   if(has_transform()) setTransformProps(p);
+}
+
+void Entity::store_xform_to_anim(int frame) {
+  if(!has_transform()) return;
+  ensure_anim_props();
+  const uint32_t rf = rel_frame(frame);
+  anim_props_.set_value<Vec3>(anim_props_.index_of("pos_"), rf, pos_);
+  anim_props_.set_value<Vec3>(anim_props_.index_of("anchor_"), rf, anchor_);
+  anim_props_.set_value<float>(anim_props_.index_of("scale_"), rf, scale_);
+  anim_props_.set_value<float>(anim_props_.index_of("rotation_"), rf, rotation_);
 }
 
 void Entity::on_len_change_done(int old_start) {

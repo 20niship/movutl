@@ -10,6 +10,23 @@ namespace mu {
 
 void (*Project::quiesce_hook_)() = nullptr;
 
+namespace {
+// prop_info_of<T>()は初回呼び出し時にレジストリへ自動登録される(遅延)。JSONは型名で引き直すため、未登録の型のフィールドは黙って読み飛ばされ、
+// 起動直後にLoadするとstd::string(動画のパス等)が復元されない。読み込み前に保存に現れる型を全て登録しておく
+void register_saved_prop_types() {
+  (void)cutil::prop_info_of<bool>();
+  (void)cutil::prop_info_of<int32_t>();
+  (void)cutil::prop_info_of<uint32_t>();
+  (void)cutil::prop_info_of<uint8_t>();
+  (void)cutil::prop_info_of<float>();
+  (void)cutil::prop_info_of<std::string>();
+  (void)cutil::prop_info_of<Vec2>();
+  (void)cutil::prop_info_of<Vec3>();
+  (void)cutil::prop_info_of<Vec4>();
+  (void)cutil::prop_info_of<Vec4b>();
+}
+} // namespace
+
 void Project::SetWorkerQuiesceHook(void (*fn)()) { quiesce_hook_ = fn; }
 
 void Project::New(int width, int height, int fps) {
@@ -102,6 +119,7 @@ void Project::Load(const char* path) {
   pj->compos_.clear();
   pj->entities.clear();
 
+  register_saved_prop_types();
   std::ifstream ifs(path);
   std::stringstream ss;
   ss << ifs.rdbuf();

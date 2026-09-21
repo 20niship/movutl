@@ -1,3 +1,4 @@
+#include <movutl/asset/config.hpp>
 #include <movutl/core/logger.hpp>
 #include <movutl/plugin/aviutl_script/aviutl_script_parser.hpp>
 #include <regex>
@@ -30,7 +31,21 @@ float parse_float_or(const std::string& s, float def) {
 }
 } // namespace
 
+// AviUtl(Lua 5.1)は可変長引数関数に暗黙の`arg`テーブル(arg[1],arg.n)を作るが、LuaJITには無い。
+// スクリプトが`arg`を使っている場合のみ、`function(...)`の直後に`local arg={n=select('#',...),...}`を補って互換にする
+std::string add_vararg_compat(const std::string& body) {
+  static const std::regex uses_arg(R"(\barg\b)");
+  if(!std::regex_search(body, uses_arg)) return body;
+  static const std::regex vararg_fn(R"(function\s*[\w.:]*\s*\(([^)]*\.\.\.)\))");
+  return std::regex_replace(body, vararg_fn, "$& local arg={n=select('#',...),...} ");
+}
+
 std::vector<AviUtlScriptDef> parse_aviutl_script(const std::string& text) {
+  static const std::regex require_re(R"(\brequire\s*[\("'\[])");
+  if(Config::Get()->ignore_scripts_with_require && std::regex_search(text, require_re)) {
+    LOG_F(1, "parse_aviutl_script: require()を含むためスキップ");
+    return {};
+  }
   static const std::regex track_re(R"(^--track(\d):(.*)$)");
   static const std::regex check_re(R"(^--check(\d):(.*)$)");
   static const std::regex at_re(R"(^@(.*)$)");
@@ -51,7 +66,7 @@ std::vector<AviUtlScriptDef> parse_aviutl_script(const std::string& text) {
     def.dialog_code = pending_dialog_code;
     std::ostringstream body;
     for(auto& l : body_lines) body << l << "\n";
-    def.lua_body = body.str();
+    def.lua_body = add_vararg_compat(body.str());
     result.push_back(std::move(def));
     pending_tracks.clear();
     pending_checks.clear();
@@ -107,6 +122,13 @@ std::vector<AviUtlScriptDef> parse_aviutl_script(const std::string& text) {
         std::string code = trim(item.substr(comma + 1));
         if(!code.empty()) pending_dialog_code += code + "\n";
       }
+      continue;
+    }
+
+    if(line.rfind("--param:", 0) == 0) {
+      // AviUtlは`--param:`以降をLuaコード(`bb=5;fh=0.1`等)としてスクリプトの前に実行する。--dialog:の変数初期化と同じくlua_bodyの前に結合する
+      std::string code = trim(line.substr(8));
+      if(!code.empty()) pending_dialog_code += code + "\n";
       continue;
     }
 

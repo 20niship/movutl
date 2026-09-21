@@ -6,24 +6,28 @@
 #include <lua.hpp>
 #include <movutl/app/app.hpp>
 #include <movutl/asset/audio.hpp>
+#include <movutl/asset/image.hpp>
+#include <movutl/asset/movie.hpp>
+#include <movutl/asset/project.hpp>
+#include <movutl/asset/text.hpp>
+#include <movutl/plugin/filter.hpp>
+#include <movutl/plugin/input.hpp>
+#include <movutl/plugin/plugin.hpp>
+#ifdef MOVUTL_DAW
+#include <movutl/asset/midi.hpp>
+#endif
+#include <movutl/asset/camera.hpp>
 #include <movutl/asset/compo_audio_ref.hpp>
 #include <movutl/asset/compo_ref.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/entity.hpp>
 #include <movutl/asset/framebuffer.hpp>
 #include <movutl/asset/group.hpp>
-#include <movutl/asset/image.hpp>
-#include <movutl/asset/midi.hpp>
-#include <movutl/asset/movie.hpp>
-#include <movutl/asset/project.hpp>
+#include <movutl/asset/scene_change.hpp>
 #include <movutl/asset/shape.hpp>
-#include <movutl/asset/text.hpp>
 #include <movutl/binding/imgui_binding.hpp>
 #include <movutl/core/anim.hpp>
 #include <movutl/gui/gui.hpp>
-#include <movutl/plugin/filter.hpp>
-#include <movutl/plugin/input.hpp>
-#include <movutl/plugin/plugin.hpp>
 extern "C" {
 #include <lauxlib.h>
 #include <lua.h>

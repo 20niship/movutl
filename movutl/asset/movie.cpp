@@ -39,14 +39,24 @@ bool Movie::render(Composition* cmp, Image* target, int frame) {
   tlocal     = std::clamp(tlocal, 0, (int)info.nframes - 1);
 
   if(!img_) img_ = cutil::make_ref<Image>();
-  img_->resize(info.width, info.height);
+  {
+    MOVUTL_ZONE_SCOPED_N("Movie::resize");
+    img_->resize(info.width, info.height);
+  }
+  img_->has_alpha = false; // 動画フレームは常に不透明とする
 
   /// フレーム指定でプラグインから直接読み込む (aviutl2 方針)
   MU_ASSERT(in_plg_->fn_read_video);
-  if(in_plg_->fn_read_video(in_handle_, tlocal, img_->data()) <= 0) return false;
+  {
+    MOVUTL_ZONE_SCOPED_N("Movie::read_video");
+    if(in_plg_->fn_read_video(in_handle_, tlocal, img_->data()) <= 0) return false;
+  }
 
   render_filters(cmp, img_.get(), frame);
-  composite(*img_, target);
+  {
+    MOVUTL_ZONE_SCOPED_N("Movie::composite");
+    composite(*img_, target);
+  }
 
   return true;
 }

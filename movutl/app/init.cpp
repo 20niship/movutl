@@ -5,7 +5,9 @@
 #include <movutl/binding/binding.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/plugin/plugin.hpp>
+#ifdef MOVUTL_DAW
 #include <movutl/plugin/vst/vst_host.hpp>
+#endif
 
 namespace mu {
 
@@ -27,8 +29,10 @@ void init() {
   detail::init_external_plugins();
   detail::register_aviutl_scripts();
   detail::register_custom_objects();
+#ifdef MOVUTL_DAW
   // バックグラウンドスレッドでVST3をスキャンする(起動をブロックしない)。ponytail: スキャン完了はGUIスレッドと非同期のため、完了直後にfilters配列へpush_backする瞬間だけ他スレッドの走査と競合しうる(既存のfilters配列自体に元々ロックが無く許容範囲)
   vst_host::scan_and_load([] { detail::register_vst_filters(); });
+#endif
   LOG_F(1, "Loading plugins...");
   detail::activate_all_plugins();
   Config::Load();

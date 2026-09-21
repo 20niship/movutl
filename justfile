@@ -2,9 +2,33 @@ default:
     @just --list
 
 # cmake configure(初回のみ) + ビルド。CMakeLists.txt変更時の再configureはcmakeのビルドルールが自動で行う
-build build_dir="build":
-    [ -f {{build_dir}}/CMakeCache.txt ] || (git submodule update --init --recursive && cmake -S . -B {{build_dir}})
-    cmake --build {{build_dir}} -j${BUILD_JOBS:-$(nproc 2>/dev/null || sysctl -n hw.ncpu)}
+# --daw: MIDI/VST3(uapmd, vst3sdkのfetchとビルド)も含める。--no-daw: 外す。どちらも無ければ前回のconfigure設定を維持する(初回はOFF)
+# 例: just build --daw
+build *flags:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    build_dir=build
+    daw=""
+    for f in {{flags}}; do
+      case "$f" in
+        --daw) daw=ON ;;
+        --no-daw) daw=OFF ;;
+        *) echo "unknown flag: $f (--daw / --no-daw)" >&2; exit 1 ;;
+      esac
+    done
+    if [ ! -f $build_dir/CMakeCache.txt ]; then
+      # uapmdサブモジュールはDAW機能の時だけ取得する
+      if [ "${daw:-OFF}" = ON ]; then
+        git submodule update --init --recursive
+      else
+        git submodule status | awk '{print $2}' | grep -v '^ext/uapmd$' | xargs git submodule update --init --recursive --
+      fi
+      cmake -S . -B $build_dir -DMOVUTL_DAW=${daw:-OFF}
+    elif [ -n "$daw" ] && ! grep -q "^MOVUTL_DAW:BOOL=$daw$" $build_dir/CMakeCache.txt; then
+      [ "$daw" = ON ] && git submodule update --init --recursive -- ext/uapmd
+      cmake -S . -B $build_dir -DMOVUTL_DAW=$daw
+    fi
+    cmake --build $build_dir -j${BUILD_JOBS:-$(nproc 2>/dev/null || sysctl -n hw.ncpu)}
 
 # ビルドしてmovutl_mainを実行する(例: just run ./examples/foobar.lua)
 # movutl_mainは../assets等相対パスでリソースを解決するためbuild/から実行する必要がある

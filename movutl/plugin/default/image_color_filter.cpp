@@ -1,6 +1,7 @@
 #include <cutil/color.hpp>
 #include <movutl/core/profiler.hpp>
 #include <movutl/plugin/default/image_color_filter.hpp>
+#include <opencv2/opencv.hpp>
 
 #define GUID(x) (0x0000000000000000 | x)
 
@@ -44,17 +45,20 @@ bool fn_proc(void* fp, FilterInData* fpip, const cutil::Prop& p) {
     return true;
   }
 
-#pragma omp parallel for schedule(static)
-  for(long i = 0; i < (long)n; i++) {
-    cutil::Vector3b rgb{px[i][0], px[i][1], px[i][2]};
-    auto hsv = cutil::RGB2HSV<double>(rgb);
-    double h = std::fmod(hsv[0] + hue + 360.0, 360.0);
-    double s = std::clamp(hsv[1] * saturation / 100.0, 0.0, 100.0);
-    auto out = cutil::HSVtoRGB(cutil::_Vec<double, 3>{h, s, hsv[2]});
-    px[i][0] = out[0];
-    px[i][1] = out[1];
-    px[i][2] = out[2];
+  // 色相/彩度はOpenCVのSIMD版HSV変換(H:0-255,S:0-255)+3ch LUTで処理する。画素毎のdouble HSV変換はフルHD級レイヤーで支配的なコストだった
+  const int w = (int)fpip->img->width, h = (int)fpip->img->height;
+  cv::Mat rgba(h, w, CV_8UC4, px), rgb, hsv;
+  cv::cvtColor(rgba, rgb, cv::COLOR_RGBA2RGB);
+  cv::cvtColor(rgb, hsv, cv::COLOR_RGB2HSV_FULL);
+  cv::Mat lut(1, 256, CV_8UC3);
+  const int hue_off = (int)std::lround(std::fmod(hue + 360.0f, 360.0f) * 256.0f / 360.0f);
+  for(int v = 0; v < 256; v++) {
+    lut.at<cv::Vec3b>(0, v) = cv::Vec3b((uint8_t)((v + hue_off) & 255), (uint8_t)std::clamp((int)std::lround(v * saturation / 100.0f), 0, 255), (uint8_t)v);
   }
+  cv::LUT(hsv, lut, hsv);
+  cv::cvtColor(hsv, rgb, cv::COLOR_HSV2RGB_FULL);
+  const int from_to[] = {0, 0, 1, 1, 2, 2}; // アルファは元のまま残しRGBだけ書き戻す
+  cv::mixChannels(&rgb, 1, &rgba, 1, from_to, 3);
   apply_brightness_contrast_lut(px, n, brightness, contrast);
 
   return true;

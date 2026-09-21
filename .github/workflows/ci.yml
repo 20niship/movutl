@@ -62,7 +62,7 @@ jobs:
             build-essential cmake ninja-build pkg-config \
             libglfw3-dev libfreetype-dev libglew-dev libglm-dev \
             libassimp-dev libluajit-5.1-dev libopencv-dev \
-            libgl1-mesa-dev libglu1-mesa-dev
+            libgl1-mesa-dev libglu1-mesa-dev ffmpeg # ffmpeg CLIはmovie_testのテスト動画生成に使う
 
       - name: just check
         env:

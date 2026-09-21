@@ -78,7 +78,7 @@ void ViewerWindow::Update() {
   }
 
   Ref<Image> img;
-  if(comp->cache.get(comp->frame, &img)) {
+  if(comp->cache.get_nearest(comp->frame, &img)) {
     if(last_bound_frame_.lock().get() != img.get()) {
       tex.set(img);
       last_bound_frame_ = img;
@@ -90,7 +90,7 @@ void ViewerWindow::Update() {
       last_bound_frame_ = img;
     }
   }
-  // キャッシュ未ヒット時は直前のテクスチャをそのまま表示し続ける
+  // キャッシュが1枚も無い間は直前のテクスチャをそのまま表示し続ける
   auto texture_id = tex.get_id();
 
   constexpr float kCtrlFooterH = 28.0f; // 操作行(再生/拡大率/波形)の高さ

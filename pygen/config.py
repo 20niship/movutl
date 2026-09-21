@@ -10,6 +10,9 @@ abi_exclude_symbols = {
     "register_vst_filters",
 }
 
+# `just build --daw`(MOVUTL_DAW)の時だけビルドされるクラス。生成コードは#ifdef MOVUTL_DAWで囲む
+daw_only_classes = {"MidiEntt", "MidiNote"}
+
 ignore_symbols = [  #
     ("", ""),
     ("Movie", "img_"),

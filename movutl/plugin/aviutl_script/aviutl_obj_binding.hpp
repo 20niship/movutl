@@ -1,5 +1,6 @@
 #pragma once
 
+#include <movutl/asset/entity.hpp>
 #include <movutl/plugin/aviutl_script/aviutl_script_parser.hpp>
 #include <movutl/plugin/filter.hpp>
 #include <string>
@@ -20,7 +21,14 @@ struct AviUtlObjContext {
   const AviUtlScriptDef* def                      = nullptr;
   bool drawn                                      = false;   // draw/drawpoly/putpixeldata/copybuffer(obj復元)のいずれかが呼ばれたか。falseのままフレーム処理が終わるとAviUtl本体同様に暗黙でdraw()相当を行う
   std::unordered_map<std::string, Image>* buffers = nullptr; // obj.copybufferの退避先("tmp"/"cache:xxx")。フィルタインスタンス単位でフレームをまたいで保持する
-  int rand_counter                                = 0;       // seed省略のobj.randが同一フレーム内で呼び出し毎に別の値を返すための連番(フレーム毎に0から数え直すので結果は決定的)
+  // カスタムオブジェクト専用の「オブジェクトバッファ(fpip->img)+描画先」2面モデル。screenが非nullの時だけ有効で、nullのままなら従来の1面モデル(.anmフィルタ)
+  // obj.drawはオブジェクトバッファを壊さず描画先(screenまたはtemp)へ合成し、obj.load("figure"等)/obj.effectはオブジェクトバッファだけを変更する
+  Image* screen      = nullptr;     // フレーム全体の出力(obj.setoption("drawtarget","framebuffer"))
+  Image* temp        = nullptr;     // 一時バッファ(obj.setoption("drawtarget","tempbuffer",w,h))
+  Image* draw_target = nullptr;     // 現在のobj.draw先(screenまたはtemp)
+  BlendType blend    = Blend_Alpha; // obj.setoption("blend",...)
+  bool screen_drawn  = false;       // obj.draw/drawpolyで描画先へ描いたか(falseのまま終わればオブジェクトバッファを暗黙drawする)
+  int rand_counter   = 0;           // seed省略のobj.randが同一フレーム内で呼び出し毎に別の値を返すための連番(フレーム毎に0から数え直すので結果は決定的)
 };
 
 // AviUtlObjContext::drawnをtrueにせず、objの現在値(ox/oy/zoom/alpha/rz)でdraw()相当を行う(スクリプト末尾で暗黙的に呼ばれる)

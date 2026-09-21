@@ -11,18 +11,22 @@
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/custom_object.hpp>
 #include <movutl/asset/entity.hpp>
+#ifdef MOVUTL_DAW
 #include <movutl/asset/midi.hpp>
+#endif
 #include <movutl/asset/project.hpp>
 #include <movutl/asset/text.hpp>
 #include <movutl/core/logger.hpp>
 #include <movutl/gui/graph_editor_window.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/gui/inspector.hpp>
-#include <movutl/gui/vst_edit_ui.hpp>
 #include <movutl/gui/widgets.hpp>
 #include <movutl/plugin/plugin.hpp>
+#ifdef MOVUTL_DAW
+#include <movutl/gui/vst_edit_ui.hpp>
 #include <movutl/plugin/vst/vst_filter_bridge.hpp>
 #include <movutl/plugin/vst/vst_host.hpp>
+#endif
 #include <string>
 #include <vector>
 
@@ -63,8 +67,6 @@ bool draw_text_style_ui(TextEntt* t) {
   return changed;
 }
 
-// セクション見出し(折りたたみ)。既定は開く。閉じていればfalse
-bool section(const char* label) { return ImGui::CollapsingHeader(label, ImGuiTreeNodeFlags_DefaultOpen); }
 } // namespace
 
 void InspectorWindow::Update() {
@@ -94,13 +96,13 @@ void InspectorWindow::Update() {
     }
     if(ImGui::IsItemHovered()) ImGui::SetTooltip(e->active_ ? "非表示にする" : "表示する");
     ImGui::SameLine();
-    const std::string str = get_entt_icon(e) + std::string(" ") + e->name.c_str();
+    const std::string str = std::string(e->clipping_up_ ? ICON_FA_CROP_SIMPLE " " : "") + (e->camera_ctrl_ ? ICON_FA_VIDEO " " : "") + std::string(get_entt_icon(e)) + " " + e->name.c_str();
     ImGui::TextUnformatted(str.c_str());
   }
 
-  if(e->has_transform() && section("トランスフォーム")) wd_entt_transform_editor(e.get(), cur_frame);
+  if(e->has_transform()) wd_entt_transform_editor(e.get(), cur_frame);
 
-  if(section("オブジェクト")) {
+  {
     if(wd_table_begin("##obj_common")) { // 合成モード(BlendType): Entityのトラック共通属性のため専用UIとして扱う
       static const char* kBlendNames[] = {"通常", "加算", "減算", "乗算", "除算", "スクリーン", "オーバーレイ", "比較(暗)", "比較(明)", "ハードライト"};
       int idx                          = std::clamp((int)e->blend_, 0, (int)IM_ARRAYSIZE(kBlendNames) - 1);
@@ -109,6 +111,10 @@ void InspectorWindow::Update() {
         e->blend_ = (BlendType)idx;
         invalidate();
       }
+      wd_row("上のオブジェクトでクリッピング");
+      if(ImGui::Checkbox("##clip_up", &e->clipping_up_)) invalidate();
+      wd_row("カメラ制御の対象");
+      if(ImGui::Checkbox("##cam_ctrl", &e->camera_ctrl_)) invalidate();
       wd_table_end();
     }
 
@@ -145,6 +151,7 @@ void InspectorWindow::Update() {
       wd_table_end();
     }
 
+#ifdef MOVUTL_DAW
     if(e->getType() == EntityType_Midi && wd_table_begin("##midi_inst")) { // 音源選択(vst_host::plugin_list())+ Edit導線(vst_edit_ui)
       auto* midi            = static_cast<MidiEntt*>(e.get());
       auto plugins          = vst_host::plugin_list();
@@ -163,6 +170,7 @@ void InspectorWindow::Update() {
       draw_vst_edit_button("midi_instrument_edit", vst_host::get_instance(midi->instrument_instance_id()));
       wd_table_end();
     }
+#endif
 
     wd_entt_props_editor(e.get(), cur_frame);
 
@@ -235,10 +243,12 @@ void InspectorWindow::Update() {
         if(ImGui::SmallButton(ICON_FA_TRASH "##fx_del")) remove_idx = i;
         if(ImGui::IsItemHovered()) ImGui::SetTooltip("エフェクトを削除");
       }
+#ifdef MOVUTL_DAW
       if(detail::is_vst_filter_guid(f.plg_->guid)) {
         ImGui::SameLine();
         draw_vst_edit_button("vst_fx_edit", detail::vst_filter_instance(f.instance_state));
       }
+#endif
       if(card_open) {
         bool props_changed = false;
         int size_          = std::min<int>(f.props.size(), (int)e->filters_[i].plg_->props.fields.size());
@@ -304,7 +314,10 @@ void InspectorWindow::Update() {
       if(((*filters)[i].flag == FilterAudioOnly) != is_audio_entt) continue;
       const char* name = (*filters)[i].name.c_str();
       if(!fuzzy_match(name, search_buffer)) continue;
-      if(ImGui::Selectable(name)) {
+      ImGui::PushID(i);
+      bool clicked = ImGui::Selectable(name);
+      ImGui::PopID();
+      if(clicked) {
         FilterParam fp;
         fp.plg_ = &(*filters)[i];
         fp.props.add_props((*filters)[i].defaults);

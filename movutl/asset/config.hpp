@@ -22,7 +22,7 @@ public:
   int max_frame                            = 320000;       // 編集出来る最大フレーム数
   int cache_frames                         = 1024;
   std::vector<std::string> plugin_paths    = {"plugins"};
-  std::vector<std::string> lua_script_dirs = {"plugins/scripts"}; // AviUtl互換.anmスクリプトを再帰的に探索するフォルダ
+  std::vector<std::string> lua_script_dirs = {"plugins/scripts", "../plugins/scripts"}; // AviUtl互換.anmスクリプトを再帰的に探索するフォルダ
 #if defined(_WIN32)
   std::vector<std::string> vst_plugin_dirs = {"C:\\Program Files\\Common Files\\VST3"}; // VST3プラグインを再帰的に探索するフォルダ
 #elif defined(__APPLE__)
@@ -30,13 +30,14 @@ public:
 #else
   std::vector<std::string> vst_plugin_dirs = {std::string(getenv("HOME") ? getenv("HOME") : "") + "/.vst3"};
 #endif
-  bool log_to_file                = false;
-  std::string log_filename        = "log.txt";
-  LogLevel log_level              = LogLevel::DEBUG;
-  bool show_viewer_ruler          = false; // Viewportにルーラー(目盛り)を表示するか
-  bool viewer_ruler_center_origin = true;  // ルーラー/カーソル座標の原点をコンポ中央にする(false=左上)。Entityのpos_と同じ座標系
-  int default_image_frames        = 150;   // 画像トラック追加時の長さ(フレーム数)。画像自体には長さが無いため既定値をここで持つ
-  float master_volume             = 1.0f;  // プレビュー再生のマスター音量(線形ゲイン、1.0=0dB)
+  bool ignore_scripts_with_require = true; // require()を含むAviUtlスクリプトを読み込まない(macではrequire先の.dllを読めないため)
+  bool log_to_file                 = false;
+  std::string log_filename         = "log.txt";
+  LogLevel log_level               = LogLevel::DEBUG;
+  bool show_viewer_ruler           = false; // Viewportにルーラー(目盛り)を表示するか
+  bool viewer_ruler_center_origin  = true;  // ルーラー/カーソル座標の原点をコンポ中央にする(false=左上)。Entityのpos_と同じ座標系
+  int default_image_frames         = 150;   // 画像トラック追加時の長さ(フレーム数)。画像自体には長さが無いため既定値をここで持つ
+  float master_volume              = 1.0f;  // プレビュー再生のマスター音量(線形ゲイン、1.0=0dB)
 
   // 以下 movutl/core/sys_info.hpp より統合
   int sys_flag = 0;                  // システムフラグ (kSysFlagEdit 等)

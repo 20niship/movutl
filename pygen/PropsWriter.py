@@ -2,6 +2,7 @@ from pygen_types import MFunction, MEnum, MClass, MArgument, ArgumentType
 from typing import List
 import re
 from utils import logger, write_if_different
+from config import daw_only_classes
 
 # 1クラスに複数のprops三つ組(例: EntityのgetPropsInfoとgetTrackPropsInfo)を持たせるため、"get<Prefix>PropsInfo"からPrefixを抽出する(対象フィールドはMPROPERTY(... group="track")側で指定)
 PROPS_INFO_NAME_RE = re.compile(r"^get(\w*)PropsInfo$")
@@ -44,9 +45,13 @@ class PropsWriter:
             "#include <movutl/asset/image.hpp>\n"
             "#include <movutl/asset/movie.hpp>\n"
             "#include <movutl/asset/audio.hpp>\n"
+            "#ifdef MOVUTL_DAW\n"
             "#include <movutl/asset/midi.hpp>\n"
+            "#endif\n"
             "#include <movutl/asset/framebuffer.hpp>\n"
             "#include <movutl/asset/group.hpp>\n"
+            "#include <movutl/asset/camera.hpp>\n"
+            "#include <movutl/asset/scene_change.hpp>\n"
             "#include <movutl/asset/compo_ref.hpp>\n"
             "#include <movutl/asset/compo_audio_ref.hpp>\n"
             "#include <movutl/core/anim.hpp>\n"
@@ -71,6 +76,12 @@ class PropsWriter:
         return False
 
     def register_class(self, cls: MClass):
+        start = len(self.autogen_text)
+        self._register_class(cls)
+        if cls.name in daw_only_classes and len(self.autogen_text) > start:
+            self.autogen_text = self.autogen_text[:start] + "#ifdef MOVUTL_DAW\n" + self.autogen_text[start:] + "#endif\n"
+
+    def _register_class(self, cls: MClass):
         prefixes = {m.group(1) for f in cls.funcs if (m := PROPS_INFO_NAME_RE.match(f.name))}
         for prefix in sorted(prefixes):  # setの反復順はPYTHONHASHSEEDで変わるため、生成物が環境で揺れないよう名前順に固定する
             if self._should_write(cls, f"get{prefix}PropsInfo"):

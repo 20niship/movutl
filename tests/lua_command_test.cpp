@@ -74,6 +74,8 @@ TEST_CASE("widgets/utility_window.lua: add_entities_uiが参照するmovutlの�
     assert(movutl.EntityType.EntityType_Midi ~= nil)
     assert(movutl.EntityType.EntityType_Framebuffer ~= nil)
     assert(movutl.EntityType.EntityType_Scene ~= nil)
+    assert(movutl.EntityType.EntityType_Camera ~= nil)
+    assert(movutl.EntityType.EntityType_SceneChange ~= nil)
     assert(movutl.EntityType.EntityType_SceneAudio ~= nil)
     assert(movutl.ShapeType.ShapeType_Triangle ~= nil)
     assert(movutl.ShapeType.ShapeType_Rect ~= nil)

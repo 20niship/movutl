@@ -40,9 +40,17 @@ Ref<CustomObjectEntt> CustomObjectEntt::Create(const char* name, const std::stri
 bool CustomObjectEntt::render(Composition* cmp, Image* target, int frame) {
   if(!def_) return false;
   MU_ASSERT(cmp != nullptr && target != nullptr);
-  target->resize((int)cmp->size[0], (int)cmp->size[1]);
+  if((int)target->width != (int)cmp->size[0] || (int)target->height != (int)cmp->size[1]) {
+    target->resize((int)cmp->size[0], (int)cmp->size[1]);
+    target->fill_rgba(Vec4b(0, 0, 0, 0));
+  }
   target->has_alpha = true;
-  target->fill_rgba(Vec4b(0, 0, 0, 0));
+
+  // AviUtl同様、オブジェクトバッファ(objbuf)と描画先(screen)を分ける。スクリプトはobjbufを作り/加工し、obj.drawでscreenへ重ねる。最後にscreenをtargetへ合成する
+  Image objbuf((int)cmp->size[0], (int)cmp->size[1]), screen((int)cmp->size[0], (int)cmp->size[1]), temp;
+  objbuf.has_alpha = screen.has_alpha = true;
+  objbuf.fill_rgba(Vec4b(0, 0, 0, 0));
+  screen.fill_rgba(Vec4b(0, 0, 0, 0));
 
   if(!L_) {
     L_ = luaL_newstate();
@@ -62,12 +70,14 @@ bool CustomObjectEntt::render(Composition* cmp, Image* target, int frame) {
   }
 
   FilterInData fpip;
-  fpip.img   = target;
+  fpip.img   = &objbuf;
   fpip.compo = cmp;
   fpip.entt  = this;
   fpip.frame = frame;
 
   detail::AviUtlObjContext ctx{&fpip, frame, def_, false, &buffers_};
+  ctx.screen = ctx.draw_target = &screen;
+  ctx.temp                     = &temp;
   detail::setup_obj_table(L_, &ctx);
 
   if(body_ref_ == LUA_NOREF) {
@@ -84,7 +94,11 @@ bool CustomObjectEntt::render(Composition* cmp, Image* target, int frame) {
     lua_pop(L_, 1);
     return false;
   }
-  if(!ctx.drawn) detail::perform_implicit_draw(L_, &ctx);
+  if(!ctx.screen_drawn && !objbuf.empty()) {
+    ctx.draw_target = &screen; // 一時バッファを指したままスクリプトが終わっても、最終出力はscreen
+    detail::perform_implicit_draw(L_, &ctx);
+  }
+  screen.copyto(target, Vec2d(0, 0), 1.0f);
   return true;
 }
 

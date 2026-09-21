@@ -190,3 +190,45 @@ TEST_CASE("Project::Save/Load: カスタムオブジェクトを含むプロジ�
 
   std::filesystem::remove(tmp_path);
 }
+
+TEST_CASE("parse_aviutl_script: --param:の内容はスクリプト本体の前に実行される変数初期化として保持される") {
+  auto defs = detail::parse_aviutl_script("@パラメータ付き\n--param:bb=5;fh=0.1\nlocal x = fh * 2\n");
+  REQUIRE(defs.size() == 1);
+  CHECK(defs[0].dialog_code == "bb=5;fh=0.1\n");
+  CHECK(defs[0].lua_body.find("--param") == std::string::npos);
+}
+
+TEST_CASE("CustomObjectEntt: obj.drawはオブジェクトバッファを壊さず描画先へ重ねて描ける(泡等の複数draw)") {
+  register_test_object("@二つ描く\n"
+                       "obj.load(\"figure\", \"四角形\", 0xff0000, 4)\n"
+                       "obj.draw(-5, 0)\n"
+                       "obj.draw(5, 0)\n");
+  auto e = CustomObjectEntt::Create("二つ", "二つ描く");
+  REQUIRE(e != nullptr);
+  auto comp   = cutil::make_ref<Composition>("test", 20, 20, 30);
+  auto target = cutil::make_ref<Image>();
+  CHECK(e->render(comp.get(), target.get(), 0));
+  CHECK(target->rgba(5, 10)[0] == 255);  // 左に描いた赤
+  CHECK(target->rgba(15, 10)[0] == 255); // 右に描いた赤
+  CHECK(target->rgba(10, 10)[3] == 0);   // 間は透明のまま
+}
+
+TEST_CASE("CustomObjectEntt: HSV()/RGB()の組み込み関数と一時バッファ経由のロードが動く") {
+  register_test_object("@色テスト\n"
+                       "local c = HSV(120, 100, 100)\n"
+                       "obj.setoption(\"drawtarget\", \"tempbuffer\", 8, 8)\n"
+                       "obj.load(\"figure\", \"四角形\", c, 4)\n"
+                       "obj.draw(0, 0)\n"
+                       "obj.load(\"tempbuffer\")\n"
+                       "obj.setoption(\"drawtarget\", \"framebuffer\")\n"
+                       "obj.draw(0, 0)\n");
+  auto e = CustomObjectEntt::Create("色", "色テスト");
+  REQUIRE(e != nullptr);
+  auto comp   = cutil::make_ref<Composition>("test", 20, 20, 30);
+  auto target = cutil::make_ref<Image>();
+  CHECK(e->render(comp.get(), target.get(), 0));
+  const Vec4b px = target->rgba(10, 10);
+  CHECK(px[0] == 0);
+  CHECK(px[1] == 255); // HSV(120,100,100)=緑
+  CHECK(px[2] == 0);
+}

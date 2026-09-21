@@ -1,54 +1,36 @@
 #pragma once
 
-#include <cutil/quaternion.hpp>
 #include <movutl/asset/entity.hpp>
-#include <movutl/core/assert.hpp>
-#include <movutl/core/core.hpp>
-#include <movutl/core/logger.hpp>
-#include <movutl/core/vector.hpp>
 
 namespace mu {
 
-enum class CamDistModel : int16_t {
-  NONE,                   /**< Rectilinear images. No distortion compensation required. */
-  MODIFIED_BROWN_CONRADY, /**< Equivalent to Brown-Conrady distortion, except that tangential distortion is applied to radially distorted points */
-  INVERSE_BROWN_CONRADY,  /**< Equivalent to Brown-Conrady distortion, except undistorts image instead of distorting it */
-  FTHETA,                 /**< F-Theta fish-eye distortion model */
-  BROWN_CONRADY,          /**< Unmodified Brown-Conrady distortion model */
-  KANNALA_BRANDT4,        /**< Four parameter Kannala Brandt distortion model */
-  COUNT,                  /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
-  R2ONLY                  // r^2だけのパラメータのDistortion model
-};
+inline constexpr float kCameraDefaultZ = -1024.0f; // AviUtl既定のカメラZ(Z=0面が等倍になる距離)
 
-// Default camera values
-const float YAW         = -90.0f;
-const float PITCH       = 0.0f;
-const float SPEED       = 2.5f;
-const float SENSITIVITY = 0.1f;
-const float ZOOM        = 45.0f;
-
-
-// An abstract camera class that processes input and calculates the corresponding Euler Angles, Vecs and Matrices for use in OpenGL
-class Camera3D : public Entity {
+// AviUtlのカメラ制御相当。自身は描画せず、自身より下のレイヤーの「カメラ制御」ONのEntityへ視点変換を親として与える。
+// カメラ位置X/Y/Zは pos_、傾きは rotation_ を流用する(AviUtl既定はZ=-1024でスケール等倍)
+class Camera3D final : public Entity {
 public:
-  Vec3 pos;
-  cutil::Quatf rot;
-  Vec3 up      = Vec3(0, 0, 1);
-  float fov    = 60.0f;
-  float aspect = 1.0f;
+  Camera3D() { pos_ = Vec3(0, 0, kCameraDefaultZ); }
+  ~Camera3D() = default;
 
-  // camera options
-  float move_speed   = 2.5f;
-  float rotate_speed = 0.1f;
+  Vec3 target_           = Vec3(0, 0, 0); // MPROPERTY(name="目標位置", desc="カメラが向く点(2D近似では未使用)")
+  float fov_             = 45.0f;         // MPROPERTY(name="視野角(度)", desc="2D近似では未使用", min=1.0, max=170.0)
+  int32_t target_layers_ = 0;             // MPROPERTY(name="対象レイヤー数", desc="自身より下の何レイヤーに効かせるか。0なら以降すべて", min=0)
 
+  static Ref<Camera3D> Create(const char* name);
   virtual EntityType getType() const override { return EntityType_Camera; }
-  // ponytail: CPURendererは2D合成のみでカメラ変換パスが無いため、自身は何も描画しない(camera_ctrl_で参照される側)
-  virtual bool render(Composition* cmp, Image* target, int frame) override {
-    MU_UNUSED(cmp);
-    MU_UNUSED(target);
-    MU_UNUSED(frame);
-    return true;
-  }
+  virtual bool render(Composition*, Image*, int) override { return true; }
+
+  // camera_layerにあるこのカメラが、layer_iのEntityへ効くか
+  bool affects(int camera_layer, int layer_i) const { return layer_i > camera_layer && (target_layers_ <= 0 || layer_i <= camera_layer + target_layers_); }
+
+  // 世界座標→画面座標の視点変換(2D近似: カメラXYの逆平行移動、Zによる遠近スケール、傾きの逆回転)。カメラがZ=0面の前後(距離<1)にある場合は等倍
+  // ponytail: 目標位置/視野角によるパン・チルト・ズームと深度ボケは無し(CPURendererは2D合成のみ)。3D対応時にrot_x_/rot_y_へ反映する
+  GroupXform view_xform() const;
+
+  virtual const cutil::PropInfo* getPropsInfo() const override; // MUFUNC_AUTOGEN
+  virtual cutil::Prop getProps() const override;                // MUFUNC_AUTOGEN
+  virtual void setProps(const cutil::Prop& props) override;     // MUFUNC_AUTOGEN
 };
 
 } // namespace mu

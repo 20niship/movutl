@@ -1,3 +1,4 @@
+#include <cmath>
 #include <cstring>
 #include <movutl/asset/movie.hpp>
 #include <movutl/core/logger.hpp>
@@ -45,6 +46,14 @@ struct FFmpegVideoHandle {
   bool eof                 = false;
   bool has_pending         = false;
 
+  /// 直近に変換したBGRAフレームのリング。複数ワーカーが少し順不同で読みに来ても、シーク+再デコード無しで返せるようにする
+  static constexpr int kRing = 6;
+  struct RingSlot {
+    int frame = -1;
+    std::vector<uint8_t> data;
+  } ring[kRing];
+  int ring_next = 0;
+
   // ---------- audio: fn_open時に全体をPCM16へデコードして保持(ponytail: 長時間音声はメモリ消費大、必要ならvideoと同様のシーク+逐次デコードへ切替) ----------
   int audio_stream_index      = -1;
   int audio_native_rate       = 0;
@@ -67,8 +76,9 @@ struct FFmpegVideoHandle {
     dec_ctx       = nullptr;
     fmt_ctx       = nullptr;
     decoded_frame = -1;
-    eof           = false;
-    has_pending   = false;
+    for(auto& r : ring) r.frame = -1;
+    eof         = false;
+    has_pending = false;
   }
 };
 
@@ -193,6 +203,8 @@ static InputHandle fn_open(const char* file) {
   /// AVCodecParametersにtime_baseが含まれないため明示的に設定(無いとAVFrame::ptsが常にAV_NOPTS_VALUEになる)
   h->dec_ctx->pkt_timebase = st->time_base;
   h->dec_ctx->time_base    = st->time_base;
+  h->dec_ctx->thread_count = 0; /// 自動(コア数)。1080pのソフトデコードを並列化する
+  h->dec_ctx->thread_type  = FF_THREAD_FRAME | FF_THREAD_SLICE;
   if(avcodec_open2(h->dec_ctx, dec, nullptr) < 0) {
     LOG_F(ERROR, "Failed to setup decoder: %s", file);
     delete h;
@@ -308,8 +320,15 @@ static int fn_read_video(InputHandle ih, int frame_no, void* buf) {
     return h->width * h->height * 4;
   }
 
-  /// 連続フレームでなければシークしてデコーダを巻き戻す
-  if(frame_no != h->decoded_frame + 1) {
+  for(auto& r : h->ring) {
+    if(r.frame != frame_no) continue;
+    memcpy(buf, r.data.data(), r.data.size());
+    return h->width * h->height * 4;
+  }
+
+  /// 後ろへ戻る/大きく先へ飛ぶ場合のみシークする。少し先(複数ワーカーが順不同で読みに来る等)は前方デコードで済ませる(シーク=キーフレームからの再デコードで遅い)
+  constexpr int kMaxForwardDecode = 60;
+  if(h->decoded_frame < 0 || frame_no <= h->decoded_frame || frame_no > h->decoded_frame + kMaxForwardDecode) {
     const auto tb        = h->fmt_ctx->streams[h->stream_index]->time_base;
     const int64_t target = h->start_time + av_rescale(frame_no * (int64_t)h->fps.den, tb.den, (int64_t)h->fps.num * tb.num);
     if(av_seek_frame(h->fmt_ctx, h->stream_index, target, AVSEEK_FLAG_BACKWARD) < 0) av_seek_frame(h->fmt_ctx, -1, 0, AVSEEK_FLAG_BACKWARD); /// フォールバック: 先頭へ
@@ -320,15 +339,27 @@ static int fn_read_video(InputHandle ih, int frame_no, void* buf) {
   }
 
   const double target_sec = (double)frame_no * h->fps.den / (double)h->fps.num;
+  const double frame_dur  = (double)h->fps.den / (double)h->fps.num;
   constexpr double EPS    = 0.000001;
-  bool got                = false;
+  /// 目標の1フレーム以内に入っていない(=読み飛ばす)フレームはBGRA変換を省く
+  /// 目標の直近kRing枚は変換してリングへ入れる(順不同に来る隣接フレームの要求をシーク無しで返すため)
+  auto convert_if_near = [&](AVFrame* f, double t) {
+    if(t + frame_dur * (FFmpegVideoHandle::kRing - 0.001) <= target_sec) return;
+    convert_to_bgra(h, f);
+    auto& slot   = h->ring[h->ring_next];
+    h->ring_next = (h->ring_next + 1) % FFmpegVideoHandle::kRing;
+    slot.frame   = (int)std::llround(t / frame_dur);
+    slot.data.resize((size_t)h->width * h->height * 4);
+    copy_out(h, slot.data.data());
+  };
+  bool got = false;
 
   /// 未消費の先行フレームがあれば先に処理する
   if(h->has_pending) {
     h->has_pending = false;
     const double t = h->pending->pts * av_q2d(h->dec_ctx->time_base);
     if(t <= target_sec + EPS) {
-      convert_to_bgra(h, h->pending);
+      convert_if_near(h->pending, t);
       got = true;
     } else {
       h->has_pending = true; /// まだ未来のフレームなので保持し続ける
@@ -340,7 +371,7 @@ static int fn_read_video(InputHandle ih, int frame_no, void* buf) {
     if(r == 1) {
       const double t = h->frame->pts * av_q2d(h->dec_ctx->time_base);
       if(t <= target_sec + EPS) {
-        convert_to_bgra(h, h->frame);
+        convert_if_near(h->frame, t);
         got = true;
       } else {
         /// 目標を超えるフレーム: 消費せず保持して終了 (連続読み込み時に備える)
@@ -357,6 +388,7 @@ static int fn_read_video(InputHandle ih, int frame_no, void* buf) {
   if(!got) return 0;
   h->decoded_frame = frame_no;
   copy_out(h, buf);
+
   return h->width * h->height * 4;
 }
 

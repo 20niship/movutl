@@ -1,5 +1,12 @@
 # movutl 開発ルール
 
+## 動作検証をする際は:
+
+- ビルドしたい時はcmakeコマンドを叩かずに, `just build`を使用せよ
+    - MIDI/VST3(DAW機能)は任意。`just build --daw`の時だけuapmd等をfetchしてビルドする(`MOVUTL_DAW`)。関連コードは`#ifdef MOVUTL_DAW`で囲む。EQ/音量/パン等の自前エフェクトは常にビルドされる。
+- movutl_mainを実行したい時は, `just run`を使用せよ。`just run ./examples/xxx.lua`と引数を追加することで.luaを読み込んだりプロジェクトファイルを開くことができる。
+
+
 ## 実装が終わったら(コミット・push・PR作成の前に必ず実行)
 ```
 just autogen

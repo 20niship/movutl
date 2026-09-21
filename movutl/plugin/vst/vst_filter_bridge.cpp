@@ -131,11 +131,10 @@ uapmd_plugin_hosting::AudioPluginInstanceAPI* vst_filter_instance(void* instance
 bool is_vst_filter_guid(uint64_t guid) { return (guid & 0xFFFF000000000000ULL) == kVstFilterGuidPrefix; }
 
 void register_vst_filters() {
-  auto plugins  = vst_host::plugin_list();
-  auto& filters = AppMain::Get()->filters;
+  auto plugins = vst_host::plugin_list();
   for(size_t i = 0; i < plugins.size(); i++) {
     LOG_F(1, "Registering VST3 filter: %s (%s)", plugins[i].name.c_str(), plugins[i].id.c_str());
-    filters.push_back(build_table(plugins[i], i));
+    AppMain::Get()->add_filter(build_table(plugins[i], i));
   }
 }
 

@@ -96,17 +96,25 @@ void AppMain::update_frame_impl() {
   auto cmp = Composition::GetActiveComp();
   if(!cmp) return;
 
-  double now = mu_now_seconds();
-  double fps = (double)cmp->framerate;
-  if(now - last_frame_time_ >= 1.0 / fps) {
-    int next = cmp->frame + 1;
-    if(next > cmp->fend) {
-      // ループ折り返しもgoto_frame()経由にして音声seekを必ず伴わせる
-      goto_frame(cmp->fstart);
-    } else {
-      cmp->frame = next;
-    }
+  double now      = mu_now_seconds();
+  const double dt = 1.0 / (double)cmp->framerate;
+  double lag      = now - last_frame_time_;
+  if(lag < dt) return;
+  // last_frame_time_ = nowで上書きすると、描画間隔(vsync)の端数ぶん毎フレーム遅れて音声(実時間)に対し映像が徐々に遅れる。
+  // 経過時間を分だけ進めて端数を持ち越し、遅れが大きすぎる(0.5秒超)時のみ追従を諦めて時計を合わせ直す
+  if(lag > 0.5) {
     last_frame_time_ = now;
+    lag              = dt;
+  }
+  int steps = (int)(lag / dt);
+  last_frame_time_ += steps * dt;
+  int next = cmp->frame + steps;
+  if(next > cmp->fend) {
+    // ループ折り返しもgoto_frame()経由にして音声seekを必ず伴わせる
+    goto_frame(cmp->fstart);
+    last_frame_time_ = now;
+  } else {
+    cmp->frame = next;
   }
 }
 
