@@ -1,13 +1,9 @@
-cmake_policy(SET CMP0072 NEW)
-set(OpenGL_GL_PREFERENCE LEGACY)
-
 find_package(Threads REQUIRED QUIET)
 find_package(glfw3 REQUIRED QUIET)
 find_package(Freetype REQUIRED QUIET)
 find_package(OpenCV REQUIRED QUIET)
-find_package(Vulkan QUIET)
-find_package(OpenGL REQUIRED QUIET)
-find_package(GLEW REQUIRED QUIET)
+find_package(Vulkan REQUIRED)
+find_package(glslang CONFIG REQUIRED) # 実行時GLSL→SPIR-Vコンパイル用
 find_package(glm REQUIRED QUIET)
 find_package(assimp REQUIRED QUIET)
 
@@ -35,18 +31,15 @@ find_package(OpenMP QUIET)
 
 pkg_check_modules(LuaJIT REQUIRED IMPORTED_TARGET luajit)
 
-# --------------------------------------------------------------
-# ------------     Renderer (OpenGL / Vulkan) ------------------
-# --------------------------------------------------------------
-set(RENDERER "WITH_OPENGL")
-add_compile_definitions(${RENDERER})
-
 set(MOVUTL_LIBRARIES 
   glfw
   ${GLFW_LIBRARY_DIRS}
   ${CMAKE_DL_LIBS}
   ${FREETYPE_LIBRARIES}
-  OpenGL::GL 
+  Vulkan::Vulkan
+  glslang::glslang
+  glslang::SPIRV
+  glslang::glslang-default-resource-limits
   ${OpenCV_LIBS}
   ${OpenCV_LIBRARIES}
   # ${assimp_LIBRARIES}
@@ -63,11 +56,9 @@ set(MOVUTL_INCLUDES
   ${FREETYPE_INCLUDE_DIRS}
   # ${spdlog_INCLUDE_DIR}
   ${MOVUTL_ROOT_DIR}
-  ${GLEW_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
 )
 
-set(MOVUTL_LIBRARIES ${MOVUTL_LIBRARIES} GLEW::GLEW)
 if(OpenMP_CXX_FOUND)
   set(MOVUTL_LIBRARIES ${MOVUTL_LIBRARIES} OpenMP::OpenMP_CXX)
 endif()
@@ -271,7 +262,7 @@ file(GLOB MOVUTL_EXT_SRC
   ${MOVUTL_ROOT_DIR}/ext/imgui/imgui_tables.cpp
   ${MOVUTL_ROOT_DIR}/ext/imgui/imgui_demo.cpp
   ${MOVUTL_ROOT_DIR}/ext/imgui/backends/imgui_impl_glfw.cpp
-  ${MOVUTL_ROOT_DIR}/ext/imgui/backends/imgui_impl_opengl3.cpp
+  ${MOVUTL_ROOT_DIR}/ext/imgui/backends/imgui_impl_vulkan.cpp
   ${MOVUTL_ROOT_DIR}/ext/filewatch/FileWatcher.cpp
 
   # -- luaintf

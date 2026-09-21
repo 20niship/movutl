@@ -60,9 +60,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             build-essential cmake ninja-build pkg-config \
-            libglfw3-dev libfreetype-dev libglew-dev libglm-dev \
+            libglfw3-dev libfreetype-dev libglm-dev \
             libassimp-dev libluajit-5.1-dev libopencv-dev \
-            libgl1-mesa-dev libglu1-mesa-dev ffmpeg # ffmpeg CLIはmovie_testのテスト動画生成に使う
+            libvulkan-dev glslang-dev glslang-tools libglslang-dev spirv-tools \
+            mesa-vulkan-drivers ffmpeg # mesa-vulkan-drivers=lavapipe(CPU Vulkan)。ffmpeg CLIはmovie_testのテスト動画生成に使う
 
       - name: just check
         env:
