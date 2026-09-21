@@ -72,6 +72,7 @@ cutil::Prop Entity::getSaveProps() const {
   p.set<int32_t>("guid", (int32_t)guid_);
   p.set_child("props", getProps());
   p.set_child("trk", getTrackProps());
+  p.set<int32_t>("blend", (int32_t)blend_); // BlendTypeはpygen非対応(getTrackProps対象外)のため個別に保存する
   p.set_child("xform", getTransformProps());
   if(getPropsInfo() || has_transform()) {
     ensure_anim_props();
@@ -101,6 +102,7 @@ Ref<Entity> Entity::fromSaveProps(const cutil::Prop& p) {
   e->guid_ = (uint64_t)cutil::get_or<int32_t>(p, "guid", (int32_t)e->guid_);
   if(p.contains("props")) e->setProps(p.get_child("props"));
   if(p.contains("trk")) e->setTrackProps(p.get_child("trk"));
+  e->blend_ = (BlendType)cutil::get_or<int32_t>(p, "blend", (int32_t)Blend_Alpha);
   if(p.contains("xform")) e->setTransformProps(p.get_child("xform"));
   if(e->getPropsInfo() || e->has_transform()) {
     e->ensure_anim_props(); // setProps()適用後の値を各プロパティの初期キーフレームにする
