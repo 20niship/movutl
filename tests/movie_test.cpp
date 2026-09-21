@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <doctest/doctest.h>
+#include <filesystem>
 #include <movutl/app/app.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/image.hpp>
@@ -28,6 +29,7 @@ static PluginRegister plugin_register_;
 std::string gen_test_video(const std::string& filename, const std::string& lavfi_src) {
   const std::string path = "/tmp/opencode/" + filename;
   if(fs_exists(path)) return path;
+  std::filesystem::create_directories("/tmp/opencode"); // ffmpegは出力先ディレクトリを作らないためCI等の新規環境用
   const std::string cmd = "ffmpeg -y -loglevel error -f lavfi -i " + lavfi_src + " -pix_fmt yuv420p -c:v libx264 " + path;
   const int r           = std::system(cmd.c_str());
   REQUIRE_MESSAGE(r == 0, "failed to generate test video: " << cmd);
