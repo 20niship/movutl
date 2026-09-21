@@ -9,7 +9,7 @@
 #include <movutl/audio/audio_mixer.hpp>
 #include <movutl/core/logger.hpp>
 #include <movutl/core/prop_types.hpp>
-#include <movutl/render2d/renderer.hpp>
+#include <movutl/render2d/renderer_registry.hpp>
 
 namespace mu {
 
@@ -198,8 +198,7 @@ Ref<Image> Composition::render_current_frame_main_thread(bool transparent_bg) {
   Ref<Image> out;
   if(c.get(frame, &out)) return out;
   if(!PushRenderGuard(guid)) return nullptr;
-  CPURenderer renderer;
-  renderer.render_frame(this, frame, out, transparent_bg);
+  create_active_renderer()->render_frame(this, frame, out, transparent_bg);
   c.insert(frame, out, frame);
   PopRenderGuard(guid);
   return out;

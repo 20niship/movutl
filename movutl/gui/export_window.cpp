@@ -9,7 +9,7 @@
 #include <movutl/core/filesystem.hpp>
 #include <movutl/core/status_log.hpp>
 #include <movutl/gui/export_window.hpp>
-#include <movutl/render2d/renderer.hpp>
+#include <movutl/render2d/renderer_registry.hpp>
 #include <thread>
 #include <vector>
 
@@ -38,7 +38,8 @@ void export_thread_func(OutputPluginTable* plugin, Composition* comp, std::strin
   int audio_ch          = with_audio ? comp->audio_channels : 0;
   void* handle          = plugin->fn_open(path.c_str(), (int)comp->size[0], (int)comp->size[1], comp->framerate, audio_sr, audio_ch, props);
   if(handle != nullptr) {
-    CPURenderer renderer;
+    auto renderer_ptr  = create_active_renderer();
+    Renderer& renderer = *renderer_ptr;
     Ref<Image> frame_buf;
     std::vector<int16_t> audio_buf;
     for(int f = fstart; f <= fend; f++) {
