@@ -79,7 +79,7 @@ bool AudioEntt::fetch_audio(Composition* cmp, int64_t start_sample, int n, int16
   if(info.audio_n <= 0) return false;
 
   int64_t track_start = cmp->frame_to_sample(fstart_);
-  int64_t track_len   = cmp->frame_to_sample(fend_) - track_start;
+  int64_t track_len   = cmp->frame_to_sample(fend_ + 1) - track_start; // fend_は含む(visible()と同じ)ので+1する
   if(track_len <= 0) return false;
   int64_t elapsed = start_sample - track_start;
   if(elapsed + n <= 0) return false;
@@ -92,7 +92,7 @@ bool AudioEntt::fetch_audio(Composition* cmp, int64_t start_sample, int n, int16
   int32_t native_ch   = info.audio_channels > 0 ? info.audio_channels : cmp->audio_channels;
   double speed_ratio  = std::max(0.01, (double)speed / 100.0);
 
-  int64_t native_start = (int64_t)((double)elapsed / cmp->audio_sample_rate * native_rate * speed_ratio) + (int64_t)(offset_sec_ * native_rate);
+  int64_t native_start = (int64_t)((double)elapsed / cmp->audio_sample_rate * native_rate * speed_ratio) + (int64_t)((double)offset_sec_ * native_rate);
   int native_n         = std::max(1, (int)std::ceil((double)n * native_rate * speed_ratio / cmp->audio_sample_rate) + 2);
 
   std::vector<int16_t> native_buf((size_t)native_n * native_ch, 0);

@@ -66,7 +66,7 @@ bool MidiEntt::fetch_audio(Composition* cmp, int64_t start_sample, int n, int16_
   if(inst == nullptr) return false;
 
   int64_t track_start = cmp->frame_to_sample(fstart_);
-  int64_t track_end   = cmp->frame_to_sample(fend_);
+  int64_t track_end   = cmp->frame_to_sample(fend_ + 1);
   if(track_end <= track_start) return false;
   if(start_sample + n <= track_start || start_sample >= track_end) return false; // このチャンクはトラック範囲外
 

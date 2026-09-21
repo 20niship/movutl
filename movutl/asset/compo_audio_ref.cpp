@@ -38,7 +38,7 @@ bool CompoAudioEntt::fetch_audio(Composition* cmp, int64_t start_sample, int n, 
   } guard{dst_comp};
 
   int64_t track_start = cmp->frame_to_sample(fstart_);
-  int64_t track_len   = cmp->frame_to_sample(fend_) - track_start;
+  int64_t track_len   = cmp->frame_to_sample(fend_ + 1) - track_start;
   if(track_len <= 0) return false;
   int64_t elapsed = start_sample - track_start;
   if(elapsed + n <= 0 || elapsed >= track_len) return false;

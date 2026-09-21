@@ -20,7 +20,9 @@ namespace mu {
 const cutil::PropInfo* AudioEntt::getPropsInfo() const {
   static const cutil::PropInfo info = [] {
     cutil::PropInfo p;
-    // offset_sec_ has an unsupported type (double)
+    p.fields.push_back(cutil::PropInfo::Field("offset_sec_", offsetof(AudioEntt, offset_sec_), cutil::prop_info_of<float>()));
+    p.fields.back().set_label("開始位置(秒)");
+    p.fields.back().min_value = 0.0;
     p.fields.push_back(cutil::PropInfo::Field("speed", offsetof(AudioEntt, speed), cutil::prop_info_of<float>()));
     p.fields.back().set_label("再生速度");
     p.fields.back().min_value  = 0.0;

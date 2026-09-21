@@ -1332,7 +1332,7 @@ bool BeginTrack(const Ref<Entity>& entity) {
       for(int x = (int)rect.Min.x; x < (int)rect.Max.x; x++) {
         int f = ctx_.view2f(x);
         if(f < *start || f >= *end) continue;
-        int idx = wf.index_for_second((f - *start) / (double)fps);
+        int idx = wf.index_for_second((double)audio->offset_sec_ + (f - *start) / (double)fps * (audio->speed / 100.0));
         if(idx < 0 || idx >= (int)wf.levels.size()) continue;
         int len = (int)(half * (wf.levels[idx] / 255.0f));
         if(len > 0) dl->AddLine(ImVec2((float)x, (float)(mid - len)), ImVec2((float)x, (float)(mid + len)), IM_COL32(255, 255, 255, 200)); // トラック背景(緑系)とのコントラストを確保するため白系に

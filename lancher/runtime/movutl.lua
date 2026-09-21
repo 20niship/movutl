@@ -139,7 +139,7 @@ movutl.TextDecoration = {}
 ---@field loop_ boolean
 ---@field path_ string
 movutl.AudioEntt = {}
-movutl.AudioEntt.offset_sec_ = 0.0
+movutl.AudioEntt.offset_sec_ = 0.0 f
 movutl.AudioEntt.speed = 100.0 f
 movutl.AudioEntt.volume_ = 100.0 f
 movutl.AudioEntt.loop_ = false
