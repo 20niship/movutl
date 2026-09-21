@@ -96,7 +96,7 @@ void InspectorWindow::Update() {
     }
     if(ImGui::IsItemHovered()) ImGui::SetTooltip(e->active_ ? "非表示にする" : "表示する");
     ImGui::SameLine();
-    const std::string str = get_entt_icon(e) + std::string(" ") + e->name.c_str();
+    const std::string str = std::string(e->clipping_up_ ? ICON_FA_CROP_SIMPLE " " : "") + (e->camera_ctrl_ ? ICON_FA_VIDEO " " : "") + std::string(get_entt_icon(e)) + " " + e->name.c_str();
     ImGui::TextUnformatted(str.c_str());
   }
 
@@ -111,6 +111,10 @@ void InspectorWindow::Update() {
         e->blend_ = (BlendType)idx;
         invalidate();
       }
+      wd_row("上のオブジェクトでクリッピング");
+      if(ImGui::Checkbox("##clip_up", &e->clipping_up_)) invalidate();
+      wd_row("カメラ制御の対象");
+      if(ImGui::Checkbox("##cam_ctrl", &e->camera_ctrl_)) invalidate();
       wd_table_end();
     }
 

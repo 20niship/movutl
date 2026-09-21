@@ -39,6 +39,25 @@ TEST_CASE("clipping_up: 下に何も無い領域では上のオブジェクト�
   CHECK(out->rgba(45, 30) == Vec4b(0, 0, 0, 0));     // 右半分(下に何も無い): topはクリップされ透明のまま
 }
 
+TEST_CASE("clipping_up: 1つ上のレイヤーが可視でなければ通常描画") {
+  auto comp      = make_test_comp(60, 60);
+  comp->bg_color = 0;
+
+  auto top          = ShapeEntt::Create("top3", ShapeType_Rect);
+  top->pos_         = Vec3(0, 0, 0);
+  top->size_        = Vec2(60, 60);
+  top->color_       = Vec4b(0, 0, 255, 255);
+  top->fstart_      = 0;
+  top->fend_        = 10;
+  top->clipping_up_ = true;
+  comp->insert_entity(top, 1); // layer 0は空
+
+  CPURenderer renderer;
+  Ref<Image> out;
+  REQUIRE(renderer.render_frame(comp.get(), 0, out));
+  CHECK(out->rgba(30, 30) == Vec4b(0, 0, 255, 255));
+}
+
 TEST_CASE("clipping_up=falseなら通常通り全面に描画される") {
   auto comp = make_test_comp(60, 60);
 

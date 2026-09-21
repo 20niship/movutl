@@ -88,7 +88,7 @@ struct TimelineContext {
   int ctx_layer = -1;
 
   // 破壊的操作はEndTimeline()で遅延適用する(BeginTrackはlayer.entts[]への参照を持ったまま呼ばれるため、その最中にvectorを変更しない)
-  int pending_clip_op      = 0;  // 1=分割 2=複製 3=削除 4=有効/無効切替
+  int pending_clip_op      = 0;  // 1=分割 2=複製 3=削除 4=有効/無効切替 5=上のオブジェクトでクリッピング切替 6=カメラ制御の対象切替
   int pending_insert_layer = -1; // 挿入位置(この位置に空レイヤーを追加)
   struct PendingAdd {
     bool valid      = false;
@@ -494,7 +494,8 @@ static const char* entt_type_label(const Entity* e) {
     case EntityType_SceneAudio: return "コンポ音声参照";
     case EntityType_Custom: return "カスタムオブジェクト";
     case EntityType_Midi: return "MIDI";
-    case EntityType_Camera: return "カメラ";
+    case EntityType_Camera: return "カメラ制御";
+    case EntityType_SceneChange: return "シーンチェンジ";
     default: return "オブジェクト";
   }
 }
@@ -522,6 +523,8 @@ bool TimelineAddEntityMenu(int frame, int layer) {
   }
   if(ImGui::MenuItem(ICON_FA_TV " フレームバッファ")) picked = add(EntityType_Framebuffer);
   if(ImGui::MenuItem(ICON_FA_LAYER_GROUP " グループ制御")) picked = add(EntityType_Group);
+  if(ImGui::MenuItem(ICON_FA_VIDEO " カメラ制御")) picked = add(EntityType_Camera);
+  if(ImGui::MenuItem(ICON_FA_SHUFFLE " シーンチェンジ")) picked = add(EntityType_SceneChange);
   if(ImGui::MenuItem(ICON_FA_GLOBE " コンポ参照")) picked = add(EntityType_Scene);
   return picked;
 }
@@ -612,6 +615,16 @@ static void apply_pending_ops(Composition* cp) {
       bool any_active = false;
       for(const auto& e : sel) any_active |= e->active_;
       for(const auto& e : sel) e->active_ = !any_active;
+    } else if(op == 5) { // 上のオブジェクトでクリッピング(選択の一つでもONなら全てOFF、全てOFFなら全てON)
+      auto sel     = selected_refs();
+      bool any_clp = false;
+      for(const auto& e : sel) any_clp |= e->clipping_up_;
+      for(const auto& e : sel) e->clipping_up_ = !any_clp;
+    } else if(op == 6) { // カメラ制御の対象(同上)
+      auto sel     = selected_refs();
+      bool any_cam = false;
+      for(const auto& e : sel) any_cam |= e->camera_ctrl_;
+      for(const auto& e : sel) e->camera_ctrl_ = !any_cam;
     }
     changed = true;
   }
@@ -767,6 +780,10 @@ int EndTimeline() {
     if(ImGui::MenuItem(multi ? ICON_FA_COPY " 選択を複製" : ICON_FA_COPY " 複製")) ctx_.pending_clip_op = 2;
     bool now_active = ctx_.ctx_entt ? ctx_.ctx_entt->active_ : true;
     if(ImGui::MenuItem(now_active ? ICON_FA_EYE_SLASH " 無効にする" : ICON_FA_EYE " 有効にする")) ctx_.pending_clip_op = 4;
+    bool now_clip = ctx_.ctx_entt ? ctx_.ctx_entt->clipping_up_ : false;
+    if(ImGui::MenuItem(ICON_FA_CROP_SIMPLE " 上のオブジェクトでクリッピング", nullptr, now_clip)) ctx_.pending_clip_op = 5;
+    bool now_cam = ctx_.ctx_entt ? ctx_.ctx_entt->camera_ctrl_ : false;
+    if(ImGui::MenuItem(ICON_FA_VIDEO " カメラ制御の対象", nullptr, now_cam)) ctx_.pending_clip_op = 6;
     ImGui::Separator();
     if(ImGui::MenuItem(multi ? ICON_FA_TRASH " 選択を削除" : ICON_FA_TRASH " 削除")) ctx_.pending_clip_op = 3;
     ImGui::EndPopup();
@@ -1286,6 +1303,16 @@ bool BeginTrack(const Ref<Entity>& entity) {
   dl->AddRectFilled(body.Min, body.Max, col, 3.0f);
   dl->AddRect(body.Min, body.Max, scale_color(col, 0.55f) | 0xFF000000, 3.0f);
 
+  if(entity->clipping_up_) { // 上のオブジェクトでクリッピング中: 上端にシアンの線
+    dl->AddLine(ImVec2(body.Min.x + 2, body.Min.y + 1), ImVec2(body.Max.x - 2, body.Min.y + 1), IM_COL32(0, 230, 255, 255), 2.0f);
+    if(hovered) ImGui::SetTooltip("上のオブジェクトでクリッピング中");
+  }
+
+  if(entity->camera_ctrl_) { // カメラ制御の対象: 下端にオレンジの線
+    dl->AddLine(ImVec2(body.Min.x + 2, body.Max.y - 1), ImVec2(body.Max.x - 2, body.Max.y - 1), IM_COL32(255, 170, 40, 255), 2.0f);
+    if(hovered) ImGui::SetTooltip("カメラ制御の対象");
+  }
+
   if(dim_track) { // 網掛け
     dl->PushClipRect(body.Min, body.Max, true);
     for(float hx = body.Min.x - body.GetHeight(); hx < body.Max.x; hx += 6.0f) dl->AddLine(ImVec2(hx, body.Max.y), ImVec2(hx + body.GetHeight(), body.Min.y), IM_COL32(0, 0, 0, 90));
@@ -1308,7 +1335,7 @@ bool BeginTrack(const Ref<Entity>& entity) {
     const float vis_r = std::min(body.Max.x, (float)inside.right()) - 3.0f;
     const float avail = vis_r - vis_l;
     if(avail > 10.0f) {
-      const std::string label = std::string(get_entt_icon(entity)) + " " + name;
+      const std::string label = std::string(entity->clipping_up_ ? ICON_FA_CROP_SIMPLE " " : "") + (entity->camera_ctrl_ ? ICON_FA_VIDEO " " : "") + get_entt_icon(entity) + " " + name;
       const std::string shown = ellipsize(label.c_str(), avail);
       if(!shown.empty()) {
         auto tsz = ImGui::CalcTextSize(shown.c_str());

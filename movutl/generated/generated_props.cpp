@@ -9,11 +9,13 @@
 #ifdef MOVUTL_DAW
 #include <movutl/asset/midi.hpp>
 #endif
+#include <movutl/asset/camera.hpp>
 #include <movutl/asset/compo_audio_ref.hpp>
 #include <movutl/asset/compo_ref.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/framebuffer.hpp>
 #include <movutl/asset/group.hpp>
+#include <movutl/asset/scene_change.hpp>
 #include <movutl/core/anim.hpp>
 #include <movutl/core/prop_types.hpp>
 namespace mu {
@@ -46,6 +48,31 @@ cutil::Prop AudioEntt::getProps() const {
   return p;
 }
 void AudioEntt::setProps(const cutil::Prop& p) { (void)p.load_to(this, getPropsInfo()); }
+const cutil::PropInfo* Camera3D::getPropsInfo() const {
+  static const cutil::PropInfo info = [] {
+    cutil::PropInfo p;
+    p.fields.push_back(cutil::PropInfo::Field("target_", offsetof(Camera3D, target_), cutil::prop_info_of<Vec3>()));
+    p.fields.back().set_label("目標位置");
+    p.fields.back().set_desc("カメラが向く点(2D近似では未使用)");
+    p.fields.push_back(cutil::PropInfo::Field("fov_", offsetof(Camera3D, fov_), cutil::prop_info_of<float>()));
+    p.fields.back().set_label("視野角(度)");
+    p.fields.back().set_desc("2D近似では未使用");
+    p.fields.back().min_value = 1.0;
+    p.fields.back().max_value = 170.0;
+    p.fields.push_back(cutil::PropInfo::Field("target_layers_", offsetof(Camera3D, target_layers_), cutil::prop_info_of<int32_t>()));
+    p.fields.back().set_label("対象レイヤー数");
+    p.fields.back().set_desc("自身より下の何レイヤーに効かせるか。0なら以降すべて");
+    p.fields.back().min_value = 0;
+    return p;
+  }();
+  return &info;
+}
+cutil::Prop Camera3D::getProps() const {
+  cutil::Prop p;
+  p.dump(this, getPropsInfo());
+  return p;
+}
+void Camera3D::setProps(const cutil::Prop& p) { (void)p.load_to(this, getPropsInfo()); }
 const cutil::PropInfo* CompoAudioEntt::getPropsInfo() const {
   static const cutil::PropInfo info = [] {
     cutil::PropInfo p;
@@ -114,6 +141,7 @@ const cutil::PropInfo* Entity::getTrackPropsInfo() const {
     p.fields.back().set_desc("(音声のみ)他のレイヤを非表示にする");
     p.fields.push_back(cutil::PropInfo::Field("clipping_up_", offsetof(Entity, clipping_up_), cutil::prop_info_of<bool>()));
     p.fields.back().set_label("上レイヤでクリッピング");
+    p.fields.back().set_desc("1つ上のオブジェクトの形で切り抜く");
     p.fields.push_back(cutil::PropInfo::Field("camera_ctrl_", offsetof(Entity, camera_ctrl_), cutil::prop_info_of<bool>()));
     p.fields.back().set_label("カメラ制御");
     p.fields.back().set_desc("カメラ制御の対象");
@@ -266,6 +294,32 @@ cutil::Prop Movie::getProps() const {
   return p;
 }
 void Movie::setProps(const cutil::Prop& p) { (void)p.load_to(this, getPropsInfo()); }
+const cutil::PropInfo* SceneChangeEntt::getPropsInfo() const {
+  static const cutil::PropInfo info = [] {
+    cutil::PropInfo p;
+    p.fields.push_back(cutil::PropInfo::Field("type_", offsetof(SceneChangeEntt, type_), cutil::prop_info_of<int32_t>()));
+    p.fields.back().set_label("種類(0:フェード 1:左右ワイプ 2:上下ワイプ 3:円形)");
+    p.fields.back().min_value = 0;
+    p.fields.back().max_value = 3;
+    p.fields.push_back(cutil::PropInfo::Field("invert_", offsetof(SceneChangeEntt, invert_), cutil::prop_info_of<bool>()));
+    p.fields.back().set_label("反転");
+    p.fields.back().set_desc("ワイプの方向を反転する");
+    p.fields.push_back(cutil::PropInfo::Field("blur_", offsetof(SceneChangeEntt, blur_), cutil::prop_info_of<float>()));
+    p.fields.back().set_label("ぼかし");
+    p.fields.back().set_desc("ワイプ境界のぼかし幅(0〜1)");
+    p.fields.back().min_value  = 0.0;
+    p.fields.back().max_value  = 1.0;
+    p.fields.back().drag_speed = 0.01;
+    return p;
+  }();
+  return &info;
+}
+cutil::Prop SceneChangeEntt::getProps() const {
+  cutil::Prop p;
+  p.dump(this, getPropsInfo());
+  return p;
+}
+void SceneChangeEntt::setProps(const cutil::Prop& p) { (void)p.load_to(this, getPropsInfo()); }
 const cutil::PropInfo* ShapeEntt::getPropsInfo() const {
   static const cutil::PropInfo info = [] {
     cutil::PropInfo p;

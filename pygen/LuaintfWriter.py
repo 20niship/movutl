@@ -50,6 +50,8 @@ class LuaIntfWriter:
             "#endif\n"
             "#include <movutl/asset/framebuffer.hpp>\n"
             "#include <movutl/asset/group.hpp>\n"
+            "#include <movutl/asset/camera.hpp>\n"
+            "#include <movutl/asset/scene_change.hpp>\n"
             "#include <movutl/asset/shape.hpp>\n"
             "#include <movutl/asset/compo_ref.hpp>\n"
             "#include <movutl/asset/compo_audio_ref.hpp>\n"

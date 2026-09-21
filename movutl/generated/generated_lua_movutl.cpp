@@ -16,12 +16,14 @@
 #ifdef MOVUTL_DAW
 #include <movutl/asset/midi.hpp>
 #endif
+#include <movutl/asset/camera.hpp>
 #include <movutl/asset/compo_audio_ref.hpp>
 #include <movutl/asset/compo_ref.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/entity.hpp>
 #include <movutl/asset/framebuffer.hpp>
 #include <movutl/asset/group.hpp>
+#include <movutl/asset/scene_change.hpp>
 #include <movutl/asset/shape.hpp>
 #include <movutl/binding/imgui_binding.hpp>
 #include <movutl/core/anim.hpp>
@@ -119,11 +121,19 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addConstant("EntityType_Camera", EntityType::EntityType_Camera)
     .addConstant("EntityType_Effect", EntityType::EntityType_Effect)
     .addConstant("EntityType_Midi", EntityType::EntityType_Midi)
+    .addConstant("EntityType_SceneChange", EntityType::EntityType_SceneChange)
     .endModule()
     .beginModule("ImageFormat")
     .addConstant("ImageFormatRGB", ImageFormat::ImageFormatRGB)
     .addConstant("ImageFormatRGBA", ImageFormat::ImageFormatRGBA)
     .addConstant("ImageFormatGRAYSCALE", ImageFormat::ImageFormatGRAYSCALE)
+    .endModule()
+    .beginModule("SceneChangeType")
+    .addConstant("SceneChangeType_Fade", SceneChangeType::SceneChangeType_Fade)
+    .addConstant("SceneChangeType_WipeLR", SceneChangeType::SceneChangeType_WipeLR)
+    .addConstant("SceneChangeType_WipeUD", SceneChangeType::SceneChangeType_WipeUD)
+    .addConstant("SceneChangeType_Circle", SceneChangeType::SceneChangeType_Circle)
+    .addConstant("SceneChangeType_Count", SceneChangeType::SceneChangeType_Count)
     .endModule()
     .beginModule("ShapeType")
     .addConstant("ShapeType_Triangle", ShapeType::ShapeType_Triangle)
@@ -161,6 +171,15 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addVariable("volume_", &AudioEntt::volume_)         // float
     .addVariable("loop_", &AudioEntt::loop_)             // bool
     .addVariable("path_", &AudioEntt::path_)             // std::string
+    .endClass()
+    .beginClass<Camera3D>("Camera3D")
+    .addStaticFunction("Create", &Camera3D::Create)
+    .addFunction("getType", &Camera3D::getType)
+    .addFunction("affects", &Camera3D::affects)
+    .addFunction("view_xform", &Camera3D::view_xform)
+    .addVariable("target_", &Camera3D::target_)               // Vec3
+    .addVariable("fov_", &Camera3D::fov_)                     // float
+    .addVariable("target_layers_", &Camera3D::target_layers_) // int32_t
     .endClass()
     .beginClass<CompoAudioEntt>("CompoAudioEntt")
     .addFunction("getType", &CompoAudioEntt::getType)
@@ -410,6 +429,15 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addVariable("compos_", &Project::compos_)             // std::vector<Ref<Composition> >
     .addVariable("main_comp_idx", &Project::main_comp_idx) // int
     .endClass()
+    .beginClass<SceneChangeEntt>("SceneChangeEntt")
+    .addStaticFunction("Create", &SceneChangeEntt::Create)
+    .addFunction("getType", &SceneChangeEntt::getType)
+    .addFunction("progress", &SceneChangeEntt::progress)
+    .addFunction("affects", &SceneChangeEntt::affects)
+    .addVariable("type_", &SceneChangeEntt::type_)     // int32_t
+    .addVariable("invert_", &SceneChangeEntt::invert_) // bool
+    .addVariable("blur_", &SceneChangeEntt::blur_)     // float
+    .endClass()
     .beginClass<ShapeEntt>("ShapeEntt")
     .addStaticFunction("Create", &ShapeEntt::Create)
     .addFunction("getType", &ShapeEntt::getType)
@@ -476,6 +504,9 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addVariable("dir", &WorkspaceEntry::dir)                 // int
     .addVariable("ratio", &WorkspaceEntry::ratio)             // float
     .endClass()
+    .addFunction("SceneChangeFromExoName", static_cast<bool (*)(const std::string&, int&, bool&)>(&SceneChangeFromExoName))
+    .addFunction("SceneChangeProgress", static_cast<float (*)(int, int, int)>(&SceneChangeProgress))
+    .addFunction("SceneChangeWeight", static_cast<float (*)(int, float, float, float, bool, float)>(&SceneChangeWeight))
     .addFunction("add_filter_to_entity", static_cast<bool (*)(const Ref<Entity>&, const char*)>(&add_filter_to_entity))
     .addFunction("add_filter_to_image", static_cast<bool (*)(const Ref<Image>&, const char*)>(&add_filter_to_image))
     .addFunction("add_filter_to_selected_entt", static_cast<bool (*)(const char*)>(&add_filter_to_selected_entt))

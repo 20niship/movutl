@@ -16,12 +16,14 @@
 #ifdef MOVUTL_DAW
 #include <movutl/asset/midi.hpp>
 #endif
+#include <movutl/asset/camera.hpp>
 #include <movutl/asset/compo_audio_ref.hpp>
 #include <movutl/asset/compo_ref.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/entity.hpp>
 #include <movutl/asset/framebuffer.hpp>
 #include <movutl/asset/group.hpp>
+#include <movutl/asset/scene_change.hpp>
 #include <movutl/asset/shape.hpp>
 #include <movutl/binding/imgui_binding.hpp>
 #include <movutl/core/anim.hpp>

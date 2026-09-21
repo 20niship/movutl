@@ -2,6 +2,7 @@
 #include <filesystem>
 #include <movutl/app/app.hpp>
 #include <movutl/asset/audio.hpp>
+#include <movutl/asset/camera.hpp>
 #include <movutl/asset/compo_audio_ref.hpp>
 #include <movutl/asset/compo_ref.hpp>
 #include <movutl/asset/composition.hpp>
@@ -11,6 +12,7 @@
 #include <movutl/asset/framebuffer.hpp>
 #include <movutl/asset/group.hpp>
 #include <movutl/asset/image.hpp>
+#include <movutl/asset/scene_change.hpp>
 #ifdef MOVUTL_DAW
 #include <movutl/asset/midi.hpp>
 #endif
@@ -222,6 +224,24 @@ bool add_new_track(const char* name, EntityType type, int start, int end) {
       g->fstart_ = start;
       g->fend_   = std::max(end, start + 1);
       main_comp->insert_entity(g);
+      break;
+    }
+    case EntityType_Camera: {
+      auto c                 = Camera3D::Create(name);
+      Composition* main_comp = Composition::GetActiveComp();
+      MU_ASSERT(main_comp);
+      c->fstart_ = start;
+      c->fend_   = std::max(end, start + 1);
+      main_comp->insert_entity(c);
+      break;
+    }
+    case EntityType_SceneChange: {
+      auto s                 = SceneChangeEntt::Create(name);
+      Composition* main_comp = Composition::GetActiveComp();
+      MU_ASSERT(main_comp);
+      s->fstart_ = start;
+      s->fend_   = std::max(end, start + 1);
+      main_comp->insert_entity(s);
       break;
     }
     case EntityType_Scene: {

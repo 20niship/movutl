@@ -6,11 +6,13 @@
 #include <fstream>
 #include <map>
 #include <movutl/asset/audio.hpp>
+#include <movutl/asset/camera.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/group.hpp>
 #include <movutl/asset/image.hpp>
 #include <movutl/asset/movie.hpp>
 #include <movutl/asset/project.hpp>
+#include <movutl/asset/scene_change.hpp>
 #include <movutl/asset/shape.hpp>
 #include <movutl/asset/text.hpp>
 #include <movutl/command/exo/exo_effects.hpp>
@@ -227,6 +229,7 @@ int import_exo_file(const char* path) {
     auto play          = find_fx("標準再生");
 
     Ref<Entity> ent;
+    bool sc_invert = false;
     if(kind == "動画ファイル") {
       auto file = resolve_media_path(get(src, "file"), base_dir);
       auto mov  = Movie::Create(stem_of(file).c_str(), file.c_str());
@@ -286,6 +289,21 @@ int import_exo_file(const char* path) {
       g->alpha_         = parse_alpha(src);
       g->target_layers_ = geti(src, "対象レイヤー数");
       ent               = g;
+    } else if(kind == "カメラ制御") {
+      auto c            = Camera3D::Create("カメラ制御");
+      c->pos_           = Vec3(getf(src, "X"), getf(src, "Y"), getf(src, "Z", kCameraDefaultZ));
+      c->target_        = Vec3(getf(src, "目標X"), getf(src, "目標Y"), getf(src, "目標Z"));
+      c->rotation_      = getf(src, "傾き");
+      c->fov_           = getf(src, "視野角", c->fov_);
+      c->target_layers_ = geti(src, "対象レイヤー数");
+      ent               = c;
+    } else if(int sc_type = 0; SceneChangeFromExoName(kind, sc_type, sc_invert)) {
+      auto s   = SceneChangeEntt::Create(kind.c_str());
+      s->type_ = sc_type;
+      // ponytail: exoの「反転」は名前由来の方向と排他にせずXORで反映。「調整」は0〜100をぼかし幅0〜1へ対応させただけの近似(実機未検証)
+      s->invert_ = sc_invert != (geti(src, "反転") != 0);
+      s->blur_   = std::clamp(getf(src, "調整") / 100.f, 0.f, 1.f);
+      ent        = s;
     } else {
       LOG_F(WARNING, "import_exo_file: [%d] unsupported object '%s', skipped", n, kind.c_str());
       exo_import_report().add("未対応のオブジェクト「" + kind + "」をスキップしました");

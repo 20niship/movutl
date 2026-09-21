@@ -50,6 +50,8 @@ class PropsWriter:
             "#endif\n"
             "#include <movutl/asset/framebuffer.hpp>\n"
             "#include <movutl/asset/group.hpp>\n"
+            "#include <movutl/asset/camera.hpp>\n"
+            "#include <movutl/asset/scene_change.hpp>\n"
             "#include <movutl/asset/compo_ref.hpp>\n"
             "#include <movutl/asset/compo_audio_ref.hpp>\n"
             "#include <movutl/core/anim.hpp>\n"

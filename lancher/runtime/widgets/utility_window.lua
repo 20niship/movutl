@@ -69,6 +69,8 @@ local function add_entities_ui()
 
   group("制御")
   add(icons.ICON_FA_LAYER_GROUP, "グループ", "グループ制御を追加", "group", movutl.EntityType.EntityType_Group)
+  add(icons.ICON_FA_VIDEO, "カメラ", "カメラ制御を追加", "camera", movutl.EntityType.EntityType_Camera)
+  add(icons.ICON_FA_SHUFFLE, "シーンチェンジ", "シーンチェンジを追加", "scene change", movutl.EntityType.EntityType_SceneChange)
   add(icons.ICON_FA_TV, "バッファ", "フレームバッファを追加", "framebuffer", movutl.EntityType.EntityType_Framebuffer)
   if tile(icons.ICON_FA_MAGNIFYING_GLASS, "カスタム", "カスタムオブジェクトを追加(検索して選択)") then imgui.OpenPopup("##ADD_CUSTOM_OBJECT_POPUP", 0) end
   if imgui.BeginPopup("##ADD_CUSTOM_OBJECT_POPUP", 0) then
