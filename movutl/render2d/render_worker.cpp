@@ -2,7 +2,7 @@
 #include <movutl/asset/config.hpp>
 #include <movutl/core/profiler.hpp>
 #include <movutl/render2d/render_worker.hpp>
-#include <movutl/render2d/renderer.hpp>
+#include <movutl/render2d/renderer_registry.hpp>
 
 namespace mu {
 
@@ -94,7 +94,8 @@ size_t RenderWorkerPool::queue_size() const {
 }
 
 void RenderWorkerPool::worker_loop(size_t worker_idx) {
-  CPURenderer renderer;
+  auto renderer_ptr  = create_active_renderer();
+  Renderer& renderer = *renderer_ptr;
   while(true) {
     Job job{nullptr, 0};
     {

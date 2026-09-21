@@ -31,6 +31,7 @@ void Config::Load() {
   c->show_viewer_ruler           = cutil::get_or<bool>(js, "show_viewer_ruler", c->show_viewer_ruler);
   c->viewer_ruler_center_origin  = cutil::get_or<bool>(js, "viewer_ruler_center_origin", c->viewer_ruler_center_origin);
   c->master_volume               = cutil::get_or<float>(js, "master_volume", c->master_volume);
+  c->renderer                    = cutil::get_or<std::string>(js, "renderer", c->renderer);
   c->ignore_scripts_with_require = cutil::get_or<bool>(js, "ignore_scripts_with_require", c->ignore_scripts_with_require);
 }
 
@@ -46,6 +47,7 @@ void Config::Save() {
   js.set<bool>("show_viewer_ruler", c->show_viewer_ruler);
   js.set<bool>("viewer_ruler_center_origin", c->viewer_ruler_center_origin);
   js.set<float>("master_volume", c->master_volume);
+  js.set<std::string>("renderer", c->renderer);
   js.set<bool>("ignore_scripts_with_require", c->ignore_scripts_with_require);
 
   std::string out;

@@ -5,6 +5,7 @@
 #include <movutl/binding/binding.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/plugin/plugin.hpp>
+#include <movutl/render2d/renderer_registry.hpp>
 #ifdef MOVUTL_DAW
 #include <movutl/plugin/vst/vst_host.hpp>
 #endif
@@ -36,6 +37,7 @@ void init() {
   LOG_F(1, "Loading plugins...");
   detail::activate_all_plugins();
   Config::Load();
+  init_active_renderer();
   LOG_F(1, "Initialization complete");
   detail::init_lua_binding();
 }
