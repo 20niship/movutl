@@ -276,7 +276,7 @@ TEST_CASE("register_aviutl_scripts: 2値化スクリプトをフォルダスキ�
 TEST_CASE("register_aviutl_scripts: obj.drawpolyで台形変形を実行できる") {
   std::string text = "@あおりテスト\n"
                      "local w, h = obj.w, obj.h\n"
-                     "obj.drawpoly(-2, -h / 2, 0, 2, -h / 2, 0, -w / 2, h / 2, 0, w / 2, h / 2, 0)\n";
+                     "obj.drawpoly(-2, -h / 2, 0, 2, -h / 2, 0, w / 2, h / 2, 0, -w / 2, h / 2, 0)\n";
 
   FilterPluginTable* plg = register_test_script(text, "あおりテスト");
   REQUIRE(plg != nullptr);

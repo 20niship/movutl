@@ -236,7 +236,9 @@ bool Image::drawquad(Image* dst, const Vec2 corners[4], float alpha_mul, BlendTy
   if(this->width <= 0 || this->height <= 0 || dst->width <= 0 || dst->height <= 0) return false;
 
   // corners順は左上,右上,左下,右下(AviUtl obj.drawpolyの引数順に合わせる)。端点はtransform_toと同様ピクセル座標の右端/下端(width-1,height-1)を使う
-  cv::Point2f src_pts[4] = {{0, 0}, {(float)width - 1, 0}, {0, (float)height - 1}, {(float)width - 1, (float)height - 1}};
+  // 幅/高さ1の画像(obj.load("figure",..,1)の1x1ベタ塗り等)は端点が同一になり変換行列が特異になるため、最低1pxの広がりを持たせる
+  const float sw = std::max(1.0f, (float)width - 1), sh = std::max(1.0f, (float)height - 1);
+  cv::Point2f src_pts[4] = {{0, 0}, {sw, 0}, {0, sh}, {sw, sh}};
   cv::Point2f dst_pts[4];
   float min_x = std::numeric_limits<float>::max(), max_x = std::numeric_limits<float>::lowest();
   float min_y = std::numeric_limits<float>::max(), max_y = std::numeric_limits<float>::lowest();

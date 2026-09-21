@@ -2,11 +2,13 @@
 #include <chrono>
 #include <cmath>
 #include <cstring>
+#include <map>
 #include <movutl/app/app_impl.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/core/logger.hpp>
 #include <movutl/plugin/aviutl_script/aviutl_obj_binding.hpp>
 #include <mutex>
+#include <opencv2/opencv.hpp>
 #include <string>
 
 extern "C" {
@@ -158,19 +160,32 @@ int l_obj_rand(lua_State* L) {
 
 // obj.interpolation(time,x0,y0,z0,x1,y1,z1,x2,y2,z2,x3,y3,z3): 4点のCatmull-Romスプラインで、p1→p2間をtime(0-1)で補間した(x,y,z)を返す
 int l_obj_interpolation(lua_State* L) {
-  double t = luaL_checknumber(L, 1);
-  double p[4][3];
+  // obj.interpolation(t, p0, p1, p2, p3): 各点は1〜3次元。次元数は引数の数((n-1)/4)で決まる(1D=5引数,2D=9,3D=13)
+  const int dims = (lua_gettop(L) - 1) / 4;
+  if(dims < 1 || dims > 3 || lua_gettop(L) != 1 + dims * 4) return luaL_error(L, "obj.interpolation: 引数の数が不正です(1+4*次元数個必要)");
+  double t       = luaL_checknumber(L, 1);
+  double p[4][3] = {};
   for(int i = 0; i < 4; i++)
-    for(int k = 0; k < 3; k++) p[i][k] = luaL_checknumber(L, 2 + i * 3 + k);
+    for(int k = 0; k < dims; k++) p[i][k] = luaL_checknumber(L, 2 + i * dims + k);
   double t2 = t * t, t3 = t2 * t;
-  for(int k = 0; k < 3; k++) lua_pushnumber(L, 0.5 * ((2 * p[1][k]) + (-p[0][k] + p[2][k]) * t + (2 * p[0][k] - 5 * p[1][k] + 4 * p[2][k] - p[3][k]) * t2 + (-p[0][k] + 3 * p[1][k] - 3 * p[2][k] + p[3][k]) * t3));
-  return 3;
+  for(int k = 0; k < dims; k++) lua_pushnumber(L, 0.5 * ((2 * p[1][k]) + (-p[0][k] + p[2][k]) * t + (2 * p[0][k] - 5 * p[1][k] + 4 * p[2][k] - p[3][k]) * t2 + (-p[0][k] + 3 * p[1][k] - 3 * p[2][k] + p[3][k]) * t3));
+  return dims;
 }
 
 // obj.getvalue(target[,time]): 現在のobj変数("x","ox","zoom","rz"等)またはトラックバー("track0"-"track3")の値を返す。未知のtargetはnil
 // ponytail: 他フレームの値(time指定)は保持していないので無視して現在値を返す
 int l_obj_getvalue(lua_State* L) {
   std::string key = luaL_checkstring(L, 1);
+  if(key == "time" && lua_gettop(L) >= 3) {
+    // obj.getvalue("time",0,index): 中間点(区間)の開始時刻。単一オブジェクトとして動かすので区間は1つ(index>=0は0、-1(=終端)はobj.totaltime)
+    if(luaL_checkinteger(L, 3) >= 0) {
+      lua_pushnumber(L, 0);
+    } else {
+      lua_getglobal(L, "obj");
+      lua_getfield(L, -1, "totaltime");
+    }
+    return 1;
+  }
   lua_getglobal(L, "obj");
   lua_getfield(L, -1, key.c_str());
   return lua_isnumber(L, -1) ? 1 : (lua_pushnil(L), 1);
@@ -218,12 +233,120 @@ FilterPluginTable* find_filter_by_name(const char* name) {
 }
 
 // AviUtl内蔵エフェクトとmovutl内蔵フィルタは日本語名が一致するものが多いため、名前一致検索のみ行う(見つからなければベストエフォートでスキップ)
+// obj.effectの名前付き数値引数("上",10,"下",5,...)を集める
+std::map<std::string, double> collect_effect_args(lua_State* L) {
+  std::map<std::string, double> a;
+  for(int i = 2; i + 1 <= lua_gettop(L); i += 2)
+    if(lua_isstring(L, i) && lua_isnumber(L, i + 1)) a[lua_tostring(L, i)] = lua_tonumber(L, i + 1);
+  return a;
+}
+
+// 画像を上下左右へ拡張/縮小(負値でクロップ)して置き換える。はみ出た部分は透明
+void resize_canvas(Image* img, int top, int bottom, int left, int right) {
+  const int nw = std::max(1, (int)img->width + left + right), nh = std::max(1, (int)img->height + top + bottom);
+  Image out(nw, nh);
+  out.has_alpha = true;
+  out.fill_rgba(Vec4b(0, 0, 0, 0));
+  for(int y = 0; y < (int)img->height; y++) {
+    const int ty = y + top;
+    if(ty < 0 || ty >= nh) continue;
+    for(int x = 0; x < (int)img->width; x++) {
+      const int tx = x + left;
+      if(tx >= 0 && tx < nw) out(tx, ty) = (*img)(x, y);
+    }
+  }
+  img->resize(nw, nh);
+  img->has_alpha = true;
+  std::memcpy(img->data(), out.data(), img->size_in_bytes());
+}
+
+// movutlのフィルタに無いAviUtl組み込みエフェクトの簡易実装。処理したらtrue。ponytail: 見た目が近づくだけの簡易版(AviUtl実機との一致は未検証)
+bool apply_builtin_effect(lua_State* L, AviUtlObjContext* ctx, const std::string& name) {
+  Image* img = ctx->fpip->img;
+  if(!img || img->empty()) return false;
+  auto a   = collect_effect_args(L);
+  auto arg = [&](const char* k, double d) { return a.count(k) ? a[k] : d; };
+  if(name == "クリッピング") {
+    resize_canvas(img, -(int)arg("上", 0), -(int)arg("下", 0), -(int)arg("左", 0), -(int)arg("右", 0));
+  } else if(name == "領域拡張") {
+    resize_canvas(img, (int)arg("上", 0), (int)arg("下", 0), (int)arg("左", 0), (int)arg("右", 0));
+  } else if(name == "境界ぼかし") {
+    // 透明度(アルファ)だけをぼかして輪郭をぼかす
+    const int range = (int)arg("範囲", 5);
+    if(range > 0) {
+      cv::Mat alpha((int)img->height, (int)img->width, CV_8UC1);
+      for(int y = 0; y < (int)img->height; y++)
+        for(int x = 0; x < (int)img->width; x++) alpha.at<uint8_t>(y, x) = (*img)(x, y)[3];
+      cv::GaussianBlur(alpha, alpha, cv::Size(range * 2 + 1, range * 2 + 1), range / 2.0);
+      for(int y = 0; y < (int)img->height; y++)
+        for(int x = 0; x < (int)img->width; x++) (*img)(x, y)[3] = alpha.at<uint8_t>(y, x);
+    }
+  } else if(name == "ローテーション") {
+    const int rot = ((int)arg("90度回転", 0) % 4 + 4) % 4;
+    if(rot == 0 && !arg("上下反転", 0) && !arg("左右反転", 0)) return true;
+    cv::Mat m((int)img->height, (int)img->width, CV_8UC4);
+    std::memcpy(m.data, img->data(), img->size_in_bytes());
+    if(arg("上下反転", 0)) cv::flip(m, m, 0);
+    if(arg("左右反転", 0)) cv::flip(m, m, 1);
+    if(rot == 1) cv::rotate(m, m, cv::ROTATE_90_CLOCKWISE);
+    if(rot == 2) cv::rotate(m, m, cv::ROTATE_180);
+    if(rot == 3) cv::rotate(m, m, cv::ROTATE_90_COUNTERCLOCKWISE);
+    img->resize(m.cols, m.rows);
+    img->has_alpha = true;
+    std::memcpy(img->data(), m.data, img->size_in_bytes());
+  } else if(name == "極座標変換") {
+    // 画像の横=角度、縦=中心からの距離として輪(円盤)へ変換する。出力は一辺 2*(高さ+中心幅) の正方形
+    const int inner   = std::max(0, (int)arg("中心幅", 0));
+    const double zoom = arg("拡大率", 100) / 100.0, rot = arg("回転", 0) * M_PI / 180.0;
+    const int w = (int)img->width, h = (int)img->height, d = std::max(1, (int)std::lround(2 * (h + inner) * zoom));
+    Image out(d, d);
+    out.has_alpha = true;
+    out.fill_rgba(Vec4b(0, 0, 0, 0));
+    for(int y = 0; y < d; y++)
+      for(int x = 0; x < d; x++) {
+        const double dx = x - d / 2.0 + 0.5, dy = y - d / 2.0 + 0.5, r = std::hypot(dx, dy) / zoom - inner;
+        if(r < 0 || r >= h) continue;
+        double t = std::atan2(dy, dx) - rot;
+        t        = t / (2 * M_PI) + 0.5;
+        t -= std::floor(t);
+        out(x, y) = (*img)(std::min(w - 1, (int)(t * w)), std::min(h - 1, (int)r));
+      }
+    img->resize(d, d);
+    img->has_alpha = true;
+    std::memcpy(img->data(), out.data(), img->size_in_bytes());
+  } else if(name == "ノイズ") {
+    // 値ノイズでアルファを削る簡易版(周期X/Yで粗さ、しきい値[%]以下を透明、変化速度で時間変化)
+    const double px = std::max(1.0, arg("周期X", 100)), py = std::max(1.0, arg("周期Y", 100)), th = arg("しきい値", 0) / 100.0, tm = arg("変化速度", 0) * ctx->frame / 30.0;
+    auto hash = [](int x, int y) {
+      uint32_t h = (uint32_t)x * 374761393u + (uint32_t)y * 668265263u;
+      h          = (h ^ (h >> 13)) * 1274126177u;
+      return (h ^ (h >> 16)) / 4294967295.0;
+    };
+    for(int y = 0; y < (int)img->height; y++)
+      for(int x = 0; x < (int)img->width; x++) {
+        const double fx = x / px, fy = y / py + tm, ix = (int)std::floor(fx), iy = (int)std::floor(fy), tx = fx - ix, ty = fy - iy;
+        const double n = (hash(ix, iy) * (1 - tx) + hash(ix + 1, iy) * tx) * (1 - ty) + (hash(ix, iy + 1) * (1 - tx) + hash(ix + 1, iy + 1) * tx) * ty;
+        if(n < th) (*img)(x, y)[3] = 0;
+      }
+  } else {
+    return false;
+  }
+  sync_obj_size(L, img);
+  return true;
+}
+
 int l_obj_effect(lua_State* L) {
   auto* ctx = get_ctx(L);
   if(lua_gettop(L) == 0) return 0; // 引数なしobj.effect()はAviUtlでは保留中のobj値の確定。ponytail: 確定は未対応のno-op
   std::string name       = luaL_checkstring(L, 1);
   FilterPluginTable* plg = find_filter_by_name(name.c_str());
+  if(ctx->screen && name == "ぼかし") { // AviUtlのぼかしは範囲ぶんキャンバスを広げる(2面モデルのみ。1面モデルは従来どおり)
+    const int r = std::max(0, (int)luaL_optnumber(L, 3, 5));
+    resize_canvas(ctx->fpip->img, r, r, r, r);
+    sync_obj_size(L, ctx->fpip->img);
+  }
   if(!plg) {
+    if(apply_builtin_effect(L, ctx, name)) return 0;
     LOG_F(WARNING, "obj.effect: 内部フィルタ '%s' が見つかりません(スキップ)", name.c_str());
     return 0;
   }
@@ -264,6 +387,17 @@ void perform_draw(lua_State* L, AviUtlObjContext* ctx, double x, double y, doubl
   if(!img || img->empty()) return;
   Placement pl;
   pl.x = x, pl.y = y;
+  if(ctx->screen) { // 2面モデル: オブジェクトバッファは残したまま、描画先へ重ねる
+    pl.anchor_x = obj_field_or_arg(L, 999, "cx", 0.0), pl.anchor_y = obj_field_or_arg(L, 999, "cy", 0.0);
+    pl.scale_x = pl.scale_y = zoom;
+    pl.aspect               = std::clamp(obj_field_or_arg(L, 999, "aspect", 0.0), -1.0, 1.0);
+    pl.rot_x = rx, pl.rot_y = ry, pl.rot_z = rz;
+    pl.alpha = (float)alpha;
+    pl.blend = ctx->blend;
+    img->place(ctx->draw_target, pl);
+    ctx->screen_drawn |= ctx->draw_target == ctx->screen; // 一時バッファへの描画は最終出力に数えない
+    return;
+  }
   pl.anchor_x = obj_field_or_arg(L, 999, "cx", 0.0), pl.anchor_y = obj_field_or_arg(L, 999, "cy", 0.0);
   pl.scale_x = pl.scale_y = zoom;
   pl.aspect               = std::clamp(obj_field_or_arg(L, 999, "aspect", 0.0), -1.0, 1.0);
@@ -284,7 +418,7 @@ int l_obj_draw(lua_State* L) {
   return 0;
 }
 
-// obj.drawpoly(x0,y0,z0, x1,y1,z1, x2,y2,z2, x3,y3,z3): 四隅(左上,右上,左下,右下)を個別移動させ射影変形して描き直す(UV引数は非対応)
+// obj.drawpoly(x0,y0,z0, x1,y1,z1, x2,y2,z2, x3,y3,z3): 四隅(AviUtl仕様どおり時計回りの 左上,右上,右下,左下)を個別移動させ射影変形して描き直す(UV引数は非対応)
 int l_obj_drawpoly(lua_State* L) {
   auto* ctx  = get_ctx(L);
   Image* img = ctx->fpip->img;
@@ -294,11 +428,18 @@ int l_obj_drawpoly(lua_State* L) {
     return 0;
   }
 
+  Image* dst = ctx->screen ? ctx->draw_target : img; // 2面モデルでは描画先の中心が原点
   Vec2d corners[4];
   for(int i = 0; i < 4; i++) {
     double x   = luaL_checknumber(L, i * 3 + 1);
     double y   = luaL_checknumber(L, i * 3 + 2);
-    corners[i] = Vec2d(img->width / 2.0 + x, img->height / 2.0 + y);
+    corners[i] = Vec2d(dst->width / 2.0 + x, dst->height / 2.0 + y);
+  }
+  std::swap(corners[2], corners[3]); // Image::drawpolyは 左上,右上,左下,右下 の順なので、時計回りの引数順から入れ替える
+  if(ctx->screen) {
+    img->drawpoly(dst, corners, 1.0f, ctx->blend);
+    ctx->screen_drawn |= ctx->draw_target == ctx->screen; // 一時バッファへの描画は最終出力に数えない
+    return 0;
   }
 
   Image tmp(img->width, img->height);
@@ -381,9 +522,44 @@ int l_obj_copybuffer(lua_State* L) {
 }
 
 // obj.setoption("drawtarget","tempbuffer",w,h): 描画バッファを拡張する(既存内容は中央基準で保持)。他のオプションは非対応でno-op
+// AviUtlの合成モード指定(文字列/数値)をBlendTypeへ。ponytail: alpha_*系(アルファを考慮する版)も通常の加算等と同一視している
+BlendType parse_blend(lua_State* L, int idx) {
+  if(lua_isnumber(L, idx)) {
+    static const BlendType tbl[] = {Blend_Alpha, Blend_Add, Blend_Sub, Blend_Mul, Blend_Screen, Blend_Overlay, Blend_Lighten, Blend_Darken};
+    int n                        = (int)lua_tointeger(L, idx);
+    return (n >= 0 && n < 8) ? tbl[n] : Blend_Alpha;
+  }
+  std::string m = lua_isstring(L, idx) ? lua_tostring(L, idx) : "";
+  if(m.rfind("alpha_", 0) == 0) m = m.substr(6);
+  if(m == "add") return Blend_Add;
+  if(m == "sub") return Blend_Sub;
+  if(m == "mul") return Blend_Mul;
+  if(m == "screen") return Blend_Screen;
+  if(m == "overlay") return Blend_Overlay;
+  if(m == "max" || m == "lighten") return Blend_Lighten;
+  if(m == "min" || m == "darken") return Blend_Darken;
+  return Blend_Alpha;
+}
+
 int l_obj_setoption(lua_State* L) {
   auto* ctx       = get_ctx(L);
   std::string opt = luaL_checkstring(L, 1);
+  if(ctx->screen) { // 2面モデル: 描画先の切り替えと合成モード
+    if(opt == "blend") ctx->blend = parse_blend(L, 2);
+    if(opt == "drawtarget" && lua_isstring(L, 2)) {
+      std::string mode = lua_tostring(L, 2);
+      if(mode == "tempbuffer" && lua_gettop(L) >= 4) {
+        const int w = std::max(1, (int)luaL_checknumber(L, 3)), h = std::max(1, (int)luaL_checknumber(L, 4));
+        ctx->temp->resize(w, h);
+        ctx->temp->has_alpha = true;
+        ctx->temp->fill_rgba(Vec4b(0, 0, 0, 0));
+        ctx->draw_target = ctx->temp;
+      } else if(mode == "framebuffer") {
+        ctx->draw_target = ctx->screen;
+      }
+    }
+    return 0;
+  }
   if(opt != "drawtarget" || lua_gettop(L) < 4 || !lua_isstring(L, 2)) return 0;
   std::string mode = lua_tostring(L, 2);
   if(mode != "tempbuffer") return 0;
@@ -406,9 +582,82 @@ int l_obj_setoption(lua_State* L) {
 }
 
 // obj.load("image",path): 画像ファイルで描画バッファを置き換える。"tempbuffer"/"obj"は現在のバッファをそのまま使うno-op。他(movie/figure/text等)は未対応で警告のみ
+// obj.load("figure",名前,色,サイズ[,線幅])用: 図形1個の画像を作る(サイズ=直径/一辺のpx。線幅>0なら輪郭のみ)
+void make_figure(Image& img, const std::string& name, uint32_t color, int size, int line, int screen_w, int screen_h) {
+  const int w = name == "背景" ? std::max(1, screen_w) : std::max(1, size);
+  const int h = name == "背景" ? std::max(1, screen_h) : std::max(1, size);
+  cv::Mat mask(h, w, CV_8UC1, cv::Scalar(0));
+  const float cx = w / 2.0f, cy = h / 2.0f, r = size / 2.0f;
+  const int thick = line > 0 ? line : cv::FILLED;
+  auto poly       = [&](int n, double rot) {
+    std::vector<cv::Point> pts;
+    for(int i = 0; i < n; i++) {
+      double a = rot + 2 * M_PI * i / n;
+      pts.emplace_back((int)std::lround(cx + r * std::cos(a)), (int)std::lround(cy + r * std::sin(a)));
+    }
+    if(line > 0)
+      cv::polylines(mask, pts, true, cv::Scalar(255), line, cv::LINE_AA);
+    else
+      cv::fillConvexPoly(mask, pts, cv::Scalar(255), cv::LINE_AA);
+  };
+  if(name == "四角形" || name == "背景") {
+    cv::rectangle(mask, cv::Point(0, 0), cv::Point(w - 1, h - 1), cv::Scalar(255), thick, cv::LINE_8); // 軸平行の矩形はAA不要(1pxだとAAでアルファが薄くなる)
+  } else if(name == "三角形") {
+    poly(3, -M_PI / 2);
+  } else if(name == "五角形") {
+    poly(5, -M_PI / 2);
+  } else if(name == "六角形") {
+    poly(6, -M_PI / 2);
+  } else if(name == "星型") {
+    std::vector<cv::Point> pts;
+    for(int i = 0; i < 10; i++) {
+      double a = -M_PI / 2 + M_PI * i / 5, rr = i % 2 ? r * 0.4 : r;
+      pts.emplace_back((int)std::lround(cx + rr * std::cos(a)), (int)std::lround(cy + rr * std::sin(a)));
+    }
+    if(line > 0)
+      cv::polylines(mask, pts, true, cv::Scalar(255), line, cv::LINE_AA);
+    else
+      cv::fillPoly(mask, std::vector<std::vector<cv::Point>>{pts}, cv::Scalar(255), cv::LINE_AA);
+  } else { // 円(未知の名前も円扱い)
+    cv::circle(mask, cv::Point((int)std::lround(cx), (int)std::lround(cy)), (int)std::lround(std::max(0.0f, r - 0.5f)), cv::Scalar(255), thick, cv::LINE_AA);
+  }
+  img.resize(w, h);
+  img.has_alpha = true;
+  const Vec4b rgb((color >> 16) & 0xFF, (color >> 8) & 0xFF, color & 0xFF, 0);
+  for(int y = 0; y < h; y++)
+    for(int x = 0; x < w; x++) {
+      Vec4b px  = rgb;
+      px[3]     = mask.at<uint8_t>(y, x);
+      img(x, y) = px;
+    }
+}
+
 int l_obj_load(lua_State* L) {
   auto* ctx        = get_ctx(L);
   std::string type = lua_isstring(L, 1) ? lua_tostring(L, 1) : "";
+  if(ctx->screen && ctx->fpip->img) { // 2面モデル: 図形の生成と、一時バッファ/フレームバッファからの取り込み
+    Image* obj_img = ctx->fpip->img;
+    if(type == "figure" && lua_isstring(L, 2)) {
+      const Composition* cmp = ctx->fpip->compo;
+      Image fig;
+      make_figure(fig, lua_tostring(L, 2), (uint32_t)luaL_optinteger(L, 3, 0xffffff), (int)luaL_optnumber(L, 4, 100), (int)luaL_optnumber(L, 5, 0), cmp ? (int)cmp->size[0] : 0, cmp ? (int)cmp->size[1] : 0);
+      obj_img->resize(fig.width, fig.height);
+      obj_img->has_alpha = true;
+      std::memcpy(obj_img->data(), fig.data(), obj_img->size_in_bytes());
+      sync_obj_size(L, obj_img);
+      return 0;
+    }
+    if(type == "tempbuffer" || type == "framebuffer") {
+      Image* src = type == "tempbuffer" ? ctx->temp : ctx->screen;
+      if(src && !src->empty()) {
+        obj_img->resize(src->width, src->height);
+        obj_img->has_alpha = true;
+        std::memcpy(obj_img->data(), src->data(), obj_img->size_in_bytes());
+        sync_obj_size(L, obj_img);
+      }
+      return 0;
+    }
+  }
   if(type == "image" && lua_isstring(L, 2) && ctx->fpip->img) {
     Image loaded;
     if(!loaded.load_file(lua_tostring(L, 2))) {
@@ -428,8 +677,73 @@ int l_obj_load(lua_State* L) {
 
 int l_obj_noop(lua_State*) { return 0; }
 
+// obj.getaudio(buf,file,mode,size): (サンプル数, サンプリングレート, バッファ)を返す。
+// ponytail: 音声ミキサとは未接続なので無音(0埋め)を返す。音声波形/スペクトラム系スクリプトが落ちずに動くだけ
+int l_obj_getaudio(lua_State* L) {
+  const int n = (int)std::clamp(luaL_optinteger(L, 4, 1024), (lua_Integer)1, (lua_Integer)65536);
+  lua_pushinteger(L, n);
+  lua_pushinteger(L, 44100);
+  lua_createtable(L, n, 0);
+  for(int i = 1; i <= n; i++) {
+    lua_pushnumber(L, 0);
+    lua_rawseti(L, -2, i);
+  }
+  return 3;
+}
+
+// obj.getoption(key[,...]): 単一オブジェクトとして動かすのでsection_num(中間点の数)は0、script_nameは実行中のスクリプト名、guiは常にfalse。未対応キーはnil
+int l_obj_getoption(lua_State* L) {
+  std::string key = luaL_checkstring(L, 1);
+  if(key == "section_num") {
+    lua_pushinteger(L, 0);
+  } else if(key == "script_name") {
+    lua_pushstring(L, get_ctx(L)->def ? get_ctx(L)->def->name.c_str() : "");
+  } else if(key == "gui") {
+    lua_pushboolean(L, 0);
+  } else {
+    lua_pushnil(L);
+  }
+  return 1;
+}
+
+// AviUtl組み込みグローバル関数HSV: HSV(col)で(h,s,v)に分解、HSV(h,s,v)で0xRRGGBBのパック整数を返す(h:0-360, s/v:0-100)
+int l_global_HSV(lua_State* L) {
+  auto clamp01 = [](double v) { return v < 0 ? 0.0 : (v > 1 ? 1.0 : v); };
+  if(lua_gettop(L) == 1) {
+    lua_Integer c  = luaL_checkinteger(L, 1);
+    const double r = ((c >> 16) & 0xFF) / 255.0, g = ((c >> 8) & 0xFF) / 255.0, b = (c & 0xFF) / 255.0;
+    const double mx = std::max({r, g, b}), mn = std::min({r, g, b}), d = mx - mn;
+    double h = 0;
+    if(d > 0) h = mx == r ? 60 * std::fmod((g - b) / d + 6, 6) : (mx == g ? 60 * ((b - r) / d + 2) : 60 * ((r - g) / d + 4));
+    lua_pushnumber(L, h);
+    lua_pushnumber(L, mx > 0 ? d / mx * 100 : 0);
+    lua_pushnumber(L, mx * 100);
+    return 3;
+  }
+  double h       = std::fmod(std::fmod(luaL_checknumber(L, 1), 360.0) + 360.0, 360.0) / 60.0;
+  const double s = clamp01(luaL_checknumber(L, 2) / 100.0), v = clamp01(luaL_checknumber(L, 3) / 100.0);
+  const int sector = (int)h;
+  const double f = h - sector, p = v * (1 - s), q = v * (1 - s * f), t = v * (1 - s * (1 - f));
+  double o[3];
+  switch(sector) {
+    case 0: o[0] = v, o[1] = t, o[2] = p; break;
+    case 1: o[0] = q, o[1] = v, o[2] = p; break;
+    case 2: o[0] = p, o[1] = v, o[2] = t; break;
+    case 3: o[0] = p, o[1] = q, o[2] = v; break;
+    case 4: o[0] = t, o[1] = p, o[2] = v; break;
+    default: o[0] = v, o[1] = p, o[2] = q; break;
+  }
+  lua_pushinteger(L, ((lua_Integer)std::lround(o[0] * 255) << 16) | ((lua_Integer)std::lround(o[1] * 255) << 8) | (lua_Integer)std::lround(o[2] * 255));
+  return 1;
+}
+
 // AviUtl組み込みグローバル関数RGB(color): 0xRRGGBBのパック整数を(r,g,b)の3値に分解する
 int l_global_RGB(lua_State* L) {
+  if(lua_gettop(L) >= 3) { // RGB(r,g,b): パック整数を返す
+    auto ch = [&](int i) { return (lua_Integer)std::clamp(luaL_checknumber(L, i), 0.0, 255.0); };
+    lua_pushinteger(L, (ch(1) << 16) | (ch(2) << 8) | ch(3));
+    return 1;
+  }
   lua_Integer c = luaL_checkinteger(L, 1);
   lua_pushinteger(L, (c >> 16) & 0xFF);
   lua_pushinteger(L, (c >> 8) & 0xFF);
@@ -468,9 +782,11 @@ void setup_obj_table(lua_State* L, AviUtlObjContext* ctx) {
   reg_fn("line", l_obj_line);
   reg_fn("copybuffer", l_obj_copybuffer);
   reg_fn("setoption", l_obj_setoption);
-  reg_fn("getoption", l_obj_noop);
-  reg_fn("setanchor", l_obj_noop); // アンカーポイント編集UIは今回未対応(no-op、呼び出し自体はエラーにしない)
-  reg_fn("setfont", l_obj_noop);   // テキスト描画のフォント設定は今回未対応(no-op)
+  reg_fn("getoption", l_obj_getoption);
+  reg_fn("getaudio", l_obj_getaudio);
+  reg_fn("pixeloption", l_obj_noop); // ピクセルデータの形式指定(YC/RGB)は内部形式が固定のため不要(no-op)
+  reg_fn("setanchor", l_obj_noop);   // アンカーポイント編集UIは今回未対応(no-op、呼び出し自体はエラーにしない)
+  reg_fn("setfont", l_obj_noop);     // テキスト描画のフォント設定は今回未対応(no-op)
   reg_fn("load", l_obj_load);
 
   lua_pushnumber(L, 0);
@@ -568,6 +884,8 @@ std::pair<std::string, std::vector<std::pair<std::string, double>>> load_obj_deb
 void setup_global_functions(lua_State* L) {
   lua_pushcfunction(L, l_global_RGB);
   lua_setglobal(L, "RGB");
+  lua_pushcfunction(L, l_global_HSV);
+  lua_setglobal(L, "HSV");
 }
 
 } // namespace mu::detail

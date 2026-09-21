@@ -76,12 +76,11 @@ local function add_entities_ui()
     filter_text = new_text
     for i, name in ipairs(movutl.list_custom_objects()) do
       if filter_text == "" or string.find(name, filter_text, 1, true) then
-        imgui.PushID(name .. "##" .. i)
-        if imgui.Selectable(name, false, 0, imgui.ImVec2(0, 0)) then
+        -- 同名オブジェクトでIDが衝突しないよう連番を付ける(PushIDはLuaから1引数で呼べない)
+        if imgui.Selectable(name .. "##" .. i, false, 0, imgui.ImVec2(0, 0)) then
           movutl.add_new_custom_object_track(name, 0, 100)
           confirmed = true
         end
-        imgui.PopID()
       end
     end
     imgui.EndPopup()

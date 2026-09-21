@@ -6,6 +6,7 @@
 #include <movutl/core/text_encoding.hpp>
 #include <movutl/plugin/aviutl_script/aviutl_script_parser.hpp>
 #include <movutl/plugin/plugin.hpp>
+#include <set>
 #include <sstream>
 
 namespace mu::detail {
@@ -32,10 +33,13 @@ void register_custom_objects_from_file(const std::filesystem::path& path) {
 
 void register_custom_objects() {
   namespace fs = std::filesystem;
+  // lua_script_dirsはビルドフォルダ内のコピーとリポジトリ直下の両方を指しうるので、フォルダからの相対パスが同じファイルは最初に見つかった方だけ登録する(二重登録の防止)
+  std::set<fs::path> seen;
   for(const auto& dir : Config::Get()->lua_script_dirs) {
     if(!fs::exists(dir) || !fs::is_directory(dir)) continue;
     for(const auto& entry : fs::recursive_directory_iterator(dir)) {
       if(!entry.is_regular_file() || entry.path().extension() != ".obj") continue;
+      if(!seen.insert(fs::relative(entry.path(), dir)).second) continue;
       LOG_F(1, "Loading custom object script: %s", entry.path().string().c_str());
       register_custom_objects_from_file(entry.path());
     }
