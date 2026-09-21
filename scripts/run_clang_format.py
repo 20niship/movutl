@@ -6,11 +6,13 @@ from concurrent.futures import ThreadPoolExecutor
 EXTENSIONS = (".c", ".cpp", ".h", ".hpp")
 # .claudeはエージェント用worktree(リポジトリのコピー)を含むため対象外
 EXCLUDE_DIRS = {"build", ".git", "dist", "ext", "assets", ".cache", ".claude"}
+# 外部リポジトリ(AviUtlスクリプトのsubmodule)は整形しない
+EXCLUDE_PATHS = {os.path.join(".", "plugins", "scripts", "Aodaruma-AviUtl-Script")}
 CHECK = "--check" in sys.argv[1:]
 
 paths = []
 for root, dirs, files in os.walk("."):
-    dirs[:] = [d for d in dirs if d not in EXCLUDE_DIRS]
+    dirs[:] = [d for d in dirs if d not in EXCLUDE_DIRS and os.path.join(root, d) not in EXCLUDE_PATHS]
     paths += [os.path.join(root, f) for f in files if f.endswith(EXTENSIONS)]
 
 
