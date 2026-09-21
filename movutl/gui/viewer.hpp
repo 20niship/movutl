@@ -1,6 +1,6 @@
 #pragma once
 #include <imgui.h>
-#include <movutl/graphics/GLTexture.hpp>
+#include <movutl/graphics/VkTexture.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/gui/transform_gizmo.hpp>
 
@@ -15,7 +15,7 @@ struct ViewerCursor {
 ViewerCursor& viewer_cursor();
 
 class ViewerWindow final : public UIPanel {
-  GLTexture tex;
+  VkTexture tex;
   float zoom         = 1.0f; // ダブルクリックで1.0にリセット
   ImVec2 pan         = ImVec2(0, 0);
   bool show_checker_ = false; // 透明部分を市松模様で表示(背景色のalphaが0のとき有効)

@@ -91,7 +91,6 @@ void ViewerWindow::Update() {
     }
   }
   // キャッシュが1枚も無い間は直前のテクスチャをそのまま表示し続ける
-  auto texture_id = tex.get_id();
 
   constexpr float kCtrlFooterH = 28.0f; // 操作行(再生/拡大率/波形)の高さ
   const float kFooterH         = kCtrlFooterH;
@@ -133,11 +132,7 @@ void ViewerWindow::Update() {
       }
     }
   }
-  if(texture_id != 0) {
-    ImTextureID tex_id = (ImTextureID) reinterpret_cast<void*>(static_cast<intptr_t>(texture_id));
-    tex.bind();
-    dl->AddImage(tex_id, img_min, img_max);
-  }
+  if(tex.initialized()) dl->AddImage(tex.id(), img_min, img_max);
   dl->AddRect(img_min, img_max, IM_COL32(255, 255, 255, 180)); // Composition境界線
 
   if(hovered) {

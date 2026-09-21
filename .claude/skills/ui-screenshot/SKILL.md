@@ -5,7 +5,7 @@ description: movutlのGUIを実際に起動してスクリーンショット(PNG
 
 # movutl の UI スクリーンショットで動作確認する
 
-画面収録権限が無い環境でも、アプリ内蔵の `movutl.export_screen_png(path)`(`app.hpp`。中身は `gui.hpp` の `capture_screen()`=GLの表示中バッファ読み出し)を Lua から呼んで、ImGui UI込みの画面を PNG に保存できる。外部の `screencapture` は使わない。
+画面収録権限が無い環境でも、アプリ内蔵の `movutl.export_screen_png(path)`(`app.hpp`。中身は `gui.hpp` の `capture_screen()`=Vulkan swapchainの直近描画結果のコピーをreadback)を Lua から呼んで、ImGui UI込みの画面を PNG に保存できる。外部の `screencapture` は使わない。
 
 ## 手順
 
@@ -37,7 +37,7 @@ description: movutlのGUIを実際に起動してスクリーンショット(PNG
 
 ## 撮影時の注意
 - **自動テストとしては使わない**(見た目の確認用)。結果は必ず目で見る。
-- スクショは GL のフロントバッファを読むため、ウィンドウが隠れている・画面がスリープしていると真っ黒になることがある。
+- スクショは毎フレームswapchainからGPU内コピーしておいた画像を読むため、ウィンドウが隠れていても撮れるが、最小化中は描画自体が止まり更新されない。
 - 起動直後はワーカーが描画キャッシュを作る途中でビューアが黒いことがある。`wait` を増やす。
 - `mutest` を別のエージェント/端末と同時に走らせると `/tmp` の共有ファイルで競合して一時的に失敗することがある(GUI撮影とは無関係)。
 
