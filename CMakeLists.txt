@@ -23,6 +23,7 @@ endif()
 file(COPY ${MOVUTL_ROOT_DIR}/plugins/scripts DESTINATION ${CMAKE_BINARY_DIR}/plugins)
 
 include_directories(${MOVUTL_INCLUDES} ${MOVUTL_ROOT_DIR}/ext/doctest)
+enable_testing() # ctestがルートbuildからテストを拾えるようトップレベルで有効化する
 add_subdirectory(tests)
 add_subdirectory(examples)
 add_subdirectory(pygen)

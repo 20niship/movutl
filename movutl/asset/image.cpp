@@ -71,7 +71,7 @@ template <BlendType B> inline int blend_channel(int d, int s) {
   else if constexpr(B == Blend_Div)
     return s > 0 ? std::min(255, d * 255 / s) : 255;
   else if constexpr(B == Blend_Screen)
-    return d + s - div255(d * s); // 255-(255-d)(255-s)/255 と同値で乗算1回
+    return d + s - d * s / 255; // 255-(255-d)(255-s)/255(整数除算)と同値で乗算1回
   else if constexpr(B == Blend_Overlay)
     return d < 128 ? 2 * d * s / 255 : 255 - 2 * (255 - d) * (255 - s) / 255;
   else if constexpr(B == Blend_Darken)
@@ -86,7 +86,7 @@ template <BlendType B> inline int blend_channel(int d, int s) {
 
 /// srcをdstへ合成する。am256=alpha_mul*256(固定小数)。整数演算のみ
 template <BlendType B> inline void blend_pixel_t(Vec4b& d, const Vec4b& src, int am256) {
-  int a = (src[3] * am256) >> 8; // 0..256
+  int a = ((src[3] + (src[3] >> 7)) * am256) >> 8; // 0..256(src[3]=255を256へ写像し、不透明×alpha_mul=1が厳密に256になる)
   if(a <= 0) return;
   if constexpr(B == Blend_Alpha) {
     if(a >= 256) {
