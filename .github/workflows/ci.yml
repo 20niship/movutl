@@ -62,7 +62,7 @@ jobs:
             build-essential cmake ninja-build pkg-config \
             libglfw3-dev libfreetype-dev libglm-dev \
             libassimp-dev libluajit-5.1-dev libopencv-dev \
-            libvulkan-dev glslang-dev glslang-tools libglslang-dev spirv-tools \
+            libvulkan-dev glslang-dev glslang-tools spirv-tools \
             mesa-vulkan-drivers ffmpeg # mesa-vulkan-drivers=lavapipe(CPU Vulkan)。ffmpeg CLIはmovie_testのテスト動画生成に使う
 
       - name: just check
