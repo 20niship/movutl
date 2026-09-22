@@ -1,12 +1,10 @@
 #pragma once
 // AviUtl2
 // filter2.h(ext/aviutl2_sdk_mirror/include/aviutl2_sdk/filter2.h)と形状互換のGPU描画/シェーダ実行API。filter2.hはID3D11*/LPCWSTR/BYTE等Windows/D3D11型に依存し直接includeできないため値だけを移植する。詳細規約はdocs/plan_gpu_renderer.mdのPhase7節、GLSL規約はmovutl/vulkan/gpu_compute.hpp参照。.cso(DXBC)と.spv(ランタイムがGLSL文字列しか受け付けないため)は非対応
-#include <cstdint>
 #include <memory>
 #include <movutl/asset/image.hpp>
 #include <string>
 #include <unordered_map>
-#include <vector>
 
 namespace mu {
 class GpuImage;
