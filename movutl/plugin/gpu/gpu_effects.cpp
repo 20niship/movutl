@@ -34,35 +34,39 @@ layout(push_constant) uniform PC {
   float brightness, contrast, hue, saturation;
 } pc;
 
-vec3 rgb2hsvFull(vec3 c) {
-  float V = max(c.r, max(c.g, c.b));
-  float vmin = min(c.r, min(c.g, c.b));
-  float diff = V - vmin;
-  float S = (V > 0.0) ? diff / V : 0.0;
-  float h = 0.0;
-  if(diff > 0.0) {
-    float d60 = 60.0 / diff;
-    if(V == c.r) h = (c.g - c.b) * d60;
-    else if(V == c.g) h = (c.b - c.r) * d60 + 120.0;
-    else h = (c.r - c.b) * d60 + 240.0;
-  }
-  if(h < 0.0) h += 360.0;
-  return vec3(h, S, V);
+// OpenCVのCOLOR_RGB2HSV_FULL(8u)と同じ整数シフトテーブル式(hsv_shift=12)。H/S/Vは0..255のバイト値で返す
+ivec3 rgb2hsvFullByte(ivec3 c) {
+  int r = c.r, g = c.g, b = c.b;
+  int v = max(r, max(g, b));
+  int vmin = min(r, min(g, b));
+  int diff = v - vmin;
+  int vr = (v == r) ? -1 : 0;
+  int vg = (v == g) ? -1 : 0;
+  int h_raw = (vr & (g - b)) + (~vr & ((vg & (b - r + 2 * diff)) + (~vg & (r - g + 4 * diff))));
+  int sdiv = (v == 0) ? 0 : int(floor(1044480.0 / float(v) + 0.5));     // (255<<12)/v
+  int hdiv = (diff == 0) ? 0 : int(floor(1048576.0 / (6.0 * float(diff)) + 0.5)); // (256<<12)/(6*diff)
+  int s = (diff * sdiv + 2048) >> 12;
+  int h = (h_raw * hdiv + 2048) >> 12;
+  if(h < 0) h += 256;
+  return ivec3(h & 255, clamp(s, 0, 255), v);
 }
 
-vec3 hsv2rgbFull(float h, float s, float v) {
-  float cc = v * s;
-  float hh = h / 60.0;
-  float x = cc * (1.0 - abs(mod(hh, 2.0) - 1.0));
-  float m = v - cc;
-  vec3 rgb;
-  if(hh < 1.0) rgb = vec3(cc, x, 0.0);
-  else if(hh < 2.0) rgb = vec3(x, cc, 0.0);
-  else if(hh < 3.0) rgb = vec3(0.0, cc, x);
-  else if(hh < 4.0) rgb = vec3(0.0, x, cc);
-  else if(hh < 5.0) rgb = vec3(x, 0.0, cc);
-  else rgb = vec3(cc, 0.0, x);
-  return rgb + vec3(m);
+// OpenCVのCOLOR_HSV2RGB_FULL(8u→float経路)と同じsector展開式。h/s/vは0..255のバイト値、戻り値は0..1
+vec3 hsv2rgbFullByte(int hb, int sb, int vb) {
+  float h6 = float(hb) * (6.0 / 256.0);
+  float s = float(sb) / 255.0, v = float(vb) / 255.0;
+  if(h6 < 0.0) h6 += 6.0;
+  else if(h6 >= 6.0) h6 -= 6.0;
+  int sector = int(floor(h6));
+  float frac = h6 - float(sector);
+  float tab0 = v, tab1 = v * (1.0 - s), tab2 = v * (1.0 - s * frac), tab3 = v * (1.0 - s * (1.0 - frac));
+  // OpenCVのsector_data[sector]={b,g,rのtab[]インデックス}をr,g,bの順に並べ替えたもの
+  if(sector == 0) return vec3(tab0, tab3, tab1);
+  if(sector == 1) return vec3(tab2, tab0, tab1);
+  if(sector == 2) return vec3(tab1, tab0, tab3);
+  if(sector == 3) return vec3(tab1, tab2, tab0);
+  if(sector == 4) return vec3(tab3, tab1, tab0);
+  return vec3(tab0, tab1, tab2);
 }
 
 float lut_bc(float v255) {
@@ -79,16 +83,13 @@ void main() {
   vec3 rgb = c.rgb;
 
   if(pc.hue != 0.0 || pc.saturation != 100.0) {
-    // CPU版はcv::Matを介して一度8bitへ量子化してからLUTを引くため、ここでも同じ丸め点を再現する
-    vec3 hsv = rgb2hsvFull(rgb);
-    float hbyte = mod(floor(hsv.x * 256.0 / 360.0 + 0.5), 256.0);
-    float sbyte = clamp(floor(hsv.y * 255.0 + 0.5), 0.0, 255.0);
-    float vbyte = clamp(floor(hsv.z * 255.0 + 0.5), 0.0, 255.0);
-    float hue_off = floor(mod(pc.hue + 360.0, 360.0) * 256.0 / 360.0 + 0.5);
-    float h2 = mod(hbyte + hue_off, 256.0);
-    float s2 = clamp(floor(sbyte * pc.saturation / 100.0 + 0.5), 0.0, 255.0);
-    rgb = hsv2rgbFull(h2 * 360.0 / 256.0, s2 / 255.0, vbyte / 255.0);
-    rgb = floor(clamp(rgb * 255.0, 0.0, 255.0) + 0.5) / 255.0; // HSV2RGB_FULLも8bit量子化された行列を返す
+    // CPU版(cv::cvtColor COLOR_RGB2HSV_FULL/HSV2RGB_FULL)と同じ整数シフトテーブル式でH/S/Vバイトを再現する
+    ivec3 c255 = ivec3(round(rgb * 255.0));
+    ivec3 hsv = rgb2hsvFullByte(c255);
+    int hue_off = int(floor(mod(pc.hue + 360.0, 360.0) * 256.0 / 360.0 + 0.5));
+    int h2 = (hsv.x + hue_off) & 255;
+    int s2 = clamp(int(floor(float(hsv.y) * pc.saturation / 100.0 + 0.5)), 0, 255);
+    rgb = hsv2rgbFullByte(h2, s2, hsv.z);
   }
 
   vec3 v255 = rgb * 255.0;

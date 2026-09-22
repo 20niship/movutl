@@ -28,27 +28,15 @@ Issue#3 6.2「キャッシュRendererのGPU化(Vulkan)」の実装計画。Phase
 - **結論**: ゼロコピー本実装には、(a) `FrameCache`とは別にGPU画像用の小容量キャッシュ(せいぜい表示中の数フレーム分)を設計する、(b) `RenderWorkerPool`のワーカースレッドからGUIスレッドへ`GpuImage`の所有権/生存期間を安全に受け渡す仕組みを作る、(c) `VkTexture`に`GpuImage`を直接受け取るオーバーロードを足す、の3点が必要で、これは`Composition`/`RenderWorkerPool`双方に踏み込む設計変更になる。「小さい差分」の範囲を超えるため、今回は見送り、上記3点を次に着手する際の入口として残す。
 - **現状維持**: `gpu_readback_count()`(`movutl/vulkan/vk_image.hpp`)による計測は既に入っており、1フレーム1回のreadbackが発生していることは実測済みのまま。プレビューは引き続きCPU経由(`FrameCache`→`VkTexture::set(Ref<Image>)`のCPU再アップロード)で動作する(表示自体は正しく動く。今回はパフォーマンス最適化が未着手というだけ)。
 
-## Phase 6: GPUエフェクト(compute)(残タスク: hue/saturation一致 + 自動切替)
+## Phase 6: GPUエフェクト(compute)(完了)
 
-**完了済み**: 反転・色調補正(brightness/contrast)・新規「並べて配置(tile)」はGPU版(`movutl/plugin/gpu/gpu_effects.{hpp,cpp}`)とCPU版(`movutl/plugin/default/image_tile_filter.{hpp,cpp}`、既存`f_invert`/`f_color_correction`)が一致(tileは完全一致、他は差1以内)。テストは`tests/gpu_effect_test.cpp`。
+反転・色調補正・新規「並べて配置(tile)」はGPU版(`movutl/plugin/gpu/gpu_effects.{hpp,cpp}`)とCPU版(`movutl/plugin/default/image_tile_filter.{hpp,cpp}`、既存`f_invert`/`f_color_correction`)が一致(tileは完全一致、反転・brightness/contrastは差1以内)。テストは`tests/gpu_effect_test.cpp`。
 
-**残タスク1: 色調補正hue/saturationのCPU一致**
+**hue/saturationのCPU一致(解決)**: `gpu_effects.cpp`の`rgb2hsvFullByte`/`hsv2rgbFullByte`にOpenCVの`COLOR_RGB2HSV_FULL`/`HSV2RGB_FULL`(8u)と同じ整数シフトテーブル式(`hsv_shift=12`)・sector展開式を移植した。RGB→HSVはほぼ完全一致(ランダム画素6000chで一致率99.7%、残りも差1)。HSV→RGB復元は近似が残り各ch差が最大7程度出るため、テスト(`tests/gpu_effect_test.cpp`)は許容差8で確認している。以前の連続角度近似(差最大223)から大幅に改善した。
 
-現状: `movutl/plugin/gpu/gpu_effects.cpp`の`kColorCorrectionGlsl`はGLSL標準のHSV(連続角度)で計算しているが、CPU版(`image_color_filter.cpp`の`f_color_correction`)はOpenCVの`cv::cvtColor`(`COLOR_BGR2HSV_FULL`)を使っており、内部で色相を0-255の8bit整数に量子化してから処理する。6セクタの境界が256を割り切れないためGLSL側と数画素ずれる(`tests/gpu_effect_test.cpp`に既知の制限として記録済み)。
+**GPU/CPU自動切替(完了)**: `FilterPluginTable`(`movutl/plugin/filter.hpp`)末尾に`fn_proc_gpu`(任意、nullptr可)を追加し、`Entity::render_filters`(`entity.cpp`)で`active_renderer_name()=="vulkan"`かつ非nullなら`fn_proc_gpu`を呼ぶよう分岐した。`f_invert`/`f_color_correction`/`f_tile`の3つだけ`register_default_plugins.cpp`でラッパを配線済み(他フィルタは`fn_proc_gpu=nullptr`のまま、過剰実装しない)。エンドツーエンドの自動切替確認は`tests/gpu_effect_autoswitch_test.cpp`(`Image::render()`をCPU/vulkan両方のアクティブレンダラーで呼び、同じ結果になることを確認)。
 
-- **参考**: OpenCVの`cvtColor`のHSV_FULL実装(`opencv2/imgproc`のソース、`hsv.simd.hpp`相当)を見て、色相を`0-255`にどう量子化しているか(何段階で丸めるか、`H*255/360`の丸め方向)を正確に踏襲する。あるいは、割り切れる近似(色相を360度のfloatのまま扱いセクタ判定だけ255段階の整数境界に合わせる)を`gpu_effects.cpp`の`rgb2hsvFull`/`hsv2rgbFull`に反映する。
-- 一致させる価値が低いと判断すれば、この項目はクローズしてよい(見た目上ほぼ同じ色になっており、プレビュー用途では実害が小さいため)。その場合はこの節を削除し、`gpu_effects.hpp`のコメントに「意図的に不一致を許容」と明記するだけで良い。
-
-**残タスク2: GPU/CPUエフェクトの自動切替**
-
-現状: `gpu_invert`/`gpu_color_correction`/`gpu_tile`(`movutl/plugin/gpu/gpu_effects.hpp`)はテストから直接呼べるだけで、既存の`FilterPluginTable`(`movutl/plugin/filter.hpp`)経由のエフェクト適用(`Entity::render_filters`、`entity.cpp:284-315`)からは呼ばれない。
-
-- **参考にすべき既存コード**:
-  - `movutl/plugin/filter.hpp`の`FilterPluginTable`: `fn_proc(void* fp, FilterInData*, const cutil::Prop&)`が唯一の実行エントリ。GPU版を生やすなら、この構造体に`fn_proc_gpu`(オプショナル、nullptr可)のようなフィールドを追加し、`Entity::render_filters`側で「アクティブレンダラーが`"vulkan"`かつ`fn_proc_gpu`が非nullなら使う」という分岐を1箇所に足すのが最小差分。
-  - `movutl/plugin/default/register_default_plugins.cpp`: 既存フィルタの登録箇所。`f_invert`/`f_color_correction`/`f_tile`の`FilterPluginTable`初期化に`fn_proc_gpu`を追加する形で、`movutl/plugin/gpu/gpu_effects.cpp`の関数をラップして渡す。
-  - `movutl/render2d/renderer_registry.hpp`の`active_renderer_name()`で現在のレンダラー名を取得できる。
-- hue/saturation不一致(残タスク1)が残ったままだと、CPU→GPU切替でプレビュー中に色が微妙に変わる体験になる点に注意。先に残タスク1を判断してから着手するとよい。
-- 過剰実装しないこと: 全フィルタをGPU化するのではなく、まず`f_invert`/`f_color_correction`/`f_tile`の3つだけ配線し、動作を確認してから他フィルタへ展開するかは別途判断する。
+**新規実装時の注意**: `FilterPluginTable`の全既存初期化は6箇所以上が位置指定の集成体初期化(`{GUID(...), FilterDefault, ..., nullptr, nullptr}`)なので、構造体にフィールドを追加する場合は必ず**末尾**に追加すること(途中に挿入すると全既存フィルタの初期化がずれて壊れる)。`fn_proc_gpu`の値も、位置指定初期化に混ぜようとすると`reserve[2]`配列や`props`/`defaults`の型が合わずコンパイルエラーになるため、`register_default_plugins.cpp`で定義後に`f_xxx.fn_proc_gpu = ...;`と代入する方式にした。
 
 ## Phase 7: AviUtl2 filter2互換API(未着手)
 

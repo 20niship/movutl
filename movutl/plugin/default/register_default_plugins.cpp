@@ -14,16 +14,34 @@
 #include <movutl/plugin/default/image_tile_filter.hpp>
 #include <movutl/plugin/default/image_tone_filter.hpp>
 #include <movutl/plugin/default/image_vintage_filter.hpp>
+#include <movutl/plugin/gpu/gpu_effects.hpp>
 #include <movutl/plugin/plugin.hpp>
 
 namespace mu::detail {
+
+namespace {
+// fn_proc_gpu配線用の薄いラッパ(gpu_effects.hpp)。対応する3フィルタのみ(過剰実装しない)
+bool fn_proc_invert_gpu(void* fp, FilterInData* fpip, const cutil::Prop& p) {
+  MU_UNUSED(fp);
+  return gpu_invert(*fpip->img, cutil::get_or<bool>(p, "invert_alpha", false));
+}
+bool fn_proc_color_correction_gpu(void* fp, FilterInData* fpip, const cutil::Prop& p) {
+  MU_UNUSED(fp);
+  return gpu_color_correction(*fpip->img, cutil::get_or<float>(p, "brightness", 100.0f), cutil::get_or<float>(p, "contrast", 100.0f), cutil::get_or<float>(p, "hue", 0.0f), cutil::get_or<float>(p, "saturation", 100.0f));
+}
+bool fn_proc_tile_gpu(void* fp, FilterInData* fpip, const cutil::Prop& p) {
+  MU_UNUSED(fp);
+  return gpu_tile(*fpip->img, cutil::get_or<int32_t>(p, "nx", 2), cutil::get_or<int32_t>(p, "ny", 2));
+}
+} // namespace
 
 void register_default_plugins() {
   // video_reader は plugins/video_reader/*.mso として外部プラグイン経由で登録される
 }
 
 void register_default_filters() {
-  auto Main = AppMain::Get();
+  auto Main                      = AppMain::Get();
+  f_color_correction.fn_proc_gpu = fn_proc_color_correction_gpu;
   Main->filters.push_back(f_color_correction);
   Main->filters.push_back(f_single_color);
   Main->filters.push_back(f_color_shift);
@@ -38,9 +56,11 @@ void register_default_filters() {
   Main->filters.push_back(f_bloom);
   Main->filters.push_back(f_outline);
   Main->filters.push_back(f_clipping);
+  f_invert.fn_proc_gpu = fn_proc_invert_gpu;
   Main->filters.push_back(f_invert);
   Main->filters.push_back(f_grayscale);
   Main->filters.push_back(f_sepia);
+  f_tile.fn_proc_gpu = fn_proc_tile_gpu;
   Main->filters.push_back(f_tile);
   Main->filters.push_back(f_denoise);
   Main->filters.push_back(f_sharpen);

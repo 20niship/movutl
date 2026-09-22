@@ -8,6 +8,7 @@
 #include <movutl/core/profiler.hpp>
 #include <movutl/plugin/filter.hpp>
 #include <movutl/plugin/plugin.hpp>
+#include <movutl/render2d/renderer_registry.hpp>
 #include <set>
 //
 #include <movutl/asset/audio.hpp>
@@ -310,11 +311,13 @@ bool Entity::render_filters(Composition* cmp, Image* img, int frame) {
     MOVUTL_ZONE_NAME(f.plg_->name.c_str(), f.plg_->name.size());
     void* fp = f.plg_;
     FilterInData in;
-    in.img   = img;
-    in.compo = cmp;
-    in.entt  = this;
-    in.frame = frame;
-    if(!f.plg_->fn_proc(fp, &in, f.props.get(rel_frame(frame)))) {
+    in.img             = img;
+    in.compo           = cmp;
+    in.entt            = this;
+    in.frame           = frame;
+    const bool use_gpu = f.plg_->fn_proc_gpu && active_renderer_name() == "vulkan";
+    auto* fn_proc      = use_gpu ? f.plg_->fn_proc_gpu : f.plg_->fn_proc;
+    if(!fn_proc(fp, &in, f.props.get(rel_frame(frame)))) {
       LOG_F(ERROR, "Plugin %s render failed", f.plg_->name.c_str());
       return false;
     }
