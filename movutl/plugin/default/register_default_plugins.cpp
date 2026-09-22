@@ -11,6 +11,7 @@
 #include <movutl/plugin/default/image_key_filter.hpp>
 #include <movutl/plugin/default/image_outline_filter.hpp>
 #include <movutl/plugin/default/image_posterize_filter.hpp>
+#include <movutl/plugin/default/image_tile_filter.hpp>
 #include <movutl/plugin/default/image_tone_filter.hpp>
 #include <movutl/plugin/default/image_vintage_filter.hpp>
 #include <movutl/plugin/plugin.hpp>
@@ -40,6 +41,7 @@ void register_default_filters() {
   Main->filters.push_back(f_invert);
   Main->filters.push_back(f_grayscale);
   Main->filters.push_back(f_sepia);
+  Main->filters.push_back(f_tile);
   Main->filters.push_back(f_denoise);
   Main->filters.push_back(f_sharpen);
   Main->filters.push_back(f_edge_detect);

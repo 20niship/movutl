@@ -307,6 +307,10 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addVariable("aspect_", static_cast<float FramebufferEntt::*>(&Entity::aspect_))     // float
     .addVariable("alpha_", static_cast<float FramebufferEntt::*>(&Entity::alpha_))       // float
     .endClass()
+    .beginClass<GpuCompositeSink>("GpuCompositeSink")
+    .endClass()
+    .beginClass<GpuCompositeSinkScope>("GpuCompositeSinkScope")
+    .endClass()
     .beginClass<GroupEntt>("GroupEntt")
     .addStaticFunction("Create", &GroupEntt::Create)
     .addFunction("getType", &GroupEntt::getType)

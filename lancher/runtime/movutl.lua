@@ -347,6 +347,12 @@ function movutl.FramebufferEntt:source_size( size, origin_offset, ) end
 ---@return Ref<Image> 
 function movutl.FramebufferEntt:captured_image( ) end
 
+---@class GpuCompositeSink
+movutl.GpuCompositeSink = {}
+
+---@class GpuCompositeSinkScope
+movutl.GpuCompositeSinkScope = {}
+
 ---@class GroupEntt
 ---@field target_layers_ number
 movutl.GroupEntt = {}

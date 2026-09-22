@@ -1,10 +1,14 @@
 #pragma once
+#include <atomic>
 #include <cstdint>
 #include <movutl/asset/image.hpp>
 #include <movutl/vulkan/vk_context.hpp>
 #include <vector>
 
 namespace mu {
+
+// GpuImage::readback_raw()の総呼び出し回数(全インスタンス合算、preview経路のreadback発生頻度の計測用)
+std::atomic<uint64_t>& gpu_readback_count();
 
 // GPU上の2D画像(device local)。1画素4バイトのフォーマット(RGBA8/BGRA8/R32F等)のみ扱う
 // upload/readbackは同期実行(VkContext::submit_once)。完了後は rest_layout(既定GENERAL)に戻る

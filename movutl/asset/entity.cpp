@@ -168,7 +168,11 @@ std::string EntityInfo::str() const {
 
 namespace {
 thread_local const GroupXform* tls_parent_xform = nullptr;
-}
+thread_local GpuCompositeSink* tls_gpu_sink     = nullptr;
+} // namespace
+
+GpuCompositeSinkScope::GpuCompositeSinkScope(GpuCompositeSink* sink) : prev_(tls_gpu_sink) { tls_gpu_sink = sink; }
+GpuCompositeSinkScope::~GpuCompositeSinkScope() { tls_gpu_sink = prev_; }
 
 GroupXform GroupXform::compose(const GroupXform& child) const {
   const double rad = rotation * M_PI / 180.0;
@@ -203,6 +207,7 @@ bool Entity::composite(const Image& src, Image* target, const Vec2& origin_offse
   pl.rot_x = rot_x_, pl.rot_y = rot_y_, pl.rot_z = w.rotation;
   pl.alpha = w.alpha;
   pl.blend = blend_;
+  if(tls_gpu_sink) return tls_gpu_sink->place(src, target, pl);
   return src.place(target, pl);
 }
 

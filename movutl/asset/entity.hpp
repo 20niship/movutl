@@ -23,6 +23,7 @@ struct InputPluginTable;
 struct FilterPluginTable;
 class Composition;
 class Image;
+struct Placement;
 
 inline constexpr size_t MU_MAX_NAME = 32;
 inline constexpr size_t MAX_FILTER  = 16;
@@ -129,6 +130,23 @@ public:
   ~GroupXformScope();
   GroupXformScope(const GroupXformScope&)            = delete;
   GroupXformScope& operator=(const GroupXformScope&) = delete;
+};
+
+// composite()の実合成(Image::place)をGPU描画に差し替えるフック。target実内容に依存する経路(scene_change等)では無効化すること
+class GpuCompositeSink {
+public:
+  virtual ~GpuCompositeSink()                                              = default;
+  virtual bool place(const Image& src, Image* target, const Placement& pl) = 0;
+};
+
+class GpuCompositeSinkScope {
+  GpuCompositeSink* prev_;
+
+public:
+  explicit GpuCompositeSinkScope(GpuCompositeSink* sink);
+  ~GpuCompositeSinkScope();
+  GpuCompositeSinkScope(const GpuCompositeSinkScope&)            = delete;
+  GpuCompositeSinkScope& operator=(const GpuCompositeSinkScope&) = delete;
 };
 
 class Entity {

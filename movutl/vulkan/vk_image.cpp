@@ -88,8 +88,14 @@ bool GpuImage::upload_raw(const void* data, size_t bytes) {
   return true;
 }
 
+std::atomic<uint64_t>& gpu_readback_count() {
+  static std::atomic<uint64_t> n{0};
+  return n;
+}
+
 bool GpuImage::readback_raw(std::vector<uint8_t>& out) {
   if(!valid()) return false;
+  gpu_readback_count()++;
   const size_t bytes = (size_t)w_ * h_ * 4;
   VkHostBuffer stage(bytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
   VkContext::Get()->submit_once([&](VkCommandBuffer cb) {
