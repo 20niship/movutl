@@ -75,7 +75,6 @@ TEST_CASE("GPU色調補正: brightness/contrastのみ(高速パス)はCPU版と�
   }
 }
 
-// 既知の制限: OpenCVのHSV_FULLは6セクタ境界を256階調の整数演算で決め6が256を割り切れないため、角度で連続判定するGLSL標準HSV実装とセクタ境界がずれ、境界付近の画素はCPU版と大きく異なりうる(OpenCV内部実装の再現はコストに見合わないため不一致を許容する)
 TEST_CASE("GPU色調補正: hue/saturation指定でも実行でき、値域とアルファを保つ") {
   if(!vk_ready()) return;
   Image img(16, 16);
@@ -85,6 +84,28 @@ TEST_CASE("GPU色調補正: hue/saturation指定でも実行でき、値域と�
   CHECK(img[0][3] == alpha0); // アルファは変更しない
   for(size_t i = 0; i < img.size(); i++)
     for(int c = 0; c < 3; c++) CHECK(img[i][c] <= 255);
+}
+
+// 既知の制限: HSV→RGB復元(sector展開)がOpenCVと完全一致せず各ch差が数単位出ることがある(gpu_effects.cpp参照。許容差8)
+TEST_CASE("GPU色調補正: hue/saturation指定時もCPU版とおおむね一致する") {
+  if(!vk_ready()) return;
+  for(auto hs : {std::pair{45.0f, 150.0f}, std::pair{-90.0f, 50.0f}, std::pair{179.0f, 100.0f}, std::pair{10.0f, 200.0f}}) {
+    Image img_cpu(24, 17);
+    fill_random(img_cpu, 99);
+    Image img_gpu(24, 17);
+    std::memcpy(img_gpu.data(), img_cpu.data(), img_cpu.size_in_bytes());
+
+    auto fin = make_fin(&img_cpu);
+    cutil::Prop p;
+    p.set<float>("hue", hs.first);
+    p.set<float>("saturation", hs.second);
+    REQUIRE(mu::detail::f_color_correction.fn_proc(nullptr, &fin, p));
+    REQUIRE(mu::detail::gpu_color_correction(img_gpu, 100.0f, 100.0f, hs.first, hs.second));
+
+    CAPTURE(hs.first);
+    CAPTURE(hs.second);
+    CHECK(max_diff(img_cpu, img_gpu) <= 8);
+  }
 }
 
 TEST_CASE("GPUタイル: CPU版(f_tile)と一致する") {

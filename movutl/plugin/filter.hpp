@@ -84,5 +84,8 @@ struct FilterPluginTable {
 
   cutil::PropInfo props; // フィールドのウィジェット表示情報(offsetなし、動的スキーマ)
   cutil::Prop defaults;  // fn_initが設定するフィールドの初期値
+
+  // fn_procのGPU版(任意、nullptr可)。Entity::render_filtersがactive_renderer_name()=="vulkan"時に優先して呼ぶ
+  bool (*fn_proc_gpu)(void* fp, FilterInData* fpip, const cutil::Prop& p) = nullptr;
 };
 } // namespace mu
