@@ -17,20 +17,16 @@ Issue#3 6.2「キャッシュRendererのGPU化(Vulkan)」の実装計画。Phase
 
 **完了済み**: rot_x/rot_y透視・group/camera親変換は Phase4 の `VulkanRenderer::build_xform` / `GroupXformScope` 連携で実装済み。シーンチェンジ・クリッピングは `composite_ops.hpp` 経由のCPUブリッジで動作確認済み(`tests/vulkan_renderer_test.cpp`)。追加実装は不要、変更する場合は既存テストの±2px許容(`images_close`の`max_bad_pixels`)を壊さないよう回転四隅の数式(`vulkan_renderer.cpp`の`build_xform`)をCPU版(`image.cpp`の`drawquad`)と照合すること。
 
-**残タスク: プレビューのゼロコピー表示**
+**残タスク: プレビューのゼロコピー表示 → 調査の結果、当初案では不十分と判明。未着手のまま設計を更新**
 
-現状: `VulkanRenderer::render_frame`は最後に`gpu_out_->readback(*out)`でCPUの`Ref<Image>`に戻している(1フレーム1回、`gpu_readback_count()`で実測確認済み)。`Composition::render_current_frame_main_thread()`が`Ref<Image>`を返す設計のため、viewer(`movutl/gui/viewer.cpp`)は常にCPU経由でしか画像を受け取れない。
+以前のこの節は「`VulkanRenderer`に`last_gpu_result()`のようなgetterを足し、viewerがそれを直接表示する」という小さい差分案を書いていたが、実際のプレビュー経路を調べた結果、この案では主要経路をカバーできないことが分かった。
 
-- **参考にすべき既存コード**:
-  - `movutl/render2d/frame_cache.hpp`(`FrameCache`): composition毎の`Ref<Image>`キャッシュ。GPU版キャッシュを追加するならこの隣に`GpuFrameCache`(entity層ではなくcomposition→`GpuImage`のマップ)を作るのが自然。
-  - `movutl/graphics/VkTexture.{hpp,cpp}`: 既に`GpuImage`から`VkDescriptorSet`(`ImGui_ImplVulkan_AddTexture`)を作って表示する経路がある。`VkTexture::set(Ref<Image>)`はCPU Image前提なので、`GpuImage`を直接受け取るオーバーロード(例: `VkTexture::set_gpu(GpuImage*)`)を足せば、CPUアップロードをスキップしてサンプラ/ディスクリプタだけ張り替えられる。
-  - `movutl/vulkan/vk_image.hpp`の`GpuImage`は`view()`/`image()`を公開済みなので、`VkTexture`側で追加のGpuImage生成をせず既存の`GpuImage`の`view()`をそのまま`ImGui_ImplVulkan_AddTexture`に渡せる。
-- **設計案**(小さい差分で済ませる方針。大改造しない):
-  1. `VulkanRenderer`に「readbackせずGPU上の結果を保持したまま返す」経路を追加する。例: `Renderer`インターフェースは変えず、`VulkanRenderer`だけに`GpuImage* last_gpu_result()`のようなgetterを足し、呼び出し側(viewer)が`dynamic_cast<VulkanRenderer*>`できる場合だけGPU直表示に切り替える(既存の`Ref<Image>`ベースのAPIとの後方互換を保つ)。
-  2. viewer側(`movutl/gui/viewer.cpp`)は、アクティブレンダラーが`"vulkan"`かどうかを`active_renderer_name()`(renderer_registry.hpp)で判定し、Vulkanなら`VkTexture::set_gpu`経路、CPUなら既存の`Ref<Image>`経路を使う。
-  3. `render_worker.cpp`/`export_window.cpp`はreadbackが必須(CPU出力プラグインへ渡すため)なので、`render_frame`の`Ref<Image>&`版はそのまま維持する。ゼロコピーはpreview(viewer)専用の追加経路として実装し、既存インターフェースは壊さない。
-- **注意**: `VulkanRenderer`は毎フレーム`ensure_target`で`gpu_out_`を使い回す(`vulkan_renderer.cpp`)。GPU直表示にする場合、次フレームの合成が前フレームの表示中テクスチャを上書きしないよう、表示用に読んだ`GpuImage`はダブルバッファ化するか、`VkContext::wait_idle()`(`VkTexture::set`が既にやっている)を経由してから上書きすること。
-- **テスト**: `gpu_readback_count()`を使い、「viewer経由のプレビュー1フレームでreadbackが0回」であることを確認するテストを追加する(既存の`tests/vulkan_renderer_test.cpp`の計測テストを拡張)。exportや`render_worker`経由は引き続き1回のままでよい。
+- **実際のプレビュー経路**(`movutl/gui/viewer.cpp:81`): `comp->cache.get_nearest(comp->frame, &img)` で `FrameCache`(`movutl/render2d/frame_cache.hpp`、`Ref<Image>`のみを保持)から読む。`Composition::render_current_frame_main_thread()`(getterを足す対象だった関数)は「初回フレームでキャッシュが1枚も無い時の同期フォールバック」(`viewer.cpp:87`)専用で、通常再生中には呼ばれない。
+- **実描画は `RenderWorkerPool`(`movutl/render2d/render_worker.cpp`)が担う**: 最大4本のバックグラウンドスレッドが起動時に`create_active_renderer()`で**スレッド毎に1つ**`Renderer`インスタンスを保持し続け(`worker_loop`)、ジョブが来るたびに`render_frame(job.comp, job.frame, out)`→`Ref<Image>`を`comp->cache`へ`insert`する。つまりGPU画像が実際に作られるのはGUIスレッドではなくワーカースレッド上であり、getterで拾えるのは「そのワーカーの`VulkanRenderer`が今保持している最新の1枚」でしかない。
+- **`FrameCache`はCPU向けの設計で、GPU画像をそのまま流用できない**: `Config::cache_frames`の既定は1024フレーム。CPUの`Ref<Image>`(RAM)なら1024枚保持は現実的だが、GPU VRAM上の`GpuImage`を同じ枚数保持するのはフルHD相当で数GB〜のVRAMを消費し非現実的。GPU用には全く別の(枚数を絞った)キャッシュ設計が要る。
+- **スレッド間のライフタイム管理が必要**: ワーカースレッドの`VulkanRenderer`は`ensure_target`で`gpu_out_`(`GpuImage`)を毎フレーム使い回す。GUIスレッドがこの`GpuImage`をそのまま表示に使うには、「GUIスレッドが表示に使っている間はワーカーがその`GpuImage`を上書きしない」保証(ダブルバッファや参照カウント、Vulkanフェンス待ち)が要る。生ポインタをそのまま`last_gpu_result()`で渡すのは、表示中に次フレームの合成で上書きされる競合状態(データ破壊/フリッカー)を招くため実装しない。
+- **結論**: ゼロコピー本実装には、(a) `FrameCache`とは別にGPU画像用の小容量キャッシュ(せいぜい表示中の数フレーム分)を設計する、(b) `RenderWorkerPool`のワーカースレッドからGUIスレッドへ`GpuImage`の所有権/生存期間を安全に受け渡す仕組みを作る、(c) `VkTexture`に`GpuImage`を直接受け取るオーバーロードを足す、の3点が必要で、これは`Composition`/`RenderWorkerPool`双方に踏み込む設計変更になる。「小さい差分」の範囲を超えるため、今回は見送り、上記3点を次に着手する際の入口として残す。
+- **現状維持**: `gpu_readback_count()`(`movutl/vulkan/vk_image.hpp`)による計測は既に入っており、1フレーム1回のreadbackが発生していることは実測済みのまま。プレビューは引き続きCPU経由(`FrameCache`→`VkTexture::set(Ref<Image>)`のCPU再アップロード)で動作する(表示自体は正しく動く。今回はパフォーマンス最適化が未着手というだけ)。
 
 ## Phase 6: GPUエフェクト(compute)(残タスク: hue/saturation一致 + 自動切替)
 
