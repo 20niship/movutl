@@ -1,5 +1,4 @@
 #include <algorithm>
-#include <cmath>
 #include <movutl/core/profiler.hpp>
 #include <movutl/plugin/default/image_tile_filter.hpp>
 #include <vector>
