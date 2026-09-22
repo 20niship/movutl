@@ -316,11 +316,8 @@ bool VulkanRenderer::render_frame(Composition* comp, int frame, Ref<Image>& out,
   return true;
 }
 
-namespace {
-bool g_vulkan_registered = [] {
+void register_vulkan_renderer() {
   register_renderer("vulkan", [] { return std::make_unique<VulkanRenderer>(); });
-  return true;
-}();
-} // namespace
+}
 
 } // namespace mu
