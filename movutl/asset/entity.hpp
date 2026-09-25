@@ -123,7 +123,7 @@ struct GroupXform {
 
 // Entity::render()の間だけ、そのスレッドで描画するEntityへ親グループの合成変換を与える(composite()が参照する)
 class GroupXformScope {
-  const GroupXform* prev_;
+  const GroupXform* prev_ = nullptr;
 
 public:
   explicit GroupXformScope(const GroupXform* parent);

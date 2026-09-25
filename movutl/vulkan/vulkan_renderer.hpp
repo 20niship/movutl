@@ -24,7 +24,4 @@ private:
   std::unique_ptr<GpuImage> gpu_out_;
 };
 
-// renderer_registryへ"vulkan"として登録する。mucoreは静的ライブラリのためVulkanRenderer型を直接参照しないと.oがリンクされず自己登録staticが実行されないので、init_active_renderer()より前に明示的に呼ぶこと
-void register_vulkan_renderer();
-
 } // namespace mu
