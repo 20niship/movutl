@@ -203,7 +203,7 @@ static InputHandle fn_open(const char* file) {
   /// AVCodecParametersにtime_baseが含まれないため明示的に設定(無いとAVFrame::ptsが常にAV_NOPTS_VALUEになる)
   h->dec_ctx->pkt_timebase = st->time_base;
   h->dec_ctx->time_base    = st->time_base;
-  h->dec_ctx->thread_count = 0; /// 自動(コア数)。1080pのソフトデコードを並列化する
+  h->dec_ctx->thread_count = 1; /// 複数動画をレイヤ単位で並列デコードするため無効にする(自動=コア数だと動画本数×コア数でオーバーサブスクライブする)
   h->dec_ctx->thread_type  = FF_THREAD_FRAME | FF_THREAD_SLICE;
   if(avcodec_open2(h->dec_ctx, dec, nullptr) < 0) {
     LOG_F(ERROR, "Failed to setup decoder: %s", file);
