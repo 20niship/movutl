@@ -5,6 +5,7 @@
 #include <movutl/asset/project.hpp>
 #include <movutl/command/exo/exo_report.hpp>
 #include <movutl/core/command.hpp>
+#include <movutl/core/logger.hpp>
 #include <movutl/gui/export_window.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/render2d/renderer_registry.hpp>
@@ -57,11 +58,12 @@ void render_main_menu_bar() {
     ImGui::MenuItem("ルーラー原点を中央にする", nullptr, &Config::Get()->viewer_ruler_center_origin);
     ImGui::MenuItem("開発者ウィンドウ", nullptr, &Config::Get()->show_developer_window);
     ImGui::MenuItem("FFT", nullptr, &Config::Get()->show_fft_window);
-    if(ImGui::BeginMenu("レンダラー(再起動で反映)")) {
+    if(ImGui::BeginMenu("レンダラー")) {
       for(const auto& name : renderer_names()) {
         if(ImGui::MenuItem(name.c_str(), nullptr, Config::Get()->renderer == name)) {
           Config::Get()->renderer = name;
           Config::Save();
+          LOG_F(INFO, "Renderer: %s", name.c_str());
         }
       }
       ImGui::EndMenu();
