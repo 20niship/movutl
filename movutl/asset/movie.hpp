@@ -1,12 +1,27 @@
 #pragma once
+#include <condition_variable>
 #include <movutl/asset/entity.hpp>
 #include <movutl/asset/image.hpp>
+#include <mutex>
+#include <set>
 
 namespace mu {
 
 class Movie final : public Entity {
 private:
   bool load_failed_ = false; ///< ロード失敗時の警告スパム防止フラグ
+
+  // fn_read_videoをtlocal昇順で実行させるゲート(無いとRenderWorkerPoolの先読みで到達順が乱れ無駄な逆シークが起きる)
+  std::mutex decode_order_mtx_;
+  std::condition_variable decode_order_cv_;
+  std::multiset<int> pending_decode_;
+
+  // fstart_/fend_/speed/start_frame_/loop_からtlocal(素材内フレーム)を計算する。範囲外かつループ無しなら-1
+  int compute_tlocal(int frame) const;
+
+  void wait_decode_order(int tlocal);
+  void release_decode_order(int tlocal);
+  friend struct DecodeOrderGuard; // movie.cppでwait/release_decode_orderをRAII化するため
 
 public:
   Movie() = default;

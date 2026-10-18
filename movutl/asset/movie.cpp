@@ -21,6 +21,37 @@ Ref<Movie> Movie::Create(const char* name, const char* path) {
   return mov;
 }
 
+int Movie::compute_tlocal(int frame) const {
+  int elapsed = frame - fstart_; // トラック上での経過フレーム数
+  if(elapsed < 0 || elapsed >= fend_ - fstart_) {
+    if(!loop_) return -1;
+    elapsed %= (fend_ - fstart_); // ループ再生
+  }
+  /// 開始フレーム(start_frame_)を起点に再生速度(speed, 100=等速)を適用した素材内フレーム位置
+  int tlocal = start_frame_ + (int)(elapsed * (speed / 100.0f));
+  return std::clamp(tlocal, 0, (int)info.nframes - 1);
+}
+
+void Movie::wait_decode_order(int tlocal) {
+  std::unique_lock<std::mutex> lk(decode_order_mtx_);
+  pending_decode_.insert(tlocal);
+  decode_order_cv_.wait(lk, [&] { return *pending_decode_.begin() == tlocal; });
+}
+
+void Movie::release_decode_order(int tlocal) {
+  std::lock_guard<std::mutex> lk(decode_order_mtx_);
+  pending_decode_.erase(pending_decode_.find(tlocal));
+  decode_order_cv_.notify_all();
+}
+
+// wait_decode_order/release_decode_orderを早期returnでも確実に対で呼ぶためのRAIIガード(mu::Movieのfriend)
+struct DecodeOrderGuard {
+  Movie* m;
+  int t;
+  DecodeOrderGuard(Movie* m_, int t_) : m(m_), t(t_) { m->wait_decode_order(t); }
+  ~DecodeOrderGuard() { m->release_decode_order(t); }
+};
+
 bool Movie::render(Composition* cmp, Image* target, int frame) {
   MOVUTL_ZONE_SCOPED_N("Movie::render");
   MU_ASSERT(cmp);
@@ -29,14 +60,8 @@ bool Movie::render(Composition* cmp, Image* target, int frame) {
   if(load_failed_ || in_plg_ == nullptr || in_handle_ == nullptr) return false;
   if(info.width <= 0 || info.height <= 0 || info.nframes <= 0) return false;
 
-  int elapsed = frame - fstart_; // トラック上での経過フレーム数
-  if(elapsed < 0 || elapsed >= fend_ - fstart_) {
-    if(!loop_) return false;
-    elapsed %= (fend_ - fstart_); // ループ再生
-  }
-  /// 開始フレーム(start_frame_)を起点に再生速度(speed, 100=等速)を適用した素材内フレーム位置
-  int tlocal = start_frame_ + (int)(elapsed * (speed / 100.0f));
-  tlocal     = std::clamp(tlocal, 0, (int)info.nframes - 1);
+  int tlocal = compute_tlocal(frame);
+  if(tlocal < 0) return false;
 
   if(!img_) img_ = cutil::make_ref<Image>();
   {
@@ -48,6 +73,7 @@ bool Movie::render(Composition* cmp, Image* target, int frame) {
   /// フレーム指定でプラグインから直接読み込む (aviutl2 方針)
   MU_ASSERT(in_plg_->fn_read_video);
   {
+    DecodeOrderGuard order_guard(this, tlocal);
     MOVUTL_ZONE_SCOPED_N("Movie::read_video");
     if(in_plg_->fn_read_video(in_handle_, tlocal, img_->data()) <= 0) return false;
   }
