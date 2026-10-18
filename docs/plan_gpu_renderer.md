@@ -38,36 +38,31 @@ Issue#3 6.2「キャッシュRendererのGPU化(Vulkan)」の実装計画。Phase
 
 **新規実装時の注意**: `FilterPluginTable`の全既存初期化は6箇所以上が位置指定の集成体初期化(`{GUID(...), FilterDefault, ..., nullptr, nullptr}`)なので、構造体にフィールドを追加する場合は必ず**末尾**に追加すること(途中に挿入すると全既存フィルタの初期化がずれて壊れる)。`fn_proc_gpu`の値も、位置指定初期化に混ぜようとすると`reserve[2]`配列や`props`/`defaults`の型が合わずコンパイルエラーになるため、`register_default_plugins.cpp`で定義後に`f_xxx.fn_proc_gpu = ...;`と代入する方式にした。
 
-## Phase 7: AviUtl2 filter2互換API(未着手)
+## Phase 7: AviUtl2 filter2互換API(完了、一部簡略化あり)
 
-**ゴール**: `FILTER_PROC_VIDEO`(`ext/aviutl2_sdk_mirror/include/aviutl2_sdk/filter2.h`)と同形状の関数でGPU描画/シェーダ実行ができる。
+`FILTER_PROC_VIDEO`(`ext/aviutl2_sdk_mirror/include/aviutl2_sdk/filter2.h`)と同形状の関数を`movutl/plugin/gpu/filter2_compat.{hpp,cpp}`の`Filter2Context`クラスとして実装した。`VERTEX_COLOR`/`VERTEX_COLOR_NORM`/`VERTEX_TEXTURE`/`VERTEX_TEXTURE_NORM`/`VERTEX_TYPE`/`BLEND_MODE`は値をそのまま移植(`filter2.h`はinclude しない)。`LPCWSTR`は`const wchar_t*`のまま受け取り`wstr_to_utf8`で内部変換する。
 
-**実装方針**(Phase4-6で分かったことを反映):
-- `filter2.h`は`ID3D11*`/`LPCWSTR`/`BYTE`等Windows/D3D11型に依存し直接includeできない。移植可能な定義を`movutl/plugin/gpu/filter2_compat.hpp`に新規に書く。
-  - そのまま使えるもの: `VERTEX_COLOR`, `VERTEX_COLOR_NORM`, `VERTEX_TEXTURE`, `VERTEX_TEXTURE_NORM`, `VERTEX_TYPE`, `BLEND_MODE`(値だけコピーすれば良い、`filter2.h`をincludeしない)
-  - 置換: `LPCWSTR`→`const wchar_t*`(内部でUTF-8化して扱う)、`ID3D11BlendState*`/`ID3D11SamplerState*`→独自enum、`ID3D11Texture2D*`は提供しない
-- **shader実行は`movutl/vulkan/gpu_compute.hpp`の`run_compute`/`run_compute_image`をそのまま使う**。`exec_computeshader_file/_data`は`run_compute`に、`exec_pixelshader_file/_data`はfragment相当のcompute(フルスクリーン1スレッド/pixel)に読み替えて`run_compute`で実装できる(Phase3で`run_fullscreen`は未実装のまま終わったが、`run_compute`だけで十分代替できることがPhase4/6で実証済み。無理に`run_fullscreen`を別途作らなくてよい)。
-- シェーダは`.spv`または生GLSL文字列。`compile_glsl`(`movutl/vulkan/shader_util.hpp`)がキャッシュ込みで使える。`.cso`(DXBC)は非対応、`false`を返しログ。
-- リソース名解決(`"object"` `"resource:xxxx"` `"tempbuffer"` `"framebuffer"` `"cache:xxxx"` `"image:xxxx"` `"random"`)は名前→`GpuImage*`のマップを持つ小さなレジストリで良い。`"random"`は`gpu_compute.hpp`の`make_random_image(seed)`をそのまま使える(256x256 R32F)。
-- `draw_image`/`draw_poly`/`draw_poly_to_resource`は、Phase4の`VulkanRenderer`が持つtextured quad描画(`vulkan_renderer.cpp`の`kCompositeGlsl`とほぼ同じ構造の合成compute shader)を土台に、頂点リスト(`VERTEX_COLOR`/`VERTEX_TEXTURE`等)を受け取れるよう一般化したcompute/描画関数を書く。`vulkan_renderer.cpp`の`build_xform`(dst→src逆変換の考え方)とpush constant設計をそのまま参考にできる。
-- `get_image_data`/`set_image_data`は`GpuImage::readback`/`upload`(`vk_image.hpp`)をラップするだけで良い。
+**実装したもの**
+- リソース名解決: `"object"`(`Filter2Context`構築時にコンストラクタ引数の`Image&`から自動upload)、`"framebuffer"`(任意、渡さなければ利用不可)、`"resource:xxxx"`/`"tempbuffer"`(インスタンス限り)、`"cache:xxxx"`/`"image:xxxx"`(プロセス内で共有、`"image:xxxx"`は`Image::load_file`でロード)、`"random"`(`make_random_image`)
+- `exec_pixelshader_data/_file`、`exec_computeshader_data/_file`: `movutl/vulkan/gpu_compute.hpp`の`run_compute`をそのまま使用。定数バッファは128バイト以下ならpush constant、それ以上はUBOに自動振り分け
+- `draw_image`/`draw_image_to_resource`: 2D簡略化(x,y,rz,sx,sy,alphaのみ反映。z/rx/ry/szは無視)のtranslate+rotate+scale+blend合成をcompute shaderで実装(`vulkan_renderer.cpp`の`kCompositeGlsl`と似た構造だが、Phase4のコードを壊さないよう独立に複製)
+- `draw_poly`/`draw_poly_to_resource`: 三角形ごとにbboxを計算しcompute shaderでバリセントリック座標判定するラスタライザ。QUAD系は(0,1,2)(0,2,3)の2三角形に分割、NORM系は法線を無視して非NORMと同じ扱い(ライティング未実装)
+- `set_blend_mode`、`get_image_data`/`set_image_data`(`"object"`のみ、`GpuImage::readback`/`upload`のラップ)
 
-**タスク**
-1. `movutl/plugin/gpu/filter2_compat.hpp`(上記の型定義)
-2. リソース名解決とライフサイクル管理(名前→`GpuImage`のマップ、`"object"`は呼び出し中のフィルタ対象画像に固定)
-3. `exec_pixelshader_*` / `exec_computeshader_*`(`run_compute`ベース)
-4. `draw_image` / `draw_poly` / `draw_poly_to_resource` / `set_blend_mode`(`vulkan_renderer.cpp`のquad描画を一般化)
-5. `get_image_data` / `set_image_data`(`GpuImage::readback`/`upload`のラップ)
-6. 互換ドキュメント(座標系・UV・定数バッファb0→push constant/UBOの対応)を`docs/`に追記
-7. サンプルGLSLエフェクトを`examples/`に追加
+**簡略化・既知の制限(意図的、正直に記録)**
+- シェーダ入力は生GLSL文字列のみ。`.cso`(DXBC)だけでなく`.spv`も非対応(`run_compute`がGLSL文字列しか受け付けず、SPIR-Vバイナリを直接投入する経路が現状の`gpu_compute`/`shader_util`に無いため)。ファイル読み込みは拡張子`.frag`/`.comp`/`.glsl`のみGLSLソースとして扱う
+- `VERTEX_COLOR`の色は本来「乗算済みα」だが straight alpha として扱う(Phase4の`kCompositeGlsl`と同じ式に合わせるため)
+- `draw_image`/`draw_poly`で`dst_resource`と`src_resource`が同じ場合、恒等変換以外は読み書き競合で結果が不定になりうる(ダブルバッファ未実装。`filter2_compat.hpp`にコメントで明記)
+- `create_image_resource`相当は未実装のため、`"resource:xxxx"`等を初回参照時に自動生成するサイズは`"object"`に合わせる(元APIのような任意サイズ指定はできない)
+- `get_blend_state`/`get_sampler_state`、`set_material_shine`/`set_sampler_mode`/`set_culling_state`/`set_billboard_mode`等の3D/ライティング系APIは対象外(Phase7の目的である「シェーダ実行/2D描画のGPU化」の範囲外)
 
-**テスト**
-- `exec_pixelshader_file`(GLSL、`.spv`化せず生ソースでも可)で`object`に単色出力
-- `exec_computeshader_file`で`object`を反転(Phase6の`gpu_invert`と同じ結果になることを確認できると尚良い)
-- `draw_poly`: `TRIANGLE_COLOR` / `QUAD_TEXTURE`の頂点リストで数画素を検証
-- 不正なリソース名・頂点数(3の倍数でない等)で`false`
-- `.cso`指定で`false` + ログ
-- `set_blend_mode`の各モードが`draw_image`に反映される(Phase4の`kCompositeGlsl`のblend_channelと同じ結果になるはず)
+**テスト**(`tests/filter2_compat_test.cpp`、Vulkanデバイス無し環境はSKIP。実機Apple M2で全通過)
+- `exec_pixelshader_data`で`object`に単色出力(RGBの丸め込みまで確認)
+- `exec_computeshader_data`で`object`を反転、`gpu_invert`(Phase6)と結果が一致(差1以内)
+- `draw_poly`: `TRIANGLE_COLOR`の三角形内外判定、`QUAD_TEXTURE`の四角形描画
+- 不正な頂点数(3の倍数でない)、`nullptr`頂点リスト、存在しない`"image:xxxx"`パスで`false`
+- `.cso`指定で`exec_pixelshader_file`/`exec_computeshader_file`ともに`false`
+- `set_blend_mode(ADD)`が`draw_image`に反映される(200+200をclampした255になることを確認)
 
 ## リスク・未確定事項(継続分)
 

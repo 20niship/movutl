@@ -2,11 +2,11 @@
 #include <cstring>
 #include <movutl/app/app.hpp>
 #include <movutl/asset/composition.hpp>
+#include <movutl/asset/config.hpp>
 #include <movutl/asset/project.hpp>
 #include <movutl/core/filesystem.hpp>
 #include <movutl/core/logger.hpp>
 #include <movutl/gui/gui.hpp>
-#include <movutl/render2d/renderer_registry.hpp>
 #include <thread>
 #include <vector>
 
@@ -31,17 +31,19 @@ void open_media_file(const char* path) {
 }
 
 int main(int argc, char** argv) {
-  // --renderer=<name> は位置引数(ファイル)と区別して取り除く
+  // --renderer=<name>は位置引数(ファイル)と区別して取り除く。Config::Load()後(mu::init()内)に上書きするのでこのプロセスの間だけ有効、ファイルへは保存しない
   std::vector<char*> args{argv[0]};
+  const char* renderer_override = nullptr;
   for(int i = 1; i < argc; i++) {
     if(std::strncmp(argv[i], "--renderer=", 11) == 0)
-      set_renderer_cli_override(argv[i] + 11);
+      renderer_override = argv[i] + 11;
     else
       args.push_back(argv[i]);
   }
   argc = (int)args.size();
   argv = args.data();
   mu::init();
+  if(renderer_override) Config::Get()->renderer = renderer_override;
   if(argc > 1) {
     if(fs_extension(argv[1]) == "lua") {
       mu::run_lua_file(argv[1]);

@@ -7,7 +7,6 @@
 #include <movutl/core/logger.hpp>
 #include <movutl/core/profiler.hpp>
 #include <movutl/render2d/composite_ops.hpp>
-#include <movutl/render2d/renderer_registry.hpp>
 #include <movutl/vulkan/gpu_compute.hpp>
 #include <movutl/vulkan/vulkan_renderer.hpp>
 #include <opencv2/opencv.hpp>
@@ -314,10 +313,6 @@ bool VulkanRenderer::render_frame(Composition* comp, int frame, Ref<Image>& out,
   gpu_out_->readback(*out);
   out->dirty();
   return true;
-}
-
-void register_vulkan_renderer() {
-  register_renderer("vulkan", [] { return std::make_unique<VulkanRenderer>(); });
 }
 
 } // namespace mu

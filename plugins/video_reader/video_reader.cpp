@@ -9,6 +9,7 @@
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
+#include <libavutil/hwcontext.h>
 #include <libavutil/imgutils.h>
 #include <libavutil/version.h>
 #include <libswresample/swresample.h>
@@ -29,22 +30,24 @@ constexpr AVPixelFormat kOutputPixFmt = AV_PIX_FMT_BGRA;
 /// ハンドル毎に完全に独立しており、複数の動画を同時にオープン・読み込み可能。
 struct FFmpegVideoHandle {
   std::mutex mtx;
-  AVFormatContext* fmt_ctx = nullptr;
-  AVCodecContext* dec_ctx  = nullptr;
-  AVFrame* frame           = nullptr; // デコーダからの出力
-  AVFrame* bgra            = nullptr; // BGRA 変換バッファ (直近デコード結果のキャッシュ)
-  AVFrame* pending         = nullptr; // 受け取ったが未消費の未来フレーム
-  AVPacket* pkt            = nullptr;
-  SwsContext* sws          = nullptr;
-  int stream_index         = -1;
-  int width                = 0;
-  int height               = 0;
-  AVRational fps           = {30, 1};
-  int64_t nb_frames        = 0;
-  int64_t start_time       = 0;
-  int decoded_frame        = -1; ///< bgra に変換済みのフレーム番号 (-1 = 未デコード)
-  bool eof                 = false;
-  bool has_pending         = false;
+  AVFormatContext* fmt_ctx   = nullptr;
+  AVCodecContext* dec_ctx    = nullptr;
+  AVFrame* frame             = nullptr; // デコーダからの出力(ハードウェアデコード有効時はhw_sw_frameへ転送後に差し替える)
+  AVFrame* hw_sw_frame       = nullptr; // ハードウェアフレームをシステムメモリへ転送する先(NV12等)
+  AVFrame* bgra              = nullptr; // BGRA 変換バッファ (直近デコード結果のキャッシュ)
+  AVFrame* pending           = nullptr; // 受け取ったが未消費の未来フレーム
+  AVPacket* pkt              = nullptr;
+  AVBufferRef* hw_device_ctx = nullptr; // VideoToolbox等のハードウェアデコード用(取得できなければnullptrのままソフトデコード)
+  SwsContext* sws            = nullptr;
+  int stream_index           = -1;
+  int width                  = 0;
+  int height                 = 0;
+  AVRational fps             = {30, 1};
+  int64_t nb_frames          = 0;
+  int64_t start_time         = 0;
+  int decoded_frame          = -1; ///< bgra に変換済みのフレーム番号 (-1 = 未デコード)
+  bool eof                   = false;
+  bool has_pending           = false;
 
   /// 直近に変換したBGRAフレームのリング。複数ワーカーが少し順不同で読みに来ても、シーク+再デコード無しで返せるようにする
   static constexpr int kRing = 6;
@@ -69,9 +72,11 @@ struct FFmpegVideoHandle {
     if(bgra) av_frame_free(&bgra);
     if(pending) av_frame_free(&pending);
     if(frame) av_frame_free(&frame);
+    if(hw_sw_frame) av_frame_free(&hw_sw_frame);
     if(pkt) av_packet_free(&pkt);
     if(dec_ctx) avcodec_free_context(&dec_ctx);
     if(fmt_ctx) avformat_close_input(&fmt_ctx);
+    if(hw_device_ctx) av_buffer_unref(&hw_device_ctx);
     sws           = nullptr;
     dec_ctx       = nullptr;
     fmt_ctx       = nullptr;
@@ -159,6 +164,13 @@ static void decode_audio_track(FFmpegVideoHandle* h) {
 static bool fn_init() { return true; }
 static bool fn_exit() { return true; }
 
+// AVCodecContext::get_format。ハードウェアデコード用のpix_fmtが提示されればそれを選ぶ(無ければ先頭=ソフトウェア形式にフォールバック)
+static enum AVPixelFormat get_hw_format(AVCodecContext*, const enum AVPixelFormat* pix_fmts) {
+  for(const enum AVPixelFormat* p = pix_fmts; *p != AV_PIX_FMT_NONE; p++)
+    if(*p == AV_PIX_FMT_VIDEOTOOLBOX) return *p;
+  return pix_fmts[0];
+}
+
 static InputHandle fn_open(const char* file) {
   if(file == nullptr) return nullptr;
   auto h = new(std::nothrow) FFmpegVideoHandle();
@@ -203,8 +215,18 @@ static InputHandle fn_open(const char* file) {
   /// AVCodecParametersにtime_baseが含まれないため明示的に設定(無いとAVFrame::ptsが常にAV_NOPTS_VALUEになる)
   h->dec_ctx->pkt_timebase = st->time_base;
   h->dec_ctx->time_base    = st->time_base;
-  h->dec_ctx->thread_count = 0; /// 自動(コア数)。1080pのソフトデコードを並列化する
+  h->dec_ctx->thread_count = 1; /// 複数動画をレイヤ単位で並列デコードするため無効にする(自動=コア数だと動画本数×コア数でオーバーサブスクライブする)
   h->dec_ctx->thread_type  = FF_THREAD_FRAME | FF_THREAD_SLICE;
+
+  // ハードウェアデコード(VideoToolbox)。非対応環境やコーデックではnullptrのままソフトウェアデコードへフォールバックする
+  if(av_hwdevice_ctx_create(&h->hw_device_ctx, AV_HWDEVICE_TYPE_VIDEOTOOLBOX, nullptr, nullptr, 0) == 0) {
+    h->dec_ctx->hw_device_ctx = av_buffer_ref(h->hw_device_ctx);
+    h->dec_ctx->get_format    = get_hw_format;
+    LOG_F(INFO, "video_reader: VideoToolbox hardware decode enabled: %s", file);
+  } else {
+    av_buffer_unref(&h->hw_device_ctx);
+  }
+
   if(avcodec_open2(h->dec_ctx, dec, nullptr) < 0) {
     LOG_F(ERROR, "Failed to setup decoder: %s", file);
     delete h;
@@ -218,11 +240,12 @@ static InputHandle fn_open(const char* file) {
   h->start_time = st->start_time > 0 ? st->start_time : 0;
   if(h->nb_frames <= 0 && h->fmt_ctx->duration > 0 && h->fps.num > 0) h->nb_frames = (int64_t)((double)h->fmt_ctx->duration / AV_TIME_BASE * av_q2d(h->fps));
 
-  h->frame   = av_frame_alloc();
-  h->bgra    = av_frame_alloc();
-  h->pending = av_frame_alloc();
-  h->pkt     = av_packet_alloc();
-  if(h->frame == nullptr || h->bgra == nullptr || h->pending == nullptr || h->pkt == nullptr || h->width <= 0 || h->height <= 0) {
+  h->frame       = av_frame_alloc();
+  h->hw_sw_frame = av_frame_alloc();
+  h->bgra        = av_frame_alloc();
+  h->pending     = av_frame_alloc();
+  h->pkt         = av_packet_alloc();
+  if(h->frame == nullptr || h->hw_sw_frame == nullptr || h->bgra == nullptr || h->pending == nullptr || h->pkt == nullptr || h->width <= 0 || h->height <= 0) {
     LOG_F(ERROR, "Failed to allocate frame buffers: %s", file);
     delete h;
     return nullptr;
@@ -268,9 +291,19 @@ static bool fn_info_get(InputHandle ih, EntityInfo* iip) {
 
 /// デコーダからフレームを1枚受け取ろうとする
 /// 戻り値: 1 = フレーム取得成功 / 0 = 追加入力が必要(再試行) / -1 = EOFまたはエラー
+// h->frameがハードウェアフレーム(VideoToolbox)ならシステムメモリへ転送してh->frameを差し替える。以降convert_to_bgra等は通常のCPUフレームとして扱える
+static bool transfer_hw_frame_if_needed(FFmpegVideoHandle* h) {
+  if(h->frame->format != AV_PIX_FMT_VIDEOTOOLBOX) return true;
+  av_frame_unref(h->hw_sw_frame);
+  if(av_hwframe_transfer_data(h->hw_sw_frame, h->frame, 0) < 0) return false;
+  h->hw_sw_frame->pts = h->frame->pts;
+  std::swap(h->frame, h->hw_sw_frame);
+  return true;
+}
+
 static int decode_next(FFmpegVideoHandle* h) {
   int ret = avcodec_receive_frame(h->dec_ctx, h->frame);
-  if(ret == 0) return 1;
+  if(ret == 0) return transfer_hw_frame_if_needed(h) ? 1 : -1;
   if(ret == AVERROR_EOF) {
     h->eof = true;
     return -1;
