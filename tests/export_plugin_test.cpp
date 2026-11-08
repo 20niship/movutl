@@ -5,9 +5,9 @@
 #include <movutl/asset/composition.hpp>
 #include <movutl/asset/image.hpp>
 #include <movutl/audio/audio_mixer.hpp>
+#include <movutl/core/opencv_compat.hpp>
 #include <movutl/plugin/plugin.hpp>
 #include <movutl/render2d/renderer.hpp>
-#include <movutl/core/opencv_compat.hpp>
 
 #include "scene_helpers.hpp"
 

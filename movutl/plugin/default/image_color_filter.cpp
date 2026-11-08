@@ -1,7 +1,7 @@
 #include <cutil/color.hpp>
+#include <movutl/core/opencv_compat.hpp>
 #include <movutl/core/profiler.hpp>
 #include <movutl/plugin/default/image_color_filter.hpp>
-#include <movutl/core/opencv_compat.hpp>
 
 #define GUID(x) (0x0000000000000000 | x)
 

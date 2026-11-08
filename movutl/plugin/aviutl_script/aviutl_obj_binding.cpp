@@ -6,9 +6,9 @@
 #include <movutl/app/app_impl.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/core/logger.hpp>
+#include <movutl/core/opencv_compat.hpp>
 #include <movutl/plugin/aviutl_script/aviutl_obj_binding.hpp>
 #include <mutex>
-#include <movutl/core/opencv_compat.hpp>
 #include <string>
 
 extern "C" {
