@@ -7,7 +7,7 @@
 #include <movutl/audio/audio_mixer.hpp>
 #include <movutl/plugin/plugin.hpp>
 #include <movutl/render2d/renderer.hpp>
-#include <opencv2/opencv.hpp>
+#include <movutl/core/opencv_compat.hpp>
 
 #include "scene_helpers.hpp"
 

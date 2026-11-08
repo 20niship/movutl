@@ -1,6 +1,6 @@
 #include <movutl/core/profiler.hpp>
 #include <movutl/plugin/default/image_outline_filter.hpp>
-#include <opencv2/opencv.hpp>
+#include <movutl/core/opencv_compat.hpp>
 
 #define GUID(x) (0x0000000000000000 | x)
 

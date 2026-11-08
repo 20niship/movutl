@@ -8,7 +8,7 @@
 #include <movutl/core/logger.hpp>
 #include <movutl/plugin/aviutl_script/aviutl_obj_binding.hpp>
 #include <mutex>
-#include <opencv2/opencv.hpp>
+#include <movutl/core/opencv_compat.hpp>
 #include <string>
 
 extern "C" {

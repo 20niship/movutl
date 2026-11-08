@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <movutl/core/profiler.hpp>
 #include <movutl/plugin/default/image_glow_filter.hpp>
-#include <opencv2/opencv.hpp>
+#include <movutl/core/opencv_compat.hpp>
 #include <vector>
 
 #define GUID(x) (0x0000000000000000 | x)

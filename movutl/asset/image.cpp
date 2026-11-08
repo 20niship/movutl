@@ -1,6 +1,6 @@
 #include <algorithm>
 #include <cstring>
-#include <opencv2/opencv.hpp>
+#include <movutl/core/opencv_compat.hpp>
 #include <type_traits>
 //
 #include <movutl/app/app.hpp>

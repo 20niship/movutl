@@ -1,4 +1,4 @@
-#include <opencv2/opencv.hpp>
+#include <movutl/core/opencv_compat.hpp>
 //
 #include <cmath>
 #include <cutil/prop.hpp>
