@@ -1,56 +1,58 @@
 #include <algorithm>
 #include <cmath>
 #include <movutl/paint/brush.hpp>
-#include <movutl/raster/blend.hpp>
+#include <stb_image.h>
 
 namespace mu {
 
-void BrushStroke::add(const PenSample& p) {
-  if(!has_last_) {
-    stamp(p);
-    last_     = p;
-    has_last_ = true;
-    carry_    = 0;
-    return;
-  }
-  const float dx = p.x - last_.x, dy = p.y - last_.y;
-  const float len = std::sqrt(dx * dx + dy * dy);
-  if(len <= 0.0f) return;
-  const float step = std::max(0.5f, s_.spacing * s_.size);
-  float pos        = step - carry_; // 次のスタンプまでの線分上の距離
-  float last_pos   = -carry_;
-  while(pos <= len) {
-    const float t = pos / len;
-    stamp({last_.x + dx * t, last_.y + dy * t, last_.pressure + (p.pressure - last_.pressure) * t});
-    last_pos = pos;
-    pos += step;
-  }
-  carry_ = len - last_pos;
-  last_  = p;
-}
-
-void BrushStroke::stamp(const PenSample& p) {
-  const float pr     = std::clamp(p.pressure, 0.0f, 1.0f);
-  const float radius = 0.5f * s_.size * (s_.pressure_size ? std::max(pr, 0.05f) : 1.0f);
-  const float flow   = s_.opacity * (s_.pressure_opacity ? pr : 1.0f);
-  if(radius <= 0.0f || flow <= 0.0f) return;
-  const float inner = radius * std::clamp(s_.hardness, 0.0f, 1.0f);
-  const float edge  = std::max(radius - inner, 1.0f); // 最低1pxはぼかしてアンチエイリアスにする
-  const int x0 = std::max(0, (int)std::floor(p.x - radius)), x1 = std::min(img_->width() - 1, (int)std::ceil(p.x + radius));
-  const int y0 = std::max(0, (int)std::floor(p.y - radius)), y1 = std::min(img_->height() - 1, (int)std::ceil(p.y + radius));
-  for(int y = y0; y <= y1; y++) {
-    for(int x = x0; x <= x1; x++) {
-      const float d = std::hypot(x + 0.5f - p.x, y + 0.5f - p.y);
-      if(d >= radius) continue;
-      const float cov = std::clamp((radius - d) / edge, 0.0f, 1.0f) * flow;
-      if(cov <= 0.0f) continue;
-      Vec4b& px = img_->at(x, y);
-      if(s_.eraser)
-        px[3] = (unsigned char)std::clamp(px[3] * (1.0f - cov) + 0.5f, 0.0f, 255.0f);
-      else
-        blend_over_straight(px, s_.color, cov * s_.color[3] / 255.0f);
+void CircleTip::render(const TipParams& p, int w, int h, float* mask) const {
+  const float inner = p.radius * std::clamp(hardness_, 0.0f, 1.0f);
+  const float edge  = std::max(p.radius - inner, 1.0f); // 最低1pxはぼかしてアンチエイリアスにする
+  for(int j = 0; j < h; j++) {
+    for(int i = 0; i < w; i++) {
+      const float d = std::hypot(i + 0.5f - p.cx, j + 0.5f - p.cy);
+      if(d < p.radius) mask[j * w + i] = std::clamp((p.radius - d) / edge, 0.0f, 1.0f);
     }
   }
+}
+
+void ImageTip::render(const TipParams& p, int w, int h, float* mask) const {
+  if(!img_ || img_->empty() || p.radius <= 0) return;
+  const float ca = std::cos(p.angle), sa = std::sin(p.angle);
+  const int iw = img_->width(), ih = img_->height();
+  for(int j = 0; j < h; j++) {
+    for(int i = 0; i < w; i++) {
+      // 画面座標 → 先端ローカル座標(-1〜1)。angleだけ逆回転する
+      const float dx = (i + 0.5f - p.cx) / p.radius, dy = (j + 0.5f - p.cy) / p.radius;
+      const float u = dx * ca + dy * sa, v = -dx * sa + dy * ca;
+      if(u < -1 || u >= 1 || v < -1 || v >= 1) continue;
+      const Vec4b& c  = (*img_)((int)((u + 1) * 0.5f * iw), (int)((v + 1) * 0.5f * ih));
+      const float lum = (0.299f * c[0] + 0.587f * c[1] + 0.114f * c[2]) / 255.0f;
+      mask[j * w + i] = (1.0f - lum) * c[3] / 255.0f;
+    }
+  }
+}
+
+std::shared_ptr<PixelBuffer8> load_brush_image(const std::string& path) {
+  int w = 0, h = 0, n = 0;
+  unsigned char* d = stbi_load(path.c_str(), &w, &h, &n, 4);
+  if(!d) return nullptr;
+  auto img = std::make_shared<PixelBuffer8>(w, h);
+  for(size_t i = 0; i < img->size(); i++) img->data()[i] = Vec4b{d[i * 4], d[i * 4 + 1], d[i * 4 + 2], d[i * 4 + 3]};
+  stbi_image_free(d);
+  return img;
+}
+
+float BrushTexture::sample(int x, int y) const {
+  if(!img || img->empty() || depth <= 0) return 1.0f;
+  const float s = std::max(scale, 0.01f);
+  auto wrap     = [](float v, int n) {
+    int i = (int)std::floor(v) % n;
+    return i < 0 ? i + n : i;
+  };
+  const Vec4b& c  = (*img)(wrap(x / s, img->width()), wrap(y / s, img->height()));
+  const float lum = (0.299f * c[0] + 0.587f * c[1] + 0.114f * c[2]) / 255.0f;
+  return 1.0f - depth * (1.0f - lum);
 }
 
 } // namespace mu

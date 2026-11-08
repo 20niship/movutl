@@ -1,5 +1,6 @@
 #include <fstream>
 #include <movutl/paint/paint_document.hpp>
+#include <movutl/paint/stroke_registry.hpp>
 #include <movutl/raster/blend.hpp>
 #include <nlohmann/json.hpp>
 
@@ -14,9 +15,12 @@ int PaintDocument::add_layer(const std::string& name) {
 
 bool PaintDocument::begin_stroke(int layer, const BrushSettings& s) {
   if(layer < 0 || layer >= (int)layers.size() || stroke_) return false;
+  auto st = StrokeRegistry::Get().create(s.engine, &layers[layer].img, s);
+  if(!st) return false;
+  st->set_clip(clip_);
   stroke_layer_ = layer;
   layers[layer].img.begin_edit();
-  stroke_ = std::make_unique<BrushStroke>(&layers[layer].img, s);
+  stroke_ = std::move(st);
   return true;
 }
 
@@ -24,8 +28,13 @@ void PaintDocument::add_sample(const PenSample& p) {
   if(stroke_) stroke_->add(p);
 }
 
+void PaintDocument::tick(float dt) {
+  if(stroke_) stroke_->tick(dt);
+}
+
 void PaintDocument::end_stroke() {
   if(!stroke_) return;
+  stroke_->end();
   stroke_.reset();
   auto patches = layers[stroke_layer_].img.end_edit();
   if(!patches.empty()) {

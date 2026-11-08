@@ -2,7 +2,7 @@
 
 #include <memory>
 #include <movutl/asset/entity.hpp>
-#include <movutl/paint/brush.hpp>
+#include <movutl/paint/stroke.hpp>
 #include <string>
 #include <vector>
 
@@ -37,6 +37,8 @@ public:
   // ストローク。begin〜endの間にadd_sample()で点を足す。endでUndo履歴へ積む(Redo履歴は破棄)
   bool begin_stroke(int layer, const BrushSettings& s);
   void add_sample(const PenSample& p);
+  void tick(float dt);                             // ストローク中に時間を進める(エアブラシ等。ペンが止まっていても呼ぶ)
+  void set_clip(const Selection* s) { clip_ = s; } // 以降のストロークを選択範囲の内側に限る(nullで解除)
   void end_stroke();
 
   bool can_undo() const { return !undo_.empty(); }
@@ -54,8 +56,9 @@ public:
 private:
   int w_, h_;
   std::vector<PaintHistoryStep> undo_, redo_;
-  std::unique_ptr<BrushStroke> stroke_;
-  int stroke_layer_ = -1;
+  std::unique_ptr<Stroke> stroke_;
+  const Selection* clip_ = nullptr;
+  int stroke_layer_      = -1;
 };
 
 } // namespace mu
