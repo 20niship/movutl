@@ -40,6 +40,27 @@ struct VideoExportHandle {
   int64_t audio_next_pts = 0;
 };
 
+// FFmpeg 8でAVCodec::sample_fmts/pix_fmtsが廃止されavcodec_get_supported_config()に置き換わったため、旧新どちらでも先頭の対応フォーマットを返す
+static AVSampleFormat first_sample_fmt(const AVCodec* c, AVSampleFormat def) {
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(61, 13, 100)
+  const AVSampleFormat* f = nullptr;
+  if(avcodec_get_supported_config(nullptr, c, AV_CODEC_CONFIG_SAMPLE_FORMAT, 0, (const void**)&f, nullptr) < 0) return def;
+  return f ? f[0] : def;
+#else
+  return c->sample_fmts ? c->sample_fmts[0] : def;
+#endif
+}
+
+static AVPixelFormat first_pix_fmt(const AVCodec* c, AVPixelFormat def) {
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(61, 13, 100)
+  const AVPixelFormat* f = nullptr;
+  if(avcodec_get_supported_config(nullptr, c, AV_CODEC_CONFIG_PIX_FORMAT, 0, (const void**)&f, nullptr) < 0) return def;
+  return f ? f[0] : def;
+#else
+  return c->pix_fmts ? c->pix_fmts[0] : def;
+#endif
+}
+
 static bool fn_init(cutil::PropInfo* props, cutil::Prop* defaults) {
   props->fields.push_back(cutil::PropInfo::Field("bitrate_kbps", 0, cutil::prop_info_of<int32_t>()));
   props->fields.back().set_label("ビットレート(kbps)");
@@ -86,7 +107,7 @@ static bool setup_audio_stream(VideoExportHandle* h, int sample_rate, int channe
   if(h->audio_stream == nullptr || h->audio_enc_ctx == nullptr) return false;
 
   h->audio_enc_ctx->sample_rate = sample_rate;
-  h->audio_enc_ctx->sample_fmt  = codec->sample_fmts ? codec->sample_fmts[0] : AV_SAMPLE_FMT_FLTP;
+  h->audio_enc_ctx->sample_fmt  = first_sample_fmt(codec, AV_SAMPLE_FMT_FLTP);
   h->audio_enc_ctx->bit_rate    = 192000;
   h->audio_enc_ctx->time_base   = AVRational{1, sample_rate};
 #if MU_FFMPEG_NEW_CHLAYOUT
@@ -187,7 +208,7 @@ static void* fn_open(const char* path, int width, int height, float framerate, i
   h->enc_ctx->height    = height;
   h->enc_ctx->time_base = AVRational{fps_den, fps_num};
   h->enc_ctx->framerate = AVRational{fps_num, fps_den};
-  h->enc_ctx->pix_fmt   = codec->pix_fmts ? codec->pix_fmts[0] : AV_PIX_FMT_YUV420P;
+  h->enc_ctx->pix_fmt   = first_pix_fmt(codec, AV_PIX_FMT_YUV420P);
   h->enc_ctx->bit_rate  = (int64_t)cutil::get_or<int32_t>(props, "bitrate_kbps", 8000) * 1000;
   h->enc_ctx->gop_size  = 12;
   if(h->fmt_ctx->oformat->flags & AVFMT_GLOBALHEADER) h->enc_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;

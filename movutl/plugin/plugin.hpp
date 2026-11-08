@@ -4,6 +4,7 @@
 #include <movutl/plugin/filter.hpp>
 #include <movutl/plugin/input.hpp>
 #include <movutl/plugin/output.hpp>
+#include <movutl/plugin/stroke.hpp>
 
 #ifdef MOVUTL_PLATFORM_WINDOWS
 #include <windows.h>
@@ -39,6 +40,8 @@ void activate_all_plugins();
 bool abi_register_input_plugin(const InputPluginTable* table);
 bool abi_register_filter_plugin(const FilterPluginTable* table);
 bool abi_register_output_plugin(const OutputPluginTable* table);
+bool abi_register_stroke_plugin(const StrokePluginTable* table);
+bool abi_register_tip_plugin(const TipPluginTable* table);
 ABIContext make_abi(); // 実装は movutl/generated/generated_abi.cpp (pygen生成)
 
 } // namespace detail
