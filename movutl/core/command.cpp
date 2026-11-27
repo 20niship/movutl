@@ -32,10 +32,13 @@ public:
   void tick_running_commands();
   const std::vector<CommandInfo>& infos() const { return infos_; }
 
+  void push_undo(Ref<mCommand> cmd);
   bool undo();
   bool redo();
-  bool can_undo() const { return !undo_stack_.empty(); }
-  bool can_redo() const { return !redo_stack_.empty(); }
+  bool can_undo() { return prune(), !undo_stack_.empty(); }
+  bool can_redo() { return prune(), !redo_stack_.empty(); }
+  CommandHistory history();
+  bool jump(int applied);
 
 private:
   std::vector<CommandEntry> entries_;
@@ -44,6 +47,13 @@ private:
   // 実行済みコマンドの履歴。undoable()なコマンドのみ積む。新規実行時にredo_stack_はクリアする
   std::vector<Ref<mCommand>> undo_stack_;
   std::vector<Ref<mCommand>> redo_stack_;
+
+  // 対象が無くなった履歴を捨てる
+  void prune() {
+    auto dead = [](const Ref<mCommand>& c) { return c->expired(); };
+    std::erase_if(undo_stack_, dead);
+    std::erase_if(redo_stack_, dead);
+  }
 };
 
 void CommandManager::register_command(CommandInfo info, std::function<Ref<mCommand>()> factory) {
@@ -71,11 +81,7 @@ bool CommandManager::run_command(const char* id, const char* arg) {
     instance->name = e.info.name;
     auto status    = instance->on_start();
     if(status == CommandStatus::Running) running_.push_back(RunningCommand{e.info.id, instance});
-    if(status != CommandStatus::Failed && instance->undoable()) {
-      undo_stack_.push_back(instance);
-      redo_stack_.clear();
-      status_log_set_dirty(true);
-    }
+    if(status != CommandStatus::Failed && instance->undoable()) push_undo(instance);
     // 再生/コマ送りは頻度が高くログが流れてしまうため除外する
     const bool quiet = e.info.id == "play_pause" || e.info.id.rfind("frame_step", 0) == 0;
     if(status == CommandStatus::Failed)
@@ -88,25 +94,52 @@ bool CommandManager::run_command(const char* id, const char* arg) {
   return false;
 }
 
+void CommandManager::push_undo(Ref<mCommand> cmd) {
+  if(!cmd) return;
+  if(cmd->modifies_project()) status_log_set_dirty(true);
+  undo_stack_.push_back(std::move(cmd));
+  redo_stack_.clear();
+  prune();
+}
+
 bool CommandManager::undo() {
-  if(undo_stack_.empty()) return false;
+  if(!can_undo()) return false;
   auto cmd = undo_stack_.back();
   undo_stack_.pop_back();
   cmd->on_undo();
   push_status_log(StatusLevel::Info, "元に戻す: " + cmd->name);
-  status_log_set_dirty(true);
+  if(cmd->modifies_project()) status_log_set_dirty(true);
   redo_stack_.push_back(cmd);
   return true;
 }
 
 bool CommandManager::redo() {
-  if(redo_stack_.empty()) return false;
+  if(!can_redo()) return false;
   auto cmd = redo_stack_.back();
   redo_stack_.pop_back();
   cmd->on_redo();
   push_status_log(StatusLevel::Info, "やり直し: " + cmd->name);
-  status_log_set_dirty(true);
+  if(cmd->modifies_project()) status_log_set_dirty(true);
   undo_stack_.push_back(cmd);
+  return true;
+}
+
+CommandHistory CommandManager::history() {
+  prune();
+  CommandHistory h;
+  for(const auto& c : undo_stack_) h.names.push_back(c->name);
+  h.applied = (int)h.names.size();
+  for(auto it = redo_stack_.rbegin(); it != redo_stack_.rend(); ++it) h.names.push_back((*it)->name);
+  return h;
+}
+
+bool CommandManager::jump(int applied) {
+  prune();
+  if(applied < 0 || applied > (int)(undo_stack_.size() + redo_stack_.size())) return false;
+  while((int)undo_stack_.size() > applied && undo()) {
+  }
+  while((int)undo_stack_.size() < applied && redo()) {
+  }
   return true;
 }
 
@@ -153,9 +186,12 @@ bool has_command(const char* id) { return CommandManager::Get()->has_command(id)
 void cancel_command(const char* id) { CommandManager::Get()->cancel_command(id); }
 void tick_running_commands() { CommandManager::Get()->tick_running_commands(); }
 const std::vector<CommandInfo>& get_command_infos() { return CommandManager::Get()->infos(); }
+void push_undo_command(Ref<mCommand> cmd) { CommandManager::Get()->push_undo(std::move(cmd)); }
 bool undo_command() { return CommandManager::Get()->undo(); }
 bool redo_command() { return CommandManager::Get()->redo(); }
 bool can_undo() { return CommandManager::Get()->can_undo(); }
 bool can_redo() { return CommandManager::Get()->can_redo(); }
+CommandHistory get_command_history() { return CommandManager::Get()->history(); }
+bool jump_command_history(int applied) { return CommandManager::Get()->jump(applied); }
 
 } // namespace mu

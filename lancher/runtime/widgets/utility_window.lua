@@ -101,6 +101,7 @@ movutl.register_window("ツール", {
 
 -- 確定時はCloseCurrentPopupで明示的に閉じる。Esc/外側クリックで閉じた場合もBeginPopupがfalseになるためどちらもnilで終了する
 movutl.register_command("add_object_menu", "オブジェクト追加メニュー", "オブジェクト追加メニューを表示する", "shift+a", {
+  context = "video",
   on_start = function(self)
     imgui.OpenPopup("##add_object_shortcut_menu", 0)
     return "running"

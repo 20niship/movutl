@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <doctest/doctest.h>
+#include <movutl/app/paint_commands.hpp>
 #include <movutl/paint/paint_document.hpp>
 #include <vector>
 
@@ -51,7 +52,7 @@ struct VirtualPen {
       d.tick(dt);
     }
     for(float t = 0; t < hold_sec; t += dt) d.tick(dt);
-    d.end_stroke();
+    push_paint_edit(d.end_stroke()); // 動画編集と共通のundo履歴へ
   }
 };
 

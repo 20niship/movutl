@@ -258,6 +258,7 @@ class Parser:
 def run():
     root = Path(__file__).parent.parent
     headers = [
+        root / "movutl/core/enums.hpp",
         root / "movutl/asset/entity.hpp",
         root / "movutl/asset/movie.hpp",
         root / "movutl/asset/audio.hpp",

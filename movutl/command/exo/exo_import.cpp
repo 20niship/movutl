@@ -383,6 +383,6 @@ struct ExoImportCommand final : mCommand {
 };
 } // namespace
 
-void register_exo_command() { register_command<ExoImportCommand>({"import_exo", "EXOを読み込む", "AviUtlのexoを読み込み全トラックをアクティブCompositionへ追加する", "ctrl+shift+i", {"exo"}}); }
+void register_exo_command() { register_command<ExoImportCommand>({"import_exo", "EXOを読み込む", "AviUtlのexoを読み込み全トラックをアクティブCompositionへ追加する", "", {"exo"}}); }
 
 } // namespace mu

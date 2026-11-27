@@ -7,6 +7,7 @@ TEST_CASE("ImGui::InputText_: 変更フラグと編集後文字列を返す") {
   ImGui::CreateContext();
   ImGuiIO& io    = ImGui::GetIO();
   io.DisplaySize = ImVec2(800, 600);
+  io.IniFilename = nullptr; // build/imgui.ini(ユーザーの配置)を書き換えない
   unsigned char* pixels;
   int width, height;
   io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);

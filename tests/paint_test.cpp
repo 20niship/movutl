@@ -59,19 +59,19 @@ TEST_CASE("paint: 太さと筆圧") {
   CHECK(d.layers[l2].img.get(50, 53)[3] == 0);
 }
 
-TEST_CASE("PaintDocument: ストロークのundo/redo") {
+TEST_CASE("PaintDocument: ストロークのundo/redo(共通履歴)") {
   PaintDocument d(100, 100);
   int l = d.add_layer("a");
   hline(d, l, black(8), 30);
   CHECK(d.layers[l].img.get(50, 30)[3] == 255);
-  CHECK(d.undo());
+  CHECK(undo_command());
   CHECK(d.layers[l].img.get(50, 30)[3] == 0);
   CHECK(d.layers[l].img.tile_count() == 0);
-  CHECK_FALSE(d.undo());
-  CHECK(d.redo());
+  CHECK(redo_command());
   CHECK(d.layers[l].img.get(50, 30)[3] == 255);
+  CHECK(undo_command());
   hline(d, l, black(8), 60);
-  CHECK_FALSE(d.can_redo()); // 新しいストロークでredoは破棄
+  CHECK_FALSE(can_redo()); // 新しいストロークでredoは破棄
 }
 
 TEST_CASE("erase: 塗った所だけ消え、undoで戻る") {
@@ -82,7 +82,7 @@ TEST_CASE("erase: 塗った所だけ消え、undoで戻る") {
   e.engine = "erase";
   hline(d, l, e, 20);
   CHECK(d.layers[l].img.get(50, 20)[3] == 0);
-  CHECK(d.undo());
+  CHECK(undo_command());
   CHECK(d.layers[l].img.get(50, 20)[3] == 255);
 }
 
@@ -239,11 +239,11 @@ TEST_CASE("watercolor: 下地と混ざり、ストローク終了時に確定す
   d.begin_stroke(l, s);
   d.add_sample({30, 30, 1});
   CHECK(d.layers[l].img.get(30, 30)[2] == 0); // end()前はまだ下地のまま
-  d.end_stroke();
+  push_paint_edit(d.end_stroke());
   const Vec4b c = d.layers[l].img.get(30, 30);
   CHECK(c[0] > 80);
-  CHECK(c[2] > 80); // 赤と青が混ざって紫寄り
-  CHECK(d.undo());  // 水彩もundoで戻る
+  CHECK(c[2] > 80);      // 赤と青が混ざって紫寄り
+  CHECK(undo_command()); // 水彩もundoで戻る
   CHECK(d.layers[l].img.get(30, 30)[2] == 0);
 }
 
@@ -311,7 +311,7 @@ TEST_CASE("StrokeRegistry: 自作のStroke派生クラスを登録して使え�
   s.engine = "test_red";
   VirtualPen{}.draw(d, l, s, {{3, 4, 1}});
   CHECK(d.layers[l].img.get(3, 4)[0] == 255);
-  CHECK(d.undo()); // 自作ブラシでもundoできる
+  CHECK(undo_command()); // 自作ブラシでもundoできる
   CHECK(d.layers[l].img.get(3, 4)[3] == 0);
 
   s.engine = "no_such_brush";

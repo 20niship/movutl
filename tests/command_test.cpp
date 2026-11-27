@@ -145,3 +145,30 @@ TEST_CASE("run_command(id, arg)でargが渡り、extensionsで検索できる") 
   CHECK(find_command_by_extension(".tstext") == info);
   CHECK(find_command_by_extension("nonexistent_ext") == nullptr);
 }
+
+TEST_CASE("get_command_history/jump_command_history: 履歴の一覧と任意の時点への移動") {
+  UndoableCommand::value = 0;
+  while(undo_command()) {
+  }
+  register_command<UndoableCommand>({"history_a", "A", "", ""});
+  register_command<UndoableCommand>({"history_b", "B", "", ""});
+  CHECK(run_command("history_a"));
+  CHECK(run_command("history_b"));
+  CHECK(run_command("history_a"));
+  auto h = get_command_history();
+  CHECK(h.names == std::vector<std::string>{"A", "B", "A"});
+  CHECK(h.applied == 3);
+
+  const int top = UndoableCommand::value;
+  CHECK(jump_command_history(1));
+  CHECK(UndoableCommand::value == top - 2);
+  h = get_command_history();
+  CHECK(h.names == std::vector<std::string>{"A", "B", "A"}); // やり直し側も順番どおりに残る
+  CHECK(h.applied == 1);
+  CHECK(jump_command_history(3));
+  CHECK(UndoableCommand::value == top);
+  CHECK_FALSE(jump_command_history(4));
+  CHECK_FALSE(jump_command_history(-1));
+  CHECK(jump_command_history(0));
+  CHECK_FALSE(can_undo());
+}

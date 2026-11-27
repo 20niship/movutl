@@ -15,6 +15,9 @@ daw_only_classes = {"MidiEntt", "MidiNote"}
 
 ignore_symbols = [  #
     ("", ""),
+    # core/enums.hppはBlendTypeのためだけに走査する(他のenumはバインドしない)
+    ("", "MU_Err"),
+    ("", "PluginOutFlag"),
     ("Movie", "img_"),
     ("TextEntt", "img_"),
     ("Composition", "mtx"),

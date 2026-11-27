@@ -126,13 +126,15 @@ template <> struct PropInfoOf<uint32_t> {
 };
 
 // 型不一致・未設定なら既定値を返す(旧Props::get_orの代替、cutil::Prop::get<T>は型不一致で例外を投げるため)。
+// プラグイン(.mso)はPropInfoの実体を別に持つためポインタが一致しない。Trivialな型はIDとサイズで同じ型とみなす
 template <typename T> T get_or(const cutil::Prop& p, const char* name, const T& def) {
-  if(!p.contains(name)) return def;
-  try {
-    return p.get<T>(name);
-  } catch(...) {
-    return def;
+  const PropInfo* type = prop_info_of<T>();
+  for(const auto& f : p.fields()) {
+    if(std::strncmp(f.name, name, sizeof(f.name)) != 0) continue;
+    const bool same = f.type == type || (f.type->klass == PropClass::Trivial && f.type->size == type->size && std::strcmp(f.type->id, type->id) == 0);
+    return same ? *reinterpret_cast<const T*>(p.raw_data() + f.offset) : def;
   }
+  return def;
 }
 
 } // namespace cutil

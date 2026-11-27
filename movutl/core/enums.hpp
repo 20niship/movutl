@@ -2,6 +2,21 @@
 #include <cstdint>
 
 namespace mu {
+
+// 合成モード。asset(Entity)とraster/paintで共有する
+enum BlendType { // MPROPERTY(name="合成モード")
+  Blend_Alpha     = 0,
+  Blend_Add       = 1,
+  Blend_Sub       = 2,
+  Blend_Mul       = 3,
+  Blend_Div       = 4,
+  Blend_Screen    = 5,
+  Blend_Overlay   = 6,
+  Blend_Darken    = 7,
+  Blend_Lighten   = 8,
+  Blend_HardLight = 9,
+};
+
 enum class MU_Err { NONE = 0, OUT_OF_MEMORY, INTERNL_STRUCT_DAmAGED, INVALID_INDEX, _UNRECOGNIZED_PARAM_TYPE, INVALID_CALLBACK, BAD_CALLBACK_PARAM, INTERRUPT_CANCEL, CANNOT_PARSE_KEYFRAME_TEXT };
 
 enum class PluginOutFlag : uint64_t {

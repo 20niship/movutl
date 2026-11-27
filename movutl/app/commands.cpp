@@ -1,10 +1,12 @@
 #include <algorithm>
 #include <movutl/app/app.hpp>
 #include <movutl/app/app_impl.hpp>
+#include <movutl/app/paint_commands.hpp>
 #include <movutl/asset/composition.hpp>
 #include <movutl/command/exo/exo_import.hpp>
 #include <movutl/core/command.hpp>
 #include <movutl/core/logger.hpp>
+#include <movutl/gui/paint/document_ui.hpp>
 
 namespace mu::detail {
 
@@ -214,11 +216,13 @@ struct RedoCommand final : mCommand {
 
 void register_default_commands() {
   register_exo_command();
+  register_paint_commands();
+  register_document_commands();
   register_command<PlayPauseCommand>({"play_pause", "再生/一時停止", "コンポジションの再生/一時停止をトグルする", "space"});
   register_command<FrameStepCommand>({"frame_step_forward", "次のフレーム", "現在フレームを1つ進める", "right"}, 1);
   register_command<FrameStepCommand>({"frame_step_backward", "前のフレーム", "現在フレームを1つ戻す", "left"}, -1);
-  register_command<SplitCommand>({"split", "分割", "選択中のクリップを現在フレームで分割する", "s"});
-  register_command<ToggleKeyframeCommand>({"toggle_keyframe", "中間点をトグル", "選択中オブジェクトの現在フレームの中間点を追加/削除する", "p"});
+  register_command<SplitCommand>({"split", "分割", "選択中のクリップを現在フレームで分割する", "s", {}, "video"});
+  register_command<ToggleKeyframeCommand>({"toggle_keyframe", "中間点をトグル", "選択中オブジェクトの現在フレームの中間点を追加/削除する", "shift+p", {}, "video"});
   register_command<UndoCommand>({"undo", "元に戻す", "直前の操作を取り消す", "ctrl+z"});
   register_command<RedoCommand>({"redo", "やり直し", "取り消した操作をやり直す", "ctrl+y"});
 }

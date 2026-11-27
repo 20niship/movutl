@@ -82,6 +82,8 @@ struct BrushSettings {
   float scatter     = 0;     // スタンプ位置のばらつき(サイズ比)
   uint32_t seed     = 1;     // ばらつきの乱数種(ストロークごとに同じ結果になる)
 
+  int stabilization = 0; // 手ブレ補正の強さ(0〜100)。BrushToolで入力に掛ける
+
   float airbrush_rate = 2.0f; // "airbrush": 止まっている間に1秒あたり積む濃さ(opacityの倍数)
 
   std::shared_ptr<const PixelBuffer8> pattern; // "pattern": 色の代わりに貼る画像

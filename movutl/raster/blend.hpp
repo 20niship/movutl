@@ -1,7 +1,7 @@
 #pragma once
 
 #include <algorithm>
-#include <movutl/asset/entity.hpp>
+#include <movutl/core/enums.hpp>
 #include <movutl/core/vector.hpp>
 #include <type_traits>
 

@@ -7,6 +7,7 @@
 #include <cutil/string.hpp>
 #include <movutl/core/anim.hpp>
 #include <movutl/core/defines.hpp>
+#include <movutl/core/enums.hpp>
 #include <movutl/core/prop_types.hpp>
 #include <mutex>
 #include <string>
@@ -26,19 +27,6 @@ class Image;
 
 inline constexpr size_t MU_MAX_NAME = 32;
 inline constexpr size_t MAX_FILTER  = 16;
-
-enum BlendType { // MPROPERTY(name="合成モード")
-  Blend_Alpha     = 0,
-  Blend_Add       = 1,
-  Blend_Sub       = 2,
-  Blend_Mul       = 3,
-  Blend_Div       = 4,
-  Blend_Screen    = 5,
-  Blend_Overlay   = 6,
-  Blend_Darken    = 7,
-  Blend_Lighten   = 8,
-  Blend_HardLight = 9,
-};
 
 // 一つのEntity(トラック上のオブジェクト)に適用されているフィルタ1個分のパラメータ
 struct FilterParam {

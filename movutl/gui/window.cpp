@@ -3,6 +3,7 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 // --
+#include <cstdlib>
 #include <cstring>
 #include <filesystem>
 #include <movutl/app/app.hpp>
@@ -16,6 +17,9 @@
 #include <movutl/core/status_log.hpp>
 #include <movutl/core/vector.hpp>
 #include <movutl/gui/gui.hpp>
+#include <movutl/gui/paint/canvas_input.hpp>
+#include <movutl/gui/paint/document_ui.hpp>
+#include <movutl/gui/workspace_presets.hpp>
 #include <stdio.h>
 #include <vector>
 
@@ -35,6 +39,10 @@ namespace mu {
 
 void GUIManager::init() {
   glfwSetErrorCallback(error_callback);
+#if defined(__linux__) && defined(GLFW_PLATFORM)
+  // ペン入力(XInput2)はX11のウィンドウが必要。WaylandではXWaylandで動く。XWaylandが無い環境はGLFWの自動選択に任せる
+  if(const char* display = std::getenv("DISPLAY"); display && *display) glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_X11);
+#endif
 
   if(!glfwInit()) {
     LOG_F(ERROR, "Could not initialize GLFW");
@@ -59,6 +67,7 @@ void GUIManager::init() {
   LOG_F(2, "ImGui::CreateContext with docking enabled");
   ImGui::CreateContext();
   ImGui::StyleColorsDark();
+  detail::init_workspace_settings();
 
   // start docking
   ImGuiIO& io = ImGui::GetIO();
@@ -73,6 +82,7 @@ void GUIManager::init() {
   glfwMakeContextCurrent(glfw_window);
 
   glewInit();
+  open_pen_input(glfw_window);
 
   // Setup ImGui binding
   ImGui_ImplOpenGL3_Init();
@@ -131,6 +141,7 @@ void gui_new_frame() {
       last_title = title;
     }
   }
+  switch_pending_workspace();
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
@@ -158,24 +169,18 @@ void gui_new_frame() {
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
   ImGui::Begin("##MainDockHost", nullptr, ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_NoBackground);
   ImGui::PopStyleVar(3);
-  auto app          = GUIManager::Get();
-  app->dockspace_id = ImGui::DockSpace(main_dockspace_id, ImVec2(0.0f, 0.0f));
+  auto app               = GUIManager::Get();
+  const bool first_frame = app->dockspace_id == 0;
+  app->dockspace_id      = ImGui::DockSpace(main_dockspace_id, ImVec2(0.0f, 0.0f));
   ImGui::End();
   ImGui::PopStyleColor(2);
 
   render_status_bar();
 
-  // レイアウトが空(DockSpaceOverViewportが自動生成した空の中央ノードしかない)なら未初期化とみなす
-  const auto dock_node       = ImGui::DockBuilderGetNode(app->dockspace_id);
-  const bool is_empty_layout = dock_node == nullptr || (dock_node->IsCentralNode() && dock_node->Windows.empty() && dock_node->ChildNodes[0] == nullptr);
-
-  // ワークスペースの遅延適用 / 初回起動時(iniにレイアウト未保存)はデフォルトレイアウトを適用
-  if(!app->pending_workspace.empty()) {
-    const std::string name = app->pending_workspace;
-    app->pending_workspace.clear();
-    apply_workspace(name.c_str());
-  } else if(is_empty_layout) {
-    apply_workspace("Default");
+  if(first_frame) init_first_frame_layout();
+  if(app->rebuild_layout) {
+    app->rebuild_layout = false;
+    build_workspace_layout();
   }
 }
 
@@ -227,6 +232,7 @@ void update() {
   }
   { // gui thread
     detail::gui_new_frame();
+    poll_canvas_input();
     detail::process_command_shortcuts();
     detail::AppMain::Get()->update_frame_impl();
     tick_running_commands();
@@ -245,6 +251,7 @@ void GUIManager::terminate() {
   detail::AppMain::Get()->render_pool.stop();
   detail::AppMain::Get()->audio_worker.stop();
   detail::AppMain::Get()->audio_player.stop();
+  if(const char* ini = ImGui::GetIO().IniFilename) ImGui::SaveIniSettingsToDisk(ini); // 直前の配置変更も残す
   ImGui_ImplOpenGL3_Shutdown();
   ImGui_ImplGlfw_Shutdown();
   glfwTerminate();
@@ -252,7 +259,14 @@ void GUIManager::terminate() {
 
 void terminate() { GUIManager::Get()->terminate(); }
 
-bool should_terminate() { return GUIManager::Get()->should_close; }
+bool should_terminate() {
+  auto* gui = GUIManager::Get();
+  if(gui->should_close && !confirm_quit()) { // 未保存のキャンバスがある
+    gui->should_close = false;
+    glfwSetWindowShouldClose(gui->glfw_window, GLFW_FALSE);
+  }
+  return gui->should_close;
+}
 
 GUIManager* GUIManager::singleton_ = nullptr;
 

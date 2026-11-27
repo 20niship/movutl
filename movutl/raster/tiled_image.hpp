@@ -1,10 +1,13 @@
 #pragma once
 
+#include <algorithm>
 #include <cstdint>
+#include <cstring>
 #include <movutl/core/assert.hpp>
 #include <movutl/raster/pixel_buffer.hpp>
 #include <optional>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace mu {
@@ -40,13 +43,26 @@ public:
     auto it = tiles_.find(key(x / kTile, y / kTile));
     return it == tiles_.end() ? Vec4b() : it->second(x % kTile, y % kTile);
   }
+  // タイルが無ければnullptr
+  const PixelBuffer8* find(int tx, int ty) const {
+    auto it = tiles_.find(key(tx, ty));
+    return it == tiles_.end() ? nullptr : &it->second;
+  }
+
+  // 前回の呼び出し以降に書き換えた(かもしれない)タイルのキーをoutへ移す。表示の差分更新に使う
+  void take_dirty(std::unordered_set<uint64_t>& out) {
+    out.merge(dirty_);
+    dirty_.clear();
+    last_dirty_ = kNoKey;
+  }
 
   // 書き込み用。タイルを確保し、begin_edit()中なら初回接触時にタイルの変更前を記録する
   Vec4b& at(int x, int y) {
     MU_ASSERT(in_range(x, y));
     const int tx = x / kTile, ty = y / kTile;
     const uint64_t k = key(tx, ty);
-    auto it          = tiles_.find(k);
+    if(k != last_dirty_) dirty_.insert(last_dirty_ = k); // 同じタイルが続く間はハッシュを引かない
+    auto it = tiles_.find(k);
     if(recording_ && !patch_index_.count(k)) {
       TilePatch p;
       p.tx = tx;
@@ -65,18 +81,31 @@ public:
     patches_.clear();
     patch_index_.clear();
   }
+  // 触っただけで画素が変わらなかったタイルは差分に含めない(そのために確保したタイルは解放する)
   std::vector<TilePatch> end_edit() {
+    std::vector<TilePatch> changed;
     for(auto& p : patches_) {
-      auto it = tiles_.find(key(p.tx, p.ty));
-      if(it != tiles_.end()) p.after = it->second;
+      const uint64_t k = key(p.tx, p.ty);
+      auto it          = tiles_.find(k);
+      if(it != tiles_.end()) {
+        if(same_pixels(it->second, p.before)) {
+          if(!p.before) tiles_.erase(it);
+          dirty_.insert(k); // 途中の状態が表示済みかもしれない
+          continue;
+        }
+        p.after = it->second;
+      }
+      changed.push_back(std::move(p));
     }
     recording_ = false;
+    patches_.clear();
     patch_index_.clear();
-    return std::move(patches_);
+    return changed;
   }
 
   // タイルをbufで置き換える(nulloptなら削除)。Undo/Redo・読み込みで使う
   void set_tile(int tx, int ty, const std::optional<PixelBuffer8>& buf) {
+    dirty_.insert(key(tx, ty));
     if(buf)
       tiles_[key(tx, ty)] = *buf;
     else
@@ -84,9 +113,19 @@ public:
   }
 
 private:
+  // bが無いのは完全透明と同じ
+  static bool same_pixels(const PixelBuffer8& a, const std::optional<PixelBuffer8>& b) {
+    if(b) return std::memcmp(a.data(), b->data(), a.size_in_bytes()) == 0;
+    const auto* bytes = reinterpret_cast<const uint8_t*>(a.data());
+    return std::all_of(bytes, bytes + a.size_in_bytes(), [](uint8_t v) { return v == 0; });
+  }
+
+  static constexpr uint64_t kNoKey = ~0ull;
   int w_ = 0, h_ = 0;
   std::unordered_map<uint64_t, PixelBuffer8> tiles_;
-  bool recording_ = false;
+  std::unordered_set<uint64_t> dirty_;
+  uint64_t last_dirty_ = kNoKey;
+  bool recording_      = false;
   std::vector<TilePatch> patches_;
   std::unordered_map<uint64_t, size_t> patch_index_;
 };
