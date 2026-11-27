@@ -738,6 +738,13 @@ movutl.Workspace.entries = {}
 ---@return Workspace 
 function movutl.Workspace:add_entry( window_name, dir, ratio, ) end
 
+---@param window_name string
+---@param parent string
+---@param dir number
+---@param ratio number
+---@return Workspace 
+function movutl.Workspace:split_entry( window_name, parent, dir, ratio, ) end
+
 ---@return Workspace 
 function movutl.Workspace:clear_entries( ) end
 
@@ -745,10 +752,12 @@ function movutl.Workspace:clear_entries( ) end
 ---@field window_name string
 ---@field dir number
 ---@field ratio number
+---@field parent string
 movutl.WorkspaceEntry = {}
 movutl.WorkspaceEntry.window_name = ""
 movutl.WorkspaceEntry.dir = ImGuiDir_None
 movutl.WorkspaceEntry.ratio = 0.5 f
+movutl.WorkspaceEntry.parent = ""
 
 ---@param name std::string 
 ---@param type number
@@ -896,6 +905,10 @@ function movutl.init( )end
 ---@return boolean
 function movutl.is_playing( )end
 
+---@param shortcut std::string 
+---@return boolean
+function movutl.is_shortcut_held( shortcut, )end
+
 ---@return nil
 function movutl.new_project( )end
 
@@ -940,6 +953,9 @@ function movutl.render_status_bar( )end
 ---@return nil
 function movutl.reset( )end
 
+---@return nil
+function movutl.reset_workspace( )end
+
 ---@param path string
 ---@return boolean
 function movutl.run_lua_file( path, )end
@@ -976,6 +992,10 @@ function movutl.set_image_filter_param( entt, filter_name, param_name, value, )e
 ---@param value number
 ---@return boolean
 function movutl.set_shape_filter_param( entt, filter_name, param_name, value, )end
+
+---@param ctx std::string 
+---@return nil
+function movutl.set_shortcut_context( ctx, )end
 
 ---@return boolean
 function movutl.should_terminate( )end

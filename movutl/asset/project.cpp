@@ -34,6 +34,8 @@ void Project::New(int width, int height, int fps) {
   auto pj = Project::Get();
   pj->compos_.clear();
   pj->entities.clear();
+  pj->path.clear(); // 残すと次の保存で元のファイルを新規プロジェクトで上書きする
+  pj->output_path.clear();
 
   pj->compos_.push_back(cutil::make_ref<Composition>("Main", width, height, fps));
   pj->main_comp_idx = 0;

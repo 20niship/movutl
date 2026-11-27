@@ -313,6 +313,7 @@ TEST_CASE("exo: 取り込み結果ダイアログはImGuiコンテキスト上�
   ImGui::CreateContext();
   ImGuiIO& io    = ImGui::GetIO();
   io.DisplaySize = ImVec2(800, 600);
+  io.IniFilename = nullptr; // build/imgui.ini(ユーザーの配置)を書き換えない
   unsigned char* pixels;
   int w, h;
   io.Fonts->GetTexDataAsRGBA32(&pixels, &w, &h);

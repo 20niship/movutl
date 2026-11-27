@@ -27,6 +27,7 @@ movutl.register_command("open_project_cmd", "開く", "プロジェクトファ�
 })
 
 movutl.register_command("import_media_cmd", "ファイルを読み込む", "ファイルを選択し内容に応じたEntityを追加する", "ctrl+i", {
+  context = "video",
   on_start = function(self)
     local path = movutl.select_file_dialog("ファイルを読み込む", {})
     if path == "" then return "failed" end

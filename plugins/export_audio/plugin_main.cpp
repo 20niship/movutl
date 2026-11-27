@@ -29,6 +29,17 @@ struct AudioExportHandle {
   int64_t next_pts = 0;
 };
 
+// FFmpeg 8でAVCodec::sample_fmts/pix_fmtsが廃止されavcodec_get_supported_config()に置き換わったため、旧新どちらでも先頭の対応フォーマットを返す
+static AVSampleFormat first_sample_fmt(const AVCodec* c, AVSampleFormat def) {
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(61, 13, 100)
+  const AVSampleFormat* f = nullptr;
+  if(avcodec_get_supported_config(nullptr, c, AV_CODEC_CONFIG_SAMPLE_FORMAT, 0, (const void**)&f, nullptr) < 0) return def;
+  return f ? f[0] : def;
+#else
+  return c->sample_fmts ? c->sample_fmts[0] : def;
+#endif
+}
+
 static bool fn_init(cutil::PropInfo* props, cutil::Prop* defaults) {
   props->fields.push_back(cutil::PropInfo::Field("bitrate_kbps", 0, cutil::prop_info_of<int32_t>()));
   props->fields.back().set_label("ビットレート(kbps, mp3のみ)");
@@ -94,7 +105,7 @@ static void* fn_open(const char* path, int, int, float, int audio_sample_rate, i
   }
 
   h->enc_ctx->sample_rate = audio_sample_rate;
-  h->enc_ctx->sample_fmt  = codec->sample_fmts ? codec->sample_fmts[0] : AV_SAMPLE_FMT_S16;
+  h->enc_ctx->sample_fmt  = first_sample_fmt(codec, AV_SAMPLE_FMT_S16);
   h->enc_ctx->bit_rate    = (int64_t)cutil::get_or<int32_t>(props, "bitrate_kbps", 192) * 1000;
   h->enc_ctx->time_base   = AVRational{1, audio_sample_rate};
 #if MU_FFMPEG_NEW_CHLAYOUT

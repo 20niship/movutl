@@ -18,7 +18,7 @@
 #include FT_FREETYPE_H
 #include FT_OUTLINE_H
 #include FT_SYNTHESIS_H
-#include <opencv2/opencv.hpp>
+#include <movutl/core/opencv_compat.hpp>
 
 #define WIDTH 500
 #define HEIGHT 300

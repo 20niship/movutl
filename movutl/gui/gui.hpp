@@ -18,7 +18,8 @@ public:
   virtual void Update() = 0;
   // trueを返すパネルはエクスポート中もBeginDisabledでラップされない(ExportWindow自身のキャンセルUI等)
   virtual bool always_enabled_during_export() const { return false; }
-  bool open  = true; // falseならUpdate()自体を呼ばない(ImGui::Beginのタイトルバー×ボタンで閉じる)
+  bool open = true;        // falseならUpdate()自体を呼ばない(ImGui::Beginのタイトルバー×ボタンで閉じる)
+  std::string window_name; // 空でなければ、現在のワークスペースに含まれる場合だけUpdate()を呼ぶ
   UIPanel()  = default;
   ~UIPanel() = default;
 };
@@ -27,7 +28,8 @@ public:
 struct WorkspaceEntry {
   std::string window_name;     // ドッキングするImGuiウィンドウ名
   int dir     = ImGuiDir_None; // 分割方向 (ImGuiDir_Left / Right / Up / Down)、直前のentryと同タブにする場合はNone
-  float ratio = 0.5f;          // 残り領域から確保する割合 (0.0 - 1.0)。同タブ指定時は無視される
+  float ratio = 0.5f;          // 残り領域から確保する割合 (0.0 - 1.0)。同タブ指定時は無視される。負ならドッキングせず表示対象にだけ含める
+  std::string parent;          // 空でなければ残り領域ではなく、このウィンドウのノードを分割する(dir==Noneならそのノードのタブ)
 };
 
 struct Workspace {
@@ -35,6 +37,7 @@ struct Workspace {
   std::vector<WorkspaceEntry> entries;
 
   Workspace& add_entry(const char* window_name, int dir, float ratio);
+  Workspace& split_entry(const char* window_name, const char* parent, int dir, float ratio);
   Workspace& clear_entries();
 };
 
@@ -49,8 +52,10 @@ public:
 
   int dockspace_id = 0;
 
-  // 遅延適用用。apply_workspace()が初フレーム前に呼ばれた場合、ここに名前を保持し最初のフレームで適用する
+  // 遅延適用用。apply_workspace()の指定先を保持し、次のフレーム開始前(初フレーム前なら2フレーム目)に切り替える
   std::string pending_workspace;
+  std::string current_workspace = "Default";
+  bool rebuild_layout           = false; // trueなら次のフレームで現在のワークスペースの初期配置を組み直す
 
   GLFWwindow* glfw_window = nullptr;
   bool should_close       = false;
@@ -74,10 +79,16 @@ void register_imgui_style(const char* name, const ImGuiStyle& style);
 void apply_imgui_style(const char* name);
 void remove_imgui_style(const char* name);
 
-// ワークスペース(ドッキングレイアウト)の登録・削除・適用
+// ワークスペース(ドッキングレイアウト)の登録・削除・切替。配置はワークスペースごとに保存される
 void register_workspace(const char* name, const Workspace& workspace);
 void remove_workspace(const char* name);
 void apply_workspace(const char* name);
+void reset_workspace(); // 現在のワークスペースを初期配置に戻す
+
+// "space" "alt" "shift+space" のようなキーが押されている間true(テキスト入力中はfalse)
+bool is_shortcut_held(const std::string& shortcut);
+// フォーカス中のウィンドウが毎フレーム呼ぶ。CommandInfo::contextが一致するコマンドのショートカットが有効になる
+void set_shortcut_context(const std::string& ctx);
 
 namespace detail {
 inline Workspace new_workspace() { return Workspace(); }

@@ -146,7 +146,7 @@ bool ToneCorrection(cv::Mat* img_before, float brightness, float contrast) {
 
 bool ColorCorrection(cv::Mat* img_before, int Hue_Offset, int Saturation_Offset, int Brightness_Offset) {
   cv::Mat hsvImage;
-  cvtColor((*img_before), hsvImage, CV_RGB2HSV_FULL);
+  cvtColor((*img_before), hsvImage, cv::COLOR_RGB2HSV_FULL);
   for(int x = 0; x < (*img_before).cols - 1; x++) {
     for(int y = 0; y < (*img_before).rows - 1; y++) {
       hsvImage.at<cv::Vec3b>(y, x)[0] = MIN(254, MAX(hsvImage.at<cv::Vec3b>(y, x)[0] * Hue_Offset / 100.0, 0));      // H
@@ -154,7 +154,7 @@ bool ColorCorrection(cv::Mat* img_before, int Hue_Offset, int Saturation_Offset,
       hsvImage.at<cv::Vec3b>(y, x)[2] = MIN(254, MAX(hsvImage.at<cv::Vec3b>(y, x)[2] + Brightness_Offset - 100, 0)); // V
     }
   }
-  cvtColor(hsvImage, (*img_before), CV_HSV2RGB_FULL);
+  cvtColor(hsvImage, (*img_before), cv::COLOR_HSV2RGB_FULL);
   return true;
 }
 
@@ -191,15 +191,15 @@ bool blur_g(cv::Mat* img_before, int kernel_size_x, int kernel_size_y, int sigma
 
 bool toGray(cv::Mat* img_before) {
   cv::Mat img_gray;
-  cvtColor((*img_before), img_gray, CV_RGB2GRAY);
-  cvtColor(img_gray, (*img_before), CV_GRAY2BGRA);
+  cvtColor((*img_before), img_gray, cv::COLOR_RGB2GRAY);
+  cvtColor(img_gray, (*img_before), cv::COLOR_GRAY2BGRA);
   return true;
 }
 
 bool Binarize(cv::Mat* img_before, int type) {
   // 固定の閾値処理
   cv::Mat gray_img;
-  cvtColor((*img_before), gray_img, CV_RGBA2GRAY);
+  cvtColor((*img_before), gray_img, cv::COLOR_RGBA2GRAY);
 
   cv::Mat bin_img, bininv_img, trunc_img, tozero_img, tozeroinv_img;
   // 入力画像，出力画像，閾値，maxVal，閾値処理手法

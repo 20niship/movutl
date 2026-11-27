@@ -54,7 +54,7 @@ struct LuaCommand final : mCommand {
 };
 
 void lua_register_command(const std::string& id, const std::string& name, const std::string& description, const std::string& shortcut, LuaIntf::LuaRef def) {
-  register_command(CommandInfo{id, name, description, shortcut}, [def]() -> Ref<mCommand> { return cutil::make_ref<LuaCommand>(def); });
+  register_command(CommandInfo{id, name, description, shortcut, {}, def.get<std::string>("context", "")}, [def]() -> Ref<mCommand> { return cutil::make_ref<LuaCommand>(def); });
 }
 
 // LuaIntfはstd::vector<std::string>を自動変換できない(userdata扱いになる)ため、Luaの配列テーブルを手動で変換する

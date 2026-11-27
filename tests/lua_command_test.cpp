@@ -20,6 +20,7 @@ extern "C" {
 #include <movutl/core/anim.hpp>
 #include <movutl/core/command.hpp>
 #include <movutl/core/filesystem.hpp>
+#include <movutl/core/status_log.hpp>
 #include <unordered_map>
 
 using namespace mu;
@@ -58,6 +59,9 @@ TEST_CASE("shortcuts.lua + widgets/utility_window.lua: 5つのショートカッ
   CHECK(shortcuts["save_project_as_cmd"] == "ctrl+shift+s");
   CHECK(shortcuts["open_project_cmd"] == "ctrl+o");
   CHECK(shortcuts["import_media_cmd"] == "ctrl+i");
+  // 動画編集の操作はペイント系ワークスペースで効かない
+  for(const auto& info : get_command_infos())
+    if(info.id == "import_media_cmd" || info.id == "add_object_menu") CHECK(info.context == "video");
 }
 
 TEST_CASE("widgets/utility_window.lua: add_entities_uiが参照するmovutlの定数/関数が実際に解決できる") {
@@ -188,7 +192,6 @@ TEST_CASE("統合テスト: save_project_cmdをrun_command()で呼び出すと�
   std::remove(path.c_str());
 
   Project::New();
-  Project::Get()->path.clear(); // Project::New()はpathをクリアしないため、他テストの状態が残らないよう明示的に空にする
   REQUIRE(Project::Get()->path.empty());
 
   lua_State* L = make_test_lua();
@@ -332,4 +335,20 @@ TEST_CASE("統合テスト: open_project_cmdをrun_command()で呼び出すと�
   CHECK(Entity::Find("open_test_marker") != nullptr); // 保存しておいたEntityが復元されている
 
   std::remove(path.c_str());
+}
+
+TEST_CASE("新規プロジェクト: 保存先を引き継がず、中身があればdirtyでなくても確認してから破棄する") {
+  Project::New();
+  Project::Get()->path        = "old_project.json";
+  Project::Get()->output_path = "old_output.mp4";
+  Project::New();
+  CHECK(Project::Get()->path.empty());
+  CHECK(Project::Get()->output_path.empty());
+
+  detail::register_default_commands();
+  REQUIRE(add_new_shape_track("keep", 0, 100, ShapeType_Rect));
+  status_log_set_dirty(false);
+  CHECK(run_command("new_project_cmd"));
+  CHECK_FALSE(Composition::GetActiveComp()->get_all_entities().empty()); // 確認待ち
+  Project::New();
 }

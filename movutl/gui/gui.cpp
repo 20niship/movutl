@@ -15,49 +15,48 @@
 #include <movutl/gui/graph_editor_window.hpp>
 #include <movutl/gui/gui.hpp>
 #include <movutl/gui/inspector.hpp>
+#include <movutl/gui/paint/canvas_panel.hpp>
+#include <movutl/gui/paint/palettes.hpp>
 #ifdef MOVUTL_DAW
 #include <movutl/gui/piano_roll.hpp>
 #endif
 #include <movutl/gui/timeline.hpp>
 #include <movutl/gui/timeline_window.hpp>
 #include <movutl/gui/viewer.hpp>
+#include <movutl/gui/workspace_presets.hpp>
 
 namespace mu {
 namespace detail {
 
 void init_gui_panels() {
-  auto g    = GUIManager::Get();
+  auto g           = GUIManager::Get();
+  const auto named = [](Ref<UIPanel> panel, const char* window_name) {
+    panel->window_name = window_name;
+    return panel;
+  };
   g->panels = {
-    cutil::make_ref<InspectorWindow>(),           //
-    cutil::make_ref<TimelineWindow>(),            //
-    cutil::make_ref<ViewerWindow>(),              //
-    cutil::make_ref<CompositionSettingsWindow>(), //
-    cutil::make_ref<DeveloperWindow>(),           //
-    cutil::make_ref<ExportWindow>(),              //
-    cutil::make_ref<FFTWindow>(),                 //
-    cutil::make_ref<GraphEditorWindow>(),         //
+    named(cutil::make_ref<InspectorWindow>(), ICON_FA_PLUG " エフェクト制御"),
+    named(cutil::make_ref<TimelineWindow>(), "タイムライン"),
+    named(cutil::make_ref<ViewerWindow>(), "Viewer"),
+    cutil::make_ref<CompositionSettingsWindow>(),
+    cutil::make_ref<DeveloperWindow>(),
+    cutil::make_ref<ExportWindow>(),
+    cutil::make_ref<FFTWindow>(),
+    named(cutil::make_ref<GraphEditorWindow>(), ICON_FA_CHART_LINE " グラフエディタ"),
 #ifdef MOVUTL_DAW
-    cutil::make_ref<PianoRollWindow>(), // MIDIトラック選択中のみ自前で表示する
+    named(cutil::make_ref<PianoRollWindow>(), ICON_FA_KEYBOARD " ピアノロール"), // MIDIトラック選択中のみ自前で表示する
 #endif
   };
-
-  // デフォルトワークスペース(初回起動時に適用される)。dir==Noneのentry(最後を除く)は直前entryと同タブになる
-  Workspace default_workspace;
-  default_workspace.name = "Default";
-  default_workspace.add_entry("タイムライン", ImGuiDir_Down, 0.36f);
-  default_workspace.add_entry(ICON_FA_CHART_LINE " グラフエディタ", ImGuiDir_None, 0.0f);
-  default_workspace.add_entry("ツール", ImGuiDir_Left, 0.17f);
-  default_workspace.add_entry(ICON_FA_PLUG " エフェクト制御", ImGuiDir_Right, 0.32f);
-  default_workspace.add_entry(ICON_FA_KEYBOARD " ピアノロール", ImGuiDir_Down, 0.5f);
-  default_workspace.add_entry("Viewer", ImGuiDir_None, 1.0f);
-  register_workspace("Default", default_workspace);
+  init_workspaces();
+  register_paint_palettes();
+  set_paint_panel("canvas", make_canvas_panel());
 }
 
 void update_gui_panels() {
   MOVUTL_ZONE_SCOPED_N("update_gui_panels");
   auto a = GUIManager::Get();
   for(auto& panel : a->panels) {
-    if(!panel->open) continue;
+    if(!panel->open || !is_window_in_workspace(panel->window_name)) continue;
     const bool disable = is_exporting() && !panel->always_enabled_during_export();
     if(disable) ImGui::BeginDisabled();
     // ドックタブ左の▼(ウィンドウメニュー)と×は使わないので隠して見出しを軽くする(タイムラインは自前のクラス指定で上書きされる)

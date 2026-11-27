@@ -19,6 +19,8 @@ ABIContext make_abi() {
   abi.register_input_plugin     = &abi_register_input_plugin;
   abi.register_filter_plugin    = &abi_register_filter_plugin;
   abi.register_output_plugin    = &abi_register_output_plugin;
+  abi.register_stroke_plugin    = &abi_register_stroke_plugin;
+  abi.register_tip_plugin       = &abi_register_tip_plugin;
   return abi;
 }
 

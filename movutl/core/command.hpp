@@ -37,6 +37,10 @@ public:
 
   // Undo履歴に積むかどうか。on_undo()を実装しないコマンド(再生/一時停止等)やundo/redoコマンド自身はfalseを返すこと
   virtual bool undoable() const { return false; }
+  // 取り消し対象が破棄された(閉じたペイント文書等)。trueの履歴はundo/redoせずに捨てる
+  virtual bool expired() const { return false; }
+  // 実行/undo/redoで動画プロジェクトが未保存になるか。別の文書(ペイント等)への操作はfalse
+  virtual bool modifies_project() const { return true; }
 };
 
 // コマンドの登録情報。mCommandのインスタンス(実行の度に生成/破棄される)とは分離して管理する
@@ -46,6 +50,7 @@ struct CommandInfo {
   std::string description;             // コマンドの内容説明
   std::string shortcut;                // vim風のキー表記(例: "ctrl+shift+a", "g g")。空文字ならショートカット無し。空白区切りで複数キーの連続入力になる
   std::vector<std::string> extensions; // このコマンドが扱えるファイル拡張子(小文字・ドット無し)。D&D時に一致するコマンドが実行される
+  std::string context;                 // ショートカットが効く場所。""は全体、"canvas"はキャンバス操作中のみ、"paint"/"video"はペイント系/それ以外のワークスペースのみ
 };
 
 // コマンドを登録する。run_command()のたびにfactoryを呼んでmCommandの新しいインスタンスを生成する
@@ -65,10 +70,22 @@ void cancel_command(const char* id);
 void tick_running_commands();
 const std::vector<CommandInfo>& get_command_infos(); // 登録済みコマンド一覧(メニュー表示やショートカット判定に使う)
 
+// 実行済みのコマンドを履歴へ積む(redo履歴は破棄)。run_command()を経由しない操作(ペイントのストローク等)用。nullptrは無視
+void push_undo_command(Ref<mCommand> cmd);
+
 // undoable()がtrueなコマンドの実行履歴を1つ取り消す/やり直す。履歴が空ならfalseを返す
 bool undo_command();
 bool redo_command();
 bool can_undo();
 bool can_redo();
+
+// 履歴の一覧(古い順)。先頭からapplied件が実行済みで、以降はやり直せる操作
+struct CommandHistory {
+  std::vector<std::string> names;
+  int applied = 0;
+};
+CommandHistory get_command_history();
+// 実行済みがapplied件になるまでundo/redoする。範囲外はfalse
+bool jump_command_history(int applied);
 
 } // namespace mu

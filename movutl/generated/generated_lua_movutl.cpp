@@ -495,6 +495,7 @@ void generated_lua_binding_movutl(lua_State* L) {
     .endClass()
     .beginClass<Workspace>("Workspace")
     .addFunction("add_entry", &Workspace::add_entry)
+    .addFunction("split_entry", &Workspace::split_entry)
     .addFunction("clear_entries", &Workspace::clear_entries)
     .addVariable("name", &Workspace::name)       // std::string
     .addVariable("entries", &Workspace::entries) // std::vector<WorkspaceEntry>
@@ -503,6 +504,7 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addVariable("window_name", &WorkspaceEntry::window_name) // std::string
     .addVariable("dir", &WorkspaceEntry::dir)                 // int
     .addVariable("ratio", &WorkspaceEntry::ratio)             // float
+    .addVariable("parent", &WorkspaceEntry::parent)           // std::string
     .endClass()
     .addFunction("SceneChangeFromExoName", static_cast<bool (*)(const std::string&, int&, bool&)>(&SceneChangeFromExoName))
     .addFunction("SceneChangeProgress", static_cast<float (*)(int, int, int)>(&SceneChangeProgress))
@@ -534,6 +536,7 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("import_media_file", static_cast<Ref<Entity> (*)(const char*)>(&import_media_file))
     .addFunction("init", static_cast<void (*)()>(&init))
     .addFunction("is_playing", static_cast<bool (*)()>(&is_playing))
+    .addFunction("is_shortcut_held", static_cast<bool (*)(const std::string&)>(&is_shortcut_held))
     .addFunction("new_project", static_cast<void (*)()>(&new_project))
     .addFunction("open_file", static_cast<bool (*)(const char*)>(&open_file))
     .addFunction("open_project", static_cast<void (*)(const char*)>(&open_project))
@@ -546,6 +549,7 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("render_main_menu_bar", static_cast<void (*)()>(&render_main_menu_bar))
     .addFunction("render_status_bar", static_cast<void (*)()>(&render_status_bar))
     .addFunction("reset", static_cast<void (*)()>(&reset))
+    .addFunction("reset_workspace", static_cast<void (*)()>(&reset_workspace))
     .addFunction("run_lua_file", static_cast<bool (*)(const char*)>(&run_lua_file))
     .addFunction("save_project", static_cast<void (*)()>(&save_project))
     .addFunction("save_project_as", static_cast<void (*)(const char*)>(&save_project_as))
@@ -554,6 +558,7 @@ void generated_lua_binding_movutl(lua_State* L) {
     .addFunction("select_entts", static_cast<void (*)(const std::vector<Ref<Entity> >&)>(&select_entts))
     .addFunction("set_image_filter_param", static_cast<bool (*)(const Ref<Image>&, const char*, const char*, float)>(&set_image_filter_param))
     .addFunction("set_shape_filter_param", static_cast<bool (*)(const Ref<ShapeEntt>&, const char*, const char*, float)>(&set_shape_filter_param))
+    .addFunction("set_shortcut_context", static_cast<void (*)(const std::string&)>(&set_shortcut_context))
     .addFunction("should_terminate", static_cast<bool (*)()>(&should_terminate))
     .addFunction("terminate", static_cast<void (*)()>(&terminate))
     .addFunction("update", static_cast<void (*)()>(&update))

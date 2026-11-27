@@ -1,7 +1,7 @@
 #include <algorithm>
+#include <movutl/core/opencv_compat.hpp>
 #include <movutl/core/profiler.hpp>
 #include <movutl/plugin/default/image_posterize_filter.hpp>
-#include <opencv2/opencv.hpp>
 
 #define GUID(x) (0x0000000000000000 | x)
 

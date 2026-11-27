@@ -2,6 +2,7 @@
 #include <movutl/app/app_impl.hpp>
 #include <movutl/asset/config.hpp>
 #include <movutl/core/logger.hpp>
+#include <movutl/paint/stroke_registry.hpp>
 #include <movutl/plugin/plugin.hpp>
 
 #ifdef MOVUTL_PLATFORM_WINDOWS
@@ -60,6 +61,18 @@ bool abi_register_output_plugin(const OutputPluginTable* t) {
   if(t == nullptr) return false;
   AppMain::Get()->output_plugins.push_back(*t);
   return true;
+}
+
+bool abi_register_stroke_plugin(const StrokePluginTable* t) {
+  if(t == nullptr) return false;
+  StrokePluginTable copy = *t;
+  if(copy.fn_init) copy.fn_init(&copy.props, &copy.defaults);
+  return StrokeRegistry::Get().register_type(copy);
+}
+
+bool abi_register_tip_plugin(const TipPluginTable* t) {
+  if(t == nullptr) return false;
+  return TipRegistry::Get().register_type(*t);
 }
 
 } // namespace detail

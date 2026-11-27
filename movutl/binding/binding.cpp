@@ -19,7 +19,7 @@ namespace {
 
 // Luaのテーブル(update関数)をUIPanel::Updateへ委譲するアダプタ
 struct LuaUIPanel final : UIPanel {
-  LuaUIPanel(std::string title, LuaIntf::LuaRef def) : title_(std::move(title)), def_(std::move(def)) {}
+  LuaUIPanel(std::string title, LuaIntf::LuaRef def) : title_(std::move(title)), def_(std::move(def)) { window_name = title_; }
 
   void Update() override {
     ImGui::Begin(title_.c_str());
