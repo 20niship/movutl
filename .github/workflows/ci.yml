@@ -11,8 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
+
+      # assetsは非公開リポジトリでCIから取得できないので除く
+      - name: submoduleを取得
+        run: git submodule status | awk '{print $2}' | grep -vx assets | xargs git submodule update --init --recursive --
 
       - uses: actions/setup-python@v5
         with:
@@ -43,8 +45,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
+
+      # assetsは非公開リポジトリでCIから取得できないので除く
+      - name: submoduleを取得
+        run: git submodule status | awk '{print $2}' | grep -vx assets | xargs git submodule update --init --recursive --
 
       - uses: extractions/setup-just@v2
 
@@ -62,7 +66,15 @@ jobs:
             build-essential cmake ninja-build pkg-config \
             libglfw3-dev libfreetype-dev libglew-dev libglm-dev \
             libassimp-dev libluajit-5.1-dev libopencv-dev \
-            libgl1-mesa-dev libglu1-mesa-dev ffmpeg # ffmpeg CLIはmovie_testのテスト動画生成に使う
+            libgl1-mesa-dev libglu1-mesa-dev libx11-dev libxi-dev \
+            fonts-ipafont-gothic ffmpeg # ffmpeg CLIはmovie_testとgen_ci_assets.pyの素材生成に使う
+
+      - name: テスト用の素材を合成
+        run: python3 scripts/gen_ci_assets.py
+
+      # 先にconfigureしておくと、just buildがassetsを含むsubmodule取得を行わない
+      - name: cmake configure
+        run: cmake -S . -B build -DMOVUTL_DAW=OFF
 
       - name: just check
         env:
